@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="eAiR1Y-uCo4AOL2kk93GpQ_JtoPeDheyVp7H9k4Peak">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=6.4.1" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.4.1">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.4.1">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.4.1">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.4.1" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '6.4.1',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="背景Federation V1Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="k8s多集群管理方案 - KubeFed V2">
+<meta property="og:url" content="http://kuring.me/post/kubefedv2/index.html">
+<meta property="og:site_name" content="伊图">
+<meta property="og:description" content="背景Federation V1Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-1.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-2.png">
+<meta property="og:updated_time" content="2022-01-09T03:39:23.856Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="k8s多集群管理方案 - KubeFed V2">
+<meta name="twitter:description" content="背景Federation V1Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s">
+<meta name="twitter:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-1.png">
+
+
+
+
+
+
+  <link rel="canonical" href="http://kuring.me/post/kubefedv2/">
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>k8s多集群管理方案 - KubeFed V2 | 伊图</title>
+  
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-42234015-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-42234015-1');
+</script>
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?c90f7388e03d4ed7e98a545b1d69200e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">伊图</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <h1 class="site-subtitle" itemprop="description">学习笔记</h1>
+      
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+    <a href="/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+    <a href="/archives/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+    <a href="/about/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+    <a href="/tags/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/kubefedv2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content>
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="伊图">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">k8s多集群管理方案 - KubeFed V2
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2022-01-09 11:33:15 / Modified: 11:39:23" itemprop="dateCreated datePublished" datetime="2022-01-09T11:33:15+08:00">2022-01-09</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/post/kubefedv2/#comments" itemprop="discussionUrl">
+                  <span class="post-meta-item-text">Comments: </span> <span class="post-comments-count gitment-comments-count" data-xid="/post/kubefedv2/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><h2 id="Federation-V1"><a href="#Federation-V1" class="headerlink" title="Federation V1"></a>Federation V1</h2><p>Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s v1.11 左右正式被弃用。</p>
+<h2 id="Federation-V2架构"><a href="#Federation-V2架构" class="headerlink" title="Federation V2架构"></a>Federation V2架构</h2><p>v2 版本利用 CRD 实现了整体功能，通过定义多种自定义资源（CR），从而省掉了 v1 中的 API Server；v2 版本由两个组件构成：</p>
+<ul>
+<li>admission-webhook 提供了准入控制</li>
+<li>controller-manager 处理自定义资源以及协调不同集群间的状态</li>
+</ul>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-1.png" alt="image"><br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-2.png" alt="image"></p>
+<p>代码行数在2万行左右。</p>
+<h2 id="术语"><a href="#术语" class="headerlink" title="术语"></a>术语</h2><ul>
+<li>Host Cluster：主集群/父集群</li>
+<li>Member Cluster：子集群/成员集群</li>
+</ul>
+<h1 id="CRD扩展"><a href="#CRD扩展" class="headerlink" title="CRD扩展"></a>CRD扩展</h1><h2 id="KubeFedCluster"><a href="#KubeFedCluster" class="headerlink" title="KubeFedCluster"></a>KubeFedCluster</h2><p>子集群抽象，通过kubefedctl join命令创建。后续controller会使用该信息来访问子k8s集群。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">kind: KubeFedCluster</span><br><span class="line">metadata:</span><br><span class="line">  name: kind-cluster1</span><br><span class="line">  namespace: kube-federation-system</span><br><span class="line">spec:</span><br><span class="line">  apiEndpoint: https://<span class="number">172.21</span>.<span class="number">115.165</span>:<span class="number">6443</span></span><br><span class="line">  caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXlOREUyTlRNME9Wb1hEVE14TVRJeU1qRTJOVE0wT1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTmxjCnF3UHd5cHNFc2M0aXB3QnFuRndDN044RXo2Slhqajh3ZzRybnlXTDNSdlZ0cmVua1Nha1VyYlRjZWVIck9lQTUKWGlNUVo2T1FBY25tUGU0Q2NWSkFoL2ZLQzBkeU9uL0ZZeXgyQXppRjBCK1ZNaUFhK2dvME1VMmhMZ1R5eVFGdQpDbWFmUGtsNmJxZUFJNCtCajZJUWRqY3dVMHBjY3lrNGhSTUxnQmhnTUh4NWkzVkpQckQ2Y284dHcwVnllWncyCkdDUlh2ZzlSd0QweUs5eitOVS9LVS83QjBiMTBvekpNRlVJMktPZmI4N1RkQ0h2NmlBdlVRYVdKc1BqQ0M3MzQKcnBma1ZGZXB2S2liKy9lUVBFaDE4VE5qaitveEVGMnl0Vmo2ZWVKeFc3VVZrbit0T3BxdGpEeUtKVDllNnlwdAp6U1VDTnRZWTAzckdhNTlLczBVQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZOTnRQU3hsMlMxUldOb1BCeXNIcHFoRXJONlVNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFDME0vaktCL2dqcWRSNlRLNXJQVktSSFU2cy8xTTh2eTY2WFBiVEx4M0srazdicUFWdAoxVUFzcUZDZmNrVk91WHY3eFQ0ZHIzVzdtMHE1bDYzRGg3ZDJRZDNiQ00zY2FuclpNd01OM0lSMlpmYzR0VlBGCnRTMFFONElTa0hsYnBudXQxb0F3cy9CaXNwaXNRQ0VtbHF3Zy9xbmdPMStlWWRoWm5vRW40SEFDamF4Slc5MS8KNXlOR1pKRXdia2dYQTVCbSs3VEZRL2FiYnp5a1JvOWtTMnl5c29pMnVzcUg0ZnlVS0ZWK2RETnp3Ujh0ck16cgpjWkRBNHpaVFB1WGlYRkVsWlNRa2NJSGIyV0VsYmZNRGpKNjlyVG5wakJCOWNPQ25jaHVmK0xiOXQwN1lJQ01wCmNlK0prNVp2RElRUFlKK3hTeGdRaVJxMTFraWlKcFE4Wm1FWgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==</span><br><span class="line">  proxyURL: <span class="string">""</span></span><br><span class="line">  secretRef:</span><br><span class="line">    name: kind-cluster1-dbxns</span><br><span class="line">status:</span><br><span class="line">  conditions:</span><br><span class="line">  - lastProbeTime: <span class="string">"2021-12-24T17:00:47Z"</span></span><br><span class="line">    lastTransitionTime: <span class="string">"2021-12-24T17:00:07Z"</span></span><br><span class="line">    message: /healthz responded with ok</span><br><span class="line">    reason: ClusterReady</span><br><span class="line">    status: <span class="string">"True"</span></span><br><span class="line">    type: Ready</span><br></pre></td></tr></table></figure></p>
+<h2 id="Fedrated"><a href="#Fedrated" class="headerlink" title="Fedrated"></a>Fedrated<kind></kind></h2><p>发布应用到子集群时手工创建。每一个要被联邦管理的资源都会对应一个Fedrated<kind>类型的资源，比如ConfigMap对应的是FederatedConfigMap。FederatedConfigMap包含了三部分的信息：</kind></p>
+<ul>
+<li>template：联邦的资源详细spec信息，需要特别注意的是并没有包含metadata部分的信息。</li>
+<li>placement：template中的spec信息要部署的k8s子集群信息</li>
+<li>overrides：允许对部分k8s的部分资源进行自定义修改<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: types.kubefed.io/v1beta1</span><br><span class="line">kind: FederatedConfigMap</span><br><span class="line">metadata:</span><br><span class="line">  name: test-configmap</span><br><span class="line">  namespace: test-namespace</span><br><span class="line">spec:</span><br><span class="line">  template:</span><br><span class="line">    <span class="keyword">data</span>:</span><br><span class="line">      A: ala ma kota</span><br><span class="line">  placement:</span><br><span class="line">    clusters:</span><br><span class="line">    - name: cluster2</span><br><span class="line">    - name: cluster1</span><br><span class="line">  overrides:</span><br><span class="line">  - clusterName: cluster2</span><br><span class="line">    clusterOverrides:</span><br><span class="line">    - path: /<span class="keyword">data</span></span><br><span class="line">      value:</span><br><span class="line">        foo: bar</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="FederatedTypeConfig"><a href="#FederatedTypeConfig" class="headerlink" title="FederatedTypeConfig"></a>FederatedTypeConfig</h2><p>通过kubefedctl enable <target api type>创建。定义了哪些k8s api资源需要联邦，下面的例子描述了k8s ConfigMap要被联邦资源FederatedConfigMap所管理。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: core.kubefed.io/v1beta1</span><br><span class="line">kind: FederatedTypeConfig</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    meta.helm.sh/release-name: kubefed</span><br><span class="line">    meta.helm.sh/release-namespace: kube-federation-system</span><br><span class="line">  finalizers:</span><br><span class="line">  - core.kubefed.io/federated-type-config</span><br><span class="line">  labels:</span><br><span class="line">    app.kubernetes.io/managed-by: Helm</span><br><span class="line">  name: configmaps</span><br><span class="line">  namespace: kube-federation-system</span><br><span class="line">spec:</span><br><span class="line">  federatedType:</span><br><span class="line">    group: types.kubefed.io</span><br><span class="line">    kind: FederatedConfigMap</span><br><span class="line">    pluralName: federatedconfigmaps</span><br><span class="line">    scope: Namespaced</span><br><span class="line">    version: v1beta1</span><br><span class="line">  propagation: Enabled <span class="comment"># 是否启用该联邦对象</span></span><br><span class="line">  targetType:</span><br><span class="line">    kind: ConfigMap</span><br><span class="line">    pluralName: configmaps</span><br><span class="line">    scope: Namespaced</span><br><span class="line">    version: v1</span><br><span class="line">status:</span><br><span class="line">  observedGeneration: <span class="number">1</span></span><br><span class="line">  propagationController: Running</span><br><span class="line">  statusController: NotRunning</span><br></pre></td></tr></table></figure></target></p>
+<h2 id="ReplicaSchedulingPreference"><a href="#ReplicaSchedulingPreference" class="headerlink" title="ReplicaSchedulingPreference"></a>ReplicaSchedulingPreference</h2><p>用来管理相同名字的FederatedDeployment或FederatedReplicaset资源，保证所有子集群的副本数为spec.totalReplicas。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: scheduling.kubefed.io/v1alpha1</span><br><span class="line">kind: ReplicaSchedulingPreference</span><br><span class="line">metadata:</span><br><span class="line">  name: test-deployment</span><br><span class="line">  namespace: test-ns</span><br><span class="line">spec:</span><br><span class="line">  targetKind: FederatedDeployment</span><br><span class="line">  totalReplicas: <span class="number">9</span></span><br><span class="line">  clusters:</span><br><span class="line">    A:</span><br><span class="line">      minReplicas: <span class="number">4</span></span><br><span class="line">      maxReplicas: <span class="number">6</span></span><br><span class="line">      weight: <span class="number">1</span></span><br><span class="line">    B:</span><br><span class="line">      minReplicas: <span class="number">4</span></span><br><span class="line">      maxReplicas: <span class="number">8</span></span><br><span class="line">      weight: <span class="number">2</span></span><br></pre></td></tr></table></figure></p>
+<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>使用kind来在本机创建多个k8s集群的方式测试。通过kind创建两个k8s集群 kind-cluster1和kind-cluster2。<br>​</p>
+<p>安装kubefedctl<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/kubernetes-sigs/kubefed/releases/download/v0.<span class="number">9.0</span>/kubefedctl-<span class="number">0.9</span>.<span class="number">0</span>-linux-amd64.tgz</span><br><span class="line">tar zvxf kubefedctl-<span class="number">0.9</span>.<span class="number">0</span>-linux-amd64.tgz</span><br><span class="line">chmod u+x kubefedctl</span><br><span class="line">mv kubefedctl /usr/local/bin/</span><br></pre></td></tr></table></figure></p>
+<p>在第一个集群安装KubeFed，在第一个集群执行如下的命令<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ helm repo add kubefed-charts https://raw.githubusercontent.com/kubernetes-sigs/kubefed/master/charts</span><br><span class="line">$ helm repo list</span><br><span class="line">$ helm --namespace kube-federation-system upgrade -i kubefed kubefed-charts/kubefed --version=<span class="number">0.9</span>.<span class="number">0</span> --create-namespace</span><br><span class="line"></span><br><span class="line"><span class="comment"># 会安装如下两个deployment，其中一个是controller，另外一个是webhook</span></span><br><span class="line">$ kubectl  get deploy -n kube-federation-system</span><br><span class="line">NAME                         READY   UP-TO-DATE   AVAILABLE   AGE</span><br><span class="line">kubefed-admission-webhook    <span class="number">1</span>/<span class="number">1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="number">7</span>m40s</span><br><span class="line">kubefed-controller-manager   <span class="number">2</span>/<span class="number">2</span>     <span class="number">2</span>            <span class="number">2</span>           <span class="number">7</span>m40s</span><br></pre></td></tr></table></figure></p>
+<h1 id="子集群注册"><a href="#子集群注册" class="headerlink" title="子集群注册"></a>子集群注册</h1><p>将cluster1和cluster2集群加入到cluster1中<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">kubefedctl join kind-cluster1 --cluster-context kind-cluster1 --host-cluster-context kind-cluster1 --v=<span class="number">2</span></span><br><span class="line">kubefedctl join kind-cluster2 --cluster-context kind-cluster2 --host-cluster-context kind-cluster1 --v=<span class="number">2</span></span><br></pre></td></tr></table></figure></p>
+<p>在第一个集群可以看到在kube-federation-system中创建出了两个新的kubefedcluster对象<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl -n kube-federation-system get kubefedcluster</span><br><span class="line">NAME            AGE   READY</span><br><span class="line">kind-cluster1   <span class="number">17</span>s   True</span><br><span class="line">kind-cluster2   <span class="number">16</span>s   True</span><br><span class="line"></span><br><span class="line">$ apiVersion: core.kubefed.io/v1beta1</span><br><span class="line">kind: KubeFedCluster</span><br><span class="line">metadata:</span><br><span class="line">  name: kind-cluster1</span><br><span class="line">  namespace: kube-federation-system</span><br><span class="line">spec:</span><br><span class="line">  apiEndpoint: https://<span class="number">172.21</span>.<span class="number">115.165</span>:<span class="number">6443</span></span><br><span class="line">  caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXlOREUyTlRNME9Wb1hEVE14TVRJeU1qRTJOVE0wT1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTmxjCnF3UHd5cHNFc2M0aXB3QnFuRndDN044RXo2Slhqajh3ZzRybnlXTDNSdlZ0cmVua1Nha1VyYlRjZWVIck9lQTUKWGlNUVo2T1FBY25tUGU0Q2NWSkFoL2ZLQzBkeU9uL0ZZeXgyQXppRjBCK1ZNaUFhK2dvME1VMmhMZ1R5eVFGdQpDbWFmUGtsNmJxZUFJNCtCajZJUWRqY3dVMHBjY3lrNGhSTUxnQmhnTUh4NWkzVkpQckQ2Y284dHcwVnllWncyCkdDUlh2ZzlSd0QweUs5eitOVS9LVS83QjBiMTBvekpNRlVJMktPZmI4N1RkQ0h2NmlBdlVRYVdKc1BqQ0M3MzQKcnBma1ZGZXB2S2liKy9lUVBFaDE4VE5qaitveEVGMnl0Vmo2ZWVKeFc3VVZrbit0T3BxdGpEeUtKVDllNnlwdAp6U1VDTnRZWTAzckdhNTlLczBVQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZOTnRQU3hsMlMxUldOb1BCeXNIcHFoRXJONlVNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFDME0vaktCL2dqcWRSNlRLNXJQVktSSFU2cy8xTTh2eTY2WFBiVEx4M0srazdicUFWdAoxVUFzcUZDZmNrVk91WHY3eFQ0ZHIzVzdtMHE1bDYzRGg3ZDJRZDNiQ00zY2FuclpNd01OM0lSMlpmYzR0VlBGCnRTMFFONElTa0hsYnBudXQxb0F3cy9CaXNwaXNRQ0VtbHF3Zy9xbmdPMStlWWRoWm5vRW40SEFDamF4Slc5MS8KNXlOR1pKRXdia2dYQTVCbSs3VEZRL2FiYnp5a1JvOWtTMnl5c29pMnVzcUg0ZnlVS0ZWK2RETnp3Ujh0ck16cgpjWkRBNHpaVFB1WGlYRkVsWlNRa2NJSGIyV0VsYmZNRGpKNjlyVG5wakJCOWNPQ25jaHVmK0xiOXQwN1lJQ01wCmNlK0prNVp2RElRUFlKK3hTeGdRaVJxMTFraWlKcFE4Wm1FWgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==</span><br><span class="line">  proxyURL: <span class="string">""</span></span><br><span class="line">  secretRef:</span><br><span class="line">    name: kind-cluster1-dbxns</span><br><span class="line">status:</span><br><span class="line">  conditions:</span><br><span class="line">  - lastProbeTime: <span class="string">"2021-12-24T17:00:47Z"</span></span><br><span class="line">    lastTransitionTime: <span class="string">"2021-12-24T17:00:07Z"</span></span><br><span class="line">    message: /healthz responded with ok</span><br><span class="line">    reason: ClusterReady</span><br><span class="line">    status: <span class="string">"True"</span></span><br><span class="line">    type: Ready</span><br></pre></td></tr></table></figure></p>
+<p>要想将cluster2从主集群中移除，可以执行 kubefedctl unjoin kind-cluster2 –cluster-context kind-cluster2 –host-cluster-context kind-cluster1 –v=2</p>
+<h1 id="应用发布"><a href="#应用发布" class="headerlink" title="应用发布"></a>应用发布</h1><h2 id="集群联邦API"><a href="#集群联邦API" class="headerlink" title="集群联邦API"></a>集群联邦API</h2><p>kubefed将资源分为普通k8s资源类型和联邦的资源类型。在默认的场景下，kubefed已经内置将很多资源类型做了集群联邦。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ k get FederatedTypeConfig -n kube-federation-system</span><br><span class="line">NAME                                            AGE</span><br><span class="line">clusterrolebindings.rbac.authorization.k8s.io   <span class="number">19</span>h</span><br><span class="line">clusterroles.rbac.authorization.k8s.io          <span class="number">19</span>h</span><br><span class="line">configmaps                                      <span class="number">19</span>h</span><br><span class="line">deployments.apps                                <span class="number">19</span>h</span><br><span class="line">ingresses.extensions                            <span class="number">19</span>h</span><br><span class="line">jobs.batch                                      <span class="number">19</span>h</span><br><span class="line">namespaces                                      <span class="number">19</span>h</span><br><span class="line">replicasets.apps                                <span class="number">19</span>h</span><br><span class="line">secrets                                         <span class="number">19</span>h</span><br><span class="line">serviceaccounts                                 <span class="number">19</span>h</span><br><span class="line">services                                        <span class="number">19</span>h</span><br></pre></td></tr></table></figure></p>
+<p>将crd资源类型集群联邦，执行 kubefedctl enable 命令<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ kubefedctl enable customresourcedefinitions</span><br><span class="line">I1224 <span class="number">20</span>:<span class="number">32</span>:<span class="number">54.537112</span>  <span class="number">687543</span> util.go:<span class="number">141</span>] Api resource found.</span><br><span class="line">customresourcedefinition.apiextensions.k8s.io/federatedcustomresourcedefinitions.types.kubefed.io created</span><br><span class="line">federatedtypeconfig.core.kubefed.io/customresourcedefinitions.apiextensions.k8s.io created <span class="keyword">in</span> namespace kube-federation-system</span><br></pre></td></tr></table></figure></p>
+<p>可以看到会多出一个名字为federatedcustomresourcedefinitions.types.kubefed.io 的CRD 资源，同时会新创建一个FederatedTypeConfig类型的资源。当创建了FederatedTypeConfig后，就可以通过创建federatedcustomresourcedefinition类型的实例来向各个子集群发布CRD资源了。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">$ k get crd federatedcustomresourcedefinitions.types.kubefed.io</span><br><span class="line">NAME                                                  CREATED AT</span><br><span class="line">federatedcustomresourcedefinitions.types.kubefed.io   <span class="number">2021</span>-<span class="number">12</span>-<span class="number">24</span>T12:<span class="number">32</span>:<span class="number">54</span>Z</span><br><span class="line"></span><br><span class="line">$ k get FederatedTypeConfig -n kube-federation-system customresourcedefinitions.apiextensions.k8s.io -o yaml</span><br><span class="line">apiVersion: core.kubefed.io/v1beta1</span><br><span class="line">kind: FederatedTypeConfig</span><br><span class="line">metadata:</span><br><span class="line">  finalizers:</span><br><span class="line">  - core.kubefed.io/federated-type-config</span><br><span class="line">  name: customresourcedefinitions.apiextensions.k8s.io</span><br><span class="line">  namespace: kube-federation-system</span><br><span class="line">spec:</span><br><span class="line">  federatedType:</span><br><span class="line">    group: types.kubefed.io</span><br><span class="line">    kind: FederatedCustomResourceDefinition</span><br><span class="line">    pluralName: federatedcustomresourcedefinitions</span><br><span class="line">    scope: Cluster</span><br><span class="line">    version: v1beta1</span><br><span class="line">  propagation: Enabled</span><br><span class="line">  targetType:</span><br><span class="line">    group: apiextensions.k8s.io</span><br><span class="line">    kind: CustomResourceDefinition</span><br><span class="line">    pluralName: customresourcedefinitions</span><br><span class="line">    scope: Cluster</span><br><span class="line">    version: v1</span><br><span class="line">status:</span><br><span class="line">  observedGeneration: <span class="number">1</span></span><br><span class="line">  propagationController: Running</span><br><span class="line">  statusController: NotRunning</span><br></pre></td></tr></table></figure></p>
+<p>在example/sample1下包含了很多例子，可以直接参考。接下来使用sample1中的例子进行试验。<br>​</p>
+<p>在父集群创建namespace test-namespace<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl create -f namespace.yaml</span><br><span class="line">namespace/test-namespace created</span><br></pre></td></tr></table></figure></p>
+<p>在主集群中创建federatednamespace资源<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ k apply -f federatednamespace.yaml</span><br><span class="line">federatednamespace.types.kubefed.io/test-namespace created</span><br></pre></td></tr></table></figure></p>
+<p>在子集群中即可查询到新创建的namespace资源<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ k get ns test-namespace</span><br><span class="line">NAME             STATUS   AGE</span><br><span class="line">test-namespace   Active   <span class="number">4</span>m49s</span><br></pre></td></tr></table></figure></p>
+<p>其他的对象均可以按照跟上述namespace同样的方式来创建，比较特殊的对象为clusterrulebinding，该对象在默认情况下没有联邦api FederatedClusterRoleBinding，因此需要手工先创建FederatedClusterRoleBinding联邦api类型。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ kubefedctl enable clusterrolebinding</span><br><span class="line">I1225 <span class="number">01</span>:<span class="number">46</span>:<span class="number">42.779166</span>  <span class="number">818254</span> util.go:<span class="number">141</span>] Api resource found.</span><br><span class="line">customresourcedefinition.apiextensions.k8s.io/federatedclusterrolebindings.types.kubefed.io created</span><br><span class="line">federatedtypeconfig.core.kubefed.io/clusterrolebindings.rbac.authorization.k8s.io created <span class="keyword">in</span> namespace kube-federation-system</span><br></pre></td></tr></table></figure></p>
+<p>在创建完成FederatedClusterRoleBinding联邦api类型后，即可以创建出FederatedClusterRoleBinding类型的对象。</p>
+<h2 id="子集群的个性化配置"><a href="#子集群的个性化配置" class="headerlink" title="子集群的个性化配置"></a>子集群的个性化配置</h2><p>通过Fedrated<kind>中的spec.overrides来完成，可以覆盖spec.template中的内容<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: types.kubefed.io/v1beta1</span><br><span class="line">kind: FederatedDeployment</span><br><span class="line">metadata:</span><br><span class="line">  name: test-deployment</span><br><span class="line">  namespace: test-namespace</span><br><span class="line">spec:</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: nginx</span><br><span class="line">    spec:</span><br><span class="line">      replicas: <span class="number">3</span></span><br><span class="line">      selector:</span><br><span class="line">        matchLabels:</span><br><span class="line">          app: nginx</span><br><span class="line">      template:</span><br><span class="line">        metadata:</span><br><span class="line">          labels:</span><br><span class="line">            app: nginx</span><br><span class="line">        spec:</span><br><span class="line">          containers:</span><br><span class="line">          - image: nginx</span><br><span class="line">            name: nginx</span><br><span class="line">  placement:</span><br><span class="line">    clusters:</span><br><span class="line">    - name: cluster2</span><br><span class="line">    - name: cluster1</span><br><span class="line">  overrides:</span><br><span class="line">  - clusterName: cluster2</span><br><span class="line">    clusterOverrides:</span><br><span class="line">    - path: <span class="string">"/spec/replicas"</span></span><br><span class="line">      value: <span class="number">5</span></span><br><span class="line">    - path: <span class="string">"/spec/template/spec/containers/0/image"</span></span><br><span class="line">      value: <span class="string">"nginx:1.17.0-alpine"</span></span><br><span class="line">    - path: <span class="string">"/metadata/annotations"</span></span><br><span class="line">      op: <span class="string">"add"</span></span><br><span class="line">      value:</span><br><span class="line">        foo: bar</span><br><span class="line">    - path: <span class="string">"/metadata/annotations/foo"</span></span><br><span class="line">      op: <span class="string">"remove"</span></span><br></pre></td></tr></table></figure></kind></p>
+<h2 id="多集群应用调度"><a href="#多集群应用调度" class="headerlink" title="多集群应用调度"></a>多集群应用调度</h2><h3 id="发布应用到特定的子集群"><a href="#发布应用到特定的子集群" class="headerlink" title="发布应用到特定的子集群"></a>发布应用到特定的子集群</h3><p>在Fedrated<kind>的spec.placement.clusters中，定义了要发布到哪个子集群的信息。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">placement:</span><br><span class="line">    clusters:</span><br><span class="line">    - name: cluster2</span><br><span class="line">    - name: cluster1</span><br></pre></td></tr></table></figure></kind></p>
+<p>不过上述方法需要指定特定的集群，为了有更丰富的灵活性，kubefed还提供了label selector的机制，可以提供spec.placement.clusterSelector来指定一组集群。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">spec:</span><br><span class="line">  placement:</span><br><span class="line">    clusters: []</span><br><span class="line">    clusterSelector:</span><br><span class="line">      matchLabels:</span><br><span class="line">        foo: bar</span><br></pre></td></tr></table></figure></p>
+<p>标签选择器通过跟kubefedclusters对象的label来进行匹配，可以执行下述命令给kubefedclusters来打标签。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl label kubefedclusters -n kube-federation-system kind-cluster1 foo=bar</span><br></pre></td></tr></table></figure></p>
+<h3 id="子集群差异化调度"><a href="#子集群差异化调度" class="headerlink" title="子集群差异化调度"></a>子集群差异化调度</h3><p>上述调度功能被选择的子集群为平等关系，如果要想子集群能够有所差异，可以使用ReplicaSchedulingPreference来完成，目前仅支持deployment和replicaset两种类型的资源，还不支持statefulset。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: scheduling.kubefed.io/v1alpha1</span><br><span class="line">kind: ReplicaSchedulingPreference</span><br><span class="line">metadata:</span><br><span class="line">  name: test-deployment</span><br><span class="line">  namespace: test-ns</span><br><span class="line">spec:</span><br><span class="line">  targetKind: FederatedDeployment</span><br><span class="line">  totalReplicas: <span class="number">9</span></span><br><span class="line">  clusters:</span><br><span class="line">    A:</span><br><span class="line">      minReplicas: <span class="number">4</span></span><br><span class="line">      maxReplicas: <span class="number">6</span></span><br><span class="line">      weight: <span class="number">1</span></span><br><span class="line">    B:</span><br><span class="line">      minReplicas: <span class="number">4</span></span><br><span class="line">      maxReplicas: <span class="number">8</span></span><br><span class="line">      weight: <span class="number">2</span></span><br></pre></td></tr></table></figure></p>
+<p>spec.targetKind用来指定管理的类型，仅支持FederatedDeployment和FederatedReplicaset。<br>spec.totalReplicas用来指定所有子集群的副本数总和。优先级要高于FederatedDeployment和FederatedReplicaset的spec.template中指定的副本数。<br>spec.clusters用来指定每个子集群的最大、最小副本数和权重。<br>spec.rebalance自动调整整个集群中的副本数，比如一个集群中的pod挂掉后，可以将pod迁移到另外的集群中。</p>
+<h1 id="子集群之间的交互"><a href="#子集群之间的交互" class="headerlink" title="子集群之间的交互"></a>子集群之间的交互</h1><p>无</p>
+<h1 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h1><ol>
+<li>父集群充当了所有集群的单一控制面</li>
+<li>通过联邦CRD来管理资源，无法直接使用k8s原生的资源，集群间维护CRD版本和API版本一致性导致升级比较复杂。</li>
+</ol>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li>官方文档：<a href="https://github.com/kubernetes-sigs/kubefed/blob/master/docs/userguide.md#using-cluster-selector" target="_blank" rel="noopener">https://github.com/kubernetes-sigs/kubefed/blob/master/docs/userguide.md#using-cluster-selector</a></li>
+</ul>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+      <div>
+        <div id="wechat_subscriber" style="display: block; padding: 10px 0; margin: 20px auto; width: 100%; text-align: center">
+    <img id="wechat_subscriber_qcode" src="/images/qrcode_for_gh_a3ecf2d098bc_430.jpg" alt=" wechat" style="width: 200px; max-width: 100%;">
+    <div>欢迎订阅我的公众号！</div>
+</div>
+
+      </div>
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/post/certificate/" rel="next" title="证书技术">
+                <i class="fa fa-chevron-left"></i> 证书技术
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+    <div class="comments" id="comments">
+      
+        <div id="gitment-container"></div>
+      
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.jpeg" alt>
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">188</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">2</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">33</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/kuring" target="_blank" title="GitHub" rel="external nofollow"><i class="fa fa-fw fa-globe"></i>GitHub</a>
+                  
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="http://www.zhihu.com/people/kuring" target="_blank" title="知乎" rel="external nofollow"><i class="fa fa-fw fa-globe"></i>知乎</a>
+                  
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="http://weibo.com/ilvkai" target="_blank" title="微博" rel="external nofollow"><i class="fa fa-fw fa-globe"></i>微博</a>
+                  
+                </span>
+              
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                Links
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://http://coolshell.cn/" title="酷壳" target="_blank">酷壳</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://www.ruanyifeng.com/blog/" title="阮一峰的网络日志" target="_blank">阮一峰的网络日志</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+            
+          
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Federation-V1"><span class="nav-number">1.1.</span> <span class="nav-text">Federation V1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Federation-V2架构"><span class="nav-number">1.2.</span> <span class="nav-text">Federation V2架构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#术语"><span class="nav-number">1.3.</span> <span class="nav-text">术语</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CRD扩展"><span class="nav-number">2.</span> <span class="nav-text">CRD扩展</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#KubeFedCluster"><span class="nav-number">2.1.</span> <span class="nav-text">KubeFedCluster</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Fedrated"><span class="nav-number">2.2.</span> <span class="nav-text">Fedrated</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FederatedTypeConfig"><span class="nav-number">2.3.</span> <span class="nav-text">FederatedTypeConfig</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ReplicaSchedulingPreference"><span class="nav-number">2.4.</span> <span class="nav-text">ReplicaSchedulingPreference</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#安装"><span class="nav-number">3.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#子集群注册"><span class="nav-number">4.</span> <span class="nav-text">子集群注册</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#应用发布"><span class="nav-number">5.</span> <span class="nav-text">应用发布</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#集群联邦API"><span class="nav-number">5.1.</span> <span class="nav-text">集群联邦API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#子集群的个性化配置"><span class="nav-number">5.2.</span> <span class="nav-text">子集群的个性化配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多集群应用调度"><span class="nav-number">5.3.</span> <span class="nav-text">多集群应用调度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#发布应用到特定的子集群"><span class="nav-number">5.3.1.</span> <span class="nav-text">发布应用到特定的子集群</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#子集群差异化调度"><span class="nav-number">5.3.2.</span> <span class="nav-text">子集群差异化调度</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#子集群之间的交互"><span class="nav-number">6.</span> <span class="nav-text">子集群之间的交互</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#缺点"><span class="nav-number">7.</span> <span class="nav-text">缺点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#参考资料"><span class="nav-number">8.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2013 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+
+  
+
+  
+</div>
+
+
+  
+
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" rel="external nofollow" href="https://hexo.io">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a class="theme-link" target="_blank" rel="external nofollow" href="https://theme-next.org">NexT.Pisces</a> v6.4.1</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+	
+    
+
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.4.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.4.1"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=6.4.1"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=6.4.1"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.4.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.4.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.4.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+<!-- LOCAL: You can save these files to your site and update links -->
+    
+        
+        <link rel="stylesheet" href="https://aimingoo.github.io/gitmint/style/default.css">
+        <script src="https://aimingoo.github.io/gitmint/dist/gitmint.browser.js"></script>
+    
+<!-- END LOCAL -->
+
+    
+      <style>
+        a.gitment-editor-footer-tip { display: none; }
+        .gitment-container.gitment-footer-container { display: none; }
+      </style>
+    
+
+    
+      <script type="text/javascript">
+      function renderGitment(){
+        var gitment = new Gitmint({
+            id: window.location.pathname,
+            owner: 'kuring',
+            repo: 'gitment-comments',
+            
+            lang: "" || navigator.language || navigator.systemLanguage || navigator.userLanguage,
+            
+            oauth: {
+            
+            
+                client_secret: 'b858c731ebc81dc8c66ae1f6424cd4915133d93d',
+            
+                client_id: 'ac02c664506838dd0591'
+            }});
+        gitment.render('gitment-container');
+      }
+
+      
+      renderGitment();
+      
+      </script>
+    
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
