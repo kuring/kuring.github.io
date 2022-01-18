@@ -3,8 +3,15 @@
   
     
     <entry>
-      <title><![CDATA[kubectl常用命令总结]]></title>
-      <url>%2Fpost%2Fkubectl-offen-command%2F</url>
+      <title><![CDATA[Linux下磁盘常用命令]]></title>
+      <url>%2Fpost%2Fdisk-command%2F</url>
+      <content type="text"><![CDATA[查看磁盘是否为ssd如果其中的rota值为1，说明为hdd磁盘；如果rota值为0，说明为ssd。 12345# lsblk -o name,size,type,rota,mountpointNAME SIZE TYPE ROTA MOUNTPOINTvdc 20G disk 1 /var/lib/kubelet/pods/eea3a54c-b211-4ee3-bcbe-70ba3fe84c05/volumes/kubernetes.io~csi/d-t4n36xdqey47v9e0ej8r/mountvda 120G disk 1└─vda1 120G part 1 / 但该规则在很多虚拟机的场景下并不成立，即使虚拟机的磁盘为ssd，但rota值仍然为1。可以通过修改rota的值的方式来标记磁盘的类型：echo ‘0’&gt; /sys/block/vdd/queue/rotational iostat只能观察磁盘整体性能，不能看到进程级别的 iops = r/s+w/s 吞吐量 = rkB/s + wkB/s 响应时间 = r_await + w_await iostat -xm $interval: interval为秒 123456789$ iostat -xm 1Linux 3.10.0-327.10.1.el7.x86_64 (103-17-52-sh-100-I03.yidian.com) 12/11/2016 _x86_64_ (32 CPU)avg-cpu: %user %nice %system %iowait %steal %idle 4.99 0.00 1.46 0.01 0.00 93.54Device: rrqm/s wrqm/s r/s w/s rMB/s wMB/s avgrq-sz avgqu-sz await r_await w_await svctm %utilsda 0.00 0.26 0.02 1.62 0.00 0.02 29.31 0.00 0.89 3.37 0.87 0.05 0.01sdb 0.00 0.81 10.23 67.59 1.19 29.07 796.57 0.01 0.10 0.85 2.85 0.19 1.46 r/s: 每秒发送给磁盘的读请求数 w/s: 每秒发送给磁盘的写请求数 rMB/s: 每秒从磁盘读取的数据量 wMB/s: 每秒向磁盘写入的数据量 %iowait：cpu等待磁盘时间 %util：表示磁盘使用率，该值较大说明磁盘性能存在问题，io队列不为空的时间。由于存在并行io，100%不代表磁盘io饱和 r_await：读请求处理完成时间，包括队列中的等待时间和设备实际处理时间，单位为毫秒 w_await：写请求处理完成时间，包括队列中的等待时间和设备实际处理时间，单位为毫秒 svctm: 瓶颈每次io操作的时间，单位为毫秒，可以反映出磁盘的瓶颈 avgrq-sz：平均每次请求的数据大小 avgqu-sz：平均请求io队列长度 svctm：处理io请求所需要的平均时间，不包括等待时间，单位为毫秒 1234567891011121314151617$ iostat -d -x 1Linux 3.10.0-327.10.1.el7.x86_64 (103-17-42-sh-100-i08.yidian.com) 01/19/2019 _x86_64_ (24 CPU)Device: rrqm/s wrqm/s r/s w/s rkB/s wkB/s avgrq-sz avgqu-sz await r_await w_await svctm %utilsda 0.00 7.58 0.31 266.07 9.54 888.01 6.74 0.03 0.12 8.84 0.11 0.03 0.90sdb 0.00 0.67 4.39 40.68 386.20 9277.38 428.79 0.03 0.64 3.10 0.37 0.30 1.33sdd 0.00 0.82 5.08 66.78 451.99 15587.89 446.42 0.02 0.30 3.50 0.05 0.28 2.01sde 0.00 0.67 4.14 53.77 312.74 12121.84 429.43 0.00 0.03 4.00 1.44 0.30 1.72sdc 0.00 0.50 0.05 27.47 2.74 6098.56 443.28 0.03 0.95 12.42 0.93 0.21 0.58sdf 0.00 0.47 1.07 34.58 57.05 7504.68 424.24 0.00 0.05 2.60 2.63 0.25 0.88sdg 0.00 0.72 0.14 63.87 13.79 14876.74 465.22 0.03 0.42 10.57 0.40 0.19 1.24sdj 0.00 0.79 1.85 37.81 206.01 7881.89 407.90 0.03 0.67 2.27 0.59 0.36 1.42sdi 0.00 0.65 0.29 59.54 22.01 13501.71 452.05 0.01 0.25 5.27 0.22 0.19 1.14sdk 0.00 0.50 0.30 29.46 16.74 6330.68 426.57 0.05 1.58 4.03 1.55 0.24 0.70sdm 0.00 0.63 0.73 55.70 63.73 13008.16 463.34 0.02 0.35 5.98 0.28 0.23 1.29sdh 0.00 0.47 0.06 15.68 5.16 2970.09 378.01 0.03 1.82 7.22 1.80 0.27 0.42sdl 0.00 0.56 1.32 38.14 81.04 8945.16 457.50 0.09 2.22 4.30 2.15 0.19 0.76 wrqm: 每秒合并的写请求数 rrqm：每秒合并的读请求数]]></content>
+    </entry>
+
+    
+    <entry>
+      <title><![CDATA[kubectl常用命令]]></title>
+      <url>%2Fpost%2Fkubectl-command%2F</url>
       <content type="text"><![CDATA[本文记录常用的kubectl命令，不定期更新。 统计k8s node上的污点信息 1kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers 查看不ready的pod 1kubectl get pod --all-namespaces -o wide -w | grep -vE &quot;Com|NAME|Running|1/1|2/2|3/3|4/4&quot; pod按照重启次数排序 1kubectl get pods -A --sort-by=&apos;.status.containerStatuses[0].restartCount&apos; | tail]]></content>
     </entry>
 
