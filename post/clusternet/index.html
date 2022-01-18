@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="eAiR1Y-uCo4AOL2kk93GpQ_JtoPeDheyVp7H9k4Peak">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=6.4.1" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.4.1">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.4.1">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.4.1">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.4.1" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '6.4.1',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="简介腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。https://github.com/clusternet/clusternetGitHub Star：891 架构包含clusternet-hub和clusternet-agent两个组件。 clusternet-hub部署在父集群，用途：  接收子集群的注册请求，并为每个自己群创建namespace、serviceaccount">
+<meta property="og:type" content="article">
+<meta property="og:title" content="k8s多集群管理方案 - clusternet">
+<meta property="og:url" content="http://kuring.me/post/clusternet/index.html">
+<meta property="og:site_name" content="伊图">
+<meta property="og:description" content="简介腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。https://github.com/clusternet/clusternetGitHub Star：891 架构包含clusternet-hub和clusternet-agent两个组件。 clusternet-hub部署在父集群，用途：  接收子集群的注册请求，并为每个自己群创建namespace、serviceaccount">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet1.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet2.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet3.png">
+<meta property="og:updated_time" content="2021-12-26T13:51:43.109Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="k8s多集群管理方案 - clusternet">
+<meta name="twitter:description" content="简介腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。https://github.com/clusternet/clusternetGitHub Star：891 架构包含clusternet-hub和clusternet-agent两个组件。 clusternet-hub部署在父集群，用途：  接收子集群的注册请求，并为每个自己群创建namespace、serviceaccount">
+<meta name="twitter:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet1.png">
+
+
+
+
+
+
+  <link rel="canonical" href="http://kuring.me/post/clusternet/">
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>k8s多集群管理方案 - clusternet | 伊图</title>
+  
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-42234015-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-42234015-1');
+</script>
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?c90f7388e03d4ed7e98a545b1d69200e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">伊图</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <h1 class="site-subtitle" itemprop="description">学习笔记</h1>
+      
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+    <a href="/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+    <a href="/archives/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+    <a href="/about/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+    <a href="/tags/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/clusternet/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content>
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="伊图">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">k8s多集群管理方案 - clusternet
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2021-12-26 21:44:17 / Modified: 21:51:43" itemprop="dateCreated datePublished" datetime="2021-12-26T21:44:17+08:00">2021-12-26</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/post/clusternet/#comments" itemprop="discussionUrl">
+                  <span class="post-meta-item-text">Comments: </span> <span class="post-comments-count gitment-comments-count" data-xid="/post/clusternet/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。<br><a href="https://github.com/clusternet/clusternet" target="_blank" rel="noopener">https://github.com/clusternet/clusternet</a><br>GitHub Star：891</p>
+<h1 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h1><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet1.png" alt="image.png"><br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet2.png" alt="image.png"><br>包含clusternet-hub和clusternet-agent两个组件。</p>
+<p>clusternet-hub部署在父集群，用途：</p>
+<ul>
+<li>接收子集群的注册请求，并为每个自己群创建namespace、serviceaccount等资源</li>
+<li>提供父集群跟各个子集群的长连接</li>
+<li>提供restful api来访问各个子集群，同时支持子集群的互访</li>
+</ul>
+<p>clusternet-agent部署在子集群，用途：</p>
+<ul>
+<li>自动注册子集群到父集群</li>
+<li>心跳报告到中心集群，包括k8s版本、运行平台、健康状态等</li>
+<li>通过websocket协议跟父集群通讯</li>
+</ul>
+<h1 id="CRD抽象"><a href="#CRD抽象" class="headerlink" title="CRD抽象"></a>CRD抽象</h1><h2 id="ClusterRegistrationRequest"><a href="#ClusterRegistrationRequest" class="headerlink" title="ClusterRegistrationRequest"></a>ClusterRegistrationRequest</h2><p>clusternet-agent在父集群中创建的CR，一个k8s集群一个<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: clusters.clusternet.io/v1beta1</span><br><span class="line">kind: ClusterRegistrationRequest</span><br><span class="line">metadata:</span><br><span class="line">  labels:</span><br><span class="line">    clusters.clusternet.io/cluster-id: <span class="number">2</span>bcd48d2-<span class="number">0</span>ead-<span class="number">45</span>f7-<span class="number">938</span>b-<span class="number">5</span>af6af7da5fd</span><br><span class="line">    clusters.clusternet.io/cluster-name: clusternet-cluster-pmlbp</span><br><span class="line">    clusters.clusternet.io/registered-by: clusternet-agent</span><br><span class="line">  name: clusternet-<span class="number">2</span>bcd48d2-<span class="number">0</span>ead-<span class="number">45</span>f7-<span class="number">938</span>b-<span class="number">5</span>af6af7da5fd</span><br><span class="line">spec:</span><br><span class="line">  clusterId: <span class="number">2</span>bcd48d2-<span class="number">0</span>ead-<span class="number">45</span>f7-<span class="number">938</span>b-<span class="number">5</span>af6af7da5fd</span><br><span class="line">  clusterName: clusternet-cluster-pmlbp <span class="comment"># 集群名称</span></span><br><span class="line">  clusterType: EdgeCluster <span class="comment"># 集群类型</span></span><br><span class="line">  syncMode: Dual</span><br><span class="line">status:</span><br><span class="line">  caCertificate: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXhNekV3TWpjeE5Wb1hEVE14TVRJeE1URXdNamN4TlZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTHVCCmJwdXNaZXM5RXFXaEw1WUVGb2c4eHRJai9jbFh2S1lTMnZYbGR4cUt1MUR3VHV3aUcxZUN4VGlHa2dLQXVXd1IKVFFheEh5aGY3U29lc0hqMG43NnFBKzhQT05lS1VGdERJOWVzejF2WTF5bXFoUHR0QVo0cGhkWmhmbXJjZTJLRQpuMS84MzNWbWlXd0pSZmNWcEJtTU52MjFYMVVwNWp6RGtncS9tY0JOOGN0ZU5PMEpKNkVVeTE2RXZLbjhyWG90ClErTW5PUHE4anFNMzJjRFFqYWVEdGxvM2kveXlRd1NMa2wzNFo4aElwZDZNWWVSTWpXcmhrazF4L0RYZjNJK3IKOGs5S1FBbEsvNWZRMXk5NHYwT25TK0FKZTliczZMT2srYVFWYm5SbExab2E2aVZWbUJNam03UjBjQ2w0Y1hpRwpyekRnN1ZLc3lsY1o3aGFRRTNFQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZPaGwxMHUwNnJvenZJUm9XVmpNYlVPMzFDbERNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFBQytqMXpPQVZYVXpNUFJ0U29Kd3JhMU1FSkJOUTNMWitmWnZRYjdIbk53b00zaCthMgoyc25yUitSWTYrOFFDbXVKeis1eU5yYStEZDlnNzQ1Q0hDaFpVZzlsY3RjQTRzZVR5OXZqcUVQNVBNSzEvbi9PCnFEcDQyMUpqTjYvUXJmamIvbVM0elUvZXNGZGowQXRYQ0FLMWJsNmF0ai9jZXVBbzh1bTRPaUVlNnJhanBYTHUKWFlmQ1FVZFV5TWpQdEZHTDMwNytna0RpdlVsdXk3RkQ4aUpURTh2QWpxOVBXOW40SmxFMjdQWXR5QnNocy9XSApCZ2czQjZpTG10SjZlNzJiWnA3ZmptdmJWTC9VdkxzYXZqRXltZDhrMnN1bFFwQUpzeVJrMkEzM1g3NWJpS0RGCk1CU29DaHc3U2JMSkJrN0FNckRzTjd1Q2U3WWVIWGdZemdhRAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==</span><br><span class="line">  dedicatedNamespace: clusternet-sdqrh</span><br><span class="line">  managedClusterName: clusternet-cluster-pmlbp</span><br><span class="line">  result: Approved</span><br><span class="line">  token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkluZFpWMUV6UmxCbFdUUldWa1Y0UmxBeWMzaDJOV3RuUzBabVJsaG9jWG94TkhKM2JtUkxiRTlrYUZVaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUpqYkhWemRHVnlibVYwTFhOa2NYSm9JaXdpYTNWaVpYSnVaWFJsY3k1cGJ5OXpaWEoyYVdObFlXTmpiM1Z1ZEM5elpXTnlaWFF1Ym1GdFpTSTZJbU5zZFhOMFpYSnVaWFF0YmpneWFHc3RkRzlyWlc0dGN6SnpjRFVpTENKcmRXSmxjbTVsZEdWekxtbHZMM05sY25acFkyVmhZMk52ZFc1MEwzTmxjblpwWTJVdFlXTmpiM1Z1ZEM1dVlXMWxJam9pWTJ4MWMzUmxjbTVsZEMxdU9ESm9heUlzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVnlkbWxqWlMxaFkyTnZkVzUwTG5WcFpDSTZJamN3TWpRMk1tTTBMV0prTlRFdE5HVXpNeTA1WXpnekxUWmpPV1F6TUdGall6bG1aU0lzSW5OMVlpSTZJbk41YzNSbGJUcHpaWEoyYVdObFlXTmpiM1Z1ZERwamJIVnpkR1Z5Ym1WMExYTmtjWEpvT21Oc2RYTjBaWEp1WlhRdGJqZ3lhR3NpZlEuUjJCdEQ1YzQxRm1seC1hTEFKSWQzbGxvOThSY25TakVUak5pSnVuTXg1US1jYXhwc3VkamUxekVtUF9mTHR6TjU4d21Dd3RXcHpoaXhSMWFTUHE5LXJTRlBIYzk3aDlTT3daZGdicC10alFBSjA4dllfYWdiVFRKLU1WN1dpN0xQVzRIcmt1U3RlemUzVHh2RW11NWwySlpzbG5UTXdkR3NGRVlVZzVfeWFoLUQwQ2pnTkZlR1ljUjJ1TlJBWjdkNW00Q1c5VmRkdkNsanNqRE5WX1k0RkFEbGo2cHgzSlh0SDQ4U1ZUd254TS1sNHl0eXBENjZFbG1PYXpUMmRwSWd4eWNSZ0tJSUlacWNQNnZVc0ZOM1Zka21ZZ29ydy1NSUcwc25YdzFaZ1lwRk9SUDJRa3hjd2NOUVVOTjh6VUZqSUZSSmdSSFdjNlo4aXd2eURnZTVn</span><br></pre></td></tr></table></figure></p>
+<h2 id="ClusterRole和Role"><a href="#ClusterRole和Role" class="headerlink" title="ClusterRole和Role"></a>ClusterRole和Role</h2><p>ClusterRegistrationRequest被接收后会创建ClusterRole<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">kind: ClusterRole</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    clusternet.io/autoupdate: <span class="string">"true"</span></span><br><span class="line">  labels:</span><br><span class="line">    clusternet.io/created-by: clusternet-hub</span><br><span class="line">    clusters.clusternet.io/bootstrapping: rbac-defaults</span><br><span class="line">    clusters.clusternet.io/cluster-id: <span class="number">2</span>bcd48d2-<span class="number">0</span>ead-<span class="number">45</span>f7-<span class="number">938</span>b-<span class="number">5</span>af6af7da5fd</span><br><span class="line">  name: clusternet-<span class="number">2</span>bcd48d2-<span class="number">0</span>ead-<span class="number">45</span>f7-<span class="number">938</span>b-<span class="number">5</span>af6af7da5fd</span><br><span class="line">rules:</span><br><span class="line">- apiGroups:</span><br><span class="line">  - clusters.clusternet.io</span><br><span class="line">  resources:</span><br><span class="line">  - clusterregistrationrequests</span><br><span class="line">  verbs:</span><br><span class="line">  - create</span><br><span class="line">  - get</span><br><span class="line">- apiGroups:</span><br><span class="line">  - proxies.clusternet.io</span><br><span class="line">  resourceNames:</span><br><span class="line">  - <span class="number">2</span>bcd48d2-<span class="number">0</span>ead-<span class="number">45</span>f7-<span class="number">938</span>b-<span class="number">5</span>af6af7da5fd</span><br><span class="line">  resources:</span><br><span class="line">  - sockets</span><br><span class="line">  verbs:</span><br><span class="line">  - <span class="string">'*'</span></span><br></pre></td></tr></table></figure></p>
+<p>并会在cluster对应的namespace下创建Role<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">kind: Role</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    clusternet.io/autoupdate: <span class="string">"true"</span></span><br><span class="line">  labels:</span><br><span class="line">    clusternet.io/created-by: clusternet-hub</span><br><span class="line">    clusters.clusternet.io/bootstrapping: rbac-defaults</span><br><span class="line">  name: clusternet-managedcluster-role</span><br><span class="line">  namespace: clusternet-sdqrh</span><br><span class="line">rules:</span><br><span class="line">- apiGroups:</span><br><span class="line">  - <span class="string">'*'</span></span><br><span class="line">  resources:</span><br><span class="line">  - <span class="string">'*'</span></span><br><span class="line">  verbs:</span><br><span class="line">  - <span class="string">'*'</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="ManagedCluster"><a href="#ManagedCluster" class="headerlink" title="ManagedCluster"></a>ManagedCluster</h2><p>clusternet-hub在接受ClusterRegistrationRequest后，会创建一个ManagedCluster。一个k8s集群一个namespace<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: clusters.clusternet.io/v1beta1</span><br><span class="line">kind: ManagedCluster</span><br><span class="line">metadata:</span><br><span class="line">  labels:</span><br><span class="line">    clusternet.io/created-by: clusternet-agent</span><br><span class="line">    clusters.clusternet.io/cluster-id: <span class="number">2</span>bcd48d2-<span class="number">0</span>ead-<span class="number">45</span>f7-<span class="number">938</span>b-<span class="number">5</span>af6af7da5fd</span><br><span class="line">    clusters.clusternet.io/cluster-name: clusternet-cluster-pmlbp</span><br><span class="line">  name: clusternet-cluster-pmlbp</span><br><span class="line">  namespace: clusternet-sdqrh</span><br><span class="line">spec:</span><br><span class="line">  clusterId: <span class="number">2</span>bcd48d2-<span class="number">0</span>ead-<span class="number">45</span>f7-<span class="number">938</span>b-<span class="number">5</span>af6af7da5fd</span><br><span class="line">  clusterType: EdgeCluster</span><br><span class="line">  syncMode: Dual</span><br><span class="line">status:</span><br><span class="line">  allocatable:</span><br><span class="line">    cpu: <span class="number">7600</span>m</span><br><span class="line">    memory: <span class="string">"30792789992"</span></span><br><span class="line">  apiserverURL: https://<span class="number">10.233</span>.<span class="number">0.1</span>:<span class="number">443</span> <span class="comment"># default/kubernetes的service clusterip</span></span><br><span class="line">  appPusher: true</span><br><span class="line">  capacity:</span><br><span class="line">    cpu: <span class="string">"8"</span></span><br><span class="line">    memory: <span class="number">32192720</span>Ki</span><br><span class="line">  clusterCIDR: <span class="number">10.233</span>.<span class="number">0.0</span>/<span class="number">18</span></span><br><span class="line">  conditions:</span><br><span class="line">  - lastTransitionTime: <span class="string">"2021-12-15T07:47:10Z"</span></span><br><span class="line">    message: managed cluster is ready.</span><br><span class="line">    reason: ManagedClusterReady</span><br><span class="line">    status: <span class="string">"True"</span></span><br><span class="line">    type: Ready</span><br><span class="line">  healthz: true</span><br><span class="line">  heartbeatFrequencySeconds: <span class="number">180</span></span><br><span class="line">  k8sVersion: v1.<span class="number">21.5</span></span><br><span class="line">  lastObservedTime: <span class="string">"2021-12-15T07:47:10Z"</span></span><br><span class="line">  livez: true</span><br><span class="line">  nodeStatistics:</span><br><span class="line">    readyNodes: <span class="number">1</span></span><br><span class="line">  parentAPIServerURL: https://<span class="number">172.21</span>.<span class="number">115.160</span>:<span class="number">6443</span>  <span class="comment"># 父集群地址</span></span><br><span class="line">  platform: linux/amd64</span><br><span class="line">  readyz: true</span><br><span class="line">  serviceCIDR: <span class="number">10.233</span>.<span class="number">64.0</span>/<span class="number">18</span></span><br><span class="line">  useSocket: true</span><br></pre></td></tr></table></figure></p>
+<h2 id="Subscription"><a href="#Subscription" class="headerlink" title="Subscription"></a>Subscription</h2><p>应用发布的抽象，人工提交到环境中。要发布的资源即可以是helm chart，也可以是原生的k8s对象。clusternet在部署的时候会查看部署的优先级，并且支持weight，优先部署cluster级别的资源，这点跟helm部署的逻辑一致。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">kind: Subscription</span><br><span class="line">metadata:</span><br><span class="line">  name: app-demo</span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">  <span class="comment"># 定义应用要发布到哪个k8s集群</span></span><br><span class="line">  subscribers: <span class="comment"># defines the clusters to be distributed to</span></span><br><span class="line">    - clusterAffinity:</span><br><span class="line">        matchLabels:</span><br><span class="line">          clusters.clusternet.io/cluster-id: dc91021d-<span class="number">2361</span>-<span class="number">4</span>f6d-a404-<span class="number">7</span>c33b9e01118 <span class="comment"># PLEASE UPDATE THIS CLUSTER-ID TO YOURS!!!</span></span><br><span class="line">	<span class="comment"># 定义了要发布哪些资源</span></span><br><span class="line">  feeds: <span class="comment"># defines all the resources to be deployed with</span></span><br><span class="line">    - apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">      kind: HelmChart</span><br><span class="line">      name: mysql</span><br><span class="line">      namespace: default</span><br><span class="line">    - apiVersion: v1</span><br><span class="line">      kind: Namespace</span><br><span class="line">      name: foo</span><br><span class="line">    - apiVersion: v1</span><br><span class="line">      kind: Service</span><br><span class="line">      name: my-nginx-svc</span><br><span class="line">      namespace: foo</span><br><span class="line">    - apiVersion: apps/v1</span><br><span class="line">      kind: Deployment</span><br><span class="line">      name: my-nginx</span><br><span class="line">      namespace: foo</span><br></pre></td></tr></table></figure></p>
+<h2 id="HelmChart"><a href="#HelmChart" class="headerlink" title="HelmChart"></a>HelmChart</h2><p>Subscriber发布的一个子资源之一，对应一个helm chart的完整描述<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">kind: HelmChart</span><br><span class="line">metadata:</span><br><span class="line">  name: mysql</span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">  repo: https://charts.bitnami.com/bitnami</span><br><span class="line">  chart: mysql</span><br><span class="line">  version: <span class="number">8.6</span>.<span class="number">2</span></span><br><span class="line">  targetNamespace: abc</span><br></pre></td></tr></table></figure></p>
+<h2 id="Localization"><a href="#Localization" class="headerlink" title="Localization"></a>Localization</h2><p>差异化不同于其他集群的配置，用来描述namespace级别的差异化配置。</p>
+<h2 id="Globalization"><a href="#Globalization" class="headerlink" title="Globalization"></a>Globalization</h2><p>用来描述不同集群的cluster级别的差异化配置。</p>
+<h2 id="Base"><a href="#Base" class="headerlink" title="Base"></a>Base</h2><h2 id="Description"><a href="#Description" class="headerlink" title="Description"></a>Description</h2><p>跟Base对象根据Localization和Globalization渲染得到的最终要发布到集群中的最终对象。</p>
+<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>在父集群执行如下命令：<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">helm repo add clusternet https://clusternet.github.io/charts</span><br><span class="line">helm install clusternet-hub -n clusternet-system --create-namespace clusternet/clusternet-hub</span><br><span class="line">kubectl apply -f https://raw.githubusercontent.com/clusternet/clusternet/main/manifests/samples/cluster_bootstrap_token.yaml</span><br></pre></td></tr></table></figure></p>
+<p>会在clusternet-system namespace下创建deployment clusternet-hub。</p>
+<p>最后一条命令，会创建一个secret，其中的token信息为07401b.f395accd246ae52d，在子集群注册的时候需要用到。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Secret</span><br><span class="line">metadata:</span><br><span class="line">  <span class="comment"># Name MUST be of form "bootstrap-token-&lt;token id&gt;"</span></span><br><span class="line">  name: bootstrap-token-<span class="number">07401</span>b</span><br><span class="line">  namespace: kube-system</span><br><span class="line"></span><br><span class="line"><span class="comment"># Type MUST be 'bootstrap.kubernetes.io/token'</span></span><br><span class="line">type: bootstrap.kubernetes.io/token</span><br><span class="line">stringData:</span><br><span class="line">  <span class="comment"># Human readable description. Optional.</span></span><br><span class="line">  description: <span class="string">"The bootstrap token used by clusternet cluster registration."</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># Token ID and secret. Required.</span></span><br><span class="line">  token-id: <span class="number">07401</span>b</span><br><span class="line">  token-secret: f395accd246ae52d</span><br><span class="line"></span><br><span class="line">  <span class="comment"># Expiration. Optional.</span></span><br><span class="line">  expiration: <span class="number">2025</span>-<span class="number">05</span>-<span class="number">10</span>T03:<span class="number">22</span>:<span class="number">11</span>Z</span><br><span class="line"></span><br><span class="line">  <span class="comment"># Allowed usages.</span></span><br><span class="line">  usage-bootstrap-authentication: <span class="string">"true"</span></span><br><span class="line">  usage-bootstrap-signing: <span class="string">"true"</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># Extra groups to authenticate the token as. Must start with "system:bootstrappers:"</span></span><br><span class="line">  auth-extra-groups: system:bootstrappers:clusternet:register-cluster-token</span><br></pre></td></tr></table></figure></p>
+<p>在子集群执行如下命令，其中parentURL要修改为父集群的apiserver地址<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">helm repo add clusternet https://clusternet.github.io/charts</span><br><span class="line">helm install clusternet-agent -n clusternet-system --create-namespace \</span><br><span class="line">  --set parentURL=https://<span class="number">10.0</span>.<span class="number">248.96</span>:<span class="number">8443</span> \</span><br><span class="line">  --set registrationToken=<span class="number">07401</span>b.f395accd246ae52d \</span><br><span class="line">  clusternet/clusternet-agent</span><br></pre></td></tr></table></figure></p>
+<p>其中parentURL为父集群的apiserver地址，registrationToken为父集群注册的token信息。</p>
+<h1 id="访问子集群"><a href="#访问子集群" class="headerlink" title="访问子集群"></a>访问子集群</h1><h2 id="kubectl-clusternet命令行方式访问"><a href="#kubectl-clusternet命令行方式访问" class="headerlink" title="kubectl-clusternet命令行方式访问"></a>kubectl-clusternet命令行方式访问</h2><p>安装kubectl krew插件，参考 <a href="https://krew.sigs.k8s.io/docs/user-guide/setup/install/" target="_blank" rel="noopener">https://krew.sigs.k8s.io/docs/user-guide/setup/install/</a>，执行如下命令：<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">yum install git -y</span><br><span class="line">(</span><br><span class="line">  set -x; cd <span class="string">"$(mktemp -d)"</span> &amp;&amp;</span><br><span class="line">  OS=<span class="string">"$(uname | tr '[:upper:]' '[:lower:]')"</span> &amp;&amp;</span><br><span class="line">  ARCH=<span class="string">"$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')"</span> &amp;&amp;</span><br><span class="line">  KREW=<span class="string">"krew-$&#123;OS&#125;_$&#123;ARCH&#125;"</span> &amp;&amp;</span><br><span class="line">  curl -fsSLO <span class="string">"https://github.com/kubernetes-sigs/krew/releases/latest/download/$&#123;KREW&#125;.tar.gz"</span> &amp;&amp;</span><br><span class="line">  tar zxvf <span class="string">"$&#123;KREW&#125;.tar.gz"</span> &amp;&amp;</span><br><span class="line">  ./<span class="string">"$&#123;KREW&#125;"</span> install krew</span><br><span class="line">)</span><br><span class="line">echo <span class="string">'export PATH="$&#123;PATH&#125;:$&#123;HOME&#125;/.krew/bin"'</span> &gt;&gt;  ~/.bashrc</span><br><span class="line">source ~/.bashrc</span><br></pre></td></tr></table></figure></p>
+<p>安装kubectl插件clusternet：kubectl krew install clusternet</p>
+<p>使用kubectl clusternet get可以看到发布的应用，非发布的应用看不到。</p>
+<h2 id="代码层面访问子集群"><a href="#代码层面访问子集群" class="headerlink" title="代码层面访问子集群"></a>代码层面访问子集群</h2><p>可以参照例子：<a href="https://github.com/clusternet/clusternet/blob/main/examples/clientgo/demo.go#L42-L45" target="_blank" rel="noopener">https://github.com/clusternet/clusternet/blob/main/examples/clientgo/demo.go#L42-L45</a></p>
+<p>改动代码非常小，仅需要获取到对应集群的config信息即可。<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">config, err := rest.InClusterConfig()</span><br><span class="line">	<span class="keyword">if</span> err != nil &#123;</span><br><span class="line">		klog.Error(err)</span><br><span class="line">		os.Exit(<span class="number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	// This is the ONLY place you need to wrap <span class="keyword">for</span> Clusternet</span><br><span class="line">	config.Wrap(func(rt http.RoundTripper) http.RoundTripper &#123;</span><br><span class="line">		<span class="keyword">return</span> clientgo.NewClusternetTransport(config.Host, rt)</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	// now we could create and visit all the resources</span><br><span class="line">	client := kubernetes.NewForConfigOrDie(config)</span><br><span class="line">	_, err = client.CoreV1().Namespaces().Create(context.TODO(), &amp;corev1.Namespace&#123;</span><br><span class="line">		ObjectMeta: metav1.ObjectMeta&#123;</span><br><span class="line">			Name: <span class="string">"demo"</span>,</span><br><span class="line">		&#125;,</span><br><span class="line">	&#125;, metav1.CreateOptions&#123;&#125;)</span><br></pre></td></tr></table></figure></p>
+<h1 id="应用发布"><a href="#应用发布" class="headerlink" title="应用发布"></a>应用发布</h1><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet3.png" alt="image.png"><br>在主集群提交如下的yaml文件<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">kind: Subscription</span><br><span class="line">metadata:</span><br><span class="line">  name: app-demo</span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">  subscribers: <span class="comment"># defines the clusters to be distributed to</span></span><br><span class="line">    - clusterAffinity:</span><br><span class="line">        matchLabels:</span><br><span class="line">          clusters.clusternet.io/cluster-id: dc91021d-<span class="number">2361</span>-<span class="number">4</span>f6d-a404-<span class="number">7</span>c33b9e01118 <span class="comment"># PLEASE UPDATE THIS CLUSTER-ID TO YOURS!!!</span></span><br><span class="line">  feeds: <span class="comment"># defines all the resources to be deployed with</span></span><br><span class="line">    - apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">      kind: HelmChart</span><br><span class="line">      name: mysql</span><br><span class="line">      namespace: default</span><br><span class="line">    - apiVersion: v1</span><br><span class="line">      kind: Namespace</span><br><span class="line">      name: foo</span><br><span class="line">    - apiVersion: apps/v1</span><br><span class="line">      kind: Service</span><br><span class="line">      name: my-nginx-svc</span><br><span class="line">      namespace: foo</span><br><span class="line">    - apiVersion: apps/v1</span><br><span class="line">      kind: Deployment</span><br><span class="line">      name: my-nginx</span><br><span class="line">      namespace: foo</span><br></pre></td></tr></table></figure></p>
+<h1 id="实现分析"><a href="#实现分析" class="headerlink" title="实现分析"></a>实现分析</h1><p>在主集群实现了两个aggregated apiservice<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apiregistration.k8s.io/v1</span><br><span class="line">kind: APIService</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    meta.helm.sh/release-name: clusternet-hub</span><br><span class="line">    meta.helm.sh/release-namespace: clusternet-system</span><br><span class="line">  labels:</span><br><span class="line">    app.kubernetes.io/instance: clusternet-hub</span><br><span class="line">    app.kubernetes.io/managed-by: Helm</span><br><span class="line">    app.kubernetes.io/name: clusternet-hub</span><br><span class="line">    helm.sh/chart: clusternet-hub-<span class="number">0.2</span>.<span class="number">1</span></span><br><span class="line">  name: v1alpha1.proxies.clusternet.io</span><br><span class="line">spec:</span><br><span class="line">  group: proxies.clusternet.io</span><br><span class="line">  groupPriorityMinimum: <span class="number">1000</span></span><br><span class="line">  insecureSkipTLSVerify: true</span><br><span class="line">  service:</span><br><span class="line">    name: clusternet-hub</span><br><span class="line">    namespace: clusternet-system</span><br><span class="line">    port: <span class="number">443</span></span><br><span class="line">  version: v1alpha1</span><br><span class="line">  versionPriority: <span class="number">100</span></span><br></pre></td></tr></table></figure></p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apiregistration.k8s.io/v1</span><br><span class="line">kind: APIService</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    meta.helm.sh/release-name: clusternet-hub</span><br><span class="line">    meta.helm.sh/release-namespace: clusternet-system</span><br><span class="line">  labels:</span><br><span class="line">    app.kubernetes.io/instance: clusternet-hub</span><br><span class="line">    app.kubernetes.io/managed-by: Helm</span><br><span class="line">    app.kubernetes.io/name: clusternet-hub</span><br><span class="line">    helm.sh/chart: clusternet-hub-<span class="number">0.2</span>.<span class="number">1</span></span><br><span class="line">  name: v1alpha1.shadow</span><br><span class="line">spec:</span><br><span class="line">  group: shadow</span><br><span class="line">  groupPriorityMinimum: <span class="number">1</span></span><br><span class="line">  insecureSkipTLSVerify: true</span><br><span class="line">  service:</span><br><span class="line">    name: clusternet-hub</span><br><span class="line">    namespace: clusternet-system</span><br><span class="line">    port: <span class="number">443</span></span><br><span class="line">  version: v1alpha1</span><br><span class="line">  versionPriority: <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<h1 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h1><ul>
+<li><a href="https://mp.weixin.qq.com/s/BSgb2uoAuHbxQOUvn8fEsA" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/BSgb2uoAuHbxQOUvn8fEsA</a></li>
+</ul>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+      <div>
+        <div id="wechat_subscriber" style="display: block; padding: 10px 0; margin: 20px auto; width: 100%; text-align: center">
+    <img id="wechat_subscriber_qcode" src="/images/qrcode_for_gh_a3ecf2d098bc_430.jpg" alt=" wechat" style="width: 200px; max-width: 100%;">
+    <div>欢迎订阅我的公众号！</div>
+</div>
+
+      </div>
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/post/create_test_k8s/" rel="next" title="ecs的Linux主机上快速创建测试k8s集群">
+                <i class="fa fa-chevron-left"></i> ecs的Linux主机上快速创建测试k8s集群
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/post/certificate/" rel="prev" title="证书技术">
+                证书技术 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+    <div class="comments" id="comments">
+      
+        <div id="gitment-container"></div>
+      
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.jpeg" alt>
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">189</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">31</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/kuring" target="_blank" title="GitHub" rel="external nofollow"><i class="fa fa-fw fa-globe"></i>GitHub</a>
+                  
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="http://www.zhihu.com/people/kuring" target="_blank" title="知乎" rel="external nofollow"><i class="fa fa-fw fa-globe"></i>知乎</a>
+                  
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="http://weibo.com/ilvkai" target="_blank" title="微博" rel="external nofollow"><i class="fa fa-fw fa-globe"></i>微博</a>
+                  
+                </span>
+              
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                Links
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://http://coolshell.cn/" title="酷壳" target="_blank">酷壳</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://www.ruanyifeng.com/blog/" title="阮一峰的网络日志" target="_blank">阮一峰的网络日志</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+            
+          
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#简介"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#架构"><span class="nav-number">2.</span> <span class="nav-text">架构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CRD抽象"><span class="nav-number">3.</span> <span class="nav-text">CRD抽象</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ClusterRegistrationRequest"><span class="nav-number">3.1.</span> <span class="nav-text">ClusterRegistrationRequest</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ClusterRole和Role"><span class="nav-number">3.2.</span> <span class="nav-text">ClusterRole和Role</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ManagedCluster"><span class="nav-number">3.3.</span> <span class="nav-text">ManagedCluster</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Subscription"><span class="nav-number">3.4.</span> <span class="nav-text">Subscription</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#HelmChart"><span class="nav-number">3.5.</span> <span class="nav-text">HelmChart</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Localization"><span class="nav-number">3.6.</span> <span class="nav-text">Localization</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Globalization"><span class="nav-number">3.7.</span> <span class="nav-text">Globalization</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Base"><span class="nav-number">3.8.</span> <span class="nav-text">Base</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Description"><span class="nav-number">3.9.</span> <span class="nav-text">Description</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#安装"><span class="nav-number">4.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#访问子集群"><span class="nav-number">5.</span> <span class="nav-text">访问子集群</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#kubectl-clusternet命令行方式访问"><span class="nav-number">5.1.</span> <span class="nav-text">kubectl-clusternet命令行方式访问</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码层面访问子集群"><span class="nav-number">5.2.</span> <span class="nav-text">代码层面访问子集群</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#应用发布"><span class="nav-number">6.</span> <span class="nav-text">应用发布</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#实现分析"><span class="nav-number">7.</span> <span class="nav-text">实现分析</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#相关链接"><span class="nav-number">8.</span> <span class="nav-text">相关链接</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2013 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+
+  
+
+  
+</div>
+
+
+  
+
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" rel="external nofollow" href="https://hexo.io">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a class="theme-link" target="_blank" rel="external nofollow" href="https://theme-next.org">NexT.Pisces</a> v6.4.1</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+	
+    
+
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.4.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.4.1"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=6.4.1"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=6.4.1"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.4.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.4.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.4.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+<!-- LOCAL: You can save these files to your site and update links -->
+    
+        
+        <link rel="stylesheet" href="https://aimingoo.github.io/gitmint/style/default.css">
+        <script src="https://aimingoo.github.io/gitmint/dist/gitmint.browser.js"></script>
+    
+<!-- END LOCAL -->
+
+    
+      <style>
+        a.gitment-editor-footer-tip { display: none; }
+        .gitment-container.gitment-footer-container { display: none; }
+      </style>
+    
+
+    
+      <script type="text/javascript">
+      function renderGitment(){
+        var gitment = new Gitmint({
+            id: window.location.pathname,
+            owner: 'kuring',
+            repo: 'gitment-comments',
+            
+            lang: "" || navigator.language || navigator.systemLanguage || navigator.userLanguage,
+            
+            oauth: {
+            
+            
+                client_secret: 'b858c731ebc81dc8c66ae1f6424cd4915133d93d',
+            
+                client_id: 'ac02c664506838dd0591'
+            }});
+        gitment.render('gitment-container');
+      }
+
+      
+      renderGitment();
+      
+      </script>
+    
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
