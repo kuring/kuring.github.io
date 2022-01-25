@@ -117,7 +117,7 @@
 <meta property="og:site_name" content="伊图">
 <meta property="og:description" content="k8s虽然已经发展了多个版本，但在多region和多zone的场景下支持还是相对比较弱的，且很多的特性在alpha版本就已经废弃，说明k8s官方对于region和zone方面的支持情况有很大的不确定性。业界支持多reigon和容灾的特性更多是从上层的应用层来解决。本文主要是介绍k8s自身以及社区在region和zone方面的支持情况。 k8s标签https://kubernetes.io/docs">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2022-01-25T04:34:28.508Z">
+<meta property="og:updated_time" content="2022-01-25T04:37:36.227Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="k8s在region和zone方面的支持情况">
 <meta name="twitter:description" content="k8s虽然已经发展了多个版本，但在多region和多zone的场景下支持还是相对比较弱的，且很多的特性在alpha版本就已经废弃，说明k8s官方对于region和zone方面的支持情况有很大的不确定性。业界支持多reigon和容灾的特性更多是从上层的应用层来解决。本文主要是介绍k8s自身以及社区在region和zone方面的支持情况。 k8s标签https://kubernetes.io/docs">
@@ -392,7 +392,7 @@
                 
               
 
-              <time title="Created: 2022-01-25 12:33:46 / Modified: 12:34:28" itemprop="dateCreated datePublished" datetime="2022-01-25T12:33:46+08:00">2022-01-25</time>
+              <time title="Created: 2022-01-25 12:33:46 / Modified: 12:37:36" itemprop="dateCreated datePublished" datetime="2022-01-25T12:33:46+08:00">2022-01-25</time>
             
 
             
@@ -446,8 +446,9 @@
 <li>failure-domain.beta.kubernetes.io/region：1.17版本已经废弃，被topology.kubernetes.io/region取代</li>
 <li>failure-domain.beta.kubernetes.io/zone：1.17版本已经废弃，被topology.kubernetes.io/zone取代</li>
 <li>topology.kubernetes.io/region：1.17版本开始支持</li>
-<li>topology.kubernetes.io/zone：1.17版本开始支持<h1 id="服务拓扑ServiceTopology"><a href="#服务拓扑ServiceTopology" class="headerlink" title="服务拓扑ServiceTopology"></a>服务拓扑ServiceTopology</h1>支持版本：在1.17版本引入，在1.21版本废弃<br>​</li>
+<li>topology.kubernetes.io/zone：1.17版本开始支持</li>
 </ul>
+<h1 id="服务拓扑ServiceTopology"><a href="#服务拓扑ServiceTopology" class="headerlink" title="服务拓扑ServiceTopology"></a>服务拓扑ServiceTopology</h1><p>支持版本：在1.17版本引入，在1.21版本废弃</p>
 <p>该特性在Service对象上增加了spec.topologyKeys字段，表示访问该Service的流量优先选用的拓扑域列表。访问Service流量的具体过程如下：</p>
 <ol>
 <li>当访问该Service时，一定是从某个k8s的node节点上发起，会查看当前node的label topology.kubernetes.io/zone对应的value，如果发现有endpoint所在的node的lable topology.kubernetes.io/zone对应的value相同，那么会将流量转发到该拓扑域的endpoint上。</li>
@@ -456,8 +457,8 @@
 </li>
 </ol>
 <p>在底层实现上，使用了1.16版本新引入的alpha版本特性 EndpointSlice，该特性主要是用来解决Endpoints对象过多时带来的性能问题，从而将Endpoints拆分为多个组，Service Topology特性恰好可以借助该特性来实现，本质上也是为了将Endpoints进行拆分。k8s会根据Service的topologyKeys来将Service拆分为多个EndpointSlice对象，kube-proxy根据EndpointSlice会将Service流量进行拆分。</p>
-<h1 id="拓扑感知提示Topology-Aware-Hints"><a href="#拓扑感知提示Topology-Aware-Hints" class="headerlink" title="拓扑感知提示Topology Aware Hints"></a>拓扑感知提示Topology Aware Hints</h1><p>该特性在1.21版本引入，在1.23版本变为beta版本，用来取代Topology Key功能。<br>该特性会启用两个组件：EndpointSlice控制器和kube-proxy。<br>​</p>
-<p>在Service Topology功能中，需要给Service来指定topologyKeys字段。该特性会更自动化一些，只需要在Service上增加annotation service.kubernetes.io/topology-aware-hints:auto，EndpointSlice控制器会watch到Service，发现开启了拓扑感知功能，会自动向endpoints的hints中增加forZones字段，该字段的value会根据endpoint所在node的topology.kubernetes.io/zone来决定。<br>​</p>
+<h1 id="拓扑感知提示Topology-Aware-Hints"><a href="#拓扑感知提示Topology-Aware-Hints" class="headerlink" title="拓扑感知提示Topology Aware Hints"></a>拓扑感知提示Topology Aware Hints</h1><p>该特性在1.21版本引入，在1.23版本变为beta版本，用来取代Topology Key功能。<br>该特性会启用两个组件：EndpointSlice控制器和kube-proxy。</p>
+<p>在Service Topology功能中，需要给Service来指定topologyKeys字段。该特性会更自动化一些，只需要在Service上增加annotation service.kubernetes.io/topology-aware-hints:auto，EndpointSlice控制器会watch到Service，发现开启了拓扑感知功能，会自动向endpoints的hints中增加forZones字段，该字段的value会根据endpoint所在node的topology.kubernetes.io/zone来决定。</p>
 <p>值得一提的是，当前的hints中并没有包含forRegions的字段。<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">discovery.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">EndpointSlice</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line"><span class="attr">  name:</span> <span class="string">example-hints</span></span><br><span class="line"><span class="attr">  labels:</span></span><br><span class="line">    <span class="string">kubernetes.io/service-name:</span> <span class="string">example-svc</span></span><br><span class="line"><span class="attr">addressType:</span> <span class="string">IPv4</span></span><br><span class="line"><span class="attr">ports:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">http</span></span><br><span class="line"><span class="attr">    protocol:</span> <span class="string">TCP</span></span><br><span class="line"><span class="attr">    port:</span> <span class="number">80</span></span><br><span class="line"><span class="attr">endpoints:</span></span><br><span class="line"><span class="attr">  - addresses:</span></span><br><span class="line"><span class="bullet">      -</span> <span class="string">"10.1.2.3"</span></span><br><span class="line"><span class="attr">    conditions:</span></span><br><span class="line"><span class="attr">      ready:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">    hostname:</span> <span class="string">pod-1</span></span><br><span class="line"><span class="attr">    zone:</span> <span class="string">zone-a</span></span><br><span class="line"><span class="attr">    hints:</span></span><br><span class="line"><span class="attr">      forZones:</span></span><br><span class="line"><span class="attr">        - name:</span> <span class="string">"zone-a"</span></span><br></pre></td></tr></table></figure></p>
 <h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
 <li><a href>Well-Known Labels, Annotations and Taints</a></li>
