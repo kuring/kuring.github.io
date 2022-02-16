@@ -117,7 +117,7 @@
 <meta property="og:site_name" content="伊图">
 <meta property="og:description" content="创建自签名证书创建CA123openssl genrsa -out root.key 4096openssl req -new -x509 -days 1000 -key root.key -out root.crtopenssl x509 -text -in root.crt -noout 创建私钥和公钥文件1234# 用来产生私钥文件server.keyopenssl genrsa -out">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2022-01-07T02:36:35.307Z">
+<meta property="og:updated_time" content="2022-02-15T11:35:29.233Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="证书技术">
 <meta name="twitter:description" content="创建自签名证书创建CA123openssl genrsa -out root.key 4096openssl req -new -x509 -days 1000 -key root.key -out root.crtopenssl x509 -text -in root.crt -noout 创建私钥和公钥文件1234# 用来产生私钥文件server.keyopenssl genrsa -out">
@@ -392,12 +392,24 @@
                 
               
 
-              <time title="Created: 2022-01-07 10:34:15 / Modified: 10:36:35" itemprop="dateCreated datePublished" datetime="2022-01-07T10:34:15+08:00">2022-01-07</time>
+              <time title="Created: 2022-01-07 10:34:15" itemprop="dateCreated datePublished" datetime="2022-01-07T10:34:15+08:00">2022-01-07</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-02-15 19:35:29" itemprop="dateModified" datetime="2022-02-15T19:35:29+08:00">2022-02-15</time>
               
             
           </span>
@@ -445,7 +457,7 @@
 <p>创建签名请求<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">openssl req -new -key server.key -out server.csr</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看创建的签名请求</span></span><br><span class="line">openssl req -noout -text <span class="nomarkup">-in</span> server.csr</span><br></pre></td></tr></table></figure></p>
 <p>创建自签名证书<br>新建自签名证书的附加信息server.ext，内容如下<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">authorityKeyIdentifier=keyid,issuer</span><br><span class="line">basicConstraints=CA:FALSE</span><br><span class="line">keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment</span><br><span class="line">subjectAltName = @alt_names</span><br><span class="line"></span><br><span class="line">[alt_names]</span><br><span class="line">DNS.<span class="number">1</span> = localhost</span><br><span class="line">IP.<span class="number">2</span> = <span class="number">127.0</span>.<span class="number">0.1</span></span><br><span class="line">IP.<span class="number">3</span> = <span class="number">10.66</span>.<span class="number">3.6</span></span><br></pre></td></tr></table></figure></p>
 <p>使用ca签发ssl证书，此时会产生server.crt文件，即为证书文件<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">openssl x509 -req <span class="nomarkup">-in</span> server.csr -out server.crt -days <span class="number">3650</span> \</span><br><span class="line">  -CAcreateserial -CA root.crt -CAkey root.key \</span><br><span class="line">  -CAserial serial -extfile server.ext</span><br></pre></td></tr></table></figure></p>
-<p>使用ca校验证书是否通过<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl verify -CAfile root.pem server.crt</span><br></pre></td></tr></table></figure></p>
+<p>使用ca校验证书是否通过<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl verify -CAfile root.crt server.crt</span><br></pre></td></tr></table></figure></p>
 <h1 id="证书格式"><a href="#证书格式" class="headerlink" title="证书格式"></a>证书格式</h1><p>证书按照格式可以分为二进制和文本文件两种格式。</p>
 <p>二进制格式分为：</p>
 <ol>
@@ -455,9 +467,9 @@
 <ol>
 <li><em>.pem：存放证书或者私钥。一般是</em>.key文件存放私钥信息。对于pem或者key文件，如果存在<strong>——BEGIN CERTIFICATE——</strong>，则说明这是一个证书文件。如果存在<strong>—–BEGIN RSA PRIVATE KEY—–</strong>，则说明这是一个私钥文件。</li>
 <li>*.key：用来存放私钥文件。</li>
-<li>*.crt：证书请求文件，格式的开头为：—–BEGIN CERTIFICATE REQUEST—–<h2 id="证书格式的转换"><a href="#证书格式的转换" class="headerlink" title="证书格式的转换"></a>证书格式的转换</h2>将cert证书转换为pem格式<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">openssl rsa <span class="nomarkup">-in</span> server.key -text &gt; server-key.pem</span><br><span class="line">openssl x509 <span class="nomarkup">-in</span> server.crt -out server.pem</span><br></pre></td></tr></table></figure>
-</li>
+<li>*.crt：证书请求文件，格式的开头为：—–BEGIN CERTIFICATE REQUEST—–</li>
 </ol>
+<h2 id="证书格式的转换"><a href="#证书格式的转换" class="headerlink" title="证书格式的转换"></a>证书格式的转换</h2><p>将cert证书转换为pem格式<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">openssl rsa <span class="nomarkup">-in</span> server.key -text &gt; server-key.pem</span><br><span class="line">openssl x509 <span class="nomarkup">-in</span> server.crt -out server.pem</span><br></pre></td></tr></table></figure></p>
 <p>将pem格式转换为cert格式</p>
 <h1 id="证书的使用"><a href="#证书的使用" class="headerlink" title="证书的使用"></a>证书的使用</h1><p>curl命令关于证书的用法：</p>
 <ul>
