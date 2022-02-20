@@ -117,7 +117,7 @@
 <meta property="og:site_name" content="伊图">
 <meta property="og:description" content="cluster-proportional-autoscaler项目地址：https://github.com/kubernetes-sigs/cluster-proportional-autoscaler k8s默认提供了hpa机制，可以根据pod的负载情况来对workload进行自动的扩缩容。同时以单独的autoscaler项目提供了vpa功能的支持。 该项目提供提供了类似pod水平扩容的机制，">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2022-02-14T15:29:46.657Z">
+<meta property="og:updated_time" content="2022-02-20T08:20:11.230Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Github Kubernetes SIGs组织下的项目（持续更新）">
 <meta name="twitter:description" content="cluster-proportional-autoscaler项目地址：https://github.com/kubernetes-sigs/cluster-proportional-autoscaler k8s默认提供了hpa机制，可以根据pod的负载情况来对workload进行自动的扩缩容。同时以单独的autoscaler项目提供了vpa功能的支持。 该项目提供提供了类似pod水平扩容的机制，">
@@ -392,12 +392,24 @@
                 
               
 
-              <time title="Created: 2022-02-14 23:21:37 / Modified: 23:29:46" itemprop="dateCreated datePublished" datetime="2022-02-14T23:21:37+08:00">2022-02-14</time>
+              <time title="Created: 2022-02-14 23:21:37" itemprop="dateCreated datePublished" datetime="2022-02-14T23:21:37+08:00">2022-02-14</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-02-20 16:20:11" itemprop="dateModified" datetime="2022-02-20T16:20:11+08:00">2022-02-20</time>
               
             
           </span>
@@ -444,6 +456,11 @@
 <p>k8s默认提供了hpa机制，可以根据pod的负载情况来对workload进行自动的扩缩容。同时以单独的autoscaler项目提供了vpa功能的支持。</p>
 <p>该项目提供提供了类似pod水平扩容的机制，跟hpa不同的是，pod的数量由集群中的节点规模来自动扩缩容pod。特别适合负载跟集群规模的变化成正比的服务，比如coredns、nginx ingress等服务。</p>
 <p>hpa功能k8s提供了CRD来作为hpa的配置，本项目没有单独的CRD来定义配置，而是通过在启动的时候指定参数，或者配置放到ConfigMap的方式。而且一个cluster-proportional-autoscaler实例仅能针对一个workload。</p>
+<h1 id="sig-storage-local-static-provisioner"><a href="#sig-storage-local-static-provisioner" class="headerlink" title="sig-storage-local-static-provisioner"></a><a href="https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner" target="_blank" rel="noopener">sig-storage-local-static-provisioner</a></h1><p>k8s提供了local pv功能可以用来给pod挂载本地的数据盘，具体的local pv的定义如下所示，pv中包含了要亲和的节点信息：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: PersistentVolume</span><br><span class="line">metadata:</span><br><span class="line">  name: example-pv</span><br><span class="line">spec:</span><br><span class="line">  capacity:</span><br><span class="line">    storage: 100Gi</span><br><span class="line">  volumeMode: Filesystem</span><br><span class="line">  accessModes:</span><br><span class="line">  - ReadWriteOnce</span><br><span class="line">  persistentVolumeReclaimPolicy: Delete</span><br><span class="line">  storageClassName: local-storage</span><br><span class="line">  local:</span><br><span class="line">    path: /mnt/disks/ssd1</span><br><span class="line">  nodeAffinity:</span><br><span class="line">    required:</span><br><span class="line">      nodeSelectorTerms:</span><br><span class="line">      - matchExpressions:</span><br><span class="line">        - key: kubernetes.io/hostname</span><br><span class="line">          operator: In</span><br><span class="line">          values:</span><br><span class="line">          - example-node</span><br></pre></td></tr></table></figure>
+<p>但要使用local pv功能，必须要事先创建出pv才可以，k8s本身并没有提供动态创建pv的功能。</p>
+<p>该工具可以根据配置的规则，自动将机器上符合条件的磁盘创建出local pv以供后续创建出的pod使用。</p>
+<p>相关参考：<a href="https://help.aliyun.com/document_detail/178475.html" target="_blank" rel="noopener">LocalVolume数据卷</a></p>
 
       
     </div>
@@ -716,7 +733,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#cluster-proportional-autoscaler"><span class="nav-number">1.</span> <span class="nav-text">cluster-proportional-autoscaler</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#cluster-proportional-autoscaler"><span class="nav-number">1.</span> <span class="nav-text">cluster-proportional-autoscaler</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#sig-storage-local-static-provisioner"><span class="nav-number">2.</span> <span class="nav-text">sig-storage-local-static-provisioner</span></a></li></ol></div>
             
 
           </div>
