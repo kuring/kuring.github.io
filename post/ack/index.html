@@ -118,7 +118,7 @@
 <meta property="og:description" content="阿里云容器服务是阿里云公有云基于Kubernetes企业级服务，在社区的Kubernetes版本基础上有能力增强， 本文用于调研社区增强功能，记录解决的问题、以及实现方法。ACK集群的增强功能有一部分是基于Kubernetes的api的prodiver实现，另外一部分是基于Kubernetes增加的额外组件，其中很多都已经开源，可以看到开源软件列表。 ACK的一些组件列表可以参见：组件概述 产品形">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/220839/1645347493244-2af51b21-0150-48e4-a15e-0585d5a59852.png#clientId=ub8a97252-9d7b-4&from=paste&height=916&id=ufabccb6c&margin=%5Bobject%20Object%5D&name=image.png&originHeight=916&originWidth=2458&originalType=binary&ratio=1&size=143128&status=done&style=none&taskId=uf542f250-6209-4734-8564-306faaaaca5&width=2458">
-<meta property="og:updated_time" content="2022-03-08T12:02:38.250Z">
+<meta property="og:updated_time" content="2022-03-26T14:03:20.839Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="阿里云容器服务ack技术调研（个人笔记）">
 <meta name="twitter:description" content="阿里云容器服务是阿里云公有云基于Kubernetes企业级服务，在社区的Kubernetes版本基础上有能力增强， 本文用于调研社区增强功能，记录解决的问题、以及实现方法。ACK集群的增强功能有一部分是基于Kubernetes的api的prodiver实现，另外一部分是基于Kubernetes增加的额外组件，其中很多都已经开源，可以看到开源软件列表。 ACK的一些组件列表可以参见：组件概述 产品形">
@@ -394,12 +394,24 @@
                 
               
 
-              <time title="Created: 2022-03-08 19:54:17 / Modified: 20:02:38" itemprop="dateCreated datePublished" datetime="2022-03-08T19:54:17+08:00">2022-03-08</time>
+              <time title="Created: 2022-03-08 19:54:17" itemprop="dateCreated datePublished" datetime="2022-03-08T19:54:17+08:00">2022-03-08</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-03-26 22:03:20" itemprop="dateModified" datetime="2022-03-26T22:03:20+08:00">2022-03-26</time>
               
             
           </span>
@@ -447,14 +459,14 @@
 <h1 id="产品形态"><a href="#产品形态" class="headerlink" title="产品形态"></a>产品形态</h1><ul>
 <li>专有版Kubernetes：master和worker阶段均需要创建</li>
 <li>托管版Kubernetes：只需要创建worker节点，master节点通过ack托管</li>
-<li>Serverless Kubernetes：master节点和worker阶段均不需要创建</li>
+<li>Serverless Kubernetes：master节点和worker节点均不需要自己创建</li>
 </ul>
 <h1 id="节点管理"><a href="#节点管理" class="headerlink" title="节点管理"></a>节点管理</h1><table>
 <thead>
 <tr>
 <th>大类</th>
 <th>特性</th>
-<th></th>
+<th>描述</th>
 </tr>
 </thead>
 <tbody>
@@ -576,8 +588,8 @@
 <thead>
 <tr>
 <th>大类</th>
-<th></th>
-<th></th>
+<th>功能项</th>
+<th>描述</th>
 </tr>
 </thead>
 <tbody>
@@ -587,7 +599,7 @@
 <td>类似于开源组件log-pilot，仅需要配置环境变量，即可对日志进行收集。也可以通过AliyunLogConfig CR旁路的对日志采集进行配置。</td>
 </tr>
 <tr>
-<td></td>
+<td>日志</td>
 <td>coredns日志</td>
 <td>收集coredns日志</td>
 </tr>
@@ -597,17 +609,17 @@
 <td></td>
 </tr>
 <tr>
-<td></td>
+<td>监控</td>
 <td>基于ahas产品实现的架构感知监控</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
+<td>监控</td>
 <td>node节点异常监控</td>
 <td>npd将节点异常信息产生k8s的event</td>
 </tr>
 <tr>
-<td></td>
+<td>监控</td>
 <td>k8s event监控</td>
 <td>kube-eventer收集k8s的event</td>
 </tr>
@@ -619,7 +631,7 @@
 <tr>
 <th>大类</th>
 <th>特性</th>
-<th></th>
+<th>描述</th>
 </tr>
 </thead>
 <tbody>
@@ -765,7 +777,7 @@
 <tr>
 <th>大类</th>
 <th>特性</th>
-<th></th>
+<th>描述</th>
 </tr>
 </thead>
 <tbody>
@@ -828,7 +840,7 @@
 </table>
 <h1 id="存储"><a href="#存储" class="headerlink" title="存储"></a>存储</h1><p>存储为ACK的一大亮点，借助云的丰富存储类型，通过k8s的CSI插件机制提供了块存储、文件存储、对象存储OSS和本地存储的支持。</p>
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/220839/1645347493244-2af51b21-0150-48e4-a15e-0585d5a59852.png#clientId=ub8a97252-9d7b-4&amp;from=paste&amp;height=916&amp;id=ufabccb6c&amp;margin=%5Bobject%20Object%5D&amp;name=image.png&amp;originHeight=916&amp;originWidth=2458&amp;originalType=binary&amp;ratio=1&amp;size=143128&amp;status=done&amp;style=none&amp;taskId=uf542f250-6209-4734-8564-306faaaaca5&amp;width=2458" alt="image.png"></p>
-<h1 id="本地存储"><a href="#本地存储" class="headerlink" title="本地存储"></a>本地存储</h1><ol>
+<h2 id="本地存储"><a href="#本地存储" class="headerlink" title="本地存储"></a>本地存储</h2><ol>
 <li>LVM数据卷功能，基于lvm来动态创建pv</li>
 <li>QuotaPath，基于ext4的quota特性实现的本地存储的quota隔离功能</li>
 <li>内存数据卷</li>
@@ -840,6 +852,10 @@
 <li>使用k8s的存储快照功能实现了存储快照。k8s定义了VolumeSnapshotContent（类似pv）、VolumeSnapshot（类似pvc）和VolumeSnapshotClass（类似StorageClass）三个类型来实现打快照功能，快照的恢复则借助pvc的spec.dataSource字段实现。</li>
 <li>加密云盘功能，同样借助云上能力实现。使用时，仅需要在StorageClass的parameters参数中指定加密参数即可。</li>
 </ol>
+<h1 id="Serverless-Kubernetes（ASK）"><a href="#Serverless-Kubernetes（ASK）" class="headerlink" title="Serverless Kubernetes（ASK）"></a>Serverless Kubernetes（ASK）</h1><p>ACK提供了k8s以及k8s的管理功能，其中k8s的master节点需要单独创建和维护，每个k8s集群使用的资源是完全独立的。在ASK中，用户仅需要创建k8s集群，而不需要关心k8s集群的核心组件具体是怎么创建的。</p>
+<p>在实际上，k8s的核心组件如etcd、kube-apiserver、kube-scheduler、kube-controller-manager可能是以pod的形式运行在另外的k8s集群之上，即所谓的k8s on k8s（KOK）的方案。而且这部分组件是多个k8s集群混部的，对用户完全屏蔽了实现细节，用户仅需要聚焦在如何使用k8s即可。</p>
+<p>对于k8s的node节点，用户同样不需要创建，可以认为k8s的节点资源是无限多的。ask采用了virtual kubelet的技术创建了一个虚拟的k8s node节点 <code>virtual-kubelet-${region}-${zone}</code>，整个k8s集群仅有一个节点。因为只有一个k8s节点，实际上k8s的管控作用会大大弱化，尤其是kube-scheduler，因为只有一个k8s节点，不存在pod调度的问题。</p>
+<p>用户创建的pod资源，实际上会部署在阿里云产品弹性容器实例ECI上。新创建ask集群完成后，再到ECI上即可看到有默认的容器创建出来。ECI了创建容器的功能，给用户暴露的功能是跟k8s无关的，而ask相当于是给用户提供了以k8s的方式来创建容器。</p>
 <h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>集群成本分析</p>
 
       
@@ -1119,7 +1135,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#产品形态"><span class="nav-number">1.</span> <span class="nav-text">产品形态</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#节点管理"><span class="nav-number">2.</span> <span class="nav-text">节点管理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#弹性伸缩"><span class="nav-number">3.</span> <span class="nav-text">弹性伸缩</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#安全"><span class="nav-number">4.</span> <span class="nav-text">安全</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#可观测性"><span class="nav-number">5.</span> <span class="nav-text">可观测性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#操作系统"><span class="nav-number">6.</span> <span class="nav-text">操作系统</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#容器-amp-镜像"><span class="nav-number">7.</span> <span class="nav-text">容器&amp;镜像</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#调度"><span class="nav-number">8.</span> <span class="nav-text">调度</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#网络"><span class="nav-number">9.</span> <span class="nav-text">网络</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#存储"><span class="nav-number">10.</span> <span class="nav-text">存储</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#本地存储"><span class="nav-number">11.</span> <span class="nav-text">本地存储</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#云盘存储卷"><span class="nav-number">11.1.</span> <span class="nav-text">云盘存储卷</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#其他"><span class="nav-number">12.</span> <span class="nav-text">其他</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#产品形态"><span class="nav-number">1.</span> <span class="nav-text">产品形态</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#节点管理"><span class="nav-number">2.</span> <span class="nav-text">节点管理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#弹性伸缩"><span class="nav-number">3.</span> <span class="nav-text">弹性伸缩</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#安全"><span class="nav-number">4.</span> <span class="nav-text">安全</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#可观测性"><span class="nav-number">5.</span> <span class="nav-text">可观测性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#操作系统"><span class="nav-number">6.</span> <span class="nav-text">操作系统</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#容器-amp-镜像"><span class="nav-number">7.</span> <span class="nav-text">容器&amp;镜像</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#调度"><span class="nav-number">8.</span> <span class="nav-text">调度</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#网络"><span class="nav-number">9.</span> <span class="nav-text">网络</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#存储"><span class="nav-number">10.</span> <span class="nav-text">存储</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#本地存储"><span class="nav-number">10.1.</span> <span class="nav-text">本地存储</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#云盘存储卷"><span class="nav-number">10.2.</span> <span class="nav-text">云盘存储卷</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Serverless-Kubernetes（ASK）"><span class="nav-number">11.</span> <span class="nav-text">Serverless Kubernetes（ASK）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#其他"><span class="nav-number">12.</span> <span class="nav-text">其他</span></a></li></ol></div>
             
 
           </div>
