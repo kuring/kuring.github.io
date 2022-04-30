@@ -117,7 +117,7 @@
 <meta property="og:site_name" content="伊图">
 <meta property="og:description" content="内核参数项以CentOS7 系统为例，可以看到有1088个内核参数项。1234$ uname -aLinux iZbp17o12gcsq2d87y7x1hZ 3.10.0-1160.36.2.el7.x86_64 #1 SMP Wed Jul 21 11:57:15 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux$ sysctl -a 2&amp;gt;/dev/null">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2022-04-11T09:49:13.363Z">
+<meta property="og:updated_time" content="2022-04-24T02:54:13.349Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux内核参数（持续更新）">
 <meta name="twitter:description" content="内核参数项以CentOS7 系统为例，可以看到有1088个内核参数项。1234$ uname -aLinux iZbp17o12gcsq2d87y7x1hZ 3.10.0-1160.36.2.el7.x86_64 #1 SMP Wed Jul 21 11:57:15 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux$ sysctl -a 2&amp;gt;/dev/null">
@@ -409,7 +409,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2022-04-11 17:49:13" itemprop="dateModified" datetime="2022-04-11T17:49:13+08:00">2022-04-11</time>
+                <time title="Modified: 2022-04-24 10:54:13" itemprop="dateModified" datetime="2022-04-24T10:54:13+08:00">2022-04-24</time>
               
             
           </span>
@@ -548,6 +548,10 @@
 <td>net.ipv4.ip_local_port_range</td>
 <td>随机端口的白名单范围，网络连接可以作为源端口的最小和最大端口限制</td>
 </tr>
+<tr>
+<td>net.ipv4.rp_filter</td>
+<td>是否开启对数据包源地址的校验, 收到包后根据source ip到route表中检查是否否和最佳路由，否的话扔掉这个包。这次如下值：<br>1. 不开启源地址校验<br> 2. 开启严格的反向路径校验。对每个进来的数据包，校验其反向路径是否是最佳路径。如果反向路径不是最佳路径，则直接丢弃该数据包。<br> 3. 开启松散的反向路径校验。对每个进来的数据包，校验其源地址是否可达，即反向路径是否能通（通过任意网口），如果反向路径不通，则直接丢弃该数据包。该内核参数 net.ipv4.conf.all.log_martians 可以来控制是否打开日志，日志打开后可以在/var/log/message中观察到。</td>
+</tr>
 </tbody>
 </table>
 <h2 id="内核参数在k8s的支持情况"><a href="#内核参数在k8s的支持情况" class="headerlink" title="内核参数在k8s的支持情况"></a>内核参数在k8s的支持情况</h2><table>
@@ -592,7 +596,7 @@
 <li>fs.mqueue.*,</li>
 <li>net.*（内核中可以在容器命名空间里被更改的网络配置项相关参数）。然而也有一些特例 （例如，net.netfilter.nf_conntrack_max 和 net.netfilter.nf_conntrack_expect_max 可以在容器命名空间里被更改，但它们是非命名空间的）。</li>
 </ul>
-<p>k8s在pod中声明内核参数的方式如下：<br><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1 </span><br><span class="line">kind: Pod </span><br><span class="line">metadata:   </span><br><span class="line">  name: sysctl-example </span><br><span class="line">spec:   </span><br><span class="line">  securityContext:     </span><br><span class="line">    sysctls:     </span><br><span class="line">    - name: </span><br><span class="line">      kernel.shm_rmid_forced</span><br><span class="line">      value: "0"</span><br></pre></td></tr></table></figure></p>
+<p>k8s在pod中声明内核参数的方式如下：<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span> </span><br><span class="line"><span class="attr">kind:</span> <span class="string">Pod</span> </span><br><span class="line"><span class="attr">metadata:</span>   </span><br><span class="line"><span class="attr">  name:</span> <span class="string">sysctl-example</span> </span><br><span class="line"><span class="attr">spec:</span>   </span><br><span class="line"><span class="attr">  securityContext:</span>     </span><br><span class="line"><span class="attr">    sysctls:</span>     </span><br><span class="line"><span class="attr">    - name:</span> </span><br><span class="line">      <span class="string">kernel.shm_rmid_forced</span></span><br><span class="line"><span class="attr">      value:</span> <span class="string">"0"</span></span><br></pre></td></tr></table></figure></p>
 <h3 id="业界解决方案"><a href="#业界解决方案" class="headerlink" title="业界解决方案"></a>业界解决方案</h3><h4 id="ACK-安全沙箱容器"><a href="#ACK-安全沙箱容器" class="headerlink" title="ACK - 安全沙箱容器"></a>ACK - 安全沙箱容器</h4><p>阿里云ACK服务的安全沙箱容器，底层实现为runV，pod拥有独立的内核参数，相互之间不受影响。通过扩展pod的annotation来完成内核参数的修改：<br><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">annotations:</span><br><span class="line">  securecontainer.alibabacloud.com/sysctls: "net.bridge.bridge-nf-call-ip6tables=1,net.bridge.bridge-nf-call-iptables=1,net.ipv4.ip_forward=1"</span><br></pre></td></tr></table></figure></p>
 <p><a href="https://help.aliyun.com/document_detail/198645.html" target="_blank" rel="noopener">阿里云ACK - 配置安全沙箱Pod内核参数</a></p>
 <h4 id="弹性容器实例"><a href="#弹性容器实例" class="headerlink" title="弹性容器实例"></a>弹性容器实例</h4><p>完全利用k8s的功能，有限内核参数修改。<br><a href="https://help.aliyun.com/document_detail/163023.html" target="_blank" rel="noopener">https://help.aliyun.com/document_detail/163023.html</a></p>
@@ -725,7 +729,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">212</span>
+                    <span class="site-state-item-count">213</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
