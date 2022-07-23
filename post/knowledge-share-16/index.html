@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="google-site-verification" content="eAiR1Y-uCo4AOL2kk93GpQ_JtoPeDheyVp7H9k4Peak">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=6.4.1" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.4.1">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.4.1">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.4.1">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.4.1" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '6.4.1',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="资源kaniko Google开源的一款可以在容器内部通过Dockerfile构建docker镜像的工具。 我们知道docker build命令可以根据Dockerfile构建出docker镜像，但该操作实际上是由docker daemon进程完成。如果docker build命令在docker容器中执行，由于容器中并没有docker daemon进程，因此直接执行docker build肯定会失">
+<meta property="og:type" content="article">
+<meta property="og:title" content="技术分享第16期">
+<meta property="og:url" content="http://kuring.me/post/knowledge-share-16/index.html">
+<meta property="og:site_name" content="伊图">
+<meta property="og:description" content="资源kaniko Google开源的一款可以在容器内部通过Dockerfile构建docker镜像的工具。 我们知道docker build命令可以根据Dockerfile构建出docker镜像，但该操作实际上是由docker daemon进程完成。如果docker build命令在docker容器中执行，由于容器中并没有docker daemon进程，因此直接执行docker build肯定会失">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/kaniko.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/arc42-overview-V8.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/carina.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/kube-capacity.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/opa.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/flowus.jpg">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/k8tz.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/dicengsiwei.jpg">
+<meta property="og:updated_time" content="2022-07-23T08:20:55.414Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="技术分享第16期">
+<meta name="twitter:description" content="资源kaniko Google开源的一款可以在容器内部通过Dockerfile构建docker镜像的工具。 我们知道docker build命令可以根据Dockerfile构建出docker镜像，但该操作实际上是由docker daemon进程完成。如果docker build命令在docker容器中执行，由于容器中并没有docker daemon进程，因此直接执行docker build肯定会失">
+<meta name="twitter:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/kaniko.png">
+
+
+
+
+
+
+  <link rel="canonical" href="http://kuring.me/post/knowledge-share-16/">
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>技术分享第16期 | 伊图</title>
+  
+
+
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-42234015-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-42234015-1');
+</script>
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?c90f7388e03d4ed7e98a545b1d69200e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">伊图</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <h1 class="site-subtitle" itemprop="description">学习笔记</h1>
+      
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+    <a href="/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+    <a href="/archives/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+    <a href="/about/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+    <a href="/tags/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/knowledge-share-16/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content>
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="伊图">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">技术分享第16期
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2022-07-23 16:09:08 / Modified: 16:20:55" itemprop="dateCreated datePublished" datetime="2022-07-23T16:09:08+08:00">2022-07-23</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/post/knowledge-share-16/#comments" itemprop="discussionUrl">
+                  <span class="post-meta-item-text">Comments: </span> <span class="post-comments-count gitment-comments-count" data-xid="/post/knowledge-share-16/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h1><h2 id="kaniko"><a href="#kaniko" class="headerlink" title="kaniko"></a><a href="https://github.com/GoogleContainerTools/kaniko" target="_blank" rel="noopener">kaniko</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/kaniko.png" alt></p>
+<p>Google开源的一款可以在容器内部通过Dockerfile构建docker镜像的工具。</p>
+<p>我们知道<code>docker build</code>命令可以根据Dockerfile构建出docker镜像，但该操作实际上是由docker daemon进程完成。如果<code>docker build</code>命令在docker容器中执行，由于容器中并没有docker daemon进程，因此直接执行<code>docker build</code>肯定会失败。</p>
+<p>kaniko则重新实现了Dockerfile构建镜像的功能，使得构建镜像不再依赖docker daemon。随着gitops的流程，CI工具也正逐渐on k8s部署，kaniko正好可以在k8s的环境中根据Dockerfile完成镜像的打包过程，并将镜像推送到镜像仓库中。</p>
+<h2 id="arc42"><a href="#arc42" class="headerlink" title="arc42"></a><a href="https://arc42.org/overview" target="_blank" rel="noopener">arc42</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/arc42-overview-V8.png" alt></p>
+<p>技术人员在写架构文档的时候，遇到最多的问题是该如何组织技术文档的结构，arc42 提供了架构文档的模板，将架构文档分为了 12 个章节，每个章节又包含了多个子章节，用来帮助技术人员更好的编写架构文档。</p>
+<p>相关链接：<a href="https://topic.atatech.org/articles/205083?spm=ata.21736010.0.0.18c23b50NAifwr#tF1lZkHm" target="_blank" rel="noopener">https://topic.atatech.org/articles/205083?spm=ata.21736010.0.0.18c23b50NAifwr#tF1lZkHm</a></p>
+<h2 id="Carina"><a href="#Carina" class="headerlink" title="Carina"></a><a href="https://github.com/carina-io/carina/blob/main/README_zh.md" target="_blank" rel="noopener">Carina</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/carina.png" alt></p>
+<p>国内云厂商博云发起的一款基于 Kubernetes CSI 标准实现的存储插件，用来管理本地的存储资源，支持本地磁盘的整盘或者LVM方案来管理存储。同时，还包含了Raid管理、磁盘限速、容灾转移等高级特性。</p>
+<p>相关链接：<a href="https://mp.weixin.qq.com/s/-435K5O780NS2gkuLvSr5g" target="_blank" rel="noopener">一篇看懂 Carina 全貌</a></p>
+<h2 id="kube-capacity"><a href="#kube-capacity" class="headerlink" title="kube-capacity"></a><a href="https://github.com/robscott/kube-capacity" target="_blank" rel="noopener">kube-capacity</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/kube-capacity.png" alt></p>
+<p>k8s的命令行工具kubectl用来查看集群的整体资源情况往往操作会比较复杂，可能需要多条命令配合在一起才能拿得到想要的结果。kube-capacity命令行工具用来快速查看集群中的资源使用情况，包括node、pod维度。</p>
+<p>相关链接：<a href="https://able8.medium.com/check-kubernetes-resource-reqeusts-limits-and-utilization-with-kube-capacity-cli-b00bf2f4acc9" target="_blank" rel="noopener">Check Kubernetes Resource Requests, Limits, and Utilization with Kube-capacity CLI</a></p>
+<h2 id="Kubeprober"><a href="#Kubeprober" class="headerlink" title="Kubeprober"></a><a href="https://k.erda.cloud/" target="_blank" rel="noopener">Kubeprober</a></h2><p>在k8s集群运维的过程中，诊断能力非常重要，可用来快速的定位发现问题。Kubeprober为一款定位为k8s多集群的诊断框架，提供了非常好的扩展性来接入诊断项，诊断结果可以通过grafana来统一展示。</p>
+<p>社区里类似的解决方案还有Kubehealthy和Kubeeye。</p>
+<p>相关链接：<a href="https://mp.weixin.qq.com/s/Wte75OfQ7Ihzlm4th-pNYA" target="_blank" rel="noopener">用更云原生的方式做诊断｜大规模 K8s 集群诊断利器深度解析</a></p>
+<h2 id="Open-Policy-Agent"><a href="#Open-Policy-Agent" class="headerlink" title="Open Policy Agent"></a><a href="https://www.openpolicyagent.org/" target="_blank" rel="noopener">Open Policy Agent</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/opa.png" alt></p>
+<p>OPA为一款开源的基于Rego语言的通用策略引擎，CNCF的毕业项目，可以用来实现一些基于策略的安全防护。比如在k8s中，要求pod的镜像必须为某个特定的registry，用户可以编写策略，一旦pod创建，OPA的gatekeeper组件通过webhook的方式来执行策略校验，一旦校验失败从而到会导致pod创建失败。</p>
+<p>比如 <a href="https://help.aliyun.com/document_detail/180803.html?spm=ata.21736010.0.0.3d7e50fddLMBB9" target="_blank" rel="noopener">阿里云的ACK的gatekeeper</a> 就是基于OPA的实现。</p>
+<h2 id="docker-squash"><a href="#docker-squash" class="headerlink" title="docker-squash"></a><a href="https://github.com/goldmann/docker-squash" target="_blank" rel="noopener">docker-squash</a></h2><p>docker-squash为一款docker镜像压缩工具。在使用Dockerfile来构建镜像时，会产生很多的docker镜像层，当Dockerfile中的命令过多时，会产生大量的docker镜像层，从而导致docker镜像过大。该工具可以将镜像进行按照层合并压缩，从而减小镜像的体积。</p>
+<h2 id="FlowUs"><a href="#FlowUs" class="headerlink" title="FlowUs"></a><a href="https://flowus.cn/" target="_blank" rel="noopener">FlowUs</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/flowus.jpg" alt></p>
+<p>FlowUs为国内研发的一款在线编辑器，支持文档、表格和网盘功能，该软件可以实现笔记、项目管理、共享文件等功能，跟蚂蚁集团的产品《<a href="https://www.yuque.com/" target="_blank" rel="noopener">语雀</a>》功能比较类似。但相比语雀做的好的地方在于，FlowUs通过”块编辑器“的方式，在FlowUs看来所有的文档形式都是”块“，作者可以在文档中随意放置各种类型的”块“，在同一个文档中即可以有功能完善的表格，也可以有网盘。而语雀要实现一个相对完整的表格，需要新建一种表格类型的文档，类似于Word和Excel。</p>
+<h2 id="k8tz"><a href="#k8tz" class="headerlink" title="k8tz"></a><a href="https://github.com/k8tz/k8tz" target="_blank" rel="noopener">k8tz</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/k8tz.png" alt></p>
+<p>k8s中的pod默认的时区跟pod的镜像有关，跟pod宿主机所在的时区没有关系。很多情况下，用户都期望pod里看到的时区能够跟宿主机的保持一致。用户的一种实现方式是将宿主机的时区文件挂载到pod中，但需要修改pod的yaml文件。本工具可以通过webhook的方式自动化将宿主机的时区文件挂载到pod中。</p>
+<h1 id="文章"><a href="#文章" class="headerlink" title="文章"></a>文章</h1><ol>
+<li><a href="https://mp.weixin.qq.com/s/4ufpUSq2Qn_QV5vIJcPgqg" target="_blank" rel="noopener">中美云巨头歧路，中国云未来增长点在哪？</a></li>
+</ol>
+<p>文章结合全球的云计算行业，对国内的云计算行业做了非常透彻的分析。”全球云，看中美；中美云，看六大云“，推荐阅读。</p>
+<ol start="2">
+<li><a href="https://mp.weixin.qq.com/s/F0KoDD9er7MNKYo-5POfsA" target="_blank" rel="noopener">程序员必备的思维能力：结构化思维</a></li>
+</ol>
+<p>结构化思维不仅对于程序员，对于职场中的很多职业都非常重要，无论是沟通、汇报、晋升，还是写代码结构化思维都非常重要。本文深度剖析了金字塔原理以及如何应用，非常值得一读。文章的作者将公众号的文章整理为了《程序员底层思维》一书，推荐大家阅读。</p>
+<ol start="3">
+<li><a href="https://github.com/ruanyf/document-style-guide" target="_blank" rel="noopener">中文技术文档的写作规范</a></li>
+</ol>
+<p>阮一峰老师的中文技术文档写作规范，写技术文档的同学可以参考。</p>
+<h1 id="书籍"><a href="#书籍" class="headerlink" title="书籍"></a>书籍</h1><ol>
+<li><a href="https://book.douban.com/subject/35794819/" target="_blank" rel="noopener">《程序员的底层思维》</a></li>
+</ol>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/dicengsiwei.jpg" alt></p>
+<p>通过书名中的“程序员”来看有点初级，但实际上书中的内容适合所有软件行业的从业者，甚至同样适合于其他行业的从业者，因为底层思维本来就是共性的东西，万变不离其宗。作者曾在阿里巴巴有过很长一段工作经历，书中结合着工作中的实践经验介绍了16种思维能力，讲解浅显易懂，部分内容上升到了哲学的角度来讲解。</p>
+<p>作为软件行业从业者的我，实际上书中的大部分思维能力在工作中都有应用，但却没有形成理论来总结。阅读本书，有助于对工作的内容进行总结，找到工作的理论基础。另一方面，有了书中的理论总结，也可以更好的指导工作。</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+      <div>
+        <div id="wechat_subscriber" style="display: block; padding: 10px 0; margin: 20px auto; width: 100%; text-align: center">
+    <img id="wechat_subscriber_qcode" src="/images/qrcode_for_gh_a3ecf2d098bc_430.jpg" alt=" wechat" style="width: 200px; max-width: 100%;">
+    <div>欢迎订阅我的公众号！</div>
+</div>
+
+      </div>
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/post/ipv6/" rel="next" title="ipv6">
+                <i class="fa fa-chevron-left"></i> ipv6
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+    <div class="comments" id="comments">
+      
+        <div id="gitment-container"></div>
+      
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.jpeg" alt>
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">226</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">33</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/kuring" target="_blank" title="GitHub" rel="external nofollow"><i class="fa fa-fw fa-globe"></i>GitHub</a>
+                  
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="http://www.zhihu.com/people/kuring" target="_blank" title="知乎" rel="external nofollow"><i class="fa fa-fw fa-globe"></i>知乎</a>
+                  
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="http://weibo.com/ilvkai" target="_blank" title="微博" rel="external nofollow"><i class="fa fa-fw fa-globe"></i>微博</a>
+                  
+                </span>
+              
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                Links
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://http://coolshell.cn/" title="酷壳" target="_blank">酷壳</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://www.ruanyifeng.com/blog/" title="阮一峰的网络日志" target="_blank">阮一峰的网络日志</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+            
+          
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#资源"><span class="nav-number">1.</span> <span class="nav-text">资源</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#kaniko"><span class="nav-number">1.1.</span> <span class="nav-text">kaniko</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#arc42"><span class="nav-number">1.2.</span> <span class="nav-text">arc42</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Carina"><span class="nav-number">1.3.</span> <span class="nav-text">Carina</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kube-capacity"><span class="nav-number">1.4.</span> <span class="nav-text">kube-capacity</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kubeprober"><span class="nav-number">1.5.</span> <span class="nav-text">Kubeprober</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Open-Policy-Agent"><span class="nav-number">1.6.</span> <span class="nav-text">Open Policy Agent</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#docker-squash"><span class="nav-number">1.7.</span> <span class="nav-text">docker-squash</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FlowUs"><span class="nav-number">1.8.</span> <span class="nav-text">FlowUs</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#k8tz"><span class="nav-number">1.9.</span> <span class="nav-text">k8tz</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#文章"><span class="nav-number">2.</span> <span class="nav-text">文章</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#书籍"><span class="nav-number">3.</span> <span class="nav-text">书籍</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2013 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+
+  
+
+  
+</div>
+
+
+  
+
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" rel="external nofollow" href="https://hexo.io">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a class="theme-link" target="_blank" rel="external nofollow" href="https://theme-next.org">NexT.Pisces</a> v6.4.1</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+	
+    
+
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.4.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.4.1"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=6.4.1"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=6.4.1"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.4.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.4.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.4.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+<!-- LOCAL: You can save these files to your site and update links -->
+    
+        
+        <link rel="stylesheet" href="https://aimingoo.github.io/gitmint/style/default.css">
+        <script src="https://aimingoo.github.io/gitmint/dist/gitmint.browser.js"></script>
+    
+<!-- END LOCAL -->
+
+    
+      <style>
+        a.gitment-editor-footer-tip { display: none; }
+        .gitment-container.gitment-footer-container { display: none; }
+      </style>
+    
+
+    
+      <script type="text/javascript">
+      function renderGitment(){
+        var gitment = new Gitmint({
+            id: window.location.pathname,
+            owner: 'kuring',
+            repo: 'gitment-comments',
+            
+            lang: "" || navigator.language || navigator.systemLanguage || navigator.userLanguage,
+            
+            oauth: {
+            
+            
+                client_secret: 'b858c731ebc81dc8c66ae1f6424cd4915133d93d',
+            
+                client_id: 'ac02c664506838dd0591'
+            }});
+        gitment.render('gitment-container');
+      }
+
+      
+      renderGitment();
+      
+      </script>
+    
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
