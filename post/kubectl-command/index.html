@@ -117,7 +117,7 @@
 <meta property="og:site_name" content="伊图">
 <meta property="og:description" content="本文记录常用的kubectl命令，不定期更新。 1. 统计k8s node上的污点信息1kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers 2. 查看不ready的pod1kubectl get pod --all-namespaces -o wide -w | grep">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2023-02-14T02:31:38.125Z">
+<meta property="og:updated_time" content="2023-02-24T08:39:30.831Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="kubectl常用命令">
 <meta name="twitter:description" content="本文记录常用的kubectl命令，不定期更新。 1. 统计k8s node上的污点信息1kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers 2. 查看不ready的pod1kubectl get pod --all-namespaces -o wide -w | grep">
@@ -409,7 +409,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2023-02-14 10:31:38" itemprop="dateModified" datetime="2023-02-14T10:31:38+08:00">2023-02-14</time>
+                <time title="Modified: 2023-02-24 16:39:30" itemprop="dateModified" datetime="2023-02-24T16:39:30+08:00">2023-02-24</time>
               
             
           </span>
@@ -476,6 +476,13 @@
 </ol>
 <p>obj变量为要修改的service对象名称。</p>
 <h2 id="8-查看-secret-内容"><a href="#8-查看-secret-内容" class="headerlink" title="8. 查看 secret 内容"></a>8. 查看 secret 内容</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl get secret -n ark-system ark.cmdb.https.origin.tls -o jsonpath=&apos;&#123;.data.ca\.pem&#125;&apos; | base64 -d</span><br></pre></td></tr></table></figure>
+<h2 id="9-修改-secret-或-cm-的内容"><a href="#9-修改-secret-或-cm-的内容" class="headerlink" title="9. 修改 secret 或 cm 的内容"></a>9. 修改 secret 或 cm 的内容</h2><p>很多场景下使用 <code>kubectl edit</code> 修改不能完全满足需求，比如某个 key 对应的 value 非常长且包含空格，很难直接编辑。可以通过导出 key 对应的 value 到文件，然后再重新 apply 的方式合入。</p>
+<p>导出 configmap 中特定的 key：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl get cm -n kube-system  networkpolicy-config -o jsonpath=&apos;&#123;.data.config\.yaml&#125;&apos; -o yaml</span><br></pre></td></tr></table></figure>
+<p>修改完成后，将文件重新 apply cm</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl create --save-config cm  networkpolicy-config -n kube-system --from-file /tmp/config.yaml -o yaml --dry-run | kubectl apply -f -</span><br></pre></td></tr></table></figure>
+<h2 id="9-删除所有-pod（或特定状态-pod）"><a href="#9-删除所有-pod（或特定状态-pod）" class="headerlink" title="9. 删除所有 pod（或特定状态 pod）"></a>9. 删除所有 pod（或特定状态 pod）</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl get pods --all-namespaces -o wide --no-headers | grep -v Running | awk &apos;&#123;print $1 &quot; &quot; $2&#125;&apos; | while read AA BB; do kubectl get pod -n $AA $BB --no-headers; done</span><br></pre></td></tr></table></figure>
+
       
     </div>
 
@@ -682,7 +689,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">33</span>
+                      
+                    
+                    <span class="site-state-item-count">34</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>
@@ -755,7 +764,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-统计k8s-node上的污点信息"><span class="nav-number">1.</span> <span class="nav-text">1. 统计k8s node上的污点信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-查看不ready的pod"><span class="nav-number">2.</span> <span class="nav-text">2. 查看不ready的pod</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-pod按照重启次数排序"><span class="nav-number">3.</span> <span class="nav-text">3. pod按照重启次数排序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-kubectl-proxy命令代理k8s-apiserver"><span class="nav-number">4.</span> <span class="nav-text">4. kubectl proxy命令代理k8s apiserver</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-–raw命令"><span class="nav-number">5.</span> <span class="nav-text">5. –raw命令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-查看集群中的pod的request和limit情况"><span class="nav-number">6.</span> <span class="nav-text">6. 查看集群中的pod的request和limit情况</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-修改对象的status"><span class="nav-number">7.</span> <span class="nav-text">7. 修改对象的status</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-查看-secret-内容"><span class="nav-number">8.</span> <span class="nav-text">8. 查看 secret 内容</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-统计k8s-node上的污点信息"><span class="nav-number">1.</span> <span class="nav-text">1. 统计k8s node上的污点信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-查看不ready的pod"><span class="nav-number">2.</span> <span class="nav-text">2. 查看不ready的pod</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-pod按照重启次数排序"><span class="nav-number">3.</span> <span class="nav-text">3. pod按照重启次数排序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-kubectl-proxy命令代理k8s-apiserver"><span class="nav-number">4.</span> <span class="nav-text">4. kubectl proxy命令代理k8s apiserver</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-–raw命令"><span class="nav-number">5.</span> <span class="nav-text">5. –raw命令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-查看集群中的pod的request和limit情况"><span class="nav-number">6.</span> <span class="nav-text">6. 查看集群中的pod的request和limit情况</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-修改对象的status"><span class="nav-number">7.</span> <span class="nav-text">7. 修改对象的status</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-查看-secret-内容"><span class="nav-number">8.</span> <span class="nav-text">8. 查看 secret 内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#9-修改-secret-或-cm-的内容"><span class="nav-number">9.</span> <span class="nav-text">9. 修改 secret 或 cm 的内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#9-删除所有-pod（或特定状态-pod）"><span class="nav-number">10.</span> <span class="nav-text">9. 删除所有 pod（或特定状态 pod）</span></a></li></ol></div>
             
 
           </div>
