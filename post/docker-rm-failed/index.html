@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="现象12345678$ cat &#x2F;etc&#x2F;redhat-releaseCentOS Linux release 7.2.1511 (Core)$ uname -aLinux c3-a05-136-45-10.com 3.10.0-327.el7.x86_64 #1 SMP Thu Nov 19 22:10:57 UTC 2015 x86_64 x86_64 x86_64 GNU&#x2F;Linux$ do">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernetes中pod无法删除的问题排查">
+<meta property="og:url" content="http://kuring.me/post/docker-rm-failed/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="现象12345678$ cat &#x2F;etc&#x2F;redhat-releaseCentOS Linux release 7.2.1511 (Core)$ uname -aLinux c3-a05-136-45-10.com 3.10.0-327.el7.x86_64 #1 SMP Thu Nov 19 22:10:57 UTC 2015 x86_64 x86_64 x86_64 GNU&#x2F;Linux$ do">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-01-30T20:51:02.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.233Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/docker-rm-failed/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/docker-rm-failed/","path":"post/docker-rm-failed/","title":"kubernetes中pod无法删除的问题排查"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>kubernetes中pod无法删除的问题排查 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%B0%E8%B1%A1"><span class="nav-number">1.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%A4%8D%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">问题复现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E4%BA%A7%E7%94%9F%E5%8E%9F%E5%9B%A0"><span class="nav-number">3.</span> <span class="nav-text">问题产生原因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E6%96%B9%E5%BC%8F"><span class="nav-number">4.</span> <span class="nav-text">处理方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ref"><span class="nav-number">5.</span> <span class="nav-text">ref</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/docker-rm-failed/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="kubernetes中pod无法删除的问题排查 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kubernetes中pod无法删除的问题排查
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2019-01-30 20:51:02" itemprop="dateCreated datePublished" datetime="2019-01-30T20:51:02+00:00">2019-01-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ cat /etc/redhat-release</span><br><span class="line">CentOS Linux release 7.2.1511 (Core)</span><br><span class="line"></span><br><span class="line">$ uname -a</span><br><span class="line">Linux c3-a05-136-45-10.com 3.10.0-327.el7.x86_64 #1 SMP Thu Nov 19 22:10:57 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux</span><br><span class="line"></span><br><span class="line">$ docker info | grep &quot;Storage Driver&quot;</span><br><span class="line">Storage Driver: devicemapper</span><br></pre></td></tr></table></figure>
+
+<p>在CentOS7.2的系统上，发现有一部分pod在delete后一直处于Terminating状态</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl get pods -o wide</span><br><span class="line">NAME                                 READY     STATUS        RESTARTS   AGE       IP        NODE          NOMINATED NODE</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-25dsh   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.6   &lt;none&gt;</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-f9flb   0/1       Terminating   0          54d       &lt;none&gt;    10.136.45.4   &lt;none&gt;</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-m7sl4   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.6   &lt;none&gt;</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-pqpht   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.6   &lt;none&gt;</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-r987g   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.4   &lt;none&gt;</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-zghhr   0/1       Terminating   0          54d       &lt;none&gt;    10.136.45.6   &lt;none&gt;</span><br></pre></td></tr></table></figure>
+
+<p>查看docker的日志发现有如下报错信息如下，含义为在删除pod时由于&#x2F;var&#x2F;lib&#x2F;docker&#x2F;overlay&#x2F;*&#x2F;merged目录被其他应用占用，从而导致容器无法清除。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Jan 30 14:57:47 c3-a05-136-45-4.com dockerd[1510]: time=&quot;2019-01-30T14:57:47.704641914+08:00&quot; level=error msg=&quot;Error removing mounted layer e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9: remove /var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/merged: device or resource busy&quot;</span><br><span class="line">Jan 30 14:57:47 c3-a05-136-45-4.com dockerd[1510]: time=&quot;2019-01-30T14:57:47.704772288+08:00&quot; level=error msg=&quot;Handler for DELETE /v1.31/containers/e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9 returned error: driver \&quot;overlay\&quot; failed to remove root filesystem for e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9: remove /var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/merged: device or resource busy&quot;</span><br><span class="line">Jan 30 14:57:48 c3-a05-136-45-4.com dockerd[1510]: time=&quot;2019-01-30T14:57:48.228837657+08:00&quot; level=error msg=&quot;Error removing mounted layer 2851b80d5c45d1cac3e7384116da0ad022af21701f9aa0d9ba3598efd5723030: remove /var/lib/docker/overlay/0ff0f98e1abf43c10711f2804cae3cf37efd597016d38b4753e2af19c2e27eb9/merged: device or resource busy&quot;</span><br><span class="line">Jan 30 14:57:48 c3-a05-136-45-4.com dockerd[1510]: time=&quot;2019-01-30T14:57:48.228953497+08:00&quot; level=error msg=&quot;Handler for DELETE /v1.31/containers/2851b80d5c45d1cac3e7384116da0ad022af21701f9aa0d9ba3598efd5723030 returned error: driver \&quot;overlay\&quot; failed to remove root filesystem for 2851b80d5c45d1cac3e7384116da0ad022af21701f9aa0d9ba3598efd5723030: remove /var/lib/docker/overlay/0ff0f98e1abf43c10711f2804cae3cf37efd597016d38b4753e2af19c2e27eb9/merged: device or resource busy&quot;</span><br></pre></td></tr></table></figure>
+
+<p>通过<code>docker ps -a</code>看到容器的状态为”Removal In Progress”。通过<code>docker inspect</code>可以看到容器的进程已经退出了。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># docker ps -a</span><br><span class="line">CONTAINER ID        IMAGE                                                                  COMMAND                  CREATED             STATUS                    PORTS               NAMES</span><br><span class="line">e6b7378c58a3        golang-httpserver        &quot;/bin/sh -c &#x27;go ru...&quot;   7 weeks ago         Removal In Progress                           k8s_golang-httpserver_httpserver-prod-1-6cb97dfbcc-f9flb_default_9e3d2cbb-f9d4-11e8-b61c-f01fafd10a1b_0</span><br><span class="line"></span><br><span class="line"># docker inspect e6b7378c58a3 --format &#x27;&#123;&#123;.State.Pid&#125;&#125;&#x27;</span><br><span class="line">0</span><br></pre></td></tr></table></figure>
+
+<p>使用<code>docker rm</code>命令删除容器会报错</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># docker rm e6b7378c58a3</span><br><span class="line">Error response from daemon: driver &quot;overlay&quot; failed to remove root filesystem for e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9: remove /var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/merged: device or resource busy</span><br></pre></td></tr></table></figure>
+
+<p>通过<code>kubectl delete pods</code>命令虽然可以强制删除pod，但在宿主机上仍然能看到容器的状态为”Removal In Progress”。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># kubectl delete pods  httpserver-prod-1-6cb97dfbcc-f9flb --grace-period=0 --force</span><br><span class="line">warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.</span><br><span class="line">pod &quot;httpserver-prod-1-6cb97dfbcc-f9flb&quot; force deleted</span><br></pre></td></tr></table></figure>
+
+<p>通过搜索挂载目录的信息，可以找到是哪个进程挂载了该目录。可以看到是ntpd服务挂载了该目录。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># grep -nr 98a56 /proc/*/mountinfo</span><br><span class="line">/proc/2725007/mountinfo:48:296 183 0:183 / /var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/merged rw,relatime shared:88 - overlay overlay rw,lowerdir=/var/lib/docker/overlay/5e2a5f7af24e555a5afacd6a8faa406b42c51d7f2bb4cde22adcea22e0153583/root,upperdir=/var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/upper,workdir=/var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/work</span><br><span class="line"></span><br><span class="line"># ps -ef | grep 2725007</span><br><span class="line">ntp      2725007       1  0 Jan07 ?        00:00:02 /usr/sbin/ntpd -u ntp:ntp -g</span><br><span class="line"></span><br><span class="line"># ntpd进程的启动时间在容器启动之后</span><br><span class="line"># ps -ef | grep ntpd</span><br><span class="line">root     1179644   18205  0 19:52 pts/1    00:00:00 grep --color=auto -d skip -i ntpd</span><br><span class="line">ntp      3853149       1  0 Jan07 ?        00:00:02 /usr/sbin/ntpd -u ntp:ntp -g</span><br></pre></td></tr></table></figure>
+
+<p>查看ntpd.service文件内容如下，其中<code>PrivateTmp=true</code>，该选项用于控制服务是否使用单独的tmp目录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[Unit]</span><br><span class="line">Description=Network Time Service</span><br><span class="line">After=syslog.target ntpdate.service sntp.service</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">Type=forking</span><br><span class="line">EnvironmentFile=-/etc/sysconfig/ntpd</span><br><span class="line">ExecStart=/usr/sbin/ntpd -u ntp:ntp $OPTIONS</span><br><span class="line">PrivateTmp=true</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=multi-user.target</span><br></pre></td></tr></table></figure>
+
+<h2 id="问题复现"><a href="#问题复现" class="headerlink" title="问题复现"></a>问题复现</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"># 在系统上启动一个容器，此时ntpd必须处于running状态</span><br><span class="line">$ docker run -d httpserver:1 /bin/sh -c &quot;while : ; do sleep 1000 ; done&quot;</span><br><span class="line"></span><br><span class="line"># 启动容器</span><br><span class="line">$ docker run -d httpserver:1 /bin/sh -c &quot;while : ; do sleep 1000 ; done&quot;</span><br><span class="line">200222b438aac43bbe32a6c54e31ced0848482b9dec3e519d2f847c70c1ce801</span><br><span class="line"></span><br><span class="line"># 重启ntpd</span><br><span class="line">$ systemctl restart ntpd</span><br><span class="line"></span><br><span class="line">$ docker stop 200222b438aa</span><br><span class="line"></span><br><span class="line"># 此时容器的相关信息还存在</span><br><span class="line">$ docker ps -a</span><br><span class="line">CONTAINER ID        IMAGE                                               COMMAND                  CREATED              STATUS                       PORTS               NAMES</span><br><span class="line">200222b438aa        httpserver:1    &quot;/bin/sh -c &#x27;while...&quot;   About a minute ago   Exited (137) 7 seconds ago                       hardcore_yalow</span><br><span class="line"></span><br><span class="line"># 强制删除容器失败</span><br><span class="line">$ docker rm -f 200222b438aa</span><br><span class="line">Error response from daemon: driver &quot;devicemapper&quot; failed to remove root filesystem for 200222b438aac43bbe32a6c54e31ced0848482b9dec3e519d2f847c70c1ce801: remove /var/lib/docker/devicemapper/mnt/e53342aa9cf5f43e73b6596f88939b8d3fdefaf1ca03ee95a24d867e1de6c522: device or resource busy</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 此时容器处于Removal In Progress状态</span><br><span class="line">$ docker ps -a</span><br><span class="line">CONTAINER ID        IMAGE                                               COMMAND                  CREATED             STATUS                PORTS               NAMES</span><br><span class="line">200222b438aa        httpserver:1    &quot;/bin/sh -c &#x27;while...&quot;   2 minutes ago       Removal In Progress                       hardcore_yalow</span><br><span class="line"></span><br><span class="line"># 再次重启ntpd进程</span><br><span class="line">$ systemctl restart ntpd</span><br><span class="line"></span><br><span class="line"># 强制删除成功</span><br><span class="line">$ docker rm 200222b438aa</span><br><span class="line">200222b438aa</span><br></pre></td></tr></table></figure>
+
+<p>经在如下版本的CentOS7系统实验，该问题不存在。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ uname -a</span><br><span class="line">Linux localhost.localdomain 3.10.0-862.9.1.el7.x86_64 #1 SMP Mon Jul 16 16:29:36 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux</span><br><span class="line"></span><br><span class="line">$ cat /etc/redhat-release</span><br><span class="line">CentOS Linux release 7.5.1804 (Core)</span><br><span class="line"></span><br><span class="line">$ docker info | grep &quot;Storage Driver&quot;</span><br><span class="line">Storage Driver: overlay2</span><br></pre></td></tr></table></figure>
+
+<h2 id="问题产生原因"><a href="#问题产生原因" class="headerlink" title="问题产生原因"></a>问题产生原因</h2><p>此问题为Systemd启用PrivateTmp选项后，导致mount namespace的一处内核bug。</p>
+<h2 id="处理方式"><a href="#处理方式" class="headerlink" title="处理方式"></a>处理方式</h2><p>在&#x2F;usr&#x2F;lib&#x2F;systemd&#x2F;system&#x2F;docker.service的[Service]中增加<code>MountFlags=slave</code>，并重新启动docker服务，注意重启docker后，容器会重启。</p>
+<p>当然也可以通过重启ntpd服务的方式来临时解决问题，但当下次删除容器时还需要重启ntpd。</p>
+<p>还有一种办法是修改ntpd.service中的<code>PrivateTmp=true</code>，然后重启ntpd服务。</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><p><a target="_blank" rel="noopener" href="http://blog.kissingwolf.com/2017/09/09/Docker-%E6%95%85%E9%9A%9C%EF%BC%88device-or-resource-busy%EF%BC%89/">Docker 故障（device or resource busy）</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/linux-buffer-cache/" rel="prev" title="Linux Buffer与Cache的含义">
+                  <i class="fa fa-chevron-left"></i> Linux Buffer与Cache的含义
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/r6400-merlin/" rel="next" title="网件R6400V2刷梅林教程">
+                  网件R6400V2刷梅林教程 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

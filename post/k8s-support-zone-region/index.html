@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="k8s虽然已经发展了多个版本，但在多region和多zone的场景下支持还是相对比较弱的，且很多的特性在alpha版本就已经废弃，说明k8s官方对于region和zone方面的支持情况有很大的不确定性。业界支持多reigon和容灾的特性更多是从上层的应用层来解决。本文主要是介绍k8s自身以及社区在region和zone方面的支持情况。 k8s标签https:&#x2F;&#x2F;kubernetes.io&#x2F;docs">
+<meta property="og:type" content="article">
+<meta property="og:title" content="k8s在region和zone方面的支持情况">
+<meta property="og:url" content="http://kuring.me/post/k8s-support-zone-region/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="k8s虽然已经发展了多个版本，但在多region和多zone的场景下支持还是相对比较弱的，且很多的特性在alpha版本就已经废弃，说明k8s官方对于region和zone方面的支持情况有很大的不确定性。业界支持多reigon和容灾的特性更多是从上层的应用层来解决。本文主要是介绍k8s自身以及社区在region和zone方面的支持情况。 k8s标签https:&#x2F;&#x2F;kubernetes.io&#x2F;docs">
+<meta property="og:locale">
+<meta property="article:published_time" content="2022-01-25T12:33:00.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.233Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/k8s-support-zone-region/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/k8s-support-zone-region/","path":"post/k8s-support-zone-region/","title":"k8s在region和zone方面的支持情况"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>k8s在region和zone方面的支持情况 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#k8s%E6%A0%87%E7%AD%BE"><span class="nav-number">1.</span> <span class="nav-text">k8s标签</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E6%8B%93%E6%89%91ServiceTopology"><span class="nav-number">2.</span> <span class="nav-text">服务拓扑ServiceTopology</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8B%93%E6%89%91%E6%84%9F%E7%9F%A5%E6%8F%90%E7%A4%BATopology-Aware-Hints"><span class="nav-number">3.</span> <span class="nav-text">拓扑感知提示Topology Aware Hints</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/k8s-support-zone-region/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="k8s在region和zone方面的支持情况 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          k8s在region和zone方面的支持情况
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-01-25 12:33:00" itemprop="dateCreated datePublished" datetime="2022-01-25T12:33:00+00:00">2022-01-25</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>k8s虽然已经发展了多个版本，但在多region和多zone的场景下支持还是相对比较弱的，且很多的特性在alpha版本就已经废弃，说明k8s官方对于region和zone方面的支持情况有很大的不确定性。业界支持多reigon和容灾的特性更多是从上层的应用层来解决。本文主要是介绍k8s自身以及社区在region和zone方面的支持情况。</p>
+<h1 id="k8s标签"><a href="#k8s标签" class="headerlink" title="k8s标签"></a>k8s标签</h1><p><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone">https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone</a><br>官方推荐的跟region和zone有关的标签：</p>
+<ul>
+<li>failure-domain.beta.kubernetes.io&#x2F;region：1.17版本已经废弃，被topology.kubernetes.io&#x2F;region取代</li>
+<li>failure-domain.beta.kubernetes.io&#x2F;zone：1.17版本已经废弃，被topology.kubernetes.io&#x2F;zone取代</li>
+<li>topology.kubernetes.io&#x2F;region：1.17版本开始支持</li>
+<li>topology.kubernetes.io&#x2F;zone：1.17版本开始支持</li>
+</ul>
+<h1 id="服务拓扑ServiceTopology"><a href="#服务拓扑ServiceTopology" class="headerlink" title="服务拓扑ServiceTopology"></a>服务拓扑ServiceTopology</h1><p>支持版本：在1.17版本引入，在1.21版本废弃</p>
+<p>该特性在Service对象上增加了spec.topologyKeys字段，表示访问该Service的流量优先选用的拓扑域列表。访问Service流量的具体过程如下：</p>
+<ol>
+<li>当访问该Service时，一定是从某个k8s的node节点上发起，会查看当前node的label topology.kubernetes.io&#x2F;zone对应的value，如果发现有endpoint所在的node的lable topology.kubernetes.io&#x2F;zone对应的value相同，那么会将流量转发到该拓扑域的endpoint上。</li>
+<li>如果没有找到topology.kubernetes.io&#x2F;zone相同拓扑域的endpoint，则尝试找topology.kubernetes.io&#x2F;region相同拓扑域的endpoint。</li>
+<li>如果没有找到任何拓扑域的endpoint，那么该service会转发失败。<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">Name:</span> <span class="string">my-app-web</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">my-app</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">8080</span></span><br><span class="line">  <span class="attr">topologyKeys:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;topology.kubernetes.io/zone&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;topology.kubernetes.io/region&quot;</span></span><br></pre></td></tr></table></figure>
+在底层实现上，使用了1.16版本新引入的alpha版本特性 EndpointSlice，该特性主要是用来解决Endpoints对象过多时带来的性能问题，从而将Endpoints拆分为多个组，Service Topology特性恰好可以借助该特性来实现，本质上也是为了将Endpoints进行拆分。k8s会根据Service的topologyKeys来将Service拆分为多个EndpointSlice对象，kube-proxy根据EndpointSlice会将Service流量进行拆分。</li>
+</ol>
+<h1 id="拓扑感知提示Topology-Aware-Hints"><a href="#拓扑感知提示Topology-Aware-Hints" class="headerlink" title="拓扑感知提示Topology Aware Hints"></a>拓扑感知提示Topology Aware Hints</h1><p>该特性在1.21版本引入，在1.23版本变为beta版本，用来取代Topology Key功能。<br>该特性会启用两个组件：EndpointSlice控制器和kube-proxy。</p>
+<p>在Service Topology功能中，需要给Service来指定topologyKeys字段。该特性会更自动化一些，只需要在Service上增加annotation service.kubernetes.io&#x2F;topology-aware-hints:auto，EndpointSlice控制器会watch到Service，发现开启了拓扑感知功能，会自动向endpoints的hints中增加forZones字段，该字段的value会根据endpoint所在node的topology.kubernetes.io&#x2F;zone来决定。</p>
+<p>值得一提的是，当前的hints中并没有包含forRegions的字段。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">discovery.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">EndpointSlice</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">example-hints</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">kubernetes.io/service-name:</span> <span class="string">example-svc</span></span><br><span class="line"><span class="attr">addressType:</span> <span class="string">IPv4</span></span><br><span class="line"><span class="attr">ports:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http</span></span><br><span class="line">    <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">    <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line"><span class="attr">endpoints:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">addresses:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;10.1.2.3&quot;</span></span><br><span class="line">    <span class="attr">conditions:</span></span><br><span class="line">      <span class="attr">ready:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">hostname:</span> <span class="string">pod-1</span></span><br><span class="line">    <span class="attr">zone:</span> <span class="string">zone-a</span></span><br><span class="line">    <span class="attr">hints:</span></span><br><span class="line">      <span class="attr">forZones:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&quot;zone-a&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><a href="">Well-Known Labels, Annotations and Taints</a></li>
+<li>Google Ingress for Anthos：<a target="_blank" rel="noopener" href="https://cloud.google.com/kubernetes-engine/docs/concepts/ingress-for-anthos#architecture">https://cloud.google.com/kubernetes-engine/docs/concepts/ingress-for-anthos#architecture</a></li>
+<li>阿里云ccm支持多个k8s集群的场景（手工指定lb id和server group方案）：<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/335878.html#title-4wt-hc5-p2p">https://help.aliyun.com/document_detail&#x2F;335878.html#title-4wt-hc5-p2p</a></li>
+<li><a target="_blank" rel="noopener" href="https://tencentcloudcontainerteam.github.io/2019/11/26/service-topology/">https://tencentcloudcontainerteam.github.io/2019/11/26/service-topology/</a></li>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/zh/docs/concepts/services-networking/endpoint-slices/">https://kubernetes.io/zh/docs/concepts/services-networking/endpoint-slices/</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/245165617">使用 EndpointSlice 扩展 Kubernetes 网络</a></li>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/setup/best-practices/multiple-zones/">Running in multiple zones</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/disk-command/" rel="prev" title="Linux下磁盘常用命令">
+                  <i class="fa fa-chevron-left"></i> Linux下磁盘常用命令
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/alibaba_opensource_cloudnative/" rel="next" title="阿里巴巴开源云原生项目分析（持续更新）">
+                  阿里巴巴开源云原生项目分析（持续更新） <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

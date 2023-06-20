@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="本文采用Linux操作系统在hadoop用户下安装，solr采用3.x中的最新版本3.6.2，tomcat采用6.0.37版本，安装包可以从本文下方链接下载。这里有两种安装方式，一种方式为利用solr自带的jetty来启动solr，默认端口为8983。另外一种方式为将solr集成到tomcat中。其中第一种方式较为简单，推荐新手采用。 独立启动 将sorl的安装包解压到用户的根目录下，解压后文件夹">
+<meta property="og:type" content="article">
+<meta property="og:title" content="在Linux上搭建solr环境">
+<meta property="og:url" content="http://kuring.me/post/solr_setup/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="本文采用Linux操作系统在hadoop用户下安装，solr采用3.x中的最新版本3.6.2，tomcat采用6.0.37版本，安装包可以从本文下方链接下载。这里有两种安装方式，一种方式为利用solr自带的jetty来启动solr，默认端口为8983。另外一种方式为将solr集成到tomcat中。其中第一种方式较为简单，推荐新手采用。 独立启动 将sorl的安装包解压到用户的根目录下，解压后文件夹">
+<meta property="og:locale">
+<meta property="article:published_time" content="2013-07-02T00:00:00.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.241Z">
+<meta property="article:tag" content="Solr">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/solr_setup/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/solr_setup/","path":"post/solr_setup/","title":"在Linux上搭建solr环境"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>在Linux上搭建solr环境 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8B%AC%E7%AB%8B%E5%90%AF%E5%8A%A8"><span class="nav-number">1.</span> <span class="nav-text">独立启动</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%A9%E7%94%A8tomcat"><span class="nav-number">2.</span> <span class="nav-text">利用tomcat</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85tomcat"><span class="nav-number">2.1.</span> <span class="nav-text">安装tomcat</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85solr"><span class="nav-number">2.2.</span> <span class="nav-text">安装solr</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4"><span class="nav-number">3.</span> <span class="nav-text">相关命令</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%BE%E5%85%A5%E6%95%B0%E6%8D%AE%E5%88%B0solr%E4%B8%AD"><span class="nav-number">3.1.</span> <span class="nav-text">放入数据到solr中</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE"><span class="nav-number">3.2.</span> <span class="nav-text">删除数据</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8Eclipse%E4%B8%AD%E6%90%AD%E5%BB%BA%E7%8E%AF%E5%A2%83%E6%93%8D%E4%BD%9CSolr-api"><span class="nav-number">4.</span> <span class="nav-text">在Eclipse中搭建环境操作Solr api</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8linux%E4%B8%8A%E7%BC%96%E8%AF%91%E5%B9%B6%E6%89%A7%E8%A1%8C%E7%A8%8B%E5%BA%8F"><span class="nav-number">5.</span> <span class="nav-text">在linux上编译并执行程序</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8Linux%E4%B8%8A%E6%89%93%E5%8C%85%E5%B9%B6%E6%89%A7%E8%A1%8C"><span class="nav-number">6.</span> <span class="nav-text">在Linux上打包并执行</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E4%B8%8B%E8%BD%BD"><span class="nav-number">7.</span> <span class="nav-text">相关下载</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E6%A1%A3"><span class="nav-number">8.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/solr_setup/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="在Linux上搭建solr环境 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          在Linux上搭建solr环境
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-07-02 00:00:00" itemprop="dateCreated datePublished" datetime="2013-07-02T00:00:00+00:00">2013-07-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本文采用Linux操作系统在hadoop用户下安装，solr采用3.x中的最新版本3.6.2，tomcat采用6.0.37版本，安装包可以从本文下方链接下载。<br>这里有两种安装方式，一种方式为利用solr自带的jetty来启动solr，默认端口为8983。另外一种方式为将solr集成到tomcat中。其中第一种方式较为简单，推荐新手采用。</p>
+<h1 id="独立启动"><a href="#独立启动" class="headerlink" title="独立启动"></a>独立启动</h1><ol>
+<li>将sorl的安装包解压到用户的根目录下，解压后文件夹为apache-solr-3.6.2。</li>
+<li>进入到example目录下，执行<code>java -jar start.jar</code>命令，solr服务启动，端口为8983。</li>
+<li>通过<code>http://IP地址:8983/solr/</code>来访问solr的web页面，进入admin页面后可以通过输入字符串来查找索引。查找索引默认显示的格式为xml格式，可以通过在url的后面加上参数<code>wt=json</code>来显示json格式的结果。</li>
+</ol>
+<h1 id="利用tomcat"><a href="#利用tomcat" class="headerlink" title="利用tomcat"></a>利用tomcat</h1><h2 id="安装tomcat"><a href="#安装tomcat" class="headerlink" title="安装tomcat"></a>安装tomcat</h2><p>1. 将apache-tomcat-6.0.37.tar.gz解压到hadoop的跟目录下。<br>2. 修改hadoop用户的环境变量，执行<code>vi ~/.bash_profile</code>命令，添加如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export CATALINA_HOME=/home/hadoop/apache-tomcat-6.0.37</span><br><span class="line">export CLASSPATH=.:$JAVA_HOME/lib:$CATALINA_HOME/lib</span><br><span class="line">export PATH=$PATH:$CATALINA_HOME/bin</span><br></pre></td></tr></table></figure>
+<p>3. 执行<code>source ~/.bash_profile </code>使修改的环境变量生效。<br>4. 执行tomcat的bin目录下的startup.bat脚本来启动tomcat。<br>5. 通过<code>netstat -anp | grep 8080</code>命令查看tomcat是否启动。</p>
+<h2 id="安装solr"><a href="#安装solr" class="headerlink" title="安装solr"></a>安装solr</h2><p>1. 将solr的dist&#x2F;apache-solr-3.6.2.war文件复制到tomcat的webapps目录下，并将文件命名为solr.war。执行<code>cp ~/apache-solr-3.6.2/dist/apache-solr-3.6.2.war ~/apache-tomcat-6.0.37/webapps/solr.war</code>命令。WAR是一个完整的web应用程序，包括了Solr的jar文件和所有运行Solr所依赖的Jar文件，Jsp和很多的配置文件与资源文件。</p>
+<p>2. 修改<code>~/apache-tomcat-6.0.37/conf/server.xml</code>文件相应行的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;Connector port=&quot;8080&quot; protocol=&quot;HTTP/1.1&quot; </span><br><span class="line">    connectionTimeout=&quot;20000&quot; </span><br><span class="line">    URIEncoding=&quot;UTF-8&quot;</span><br><span class="line">    redirectPort=&quot;8443&quot; /&gt;</span><br></pre></td></tr></table></figure>
+<p>增加<code>URIEncoding=&quot;UTF-8&quot;</code>来支持中文。这是因为solr基于xml，json，javabin，php，python等多种格式传输请求和返回结果。</p>
+<p>3.复制<code>~/apache-solr-3.6.2/example/solr</code>目录到<code>/home/hadoop/solr</code>位置。该位置为solr的应用环境目录。</p>
+<p>4. 修改<code>/home/hadoop/solr/conf/solrconfig.xml</code>文件中的dataDir一行内容为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;dataDir&gt;$&#123;solr.data.dir:/home/hadoop/solr/data&#125;&lt;/dataDir&gt;</span><br></pre></td></tr></table></figure>
+<p>目的是为了指定存放索引数据的路径。</p>
+<p>5. 在<code>~/apache-tomcat-6.0.37/conf/Catalina/localhost</code>目录下新建文件<code>solr.xml</code>。增加内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;Context docBase=&quot;/home/hadoop/apache-tomcat-6.0.37/webapps/solr.war&quot; debug=&quot;0&quot; crossContext=&quot;true&quot; &gt;</span><br><span class="line">    &lt;Environment name=&quot;solr/home&quot; type=&quot;java.lang.String&quot; value=&quot;/home/hadoop/solr&quot; override=&quot;true&quot; /&gt;</span><br><span class="line">&lt;/Context&gt;</span><br></pre></td></tr></table></figure>
+<p>其中docBase为tomcat的webapps下的solr.war完整路径。Environment的value属性的值为存放solr索引的文件夹，即第三步中复制的文件夹。<br>需要注意的是：Catalina目录在首次启动tomcat时创建，因此在此步骤前需要启动过tomcat。</p>
+<p>6. 在tomcat的bin目录下通过<code>startup.sh</code>启动tomcat。</p>
+<p>7. 通过<code>http://IP地址:8080/solr/</code>来访问solr的web页面。</p>
+<h1 id="相关命令"><a href="#相关命令" class="headerlink" title="相关命令"></a>相关命令</h1><h2 id="放入数据到solr中"><a href="#放入数据到solr中" class="headerlink" title="放入数据到solr中"></a>放入数据到solr中</h2><p>在apache-solr-3.6.2&#x2F;example&#x2F;exampledocs目录下，执行<code>java -jar post.jar 要存放的文件名</code>。这里自己新建一个文件test.xml放入到solr中，文件内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;add&gt;</span><br><span class="line">    &lt;doc&gt;  </span><br><span class="line">        &lt;field name=&quot;id&quot;&gt;company&lt;/field&gt;  </span><br><span class="line">        &lt;field name=&quot;text&quot;&gt;kaitone&lt;/field&gt;  </span><br><span class="line">    &lt;/doc&gt;</span><br><span class="line">&lt;/add&gt;</span><br></pre></td></tr></table></figure>
+<p>执行<code>java -jar post.jar test.xml</code>将数据放入solr中。</p>
+<h2 id="删除数据"><a href="#删除数据" class="headerlink" title="删除数据"></a>删除数据</h2><p>新建文本文件test_delete.xml，内容如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;delete&gt;</span><br><span class="line">    &lt;id&gt;company&lt;/id&gt;</span><br><span class="line">&lt;/delete&gt;</span><br></pre></td></tr></table></figure>
+<p>执行<code>java -jar post.jar test_delete.xml</code>将数据从solr中删除。<br>另外还可以通过命令行的方式来删除，命令为<code>java -Ddate=args -jar post.jar &#39;&lt;delete&gt;&lt;id&gt;company&lt;/id&gt;&lt;/delete&gt;&#39;</code>。</p>
+<h1 id="在Eclipse中搭建环境操作Solr-api"><a href="#在Eclipse中搭建环境操作Solr-api" class="headerlink" title="在Eclipse中搭建环境操作Solr api"></a>在Eclipse中搭建环境操作Solr api</h1><p>1. 新建一个java工程<br>2. 在工程中引入如下包：</p>
+<ul>
+<li>commons-httpclient-3.1.jar</li>
+<li>commons-codec-1.6.jar</li>
+<li>apache-solr-solrj-3.6.2.jar</li>
+<li>slf4j-api-1.6.1.jar</li>
+<li>slf4j-log4j12-1.6.1.jar</li>
+<li>commons-logging-1.1.3.jar</li>
+<li>log4j-1.2.12.jar</li>
+<li>httpclient-4.2.5.jar</li>
+<li>httpcore-4.2.4.jar</li>
+<li>httpmime-4.2.5.jar</li>
+</ul>
+<p>其中<code>commons-httpclient-3.1.jar</code>、<code>commons-codec-1.6.jar</code>、<code>apache-solr-solrj-3.6.2.jar</code>、<code>slf4j-api-1.6.1.jar</code>可以从solr的目录<code>apache-solr-3.6.2</code>中的dist目录下找到。</p>
+<p><code>slf4j-log4j12-1.6.1.jar</code>可以从slf4j的压缩包中<code>slf4j-1.6.1.tar.gz</code>找到。</p>
+<p><code>commons-logging-1.1.3.jar</code>可以从slf4j的压缩包中<code>commons-logging-1.1.3-bin.zip</code>找到。</p>
+<p><code>log4j-1.2.12.jar</code>可以从log4j的压缩包中<code>logging-log4j-1.2.12.tar.gz</code>找到。</p>
+<p><code>httpclient-4.2.5.jar</code>、<code>httpcore-4.2.4.jar</code>、<code>httpmime-4.2.5.jar</code>在<code>httpcomponents-client-4.2.5-bin.tar.gz</code>文件中。</p>
+<p>具体的API编程可以参考<a target="_blank" rel="noopener" href="http://www.cnblogs.com/hoojo/archive/2011/10/21/2220431.html">Solr开发文档</a>。</p>
+<h1 id="在linux上编译并执行程序"><a href="#在linux上编译并执行程序" class="headerlink" title="在linux上编译并执行程序"></a>在linux上编译并执行程序</h1><p>1. 将工程中用到的jar包复制到Linux机器上，这里复制到<code>/home/hadoop/test_solr/lib</code>目录下。</p>
+<p>2. 将测试程序的源码放到Linux机器上，这里复制到<code>/home/hadoop/test_solr</code>目录下。其中源码包括三个文件：SolrTest.java、SolrClient.java、Index.java。该三个文件将会包含在下面相关下载中的Eclipse工程中。</p>
+<p>3. 在<code>/home/hadoop/test_solr</code>目录下执行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javac -cp lib/apache-solr-solrj-3.6.2.jar:lib/commons-httpclient-3.1.jar:lib/log4j-1.2.12.jar:lib/commons-codec-1.6.jar:lib/commons-logging-1.1.3.jar:lib/slf4j-api-1.6.1.jar:lib/httpclient-4.2.5.jar:lib/httpcore-4.2.4.jar:lib/httpmime-4.2.5.jar:. SolrTest.java</span><br></pre></td></tr></table></figure>
+<p>其中-cp等同于-classpath参数，指定编译SolrTest.java文件需要的ClassPath路径，不要忘记路径后面的<code>.</code>表示当前路径，否则找不到当前目录下的其他java文件。<br>命令执行后会在<code>/home/hadoop/test_solr</code>目录下生成Index.class、SolrClient.class、SolrTest.class三个class文件。</p>
+<p>4. 在<code>/home/hadoop/test_solr</code>目录下执行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -cp lib/apache-solr-solrj-3.6.2.jar:lib/commons-httpclient-3.1.jar:lib/log4j-1.2.12.jar:lib/commons-codec-1.6.jar:lib/commons-logging-1.1.3.jar:lib/slf4j-api-1.6.1.jar:lib/httpclient-4.2.5.jar:lib/httpcore-4.2.4.jar:lib/:httpmime-4.2.5.jar:. SolrTest</span><br></pre></td></tr></table></figure>
+<p>来运行程序。</p>
+<h1 id="在Linux上打包并执行"><a href="#在Linux上打包并执行" class="headerlink" title="在Linux上打包并执行"></a>在Linux上打包并执行</h1><p>1. 在上面步骤基础上，为了方便执行，可以将class文件打成jar包来执行，这样在使用java命令执行的时候就不用指定classpath路径了，只需要在jar包的MANIFEST.MF文件中指定classpath。</p>
+<p>2. 在<code>/home/hadoop/test_solr</code>下新建一个文件，文件名可以随便，这里取名为MANIFEST.MF，与生成的jar包中的文件名一致，文件内容为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Manifest-Version: 1.0</span><br><span class="line">Created-By: 1.6.0_10 (Sun Microsystems Inc.)</span><br><span class="line">Main-Class: SolrTest</span><br><span class="line">Class-Path: /home/hadoop/test_solr/lib/apache-solr-solrj-3.6.2.jar /home/hadoop/test_solr/lib/commons-httpclient-3.1.jar /home/hadoop/test_solr/lib/log4j-1.2.12.jar /home/hadoop/test_solr/lib/commons-codec-1.6.jar /home/hadoop/test_solr/lib/commons-logging-1.1.3.jar /home/hadoop/test_solr/lib/slf4j-api-1.6.1.jar</span><br><span class="line">/home/hadoop/test_solr/lib/httpclient-4.2.5.jar</span><br><span class="line">/home/hadoop/test_solr/lib/httpcore-4.2.4.jar</span><br><span class="line">/home/hadoop/test_solr/lib/httpmime-4.2.5.jar</span><br></pre></td></tr></table></figure>
+<p>其中Main-Class指定main函数所在的类。<br>Class-Path指定用到的jar所在的路径。其中Class-Path的各个jar文件之间通过空格分隔而不是通过<code>:</code>分隔。</p>
+<p>3. 将class文件打包成jar文件。执行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jar -cfm solrtest.jar MANIFEST.MF Index.class SolrClient.class SolrTest.class </span><br></pre></td></tr></table></figure>
+<p>会在此目录下生成solrtest.jar文件。jar命令会根据指定的MANIFEST.MF文件来产生jar包中的META-INF&#x2F;MANIFEST.MF文件。两个文件内容并不完全一致，jar命令会根据格式对内容进行调整。</p>
+<p>4. 运行jar文件。通过<code>java -jar solrtest.jar</code>来执行。</p>
+<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/share/link?shareid=2915568646&uk=3506813023">本文中用到的安装包</a></p>
+<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p><a target="_blank" rel="noopener" href="http://demi-panda.com/2013/03/13/install-solr/">简单的Solr安装配置</a><br><a target="_blank" rel="noopener" href="https://lucene.apache.org/solr/3_6_2/doc-files/tutorial.html">官方安装教程</a><br><a target="_blank" rel="noopener" href="http://cxshun.iteye.com/blog/1039445">Solr初体验系列</a>讲的非常详细，适合初学者<br><a target="_blank" rel="noopener" href="http://www.cnblogs.com/hoojo/archive/2011/10/21/2220431.html">Solr开发文档</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Solr/" rel="tag"># Solr</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/compile_java_code/" rel="prev" title="通过命令编译java程序">
+                  <i class="fa fa-chevron-left"></i> 通过命令编译java程序
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/solr_setup_distribute/" rel="next" title="搭建分布式的solr环境">
+                  搭建分布式的solr环境 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="本次grafana的升级从版本3.1.1，变更为4.4.3，涉及到一个大的版本跨度。同时之前在使用的存储为sqlite，趁着这次升级更改为mysql。 grafana升级直接从官网下载对应的4.4.3版本的二进制包，修改部分配置即可，该部分没任何难度。 sqlite to mysql由于grafana使用的表结构在3.1.1到4.4.3之间有变更，不能直接将3.1.1版本的sqlite中的数据导入">
+<meta property="og:type" content="article">
+<meta property="og:title" content="grafana升级">
+<meta property="og:url" content="http://kuring.me/post/grafana-upgrade/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="本次grafana的升级从版本3.1.1，变更为4.4.3，涉及到一个大的版本跨度。同时之前在使用的存储为sqlite，趁着这次升级更改为mysql。 grafana升级直接从官网下载对应的4.4.3版本的二进制包，修改部分配置即可，该部分没任何难度。 sqlite to mysql由于grafana使用的表结构在3.1.1到4.4.3之间有变更，不能直接将3.1.1版本的sqlite中的数据导入">
+<meta property="og:locale">
+<meta property="article:published_time" content="2017-09-13T00:22:51.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.233Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/grafana-upgrade/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/grafana-upgrade/","path":"post/grafana-upgrade/","title":"grafana升级"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>grafana升级 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#grafana%E5%8D%87%E7%BA%A7"><span class="nav-number">1.</span> <span class="nav-text">grafana升级</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#sqlite-to-mysql"><span class="nav-number">2.</span> <span class="nav-text">sqlite to mysql</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/grafana-upgrade/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="grafana升级 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          grafana升级
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-09-13 00:22:51" itemprop="dateCreated datePublished" datetime="2017-09-13T00:22:51+00:00">2017-09-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本次grafana的升级从版本3.1.1，变更为4.4.3，涉及到一个大的版本跨度。同时之前在使用的存储为sqlite，趁着这次升级更改为mysql。</p>
+<h1 id="grafana升级"><a href="#grafana升级" class="headerlink" title="grafana升级"></a>grafana升级</h1><p>直接从官网下载对应的4.4.3版本的二进制包，修改部分配置即可，该部分没任何难度。</p>
+<h1 id="sqlite-to-mysql"><a href="#sqlite-to-mysql" class="headerlink" title="sqlite to mysql"></a>sqlite to mysql</h1><p>由于grafana使用的表结构在3.1.1到4.4.3之间有变更，不能直接将3.1.1版本的sqlite中的数据导入到4.4.3的mysql中。我的方法为先使用3.1.1版grafana将数据从sqlite导入到mysql中，然后再升级grafana的版本，grafana可以自动修改表结构。</p>
+<p>在的mysql中创建grafana的数据库，并修改数据库的编码为utf-8.</p>
+<p>修改grafana 3.1.1配置文件conf&#x2F;defaults.ini如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[database]</span><br><span class="line"># You can configure the database connection by specifying type, host, name, user and password</span><br><span class="line"># as separate properties or as on string using the url property.</span><br><span class="line"></span><br><span class="line"># Either &quot;mysql&quot;, &quot;postgres&quot; or &quot;sqlite3&quot;, it&#x27;s your choice</span><br><span class="line">type = mysql</span><br><span class="line">host = xx.xx.xx.xx:3306</span><br><span class="line">name = grafana</span><br><span class="line">user = dev</span><br><span class="line"># If the password contains # or ; you have to wrap it with triple quotes. Ex &quot;&quot;&quot;#password;&quot;&quot;&quot;</span><br><span class="line">password = dev</span><br></pre></td></tr></table></figure>
+
+<p>启动grafana后会自动在grafana数据库中创建相应的表结构，接下来就是将sqlite中的数据导入到mysql中。</p>
+<p>在data目录下增加如下脚本sqlitedump.sh，并执行<code>sh sqlitedump.sh grafana.db &gt; grafana.sql</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/sh</span><br><span class="line">DB=$1</span><br><span class="line">TABLES=$(sqlite3 $DB .tables | grep -v migration_log)</span><br><span class="line">for t in $TABLES; do</span><br><span class="line">    echo &quot;TRUNCATE TABLE $t;&quot;</span><br><span class="line">done</span><br><span class="line">for t in $TABLES; do</span><br><span class="line">    echo -e &quot;.mode insert $t\nselect * from $t;&quot;</span><br><span class="line">done | sqlite3 $DB</span><br></pre></td></tr></table></figure>
+
+<p>然后将grafana.sql导入到新创建的mysql。</p>
+<p>将grafana 3.1.1版本停掉，将grafana 4.4.3版本的配置指向到mysql数据库，启动grafana 4.4.3后，mysql中的表结构会自动变更。</p>
+<p>至此，grafana的升级完成。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/rsync-bypass-ralay/" rel="prev" title="通过rsync来绕过relay同步文件">
+                  <i class="fa fa-chevron-left"></i> 通过rsync来绕过relay同步文件
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/yum-build/" rel="next" title="yum源搭建">
+                  yum源搭建 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

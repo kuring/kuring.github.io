@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="限流的方式有多种，每种都有其应用场景。 限制请求的方式包括：  丢弃请求 放在队列中，等有令牌后再请求 走降级逻辑  计数器我之前设计的流控系统，以每秒为单位，如果一秒内超过固定的QPS，则将请求进行降级处理。该算法已经在生产环境中平稳运行了很久，也确实满足了业务的需求。 计数器流控算法简单粗暴，有一个缺点，即流控的单位为秒，但一秒的请求很可能是不均匀的，不能进行更细粒度的控制，也不允许流量存在某">
+<meta property="og:type" content="article">
+<meta property="og:title" content="流量控制算法">
+<meta property="og:url" content="http://kuring.me/post/rate-limit/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="限流的方式有多种，每种都有其应用场景。 限制请求的方式包括：  丢弃请求 放在队列中，等有令牌后再请求 走降级逻辑  计数器我之前设计的流控系统，以每秒为单位，如果一秒内超过固定的QPS，则将请求进行降级处理。该算法已经在生产环境中平稳运行了很久，也确实满足了业务的需求。 计数器流控算法简单粗暴，有一个缺点，即流控的单位为秒，但一秒的请求很可能是不均匀的，不能进行更细粒度的控制，也不允许流量存在某">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-12-16T01:25:50.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.241Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/rate-limit/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/rate-limit/","path":"post/rate-limit/","title":"流量控制算法"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>流量控制算法 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A1%E6%95%B0%E5%99%A8"><span class="nav-number">1.</span> <span class="nav-text">计数器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BC%8F%E6%A1%B6%E7%AE%97%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">漏桶算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A4%E7%89%8C%E6%A1%B6%E7%AE%97%E6%B3%95"><span class="nav-number">3.</span> <span class="nav-text">令牌桶算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ref"><span class="nav-number">4.</span> <span class="nav-text">ref</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/rate-limit/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="流量控制算法 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          流量控制算法
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-12-16 01:25:50" itemprop="dateCreated datePublished" datetime="2018-12-16T01:25:50+00:00">2018-12-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>限流的方式有多种，每种都有其应用场景。</p>
+<p>限制请求的方式包括：</p>
+<ol>
+<li>丢弃请求</li>
+<li>放在队列中，等有令牌后再请求</li>
+<li>走降级逻辑</li>
+</ol>
+<h2 id="计数器"><a href="#计数器" class="headerlink" title="计数器"></a>计数器</h2><p>我之前设计的流控系统，以每秒为单位，如果一秒内超过固定的QPS，则将请求进行降级处理。该算法已经在生产环境中平稳运行了很久，也确实满足了业务的需求。</p>
+<p>计数器流控算法简单粗暴，有一个缺点，即流控的单位为秒，但一秒的请求很可能是不均匀的，不能进行更细粒度的控制，也不允许流量存在某种程度的突发。</p>
+<h2 id="漏桶算法"><a href="#漏桶算法" class="headerlink" title="漏桶算法"></a>漏桶算法</h2><p>请求先进入漏桶中，漏桶以一定的速度出水，当水流的速度过大时会直接溢出。</p>
+<p>漏桶大小：起到缓冲的作用</p>
+<p>漏桶的出水速度：该值固定</p>
+<h2 id="令牌桶算法"><a href="#令牌桶算法" class="headerlink" title="令牌桶算法"></a>令牌桶算法</h2><p>令牌桶算法相比漏桶算法而言，允许请求存在某种程度的突发，常用于网络流量整形和速率限制。</p>
+<p>系统会恒定的速度往令牌桶中注入令牌，如果令牌桶中的令牌满后就不再增加。新请求来临时，会拿走一个令牌，如果没有令牌就会限制该请求。</p>
+<p>这里的请求可以代表一个网络请求，或者网络的一个字节。</p>
+<p>涉及到的变量：</p>
+<ol>
+<li>网络请求平均速率r：每隔1&#x2F;r秒向令牌桶中放入一个令牌，1秒共放入r个令牌</li>
+<li>令牌桶的最大大小：令牌桶慢后，再放入的令牌会直接丢弃</li>
+</ol>
+<p>令牌相当于操作系统中信号量机制。</p>
+<p>业界较为出名的流控工具当属Guava中的RateLimiter，基于令牌桶算法实现。</p>
+<p>在实际的代码实现中，并不一定需要一个固定的线程来定期往令牌桶中放入令牌，而是在请求到来时，直接计算得出当前是否还有令牌。比如下面的python代码实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TokenBucket</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line"></span><br><span class="line">    <span class="comment"># rate是令牌发放速度，capacity是桶的大小</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, rate, capacity</span>):</span><br><span class="line">        self._rate = rate</span><br><span class="line">        self._capacity = capacity</span><br><span class="line">        self._current_amount = <span class="number">0</span></span><br><span class="line">        self._last_consume_time = <span class="built_in">int</span>(time.time())</span><br><span class="line"></span><br><span class="line">    <span class="comment"># token_amount是发送数据需要的令牌数</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">consume</span>(<span class="params">self, token_amount</span>):</span><br><span class="line">        increment = (<span class="built_in">int</span>(time.time()) - self._last_consume_time) * self._rate  <span class="comment"># 计算从上次发送到这次发送，新发放的令牌数量</span></span><br><span class="line">        self._current_amount = <span class="built_in">min</span>(</span><br><span class="line">            increment + self._current_amount, self._capacity)  <span class="comment"># 令牌数量不能超过桶的容量</span></span><br><span class="line">        <span class="keyword">if</span> token_amount &gt; self._current_amount:  <span class="comment"># 如果没有足够的令牌，则不能发送数据</span></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">False</span></span><br><span class="line">        self._last_consume_time = <span class="built_in">int</span>(time.time())</span><br><span class="line">        self._current_amount -= token_amount</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">True</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><p><a target="_blank" rel="noopener" href="https://juejin.im/post/5ab10045518825557005db65">15行Python代码，帮你理解令牌桶算法</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/iowait/" rel="prev" title="linux iowait">
+                  <i class="fa fa-chevron-left"></i> linux iowait
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/time-wait/" rel="next" title="TCP TIME_WAIT">
+                  TCP TIME_WAIT <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

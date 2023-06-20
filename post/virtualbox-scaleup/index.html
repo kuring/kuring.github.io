@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="今天发现vagrant的其中一个虚拟机磁盘空间不够了，需要对其进行磁盘扩容，但不期望是通过增加新硬盘的方式，而是直接增加原磁盘容量的方式来无缝扩容。 修改磁盘文件进入到vm磁盘文件所在的目录~&#x2F;VirtualBox VMs&#x2F;dev_default_1531796361866_92956下 1234567891011121314151617181920212223% vboxmanage showh">
+<meta property="og:type" content="article">
+<meta property="og:title" content="VirtualBox磁盘扩容">
+<meta property="og:url" content="http://kuring.me/post/virtualbox-scaleup/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="今天发现vagrant的其中一个虚拟机磁盘空间不够了，需要对其进行磁盘扩容，但不期望是通过增加新硬盘的方式，而是直接增加原磁盘容量的方式来无缝扩容。 修改磁盘文件进入到vm磁盘文件所在的目录~&#x2F;VirtualBox VMs&#x2F;dev_default_1531796361866_92956下 1234567891011121314151617181920212223% vboxmanage showh">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-04-04T20:15:44.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.241Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/virtualbox-scaleup/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/virtualbox-scaleup/","path":"post/virtualbox-scaleup/","title":"VirtualBox磁盘扩容"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>VirtualBox磁盘扩容 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E7%A3%81%E7%9B%98%E6%96%87%E4%BB%B6"><span class="nav-number">1.</span> <span class="nav-text">修改磁盘文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8fdisk%E5%88%9B%E5%BB%BA%E6%96%B0%E7%9A%84%E7%A3%81%E7%9B%98%E5%88%86%E5%8C%BA"><span class="nav-number">2.</span> <span class="nav-text">使用fdisk创建新的磁盘分区</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%86%E6%96%B0%E5%88%9B%E5%BB%BA%E7%9A%84%E7%A3%81%E7%9B%98%E5%88%86%E5%8C%BA%E6%B7%BB%E5%8A%A0%E5%88%B0LVM%E5%88%86%E5%8C%BA%E4%B8%AD"><span class="nav-number">3.</span> <span class="nav-text">将新创建的磁盘分区添加到LVM分区中</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/virtualbox-scaleup/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="VirtualBox磁盘扩容 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          VirtualBox磁盘扩容
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2019-04-04 20:15:44" itemprop="dateCreated datePublished" datetime="2019-04-04T20:15:44+00:00">2019-04-04</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>今天发现vagrant的其中一个虚拟机磁盘空间不够了，需要对其进行磁盘扩容，但不期望是通过增加新硬盘的方式，而是直接增加原磁盘容量的方式来无缝扩容。</p>
+<h2 id="修改磁盘文件"><a href="#修改磁盘文件" class="headerlink" title="修改磁盘文件"></a>修改磁盘文件</h2><p>进入到vm磁盘文件所在的目录<code>~/VirtualBox VMs/dev_default_1531796361866_92956</code>下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">% vboxmanage showhdinfo  centos-vm-disk1.vmdk</span><br><span class="line">UUID:           acbb4ffc-0580-40d6-8627-3ed24cd0beff</span><br><span class="line">Parent UUID:    base</span><br><span class="line">State:          created</span><br><span class="line">Type:           normal (base)</span><br><span class="line">Location:       /Users/lvkai/VirtualBox VMs/dev_default_1531796361866_92956/centos-vm-disk1.vmdk</span><br><span class="line">Storage format: VMDK</span><br><span class="line">Format variant: dynamic default</span><br><span class="line">Capacity:       10000 MBytes</span><br><span class="line">Size on disk:   9634 MBytes</span><br><span class="line">Encryption:     disabled</span><br><span class="line">In use by VMs:  dev_default_1531796361866_92956 (UUID: a153957c-e43f-4dd2-8512-f51d42dee3d3)</span><br><span class="line"></span><br><span class="line"># 将之前存储的vmdk格式的文件复制一份vdi格式的文件，由于需要复制文件，该命令需要执行一段时间</span><br><span class="line">% vboxmanage clonehd centos-vm-disk1.vmdk new-centos-vm-disk1.vdi --format vdi</span><br><span class="line"></span><br><span class="line"># 将vdi格式的文件修改磁盘空间上限大小为80g，但实际占用磁盘空间仍然为之前的大小</span><br><span class="line">% vboxmanage modifyhd  new-centos-vm-disk1.vdi --resize 81920</span><br><span class="line"></span><br><span class="line"># 将vdi格式的文件重新转换为vmdk格式，会产生一个新的uuid</span><br><span class="line">% vboxmanage clonehd new-centos-vm-disk1.vdi resized.vmdk --format vmdk</span><br><span class="line">0%...10%...20%...30%...40%...50%...60%...70%...80%...90%...100%</span><br><span class="line">Clone medium created in format &#x27;vmdk&#x27;. UUID: 7e454b50-0681-494b-b9ca-81700d217c0a</span><br></pre></td></tr></table></figure>
+
+<p>新的硬盘创建完成后，在virtualbox的界面上将对应虚拟机的硬盘更换为resized.vmdk，并将之前旧的centos-vm-disk1.vmdk给删除掉。</p>
+<h2 id="使用fdisk创建新的磁盘分区"><a href="#使用fdisk创建新的磁盘分区" class="headerlink" title="使用fdisk创建新的磁盘分区"></a>使用fdisk创建新的磁盘分区</h2><p>以上命令执行完成后，开启虚拟机，进入系统，可以看到磁盘空间大小变更为85.9GB，但挂载的磁盘空间大小仍然为8.3G，新增加的磁盘空间仍然处于未分配状态。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"># fdisk -l</span><br><span class="line"></span><br><span class="line">Disk /dev/sda: 85.9 GB, 85899345920 bytes, 167772160 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line">Disk label type: dos</span><br><span class="line">Disk identifier: 0x0000ca5e</span><br><span class="line"></span><br><span class="line">   Device Boot      Start         End      Blocks   Id  System</span><br><span class="line">/dev/sda1   *        2048     1026047      512000   83  Linux</span><br><span class="line">/dev/sda2         1026048    20479999     9726976   8e  Linux LVM</span><br><span class="line"></span><br><span class="line">Disk /dev/mapper/centos-root: 8866 MB, 8866758656 bytes, 17317888 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Disk /dev/mapper/centos-swap: 1048 MB, 1048576000 bytes, 2048000 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line"></span><br><span class="line"># df -h</span><br><span class="line">Filesystem               Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/mapper/centos-root  8.3G  7.9G  386M  96% /</span><br><span class="line">devtmpfs                 296M     0  296M   0% /dev</span><br><span class="line">tmpfs                    307M     0  307M   0% /dev/shm</span><br><span class="line">tmpfs                    307M  4.5M  303M   2% /run</span><br><span class="line">tmpfs                    307M     0  307M   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda1                497M  195M  303M  40% /boot</span><br><span class="line">vagrant                  466G  390G   77G  84% /vagrant</span><br><span class="line">vagrant_data             466G  390G   77G  84% /vagrant_data</span><br><span class="line">tmpfs                     62M     0   62M   0% /run/user/1000</span><br></pre></td></tr></table></figure>
+
+<p>接下来需要将未分配的磁盘空间</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"># fdisk /dev/sda</span><br><span class="line"># 依次输入可创建新的分区</span><br><span class="line">n</span><br><span class="line">p</span><br><span class="line">回车</span><br><span class="line">回车</span><br><span class="line"></span><br><span class="line"># 继续输入p，可以看到磁盘的情况，多出了/dev/sda3</span><br><span class="line"># /dev/sda3的System为Linux，而/dev/sda2的System为Linux LVM</span><br><span class="line">Command (m for help): p</span><br><span class="line"></span><br><span class="line">Disk /dev/sda: 85.9 GB, 85899345920 bytes, 167772160 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line">Disk label type: dos</span><br><span class="line">Disk identifier: 0x0000ca5e</span><br><span class="line"></span><br><span class="line">   Device Boot      Start         End      Blocks   Id  System</span><br><span class="line">/dev/sda1   *        2048     1026047      512000   83  Linux</span><br><span class="line">/dev/sda2         1026048    20479999     9726976   8e  Linux LVM</span><br><span class="line">/dev/sda3        20480000   167772159    73646080   83  Linux</span><br><span class="line"></span><br><span class="line"># 依次输入将/dev/sda3更改为LVM格式</span><br><span class="line">t</span><br><span class="line">3</span><br><span class="line">8e</span><br><span class="line">p</span><br><span class="line"></span><br><span class="line">Disk /dev/sda: 85.9 GB, 85899345920 bytes, 167772160 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line">Disk label type: dos</span><br><span class="line">Disk identifier: 0x0000ca5e</span><br><span class="line"></span><br><span class="line">   Device Boot      Start         End      Blocks   Id  System</span><br><span class="line">/dev/sda1   *        2048     1026047      512000   83  Linux</span><br><span class="line">/dev/sda2         1026048    20479999     9726976   8e  Linux LVM</span><br><span class="line">/dev/sda3        20480000   167772159    73646080   8e  Linux LVM</span><br><span class="line"></span><br><span class="line"># 输入w后进行保存操作</span><br><span class="line">Command (m for help): w</span><br><span class="line">The partition table has been altered!</span><br><span class="line"></span><br><span class="line">Calling ioctl() to re-read partition table.</span><br><span class="line"></span><br><span class="line">WARNING: Re-reading the partition table failed with error 16: Device or resource busy.</span><br><span class="line">The kernel still uses the old table. The new table will be used at</span><br><span class="line">the next reboot or after you run partprobe(8) or kpartx(8)</span><br><span class="line">Syncing disks.</span><br></pre></td></tr></table></figure>
+
+<h2 id="将新创建的磁盘分区添加到LVM分区中"><a href="#将新创建的磁盘分区添加到LVM分区中" class="headerlink" title="将新创建的磁盘分区添加到LVM分区中"></a>将新创建的磁盘分区添加到LVM分区中</h2><p>将机器重启后，继续执行如下命令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"># vgdisplay</span><br><span class="line">  --- Volume group ---</span><br><span class="line">  VG Name               centos</span><br><span class="line">  System ID</span><br><span class="line">  Format                lvm2</span><br><span class="line">  Metadata Areas        1</span><br><span class="line">  Metadata Sequence No  3</span><br><span class="line">  VG Access             read/write</span><br><span class="line">  VG Status             resizable</span><br><span class="line">  MAX LV                0</span><br><span class="line">  Cur LV                2</span><br><span class="line">  Open LV               2</span><br><span class="line">  Max PV                0</span><br><span class="line">  Cur PV                1</span><br><span class="line">  Act PV                1</span><br><span class="line">  VG Size               9.27 GiB</span><br><span class="line">  PE Size               4.00 MiB</span><br><span class="line">  Total PE              2374</span><br><span class="line">  Alloc PE / Size       2364 / 9.23 GiB</span><br><span class="line">  Free  PE / Size       10 / 40.00 MiB</span><br><span class="line">  VG UUID               cpEmYK-XFew-6ZWT-GEeY-yEou-0vLq-OJiD08</span><br><span class="line"></span><br><span class="line"># lvscan</span><br><span class="line">  ACTIVE            &#x27;/dev/centos/swap&#x27; [1000.00 MiB] inherit</span><br><span class="line">  ACTIVE            &#x27;/dev/centos/root&#x27; [&lt;8.26 GiB] inherit</span><br><span class="line"></span><br><span class="line"># pvcreate /dev/sda3</span><br><span class="line">  Physical volume &quot;/dev/sda3&quot; successfully created.</span><br><span class="line"></span><br><span class="line"># vgextend centos /dev/sda3</span><br><span class="line">  Volume group &quot;centos&quot; successfully extended</span><br><span class="line"></span><br><span class="line"># lvextend /dev/centos/root /dev/sda3</span><br><span class="line">  Size of logical volume centos/root changed from &lt;8.26 GiB (2114 extents) to &lt;78.49 GiB (20093 extents).</span><br><span class="line">  Logical volume centos/root successfully resized.</span><br><span class="line"></span><br><span class="line"># xfs_growfs /dev/centos/root</span><br><span class="line">meta-data=/dev/mapper/centos-root isize=256    agcount=4, agsize=541184 blks</span><br><span class="line">         =                       sectsz=512   attr=2, projid32bit=1</span><br><span class="line">         =                       crc=0        finobt=0 spinodes=0</span><br><span class="line">data     =                       bsize=4096   blocks=2164736, imaxpct=25</span><br><span class="line">         =                       sunit=0      swidth=0 blks</span><br><span class="line">naming   =version 2              bsize=4096   ascii-ci=0 ftype=0</span><br><span class="line">log      =internal               bsize=4096   blocks=2560, version=2</span><br><span class="line">         =                       sectsz=512   sunit=0 blks, lazy-count=1</span><br><span class="line">realtime =none                   extsz=4096   blocks=0, rtextents=0</span><br><span class="line">data blocks changed from 2164736 to 20575232</span><br><span class="line"></span><br><span class="line"># 最后执行命令可以看到磁盘空间已经增加</span><br><span class="line"># df -h</span><br><span class="line">Filesystem               Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/mapper/centos-root   79G  7.9G   71G  11% /</span><br><span class="line">devtmpfs                 296M     0  296M   0% /dev</span><br><span class="line">tmpfs                    307M     0  307M   0% /dev/shm</span><br><span class="line">tmpfs                    307M  4.5M  303M   2% /run</span><br><span class="line">tmpfs                    307M     0  307M   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda1                497M  195M  303M  40% /boot</span><br><span class="line">vagrant                  466G  390G   77G  84% /vagrant</span><br><span class="line">vagrant_data             466G  390G   77G  84% /vagrant_data</span><br><span class="line">tmpfs                     62M     0   62M   0% /run/user/1000</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/golang-gc/" rel="prev" title="Golang GC">
+                  <i class="fa fa-chevron-left"></i> Golang GC
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/algorithm-max-subarray-or-suborder/" rel="next" title="最长公共子序列和最长公共子串问题">
+                  最长公共子序列和最长公共子串问题 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

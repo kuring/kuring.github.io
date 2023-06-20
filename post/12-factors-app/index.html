@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="2012 年，Heroku 创始人 Adam Wiggins 发布十二要素应用宣言，又被称为微服务十二要素。 内容基准代码 一个应用一个代码仓库，不要出现一个代码仓库对应多个应用的情况 如果多个应用共享一份代码，那么需要将该代码拆分为独立的类库  依赖规范：  应用必须通过配置显式声明出所有的依赖项，即使依赖的工具在所有的操作系统上都存在。比如 python 可以使用 pip 的 requirem">
+<meta property="og:type" content="article">
+<meta property="og:title" content="12要素应用">
+<meta property="og:url" content="http://kuring.me/post/12-factors-app/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="2012 年，Heroku 创始人 Adam Wiggins 发布十二要素应用宣言，又被称为微服务十二要素。 内容基准代码 一个应用一个代码仓库，不要出现一个代码仓库对应多个应用的情况 如果多个应用共享一份代码，那么需要将该代码拆分为独立的类库  依赖规范：  应用必须通过配置显式声明出所有的依赖项，即使依赖的工具在所有的操作系统上都存在。比如 python 可以使用 pip 的 requirem">
+<meta property="og:locale">
+<meta property="article:published_time" content="2022-07-01T22:21:10.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.229Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/12-factors-app/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/12-factors-app/","path":"post/12-factors-app/","title":"12要素应用"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>12要素应用 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AE%B9"><span class="nav-number">1.</span> <span class="nav-text">内容</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E5%87%86%E4%BB%A3%E7%A0%81"><span class="nav-number">1.1.</span> <span class="nav-text">基准代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96"><span class="nav-number">1.2.</span> <span class="nav-text">依赖</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8E%E7%AB%AF%E6%9C%8D%E5%8A%A1"><span class="nav-number">1.4.</span> <span class="nav-text">后端服务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E3%80%81%E5%8F%91%E5%B8%83%E5%92%8C%E8%BF%90%E8%A1%8C"><span class="nav-number">1.5.</span> <span class="nav-text">构建、发布和运行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.6.</span> <span class="nav-text">进程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AB%AF%E5%8F%A3%E7%BB%91%E5%AE%9A"><span class="nav-number">1.7.</span> <span class="nav-text">端口绑定</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91"><span class="nav-number">1.8.</span> <span class="nav-text">并发</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%98%93%E5%A4%84%E7%90%86"><span class="nav-number">1.9.</span> <span class="nav-text">易处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E4%B8%8E%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E7%AD%89%E4%BB%B7"><span class="nav-number">1.10.</span> <span class="nav-text">开发环境与生产环境等价</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A5%E5%BF%97"><span class="nav-number">1.11.</span> <span class="nav-text">日志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%A1%E7%90%86%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.12.</span> <span class="nav-text">管理进程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">2.</span> <span class="nav-text">参考</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/12-factors-app/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="12要素应用 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          12要素应用
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-07-01 22:21:10" itemprop="dateCreated datePublished" datetime="2022-07-01T22:21:10+00:00">2022-07-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>2012 年，Heroku 创始人 Adam Wiggins 发布十二要素应用宣言，又被称为微服务十二要素。</p>
+<h2 id="内容"><a href="#内容" class="headerlink" title="内容"></a>内容</h2><h3 id="基准代码"><a href="#基准代码" class="headerlink" title="基准代码"></a>基准代码</h3><ol>
+<li>一个应用一个代码仓库，不要出现一个代码仓库对应多个应用的情况</li>
+<li>如果多个应用共享一份代码，那么需要将该代码拆分为独立的类库</li>
+</ol>
+<h3 id="依赖"><a href="#依赖" class="headerlink" title="依赖"></a>依赖</h3><p>规范：</p>
+<ol>
+<li>应用必须通过配置显式声明出所有的依赖项，即使依赖的工具在所有的操作系统上都存在。比如 python 可以使用 pip 的 requirements.txt 文件声明出所有的依赖包及其版本信息。</li>
+<li>在运行时需要通过隔离手段确保应用不会调用未显式声明的依赖项。比如 python 应用可以通过virtualenv 技术来确保隔离性。</li>
+</ol>
+<p>优点：</p>
+<ol>
+<li>简化开发者的环境配置，通过构建命令即可安装所有的依赖项。</li>
+</ol>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>规范：</p>
+<ol>
+<li>代码和配置单独管理，不要将配置放到代码仓库中管理。</li>
+<li>配置传递给应用的方式之一为配置文件，另外一种为环境变量。</li>
+</ol>
+<h3 id="后端服务"><a href="#后端服务" class="headerlink" title="后端服务"></a>后端服务</h3><p>规范：</p>
+<ol>
+<li>后端服务分为本地服务和第三方服务，对应用而言都是后端服务，不应该区别对待。</li>
+</ol>
+<h3 id="构建、发布和运行"><a href="#构建、发布和运行" class="headerlink" title="构建、发布和运行"></a>构建、发布和运行</h3><p>规范：</p>
+<ol>
+<li>严格区分从代码到部署的三个阶段：构建编译打包代码；将构建结果和部署需要的配置放到环境中；指定发布版本，在环境中启动应用。</li>
+<li>每个发布版本必须对应一个唯一的 id 标识。</li>
+</ol>
+<p>反模式：</p>
+<ol>
+<li>不可以直接修改环境中的代码，可能会导致非常难同步会构建步骤。</li>
+</ol>
+<h3 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h3><p>规范：</p>
+<ol>
+<li>应用的进程需要持久化的数据一定要保存到后端服务中，保持应用进程的无状态。</li>
+<li>本地的内存和磁盘可以作为应用的缓存数据。</li>
+<li>反对使用基于 session 的粘滞技术（某一个用户的请求通过一致性 hash 等技术请求到同一个后端服务，而后端服务将用户数据缓存在内存中），推荐将用户数据缓存到Redis 等分布式缓存中。很多互联网公司都会采用 session 粘滞技术，都违背了这一原则。</li>
+</ol>
+<h3 id="端口绑定"><a href="#端口绑定" class="headerlink" title="端口绑定"></a>端口绑定</h3><p>要求应用自己通过监听端口的方式来对外提供服务。</p>
+<h3 id="并发"><a href="#并发" class="headerlink" title="并发"></a>并发</h3><p>规范：</p>
+<ol>
+<li>允许通过多进程或者多线程的方式来处理高并发</li>
+<li>应用不需要守护进程或者写入 PID 文件，可以借助如 systemd 等工具来实现。</li>
+</ol>
+<h3 id="易处理"><a href="#易处理" class="headerlink" title="易处理"></a>易处理</h3><p>规范：</p>
+<ol>
+<li>进程启动速度尽可能快，以便于更好的支持弹性伸缩、部署应用。</li>
+<li>进程在接收到SIGTERM 信号后需要优雅停止。比如对于 nginx 而言，要等到处理完所有的连接后才可以退出。</li>
+<li>进程要能够处理各种异常情况。</li>
+</ol>
+<h3 id="开发环境与生产环境等价"><a href="#开发环境与生产环境等价" class="headerlink" title="开发环境与生产环境等价"></a>开发环境与生产环境等价</h3><p>核心就只有一点，尽可能保证开发环境与生产环境的一致性。</p>
+<h3 id="日志"><a href="#日志" class="headerlink" title="日志"></a>日志</h3><p>规范：</p>
+<ol>
+<li>应用程序将日志直接输出到标准输出，标准输出的内容由日志收集程序消费。</li>
+</ol>
+<p>反模式：</p>
+<ol>
+<li>现实中应用程序将日志直接写到了日志文件，并且自己来管理日志文件。</li>
+</ol>
+<h3 id="管理进程"><a href="#管理进程" class="headerlink" title="管理进程"></a>管理进程</h3><p>规范：</p>
+<ol>
+<li>仅需要执行一次的进程，跟普通的进程一样的管理思路，比如版本、执行环境等。</li>
+</ol>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://12factor.net/zh_cn/">12要素应用</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/cri/" rel="prev" title="Container Runtime Interface(CRI)">
+                  <i class="fa fa-chevron-left"></i> Container Runtime Interface(CRI)
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/ipv6/" rel="next" title="ipv6">
+                  ipv6 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

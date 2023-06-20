@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="本文为极客时间专栏从0开始学习微服务的阅读笔记。 在了解微服务之前，先来了解一下单体应用。 在上学那会，做过一些企业站，技术往往是基于LAMP（Linux + Apache + MySQL + PHP），这种业务较为简单的企业站，就是单体应用。所有的业务代码都是放在一个PHP程序中，代码只需要我自己来维护就可以了，测试、上线、运维全部搞定。 但这种单体应用要是放到稍微有点规模的互联网公司中必然是行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从0开始学习微服务阅读笔记">
+<meta property="og:url" content="http://kuring.me/post/micro-service/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="本文为极客时间专栏从0开始学习微服务的阅读笔记。 在了解微服务之前，先来了解一下单体应用。 在上学那会，做过一些企业站，技术往往是基于LAMP（Linux + Apache + MySQL + PHP），这种业务较为简单的企业站，就是单体应用。所有的业务代码都是放在一个PHP程序中，代码只需要我自己来维护就可以了，测试、上线、运维全部搞定。 但这种单体应用要是放到稍微有点规模的互联网公司中必然是行">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-11-25T20:27:17.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.237Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/micro-service/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/micro-service/","path":"post/micro-service/","title":"从0开始学习微服务阅读笔记"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>从0开始学习微服务阅读笔记 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%AE%E6%9C%8D%E5%8A%A1%E6%9E%B6%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">微服务架构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%AE%9A%E4%B9%89"><span class="nav-number">2.</span> <span class="nav-text">服务的接口定义</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RESTful-API"><span class="nav-number">2.1.</span> <span class="nav-text">RESTful API</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IDL%E6%96%87%E4%BB%B6"><span class="nav-number">2.2.</span> <span class="nav-text">IDL文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#XML%E6%96%87%E4%BB%B6%E6%96%B9%E5%BC%8F"><span class="nav-number">2.3.</span> <span class="nav-text">XML文件方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9D%91"><span class="nav-number">2.4.</span> <span class="nav-text">坑</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83"><span class="nav-number">3.</span> <span class="nav-text">注册中心</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="nav-number">3.1.</span> <span class="nav-text">注册中心的设计</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83API%E5%8F%8A%E5%8A%9F%E8%83%BD"><span class="nav-number">3.1.1.</span> <span class="nav-text">注册中心API及功能</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E5%AD%98%E5%82%A8%E5%93%AA%E4%BA%9B%E6%9C%8D%E5%8A%A1%E4%BF%A1%E6%81%AF"><span class="nav-number">3.1.2.</span> <span class="nav-text">注册中心存储哪些服务信息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C"><span class="nav-number">3.1.3.</span> <span class="nav-text">注册中心如何工作</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E6%8F%90%E4%BE%9B%E8%80%85%E6%B3%A8%E5%86%8C%E8%8A%82%E7%82%B9"><span class="nav-number">3.1.3.1.</span> <span class="nav-text">服务提供者注册节点</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E6%8F%90%E4%BE%9B%E8%80%85%E5%8F%8D%E6%B3%A8%E5%86%8C"><span class="nav-number">3.1.3.2.</span> <span class="nav-text">服务提供者反注册</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E6%B6%88%E8%B4%B9%E8%80%85%E6%9F%A5%E8%AF%A2%E8%8A%82%E7%82%B9%E4%BF%A1%E6%81%AF"><span class="nav-number">3.1.3.3.</span> <span class="nav-text">服务消费者查询节点信息</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E6%B6%88%E8%B4%B9%E8%80%85%E8%AE%A2%E9%98%85%E6%9C%8D%E5%8A%A1%E5%8F%98%E6%9B%B4"><span class="nav-number">3.1.3.4.</span> <span class="nav-text">服务消费者订阅服务变更</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E6%A1%86%E6%9E%B6"><span class="nav-number">4.</span> <span class="nav-text">服务框架</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E6%BA%90RPC%E6%A1%86%E6%9E%B6"><span class="nav-number">4.1.</span> <span class="nav-text">开源RPC框架</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E7%9B%91%E6%8E%A7"><span class="nav-number">5.</span> <span class="nav-text">服务监控</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E8%BF%BD%E8%B8%AA"><span class="nav-number">6.</span> <span class="nav-text">服务追踪</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86"><span class="nav-number">7.</span> <span class="nav-text">服务治理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E7%AE%A1%E7%90%86"><span class="nav-number">7.1.</span> <span class="nav-text">节点管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1"><span class="nav-number">7.2.</span> <span class="nav-text">负载均衡</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E8%B7%AF%E7%94%B1"><span class="nav-number">7.3.</span> <span class="nav-text">服务路由</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%A7%84%E5%88%99%E7%9A%84%E5%86%99%E6%B3%95"><span class="nav-number">7.3.0.1.</span> <span class="nav-text">规则的写法</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B7%AF%E7%94%B1%E7%9A%84%E8%8E%B7%E5%8F%96%E6%96%B9%E5%BC%8F"><span class="nav-number">7.3.1.</span> <span class="nav-text">路由的获取方式</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E5%AE%B9%E9%94%99"><span class="nav-number">7.4.</span> <span class="nav-text">服务容错</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%AF%86%E5%88%AB%E6%9C%8D%E5%8A%A1%E8%8A%82%E7%82%B9%E6%98%AF%E5%90%A6%E5%AD%98%E6%B4%BB"><span class="nav-number">7.5.</span> <span class="nav-text">如何识别服务节点是否存活</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%95%85%E9%9A%9C%E6%97%B6%E7%9A%84%E5%BA%94%E5%AF%B9%E7%AD%96%E7%95%A5"><span class="nav-number">7.6.</span> <span class="nav-text">服务端故障时的应对策略</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E6%95%85%E9%9A%9C"><span class="nav-number">7.6.1.</span> <span class="nav-text">集群故障</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%95idc%E6%95%85%E9%9A%9C"><span class="nav-number">7.6.2.</span> <span class="nav-text">单idc故障</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%95%E6%9C%BA%E6%95%85%E9%9A%9C"><span class="nav-number">7.6.3.</span> <span class="nav-text">单机故障</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E7%9A%84%E4%BF%9D%E6%8A%A4%E6%9C%BA%E5%88%B6"><span class="nav-number">7.6.4.</span> <span class="nav-text">动态注册中心的保护机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E7%9A%84%E4%BF%9D%E6%8A%A4%E6%9C%BA%E5%88%B6"><span class="nav-number">7.6.5.</span> <span class="nav-text">静态注册中心的保护机制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86%E5%B9%B3%E5%8F%B0"><span class="nav-number">7.7.</span> <span class="nav-text">服务治理平台</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83"><span class="nav-number">8.</span> <span class="nav-text">配置中心</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E9%98%B6%E5%86%85%E5%AE%B9"><span class="nav-number">9.</span> <span class="nav-text">进阶内容</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%81%9A%E5%A5%BD%E5%AE%B9%E9%87%8F%E8%A7%84%E5%88%92"><span class="nav-number">9.1.</span> <span class="nav-text">做好容量规划</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E6%9C%BA%E6%88%BF%E9%83%A8%E7%BD%B2"><span class="nav-number">9.2.</span> <span class="nav-text">多机房部署</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%B7%E5%90%88%E4%BA%91%E9%83%A8%E7%BD%B2"><span class="nav-number">9.3.</span> <span class="nav-text">混合云部署</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DevOps%E5%AE%9E%E8%B7%B5"><span class="nav-number">9.4.</span> <span class="nav-text">DevOps实践</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Service-Mesh"><span class="nav-number">9.5.</span> <span class="nav-text">Service Mesh</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Istio"><span class="nav-number">9.6.</span> <span class="nav-text">Istio</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ref"><span class="nav-number">10.</span> <span class="nav-text">ref</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/micro-service/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="从0开始学习微服务阅读笔记 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从0开始学习微服务阅读笔记
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-11-25 20:27:17" itemprop="dateCreated datePublished" datetime="2018-11-25T20:27:17+00:00">2018-11-25</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本文为极客时间专栏从0开始学习微服务的阅读笔记。</p>
+<p>在了解微服务之前，先来了解一下单体应用。</p>
+<p>在上学那会，做过一些企业站，技术往往是基于LAMP（Linux + Apache + MySQL + PHP），这种业务较为简单的企业站，就是单体应用。所有的业务代码都是放在一个PHP程序中，代码只需要我自己来维护就可以了，测试、上线、运维全部搞定。</p>
+<p>但这种单体应用要是放到稍微有点规模的互联网公司中必然是行不通的。一个公司里有很多的人，不可能公司这么多技术人员共同维护一套代码，这样子团队的写作必然是个问题。系统的健壮性也会比较差，一旦单体应用中的一个模块出问题后往往会影响到其他的模块，导致整个系统不可用，比如PHP的服务业界通常使用php-fpm来管理，而php-fpm处理连接的方式一个请求一个线程，当一部分请求因为延时高时会消耗过多的线程资源，导致其他请求没有可用的线程可以处理。</p>
+<p>单体应用的其他缺点不再罗列，比如代码膨胀过度、发布较慢、系统高可用性差、团队协作成本高等。</p>
+<p>为了解决单体应用的这些缺点，方法只有一个就是将单体应用拆分为多个服务即服务化，服务之间通过RPC的方式相互调用。</p>
+<p>即服务化后，业界又提出了微服务的概念。</p>
+<p>维基百科中有如下定义：</p>
+<blockquote>
+<p>2014年，Martin Fowler 与 James Lewis 共同提出了微服务的概念，定义了微服务是由以单一应用程序构成的小服务，自己拥有自己的行程与轻量化处理，服务依业务功能设计，以全自动的方式部署，与其他服务使用 HTTP API 通讯。同时服务会使用最小的规模的集中管理 (例如 Docker) 能力，服务可以用不同的编程语言与数据库等元件实作。</p>
+</blockquote>
+<p>但看这个定义，看的我一脸懵逼，实在太过抽象。其实微服务也没有一个特别明确的定义。</p>
+<p>那么服务化和微服务之间有什么不同之处呢？</p>
+<ol>
+<li>服务拆分粒度更细。</li>
+<li>每个微服务都独立部署和维护。</li>
+<li>微服务需要服务治理。由于微服务会将服务变多，势必需要一个服务管理平台来对微服务进行管理。</li>
+</ol>
+<p>将单体应用向微服务拆分的方式可以分为纵向拆分和横向拆分。这里以一点资讯app为例来解释纵向拆分和横向拆分。</p>
+<p>一点资讯分为信息流、正文页等模块，而这些功能都依赖于用户信息获取模块，纵向拆分即将信息流、正文页拆分为微服务，横向拆分即将信息流、正文页都依赖的用户信息获取模块拆分为单独的服务。</p>
+<h2 id="微服务架构"><a href="#微服务架构" class="headerlink" title="微服务架构"></a>微服务架构</h2><p>采用微服务后会带来一系列复杂的问题，新技术在解决了一部分问题的同时，总会带来一些新的问题，比如服务怎么定义接口、服务的发布方式和服务发现、服务的监控、服务的治理（包括依赖关系梳理、熔断机制等）、故障快速定位等。</p>
+<p>那么一个标准的微服务架构应该长什么样子呢？</p>
+<p>服务提供方在服务启动时向服务注册中心注册服务，声明自己能够提供的服务及当前服务的地址等信息。</p>
+<p>服务调用者请求注册中心，查询所要调用服务的地址，并通过约定好的协议向服务提供者发起请求，获取到结果后按照数据协议格式将数据进行反序列化。</p>
+<p>在整个服务的调用过程中，服务的请求耗时、调用量、调用成功与否等信息都会作为监控记录下来，服务的调用关系会通过trace系统记录下来，以便用于后续的故障定位和追踪。如果服务调用失败，则需要服务治理的方式来保证调用方的正常运行。</p>
+<h2 id="服务的接口定义"><a href="#服务的接口定义" class="headerlink" title="服务的接口定义"></a>服务的接口定义</h2><p>需要解决的问题是服务的接口有哪些？每个接口的输入什么？每个接口的输出是什么？</p>
+<h3 id="RESTful-API"><a href="#RESTful-API" class="headerlink" title="RESTful API"></a>RESTful API</h3><p>HTTP协议的接口定义通常使用该协议，常见Wiki或者Swagger的方式来管理。</p>
+<h3 id="IDL文件"><a href="#IDL文件" class="headerlink" title="IDL文件"></a>IDL文件</h3><p>IDL（interface description language）用于描述接口，使得不同的编程语言不同的平台服务之间可以相互通讯。常见实现包括Thrift和protobuf，protobuf作为序列化方式的一种，通常会使用gRPC进行通讯。</p>
+<h3 id="XML文件方式"><a href="#XML文件方式" class="headerlink" title="XML文件方式"></a>XML文件方式</h3><p>服务提供者将接口描述信息保存在xml配置文件，服务启动后会加载配置文件，将服务暴露出去。</p>
+<p>服务消费者将要调用的接口信息写在xml配置文件中，进程启动后加载xml配置文件。</p>
+<h3 id="坑"><a href="#坑" class="headerlink" title="坑"></a>坑</h3><p>服务提供者通常需要提供服务的超时时间等参数，而消费者端也需要该信息，为了让消费者端能看到生产者端的配置，可以将信息放在配置中心中，但这却增大了配置中心的内容，当一旦配置变化需要同步时，同步的数据会变多。</p>
+<h2 id="注册中心"><a href="#注册中心" class="headerlink" title="注册中心"></a>注册中心</h2><p>要想实现服务之间的调用，通常会使用反向代理和服务注册中心的方法。</p>
+<p>反向代理的方法业界一般使用较多的包括nginx、haproxy以及业界新秀envoy等。</p>
+<p>在微服务架构中更多提及的方案为采用服务注册中心的方法，而注册中心的稳定性就显得尤其重要。</p>
+<p>业界注册中心采用较多的方案为zookeeper、etcd、consul、eureka。这些注册中心的存储数结构要么是树状接口，要么是key-value形式，其中k-v形式的可以变更key的值以实现类似树状结构。</p>
+<h3 id="注册中心的设计"><a href="#注册中心的设计" class="headerlink" title="注册中心的设计"></a>注册中心的设计</h3><h4 id="注册中心API及功能"><a href="#注册中心API及功能" class="headerlink" title="注册中心API及功能"></a>注册中心API及功能</h4><p>注册中心需要提供以下api以供服务提供方和服务调用方使用。</p>
+<ol>
+<li>服务注册接口，提供服务提供方使用</li>
+<li>服务反注册接口，提供服务提供方以便销毁服务</li>
+<li>心跳汇报接口，服务提供方通过心跳汇报服务是存活状态的。一旦当服务出现异常时，服务注册中心应该立即将服务从注册中心剔除。</li>
+<li>服务订阅接口，服务调用方用于获取服务提供方的实例列表</li>
+<li>服务变更接口，服务调用方用于获取最新可用服务。一旦注册中心探测到有新的服务实例或者实例减少，应该立即通知所有订阅该服务的服务调用者更新本地的节点信息。</li>
+</ol>
+<h4 id="注册中心存储哪些服务信息"><a href="#注册中心存储哪些服务信息" class="headerlink" title="注册中心存储哪些服务信息"></a>注册中心存储哪些服务信息</h4><p>通常可以按照“服务名-分组-节点信息”三层结构来存储，其中节点信息包括：节点ip地址、节点端口号、请求失败时重试次数、请求结果是否压缩。</p>
+<p>分组的划分原则包括：</p>
+<ol>
+<li>按照业务的核心程度</li>
+<li>按照机房维度</li>
+<li>线上环境、测试环境</li>
+</ol>
+<h4 id="注册中心如何工作"><a href="#注册中心如何工作" class="headerlink" title="注册中心如何工作"></a>注册中心如何工作</h4><h5 id="服务提供者注册节点"><a href="#服务提供者注册节点" class="headerlink" title="服务提供者注册节点"></a>服务提供者注册节点</h5><ol>
+<li>查看注册节点是否在白名单内，即是否可以向注册中心注册</li>
+<li>查看注册的服务名、服务分组是否存在</li>
+<li>将节点信息添加到对应的存储位置</li>
+</ol>
+<h5 id="服务提供者反注册"><a href="#服务提供者反注册" class="headerlink" title="服务提供者反注册"></a>服务提供者反注册</h5><ol>
+<li>查看服务名、服务分组对应的服务是否存在</li>
+<li>将节点删除</li>
+</ol>
+<h5 id="服务消费者查询节点信息"><a href="#服务消费者查询节点信息" class="headerlink" title="服务消费者查询节点信息"></a>服务消费者查询节点信息</h5><ol>
+<li>从本机内存中查找服务信息</li>
+<li>如果有本地快照存储可以从中查找</li>
+</ol>
+<h5 id="服务消费者订阅服务变更"><a href="#服务消费者订阅服务变更" class="headerlink" title="服务消费者订阅服务变更"></a>服务消费者订阅服务变更</h5><ol>
+<li>消费者获取到服务信息后，在本地保留cluster的sign值</li>
+<li>每个一段时间从注册中心获取cluster的sign值，如果不一致，就从注册中心拉取服务节点，并更新内存环境和本地快照</li>
+</ol>
+<h2 id="服务框架"><a href="#服务框架" class="headerlink" title="服务框架"></a>服务框架</h2><p>完整的服务框架包括：通讯框架、通讯协议、序列化和反序列化。</p>
+<h3 id="开源RPC框架"><a href="#开源RPC框架" class="headerlink" title="开源RPC框架"></a>开源RPC框架</h3><p>跟语言相关的框架：Dubbo、Motan（微博）、Tars（腾讯）、Spring Cloud</p>
+<p>跨平台的开源RPC框架：gRPC、Thrift</p>
+<h2 id="服务监控"><a href="#服务监控" class="headerlink" title="服务监控"></a>服务监控</h2><p>常用的开源监控软件包括：ELK、Graphite、TICK、Prometheus</p>
+<h2 id="服务追踪"><a href="#服务追踪" class="headerlink" title="服务追踪"></a>服务追踪</h2><p>使用分布式会话跟踪技术，利用traceid</p>
+<p>开源方案包括OpenZipkin、jaeger等</p>
+<h2 id="服务治理"><a href="#服务治理" class="headerlink" title="服务治理"></a>服务治理</h2><p>通过一系列的手段保证在意外情况下，服务仍然能够正常运行。</p>
+<h3 id="节点管理"><a href="#节点管理" class="headerlink" title="节点管理"></a>节点管理</h3><p>服务调用失败可能是服务提供者自身出现了问题，也可能是网络问题导致。</p>
+<p>1.注册中心自动摘除机制</p>
+<p>服务提供者和注册中心之间保持心跳，当超时后注册中心自动摘除服务提供者。</p>
+<p>2.服务消费者摘除</p>
+<p>将服务提供者的探活机制放到消费者端，消费者在探测到服务提供者失败后自动摘除服务提供者。这种情况可以避免服务提供者和注册中心之间网络出现异常，但是服务提供者和服务消费者之间可以通讯的情况。</p>
+<h3 id="负载均衡"><a href="#负载均衡" class="headerlink" title="负载均衡"></a>负载均衡</h3><p>常用的包括随机算法、轮询、加权轮询算法、最少活跃调用、一致性hash算法（可以配合着静态注册中心达到比较好的效果）</p>
+<p><strong>自适应最优选择算法</strong>：在客户端维护一份每一个服务节点的性能统计快照，每隔一段时间去更新快照。在发起请求时，根据二八原则，将服务节点分成两部分，找出20%的那部分响应最慢的节点并降低权重。也可称为动态加权轮询算法。1分钟的更新时间间隔是个不错的选择。</p>
+<p>个人感觉<strong>自适应最优选择算</strong>是个不错的选择，但还可以针对业务场景继续优化，比如权重进行动态调整。</p>
+<h3 id="服务路由"><a href="#服务路由" class="headerlink" title="服务路由"></a>服务路由</h3><p>用于限定服务消费者可选择服务提供者节点的范围。</p>
+<p>应用场景：分组调用（组的划分可以按照机房等维度）、灰度发布、流量切换（比如机房故障后，用于机房之间的流量调度）、读写分离（读接口部署在一起，写接口部署在一起）。</p>
+<h5 id="规则的写法"><a href="#规则的写法" class="headerlink" title="规则的写法"></a>规则的写法</h5><p>A.条件路由</p>
+<ul>
+<li>某个ip的消费者仅访问某个ip的服务提供者</li>
+<li>排除某个服务节点（所有的服务消费者都不能访问某个服务提供者）</li>
+<li>白名单和黑名单</li>
+<li>机房级别的隔离（可以基于ip地址的规则来做）</li>
+<li>读写分离（所有get类方法仅访问某些节点等）</li>
+</ul>
+<p>B.脚本路由</p>
+<p>使用脚本语言的形式来描述</p>
+<h4 id="路由的获取方式"><a href="#路由的获取方式" class="headerlink" title="路由的获取方式"></a>路由的获取方式</h4><ul>
+<li>本地配置：存储在服务消费者本地</li>
+<li>配置中心配置，可以修改规则后动态下发</li>
+</ul>
+<h3 id="服务容错"><a href="#服务容错" class="headerlink" title="服务容错"></a>服务容错</h3><p>手段包括超时、重试、双发、熔断等。</p>
+<p>双发的思路为服务调用者在发起一次服务调用后，在给定的时间内（该时间要比服务超时的时间短）没有得到结果，再发起另外一个请求。</p>
+<p>熔断的思路为在某一个时间内如果服务调用失败次数超过一定值，则触发熔断，不再向服务提供者发起请求。</p>
+<p>断路器中的状态包括：Closed、Open、Half Open（半打开状态，用于探测后端服务是否已经正常）</p>
+<p>Hystrix是最出名的熔断器，计算服务调用的失败率是通过滑动窗口来实现，滑动窗口内包含10个桶，每个桶为1秒内的服务调用情况。</p>
+<p>FailOver，失败自动切换。消费者调用失败后，自动从可以节点中选择下一个节点重新调用，可设置失败的次数。通常适合只读的场景。</p>
+<p>FailBack，失败通知。调用失败后，不能重试，而是根据失败的信息来决定后续的执行策略。通常用于写场景。</p>
+<p>FailCache，失败缓存。调用失败后，隔一段时间后再重试。</p>
+<p>FailFast，快速失败。调用失败后不再重试。</p>
+<h3 id="如何识别服务节点是否存活"><a href="#如何识别服务节点是否存活" class="headerlink" title="如何识别服务节点是否存活"></a>如何识别服务节点是否存活</h3><p>如果注册中心为zk，在服务节点变化的时候，注册中心会向服务调用方推送服务节点变化的通知。但当网络抖动的时候，可能会存在节点的状态频繁变化的问题，导致服务消费者频繁收到节点变更通知，或者导致注册中心获取到的服务节点过少。可通过以下手段来避免该问题。</p>
+<h3 id="服务端故障时的应对策略"><a href="#服务端故障时的应对策略" class="headerlink" title="服务端故障时的应对策略"></a>服务端故障时的应对策略</h3><p>故障包括：集群故障、单个idc故障、单机故障</p>
+<h4 id="集群故障"><a href="#集群故障" class="headerlink" title="集群故障"></a>集群故障</h4><p>比如触发bug、突发流量等</p>
+<p>限流：限制超出接口阈值的部分请求</p>
+<p>降级：一种思路为通过开关来实现。具体可以分为多种等级：一级降级对业务影响比较小，可以设置为自动降级；二级降级对业务有一定影响，设置为手工降级；三级降级需要谨慎操作。</p>
+<h4 id="单idc故障"><a href="#单idc故障" class="headerlink" title="单idc故障"></a>单idc故障</h4><p>基于dns的流量切换：延时稍高，比较适合入口流量。</p>
+<p>基于rpc的分组流量切换：将之前单个机房内访问的流量切换为多个机房访问。</p>
+<h4 id="单机故障"><a href="#单机故障" class="headerlink" title="单机故障"></a>单机故障</h4><p>可以通过自动重启服务的手段来解决。但要避免一次性重启服务过多的问题。</p>
+<h4 id="动态注册中心的保护机制"><a href="#动态注册中心的保护机制" class="headerlink" title="动态注册中心的保护机制"></a>动态注册中心的保护机制</h4><ol>
+<li>心跳开关保护机制，给注册中心设置一个开关，当开发打开时，即使网络频繁抖动，注册中心也不会通知消费者节点变更，后者设置一定的百分比打开该开关。正常情况下该开关可以不打开。</li>
+<li>服务节点摘除保护机制，设定一个阈值比例，在出现网络抖动的情况下，注册中心也不会将超过这个阈值的节点给下掉，防止一下子下掉过多节点。该机制正常情况下，应该开启。</li>
+</ol>
+<h4 id="静态注册中心的保护机制"><a href="#静态注册中心的保护机制" class="headerlink" title="静态注册中心的保护机制"></a>静态注册中心的保护机制</h4><p>在服务消费者端来判断是否服务提供者是否存活。服务消费者调用某一个节点失败超过一定次数就将节点标记为不可用。并隔一段时间后再去探测该节点是否存活。</p>
+<p>注册中心的服务正常情况下不改变的，只有当服务在发布的时候才去修改注册中心中的节点。注册中心中的节点变化后仍然通知服务消费者，只是在网络出现抖动的时候，不再去通知。</p>
+<p><strong>个人感觉这个思路更靠谱。</strong></p>
+<h3 id="服务治理平台"><a href="#服务治理平台" class="headerlink" title="服务治理平台"></a>服务治理平台</h3><p>1.服务管理 包括服务上下线、节点添加和删除、服务查询、服务节点查询等</p>
+<p>2.服务治理 限流、降级、切流量</p>
+<p>3.服务监控 可以包含服务的tracing监控等</p>
+<p>4.问题定位</p>
+<p>5.日志查询</p>
+<p>6.服务运维 发布部署和扩缩容</p>
+<h2 id="配置中心"><a href="#配置中心" class="headerlink" title="配置中心"></a>配置中心</h2><p>业内采用的开源配置中心包括:</p>
+<ul>
+<li>Spring Cloud 功能相对较弱，变更配置需要通过git操作</li>
+<li>Apollo 对Spring Boot的支持比较好</li>
+</ul>
+<h2 id="进阶内容"><a href="#进阶内容" class="headerlink" title="进阶内容"></a>进阶内容</h2><h3 id="做好容量规划"><a href="#做好容量规划" class="headerlink" title="做好容量规划"></a>做好容量规划</h3><p>包括容量评估和调度决策两方面。</p>
+<p>压测服务的单机最大容量可以采用区间加权的方式来计算，比如0 ~ 10ms区间权重为1，10 ~ 50ms区间权重为2,500ms以上权重为32，通过累加的方式计算出单机的权重，从而评估出单机最大容量。(<strong>该评估容量的方式非常实用</strong>)</p>
+<p>调度策略可以根据水位线来做决定，一条是安全线，一条是致命线。当水位线处于致命线需要立即扩容，当水位线回到安全线以上时可以进行缩容。（<strong>水位线的方式很赞</strong>）</p>
+<p>缩容的思路是采用逐步缩容，每隔5分钟判断一次水位线是否在致命线以上，并按照10%、30%的比例进行缩容。</p>
+<p>为了防止水位线的抖动，可以一分钟采集一个点，当5个点中的3个点都满足条件时才进行缩容。</p>
+<h3 id="多机房部署"><a href="#多机房部署" class="headerlink" title="多机房部署"></a>多机房部署</h3><p>1.主从架构</p>
+<p>所有的写请求都发给主机房，主机房更新本机房的缓存和数据库，其他机房的缓存和数据库从主机房同步。主机房出现问题后，就没法更新了。</p>
+<p>2.独立机房架构</p>
+<p>缓存层，每个机房都有写请求，每个机房的写请求通过消息同步组件将写请求同步给另外一个机房。数据库mysql只有一个主库，另外机房的mysql同步数据到该机房。</p>
+<p>以上缓存消息同步组件的实现大概如下：</p>
+<p>包括两个模块reship和collector，reship负责将本机房的写请求发一份给别的机房，collector负责从别的机房读取写请求，并发给本机房的处理服务器。</p>
+<p>可以通过消息队列和rpc调用来实现reship和collector的通讯。</p>
+<p>3.多机房的数据一致性</p>
+<p>可通过消息对账机制来保证一致性，原理为通过一个单独的程序后面来验证是否一个写请求是否已经被所有的机房都处理，如果没有处理，则重新发送写请求。</p>
+<h3 id="混合云部署"><a href="#混合云部署" class="headerlink" title="混合云部署"></a>混合云部署</h3><p>公有云上为了安全往往不部署数据库</p>
+<h3 id="DevOps实践"><a href="#DevOps实践" class="headerlink" title="DevOps实践"></a>DevOps实践</h3><p>持续集成：确保每一次代码的merge request都通过，分为四个阶段：build（开发分支代码的编译与单元测试）、package（开发分支代码打包成docker镜像）、deploy（开发分支代码部署到测试环境）、test（集成测试）。包括了代码检查和单元测试环节。</p>
+<p>持续交付：代码merge request到develop分支后，develop分支的代码能够在生产环境中测试通过，并进行小流量灰度验证，可以随时上线。分为五个阶段：build（develop分支的代码编译与单元测试）、package（develop分支代码打包）、deploy、test、canary（develop分支代码的小流量灰度验证）。</p>
+<p>持续部署：合并develop代码到master分支，并打包成docker镜像，并可随时上线。包括：build、package、clear、production。</p>
+<h3 id="Service-Mesh"><a href="#Service-Mesh" class="headerlink" title="Service Mesh"></a>Service Mesh</h3><p>Service Mesh技术以轻量级网络代理的方式与应用代码部署在一起，主要有两个关键点技术。</p>
+<p>SideCar用于转发服务之间的调用，在服务消费者端SideCar用于将请求转发到服务提供者端的SideCar中，在服务提供者端的SideCar在接收到请求后转发给本机上的服务提供者。</p>
+<p>SideCar实现方式有基于ipstables的网络拦截和直接转发请求两种方式。</p>
+<p>Control plane用于基于SideCar的服务调用的治理，用来取代微服务中需要服务框架干的事情，包括服务发现、负载均衡、请求路由、故障处理、安全认证、监控上报、日志记录、配额限制等。</p>
+<h3 id="Istio"><a href="#Istio" class="headerlink" title="Istio"></a>Istio</h3><p>Pilot主要用于流量控制，包括Rules API（提供API，用于流量控制）、Envoy API（给Envoy提供API，获取服务注册信息、流量控制信息等）、抽象模型（对服务注册信息、流量控制进行抽象）、平台适配层（适配k8s、Mesos等多个平台，将平台特定的注册信息转换成平台无关的抽象模型）。</p>
+<p>Pilot的流量控制功能包括服务发现和负载均衡、请求路由、超时重试、故障注入。</p>
+<p>Mixer实现策略控制和监控日志收集等功能，理论上Envoy发起的每次请求都会发送到Mixer，可以异步发送。</p>
+<p>Mixer的策略控制包括对服务的访问频率限制和访问控制。</p>
+<p>Citadel用于保证服务之间的安全，需要Envoy的配合。Citadel中存储了秘钥和证书，通过Pilot将授权策略和安全命名信息分发给Envoy，Envoy和Envoy之间通过双向TLS证书来进行通讯，由Mixer来管理授权和审计。</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><p><a target="_blank" rel="noopener" href="http://www.infoq.com/cn/articles/micro-service-technology-stack">微服务架构技术栈选型手册
+</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/nagle/" rel="prev" title="TCP协议中的Nagle算法">
+                  <i class="fa fa-chevron-left"></i> TCP协议中的Nagle算法
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/linux-interrupt/" rel="next" title="Linux中断">
+                  Linux中断 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

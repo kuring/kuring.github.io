@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Linux中的Buffer与Cache的含义通常非常容易混淆，两者翻译成中文都可以叫做缓存，都是数据在内存中的临时存储，而且网络上很多文章都是错误的。 1234$ free -h              total        used        free      shared  buff&#x2F;cache   availableMem:           125G         12G">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux Buffer与Cache的含义">
+<meta property="og:url" content="http://kuring.me/post/linux-buffer-cache/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="Linux中的Buffer与Cache的含义通常非常容易混淆，两者翻译成中文都可以叫做缓存，都是数据在内存中的临时存储，而且网络上很多文章都是错误的。 1234$ free -h              total        used        free      shared  buff&#x2F;cache   availableMem:           125G         12G">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-01-29T00:27:45.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.237Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/linux-buffer-cache/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/linux-buffer-cache/","path":"post/linux-buffer-cache/","title":"Linux Buffer与Cache的含义"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux Buffer与Cache的含义 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ref"><span class="nav-number">1.</span> <span class="nav-text">ref</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-buffer-cache/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux Buffer与Cache的含义 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux Buffer与Cache的含义
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2019-01-29 00:27:45" itemprop="dateCreated datePublished" datetime="2019-01-29T00:27:45+00:00">2019-01-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>Linux中的Buffer与Cache的含义通常非常容易混淆，两者翻译成中文都可以叫做缓存，都是数据在内存中的临时存储，而且网络上很多文章都是错误的。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ free -h</span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:           125G         12G        347M        9.3M        113G        113G</span><br><span class="line">Swap:            0B          0B          0B</span><br></pre></td></tr></table></figure>
+
+<p>free命令直接将buff和cache写到了一块，说明两者有很多共同点。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ vmstat 1</span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 7  1      0 364076  18664 118624552    0    0   214 11198  106  118  6  4 89  1  0</span><br><span class="line">13  1      0 349096  18664 118638192    0    0     0 1012404 171031 270124 20 13 66  2  0</span><br></pre></td></tr></table></figure>
+
+<p>而通过vmstat命令可以分别看到buffer和cache的大小，单位为KB。</p>
+<p>使用<code>man free</code>命令看到的解释如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">buffers: Memory used by kernel buffers (Buffers in /proc/meminfo)</span><br><span class="line"></span><br><span class="line">cache: Memory used by the page cache and slabs (Cached and Slab in /proc/meminfo)</span><br></pre></td></tr></table></figure>
+
+<p>查看proc的man手册结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Buffers %lu</span><br><span class="line">    Relatively temporary storage for raw disk blocks that shouldn&#x27;t get tremendously large (20MB or so).</span><br><span class="line"></span><br><span class="line">Cached %lu</span><br><span class="line">    In-memory cache for files read from the disk (the pagecache).  Doesn&#x27;t include SwapCached.</span><br><span class="line"></span><br><span class="line">SReclaimable %lu (since Linux 2.6.19)</span><br><span class="line">    Part of Slab, that might be reclaimed, such as caches.</span><br><span class="line"></span><br><span class="line">SUnreclaim %lu (since Linux 2.6.19)</span><br><span class="line">    Part of Slab, that cannot be reclaimed on memory pressure.</span><br></pre></td></tr></table></figure>
+
+<p>上述信息，文档写的并不是非常明确。</p>
+<p>可以看出buffers是磁盘数据的缓存，通常不会特别大，缓存的数据包括磁盘的写请求和读请求。内核用于将分散的写磁盘操作集中起来，批量写入磁盘。</p>
+<p>Cached是文件数据的缓存，同样可以缓存读请求和写请求。</p>
+<p>Slab包括了SReclaimalbe和Sunreclaim两部分信息，其中SReclaimable是可回收部分，SUnreclaim是不可回收部分。</p>
+<p>关于文件和磁盘的区别如下：</p>
+<p>磁盘是一个块设备，可以划分为多个分区，每个分区上可以构建不同的文件系统，文件系统挂载到目录上后，就可以对该文件系统进行读写文件操作了。</p>
+<p>读写普通文件系统中的文件时，会经过文件系统，由文件系统跟磁盘进行交互，而文件系统的缓存为cache。读写磁盘或者分区时，会跳过文件系统，直接对磁盘进行操作，而操作系统对磁盘的缓存称之为buffer。</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a target="_blank" rel="noopener" href="http://man7.org/linux/man-pages/man5/proc.5.html">Linux Programmer’s Manual PROC[5]</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/knowledge-share-9/" rel="prev" title="知识分享第9期">
+                  <i class="fa fa-chevron-left"></i> 知识分享第9期
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/docker-rm-failed/" rel="next" title="kubernetes中pod无法删除的问题排查">
+                  kubernetes中pod无法删除的问题排查 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

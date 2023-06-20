@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="本实验为在虚拟机环境中实验，操作系统为Red Hat Enterprise6.0 32位，当前网卡列表如下： 1234567891011121314151617181920[root@localhost ~]# ifconfig eth1      Link encap:Ethernet  HWaddr 00:0C:29:8C:58:06            inet addr:192.168.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux更改网卡名称">
+<meta property="og:url" content="http://kuring.me/post/linux_change_netcardname/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="本实验为在虚拟机环境中实验，操作系统为Red Hat Enterprise6.0 32位，当前网卡列表如下： 1234567891011121314151617181920[root@localhost ~]# ifconfig eth1      Link encap:Ethernet  HWaddr 00:0C:29:8C:58:06            inet addr:192.168.">
+<meta property="og:locale">
+<meta property="article:published_time" content="2014-05-02T00:00:00.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.237Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/linux_change_netcardname/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/linux_change_netcardname/","path":"post/linux_change_netcardname/","title":"Linux更改网卡名称"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux更改网卡名称 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9grub-conf%E6%96%87%E4%BB%B6"><span class="nav-number">1.</span> <span class="nav-text">修改grub.conf文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9B%B4%E6%94%B9%E7%BD%91%E5%8D%A1%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%86%85%E5%AE%B9%E5%92%8C%E6%96%87%E4%BB%B6%E5%90%8D%E7%A7%B0"><span class="nav-number">2.</span> <span class="nav-text">更改网卡配置文件内容和文件名称</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%A0%E9%99%A470-persistent-net-rules%E6%96%87%E4%BB%B6"><span class="nav-number">3.</span> <span class="nav-text">删除70-persistent-net.rules文件</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_change_netcardname/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux更改网卡名称 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux更改网卡名称
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2014-05-02 00:00:00" itemprop="dateCreated datePublished" datetime="2014-05-02T00:00:00+00:00">2014-05-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本实验为在虚拟机环境中实验，操作系统为Red Hat Enterprise6.0 32位，当前网卡列表如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# ifconfig </span><br><span class="line">eth1      Link encap:Ethernet  HWaddr 00:0C:29:8C:58:06  </span><br><span class="line">          inet addr:192.168.124.140  Bcast:192.168.124.255  Mask:255.255.255.0</span><br><span class="line">          inet6 addr: fe80::20c:29ff:fe8c:5806/64 Scope:Link</span><br><span class="line">          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1</span><br><span class="line">          RX packets:123 errors:0 dropped:0 overruns:0 frame:0</span><br><span class="line">          TX packets:57 errors:0 dropped:0 overruns:0 carrier:0</span><br><span class="line">          collisions:0 txqueuelen:1000</span><br><span class="line">          RX bytes:18770 (18.3 KiB)  TX bytes:11684 (11.4 KiB)</span><br><span class="line">          Interrupt:19 Base address:0x2024</span><br><span class="line"></span><br><span class="line">eth2      Link encap:Ethernet  HWaddr 00:50:56:3F:B3:90</span><br><span class="line">          inet addr:192.168.124.141  Bcast:192.168.124.255  Mask:255.255.255.0</span><br><span class="line">          inet6 addr: fe80::250:56ff:fe3f:b390/64 Scope:Link</span><br><span class="line">          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1</span><br><span class="line">          RX packets:111 errors:0 dropped:0 overruns:0 frame:0</span><br><span class="line">          TX packets:43 errors:0 dropped:0 overruns:0 carrier:0</span><br><span class="line">          collisions:0 txqueuelen:1000</span><br><span class="line">          RX bytes:16101 (15.7 KiB)  TX bytes:10343 (10.1 KiB)</span><br><span class="line">          Interrupt:19 Base address:0x20a4</span><br></pre></td></tr></table></figure>
+
+<p>目的为将网卡eth1更改为eth0，将eth2更改为eth3。</p>
+<h1 id="修改grub-conf文件"><a href="#修改grub-conf文件" class="headerlink" title="修改grub.conf文件"></a>修改grub.conf文件</h1><p>在文件中内核启动时增加_biosdevname&#x3D;0_选项。修改后的文件内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">default=0</span><br><span class="line">timeout=5</span><br><span class="line">splashimage=(hd0,0)/grub/splash.xpm.gz</span><br><span class="line">hiddenmenu</span><br><span class="line">title Red Hat Enterprise Linux (2.6.32-71.el6.i686)</span><br><span class="line">        root (hd0,0)</span><br><span class="line">        kernel /vmlinuz-2.6.32-71.el6.i686 ro root=/dev/mapper/VolGroup-lv_root rd_LVM_LV=VolGroup/lv_root rd_LVM_LV=VolGroup/lv_swap rd_NO_LUKS rd_NO_MD rd_NO_DM LANG=zh_CN.UTF-8 KEYBOARDTYPE=pc KEYTABLE=us nomodeset crashkernel=auto rhgb quiet biosdevname=0</span><br><span class="line">        initrd /initramfs-2.6.32-71.el6.i686.img</span><br></pre></td></tr></table></figure>
+
+<h1 id="更改网卡配置文件内容和文件名称"><a href="#更改网卡配置文件内容和文件名称" class="headerlink" title="更改网卡配置文件内容和文件名称"></a>更改网卡配置文件内容和文件名称</h1><p>在&#x2F;etc&#x2F;sysconfig&#x2F;network-scripts目录中将原有的网卡配置文件ifcfg_Auto_eth1和ifcfg_Auto_eth2更改为ifcfg_eth0和ifcfg_eth3，同时修改文件的内容，将文件的内容中的网卡设备名称进行替换。替换后的文件ifcfg_eth0内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">TYPE=Ethernet</span><br><span class="line">BOOTPROTO=dhcp</span><br><span class="line">DEFROUTE=yes</span><br><span class="line">IPV4_FAILURE_FATAL=yes</span><br><span class="line">IPV6INIT=no</span><br><span class="line">NAME=&quot;Auto eth0&quot;</span><br><span class="line">UUID=995d037e-3b65-4490-a1fa-f26f6abf066d</span><br><span class="line">ONBOOT=yes</span><br><span class="line">HWADDR=00:0C:29:8C:58:06</span><br><span class="line">PEERDNS=yes</span><br><span class="line">PEERROUTES=yes</span><br><span class="line">DEVICE=eth0</span><br></pre></td></tr></table></figure>
+
+<h1 id="删除70-persistent-net-rules文件"><a href="#删除70-persistent-net-rules文件" class="headerlink" title="删除70-persistent-net.rules文件"></a>删除70-persistent-net.rules文件</h1><p>该文件存在于&#x2F;etc&#x2F;udev&#x2F;rules.d目录下。该文件如果不存在，开始时会自动创建，里面包含了网卡名称的配置信息。</p>
+<hr>
+<p>在修改完上述内容后重新启动机器配置就修改过来了,修改完成之后的网卡配置如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost rules.d]# ifconfig                                                                                                                  </span><br><span class="line">eth0      Link encap:Ethernet  HWaddr 00:0C:29:8C:58:06                                                                                             </span><br><span class="line">          inet addr:192.168.124.140  Bcast:192.168.124.255  Mask:255.255.255.0                                                                      </span><br><span class="line">          inet6 addr: fe80::20c:29ff:fe8c:5806/64 Scope:Link</span><br><span class="line">          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1</span><br><span class="line">          RX packets:87 errors:0 dropped:0 overruns:0 frame:0</span><br><span class="line">          TX packets:75 errors:0 dropped:0 overruns:0 carrier:0</span><br><span class="line">          collisions:0 txqueuelen:1000</span><br><span class="line">          RX bytes:17174 (16.7 KiB)  TX bytes:14520 (14.1 KiB)</span><br><span class="line">          Interrupt:19 Base address:0x2024</span><br><span class="line"></span><br><span class="line">eth3      Link encap:Ethernet  HWaddr 00:50:56:3F:B3:90</span><br><span class="line">          inet addr:192.168.124.141  Bcast:192.168.124.255  Mask:255.255.255.0</span><br><span class="line">          inet6 addr: fe80::250:56ff:fe3f:b390/64 Scope:Link</span><br><span class="line">          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1</span><br><span class="line">          RX packets:72 errors:0 dropped:0 overruns:0 frame:0</span><br><span class="line">          TX packets:76 errors:0 dropped:0 overruns:0 carrier:0</span><br><span class="line">          collisions:0 txqueuelen:1000</span><br><span class="line">          RX bytes:14164 (13.8 KiB)  TX bytes:14955 (14.6 KiB)</span><br><span class="line">          Interrupt:19 Base address:0x20a4</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/redhat_setup_base/" rel="prev" title="Redhat安装完成之后的设置">
+                  <i class="fa fa-chevron-left"></i> Redhat安装完成之后的设置
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/my_perfect_work/" rel="next" title="我目前的理想工作状态">
+                  我目前的理想工作状态 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

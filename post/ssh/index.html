@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="ssh命令常用参数指定私钥连接：ssh -i ~&#x2F;.ssh&#x2F;id_rsa ido@192.168.1.111 -p 7744 免密登录用来两台主机之间的ssh免密操作，步骤比较简单，主要实现如下两个操作：  生成公钥和私钥 将公钥copy到要免密登录的服务器  生成公钥和私钥执行 ssh-keygen -b 4096 -t rsa 即可在 ~&#x2F;.ssh&#x2F;目录下生成两个文件id_">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ssh协议">
+<meta property="og:url" content="http://kuring.me/post/ssh/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="ssh命令常用参数指定私钥连接：ssh -i ~&#x2F;.ssh&#x2F;id_rsa ido@192.168.1.111 -p 7744 免密登录用来两台主机之间的ssh免密操作，步骤比较简单，主要实现如下两个操作：  生成公钥和私钥 将公钥copy到要免密登录的服务器  生成公钥和私钥执行 ssh-keygen -b 4096 -t rsa 即可在 ~&#x2F;.ssh&#x2F;目录下生成两个文件id_">
+<meta property="og:locale">
+<meta property="article:published_time" content="2022-03-12T17:55:00.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.241Z">
+<meta property="article:tag" content="效率">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/ssh/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/ssh/","path":"post/ssh/","title":"ssh协议"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>ssh协议 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ssh%E5%91%BD%E4%BB%A4%E5%B8%B8%E7%94%A8%E5%8F%82%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">ssh命令常用参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95"><span class="nav-number">2.</span> <span class="nav-text">免密登录</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E5%85%AC%E9%92%A5%E5%92%8C%E7%A7%81%E9%92%A5"><span class="nav-number">2.1.</span> <span class="nav-text">生成公钥和私钥</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%86%E5%85%AC%E9%92%A5copy%E5%88%B0%E8%A6%81%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="nav-number">2.2.</span> <span class="nav-text">将公钥copy到要免密登录的服务器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ssh%E9%9A%A7%E9%81%93"><span class="nav-number">3.</span> <span class="nav-text">ssh隧道</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rsync"><span class="nav-number">4.</span> <span class="nav-text">rsync</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/ssh/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="ssh协议 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ssh协议
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-12 17:55:00" itemprop="dateCreated datePublished" datetime="2022-03-12T17:55:00+00:00">2022-03-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="ssh命令常用参数"><a href="#ssh命令常用参数" class="headerlink" title="ssh命令常用参数"></a>ssh命令常用参数</h2><p>指定私钥连接：<code>ssh -i ~/.ssh/id_rsa ido@192.168.1.111 -p 7744</code></p>
+<h2 id="免密登录"><a href="#免密登录" class="headerlink" title="免密登录"></a>免密登录</h2><p>用来两台主机之间的ssh免密操作，步骤比较简单，主要实现如下两个操作：</p>
+<ol>
+<li>生成公钥和私钥</li>
+<li>将公钥copy到要免密登录的服务器</li>
+</ol>
+<h3 id="生成公钥和私钥"><a href="#生成公钥和私钥" class="headerlink" title="生成公钥和私钥"></a>生成公钥和私钥</h3><p>执行 <code>ssh-keygen -b 4096 -t rsa</code> 即可在 ~&#x2F;.ssh&#x2F;目录下生成两个文件id_rsa和id_rsa.pub，其中id_rsa为私钥文件，id_rsa.pub为公钥文件。</p>
+<h3 id="将公钥copy到要免密登录的服务器"><a href="#将公钥copy到要免密登录的服务器" class="headerlink" title="将公钥copy到要免密登录的服务器"></a>将公钥copy到要免密登录的服务器</h3><p>执行 <code>ssh-copy-id $user@$ip</code> 即可将本地的公钥文件放到放到要免密登录服务器的 $HOME&#x2F;.ssh&#x2F;authorized_keys 文件中。至此，免密登录的配置就完成了。</p>
+<h2 id="ssh隧道"><a href="#ssh隧道" class="headerlink" title="ssh隧道"></a>ssh隧道</h2><p>动态端口转发：执行 <code>ssh root@xxxx -ND 127.0.0.1:1080</code> 即可在本机的1080端口开启一个ssh隧道。</p>
+<h2 id="rsync"><a href="#rsync" class="headerlink" title="rsync"></a>rsync</h2><p>rsync的常用命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rsync -avzP --delete $local_idr  $user@$remote:$remote_dir</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%88%E7%8E%87/" rel="tag"># 效率</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/OpenKruise/" rel="prev" title="OpenKruise调研">
+                  <i class="fa fa-chevron-left"></i> OpenKruise调研
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/proxy-server/" rel="next" title="正向代理">
+                  正向代理 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

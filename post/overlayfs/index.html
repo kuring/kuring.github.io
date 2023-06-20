@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="docker image结构docker可以通过命令docker image inspect $&amp;#123;image&amp;#125;来查看image的详细信息，其中包含了所使用的底层文件系统及各层的信息。 docker container的存储结构分为了只读层、init层和可读写层。 只读层跟docker image的层次结构恰好对应，主要包含操作系统的文件、配置、目录等信息，不包含操作系统镜像。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="理解OverlayFS">
+<meta property="og:url" content="http://kuring.me/post/overlayfs/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="docker image结构docker可以通过命令docker image inspect $&amp;#123;image&amp;#125;来查看image的详细信息，其中包含了所使用的底层文件系统及各层的信息。 docker container的存储结构分为了只读层、init层和可读写层。 只读层跟docker image的层次结构恰好对应，主要包含操作系统的文件、配置、目录等信息，不包含操作系统镜像。">
+<meta property="og:locale">
+<meta property="og:image" content="https://arkingc.github.io/img/in-post/post-docker-filesystem/overlay_constructs.jpg">
+<meta property="article:published_time" content="2018-07-28T21:30:25.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.241Z">
+<meta property="article:tag" content="overlay overlay2">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://arkingc.github.io/img/in-post/post-docker-filesystem/overlay_constructs.jpg">
+
+
+<link rel="canonical" href="http://kuring.me/post/overlayfs/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/overlayfs/","path":"post/overlayfs/","title":"理解OverlayFS"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>理解OverlayFS | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#docker-image%E7%BB%93%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">docker image结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#overlay"><span class="nav-number">2.</span> <span class="nav-text">overlay</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#overlay2"><span class="nav-number">3.</span> <span class="nav-text">overlay2</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ref"><span class="nav-number">4.</span> <span class="nav-text">ref</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/overlayfs/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="理解OverlayFS | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          理解OverlayFS
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-07-28 21:30:25" itemprop="dateCreated datePublished" datetime="2018-07-28T21:30:25+00:00">2018-07-28</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="docker-image结构"><a href="#docker-image结构" class="headerlink" title="docker image结构"></a>docker image结构</h2><p>docker可以通过命令<code>docker image inspect $&#123;image&#125;</code>来查看image的详细信息，其中包含了所使用的底层文件系统及各层的信息。</p>
+<p>docker container的存储结构分为了只读层、init层和可读写层。</p>
+<p>只读层跟docker image的层次结构恰好对应，主要包含操作系统的文件、配置、目录等信息，不包含操作系统镜像。</p>
+<p>init层在只读层和读写层中间，用来专门存放&#x2F;etc&#x2F;hosts &#x2F;etc&#x2F;resolv.conf等信息，这些文件往往需要在启动的时候写入一些指定值，但不期望<code>docker commit</code>命令对其进行提交。</p>
+<p>可读写层为容器在运行中可以进行写入的层。</p>
+<h2 id="overlay"><a href="#overlay" class="headerlink" title="overlay"></a>overlay</h2><p><img src="https://arkingc.github.io/img/in-post/post-docker-filesystem/overlay_constructs.jpg" alt="image"></p>
+<p>采用了两层结构，lowerdir为镜像层，只读。upperdir为容器层。</p>
+<p>每层都会在&#x2F;var&#x2F;run&#x2F;docker&#x2F;overlay创建一个文件夹，文件夹中为实际层的内容，文件采用硬链接的方式链接到真实层中的文件，每一层都包含该层该拥有的所有文件，而该文件的真实存储可能是采用硬链接的方式链接到上层中的真实文件，因此比较耗费inode。</p>
+<p>创建一个容器时，会新增两个目录，一个为读写层，一个为初始层。初始层中保存了容器初始化时的环境信息，如hostname、hosts文件等。读写层用于记录容器的所有改动。</p>
+<h2 id="overlay2"><a href="#overlay2" class="headerlink" title="overlay2"></a>overlay2</h2><p>为了规避overlay消耗inode节点过多的问题，overlay2采用在每层中增加lower文件的方式来记录所有底层的信息，类似于链表的形式。</p>
+<p><code>docker pull ubuntu</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost runc]# docker pull ubuntu</span><br><span class="line">Using default tag: latest</span><br><span class="line">latest: Pulling from library/ubuntu</span><br><span class="line">c64513b74145: Pull complete</span><br><span class="line">01b8b12bad90: Pull complete</span><br><span class="line">c5d85cf7a05f: Pull complete</span><br><span class="line">b6b268720157: Pull complete</span><br><span class="line">e12192999ff1: Pull complete</span><br><span class="line">Digest: sha256:3f119dc0737f57f704ebecac8a6d8477b0f6ca1ca0332c7ee1395ed2c6a82be7</span><br><span class="line">Status: Downloaded newer image for ubuntu:latest</span><br></pre></td></tr></table></figure>
+
+<p>会在&#x2F;var&#x2F;run&#x2F;docker&#x2F;overlay2目录下创建如下文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 2</span><br><span class="line">.</span><br><span class="line">|-- 664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672    // 第0层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   `-- link    // MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- 783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba    // 第2层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // HXATFASQ4E2JBG434DUEN54EZZ</span><br><span class="line">|   |-- lower   // l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- 89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6    // 第3层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // 5PHT7S3MCZTTQOXVPA4CKJRRFD</span><br><span class="line">|   |-- lower   // l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- backingFsBlockDev</span><br><span class="line">|-- bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68    // 第4层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // QMKHIPSDT4JTPE4FLT7QGJ33ND</span><br><span class="line">|   |-- lower   // l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3    // 第1层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // WUZC5WSTQTPJUJ4KFAYCUT5IPD</span><br><span class="line">|   |-- lower   // l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">`-- l</span><br><span class="line">    |-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff</span><br><span class="line">    |-- HXATFASQ4E2JBG434DUEN54EZZ -&gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff</span><br><span class="line">    |-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff</span><br><span class="line">    |-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff</span><br><span class="line">    `-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff</span><br></pre></td></tr></table></figure>
+
+<p>l目录下为超链接，缩短后的目录，为了避免mount时超出页大小限制。</p>
+<p>每一层中的diff文件夹包含实际内容。</p>
+<p>每一层中都有一个link文件，内容为l目录中的超链接，超链接实际指向当前层目录中的diff文件夹。</p>
+<p>除去最底层的目录外，其余每一层中包含一个lower文件，包含了该层的所有更底层名称和顺序，可以根据该文件构建出整个镜像的层次结构。</p>
+<p>work目录用于OverlayFS内部使用。</p>
+<p>最底层只有link文件，无lower文件，因此664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672为最底层。</p>
+<p>以上五层为lower，只读。</p>
+<p>当使用<code>docker run -it ubuntu:latest /bin/bash</code>启动一个容器后，在overlay2目录下会多出两个文件夹。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 1 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08 l</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">|-- diff</span><br><span class="line">|-- link    // ZJVMGTB2IOJ6QF57TYM5O7EWXW</span><br><span class="line">|-- lower   // l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">|-- diff</span><br><span class="line">|-- link</span><br><span class="line">|-- lower   // l/ZJVMGTB2IOJ6QF57TYM5O7EWXW:l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">l</span><br><span class="line">|-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff</span><br><span class="line">|-- AOLYGFOHIAHWU5CBAJFULNAXI7 -&gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/diff</span><br><span class="line">|-- HXATFASQ4E2JBG434DUEN54EZZ -&gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff</span><br><span class="line">|-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff</span><br><span class="line">|-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff</span><br><span class="line">|-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff</span><br><span class="line">`-- ZJVMGTB2IOJ6QF57TYM5O7EWXW -&gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init/diff</span><br></pre></td></tr></table></figure>
+
+<p><code>0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</code>用于存放容器初始化时的信息，通过下面查看更直观。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">|-- diff</span><br><span class="line">|   |-- dev</span><br><span class="line">|   |   `-- console</span><br><span class="line">|   `-- etc</span><br><span class="line">|       |-- hostname</span><br><span class="line">|       |-- hosts</span><br><span class="line">|       |-- mtab -&gt; /proc/mounts</span><br><span class="line">|       `-- resolv.conf</span><br><span class="line">|-- link</span><br><span class="line">|-- lower</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">    `-- work</span><br></pre></td></tr></table></figure>
+
+<p><code>0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</code>的直接底层为init层，更详细的目录结构如下。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 2  0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">|-- diff</span><br><span class="line">|-- link</span><br><span class="line">|-- lower</span><br><span class="line">|-- merged</span><br><span class="line">|   |-- bin</span><br><span class="line">|   |-- boot</span><br><span class="line">|   |-- dev</span><br><span class="line">|   |-- etc</span><br><span class="line">|   |-- home</span><br><span class="line">|   |-- lib</span><br><span class="line">|   |-- lib64</span><br><span class="line">|   |-- media</span><br><span class="line">|   |-- mnt</span><br><span class="line">|   |-- opt</span><br><span class="line">|   |-- proc</span><br><span class="line">|   |-- root</span><br><span class="line">|   |-- run</span><br><span class="line">|   |-- sbin</span><br><span class="line">|   |-- srv</span><br><span class="line">|   |-- sys</span><br><span class="line">|   |-- tmp</span><br><span class="line">|   |-- usr</span><br><span class="line">|   `-- var</span><br><span class="line">`-- work</span><br><span class="line">    `-- work</span><br></pre></td></tr></table></figure>
+
+<p>merged文件夹中内容较多，为overlay2的直接挂载点，对容器的修改会反应到该目录中。例如在容器中增加&#x2F;root&#x2F;hello.txt文件，在merged目录下会增加root&#x2F;hello.txt文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# mount  | grep overlay2</span><br><span class="line">/dev/mapper/centos-root on /var/lib/docker/overlay2 type xfs (rw,relatime,attr2,inode64,noquota)</span><br><span class="line">overlay on /var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/merged type overlay (rw,relatime,lowerdir=/var/lib/docker/overlay2/l/ZJVMGTB2IOJ6QF57TYM5O7EWXW:/var/lib/docker/overlay2/l/QMKHIPSDT4JTPE4FLT7QGJ33ND:/var/lib/docker/overlay2/l/5PHT7S3MCZTTQOXVPA4CKJRRFD:/var/lib/docker/overlay2/l/HXATFASQ4E2JBG434DUEN54EZZ:/var/lib/docker/overlay2/l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:/var/lib/docker/overlay2/l/MZUEUOFHBNVTRCJYJEG7QY4VWT,upperdir=/var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/diff,workdir=/var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/work)</span><br></pre></td></tr></table></figure>
+
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.docker.com/storage/storagedriver/overlayfs-driver/">Use the OverlayFS storage driver</a></li>
+<li><a target="_blank" rel="noopener" href="https://arkingc.github.io/2017/05/05/docker-filesystem-overlay/">Docker存储驱动—Overlay&#x2F;Overlay2「译」</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/overlay-overlay2/" rel="tag"># overlay overlay2</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/golang-interview/" rel="prev" title="Golang面试题">
+                  <i class="fa fa-chevron-left"></i> Golang面试题
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/pushd-popd/" rel="next" title="pushd和popd命令的用法">
+                  pushd和popd命令的用法 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="网桥工作在数据链路层，将两个LAN连起来，根据MAC地址来转发帧。Linux下要配置网桥的方法有两种，一种是通过修改配置文件，另外一种是通过brctl工具。修改配置文件的方式是通过修改&#x2F;etc&#x2F;sysconfig&#x2F;network-scripts&#x2F;ifcgg-eth*文件来完成的，这种方式没有仔细研究。本文将编写两个脚本来完成网桥的创建和删除，脚本的功能为将机">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux下搭建网桥及脚本编写">
+<meta property="og:url" content="http://kuring.me/post/linux_bridge/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="网桥工作在数据链路层，将两个LAN连起来，根据MAC地址来转发帧。Linux下要配置网桥的方法有两种，一种是通过修改配置文件，另外一种是通过brctl工具。修改配置文件的方式是通过修改&#x2F;etc&#x2F;sysconfig&#x2F;network-scripts&#x2F;ifcgg-eth*文件来完成的，这种方式没有仔细研究。本文将编写两个脚本来完成网桥的创建和删除，脚本的功能为将机">
+<meta property="og:locale">
+<meta property="article:published_time" content="2013-11-14T00:00:00.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.237Z">
+<meta property="article:tag" content="网络">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/linux_bridge/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/linux_bridge/","path":"post/linux_bridge/","title":"Linux下搭建网桥及脚本编写"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux下搭建网桥及脚本编写 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BD%91%E6%A1%A5%E5%88%9B%E5%BB%BA%E8%84%9A%E6%9C%AC"><span class="nav-number">1.</span> <span class="nav-text">网桥创建脚本</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BD%91%E6%A1%A5%E5%88%A0%E9%99%A4%E8%84%9A%E6%9C%AC"><span class="nav-number">2.</span> <span class="nav-text">网桥删除脚本</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="nav-number">3.</span> <span class="nav-text">注意事项</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E7%BD%91%E5%9D%80"><span class="nav-number">4.</span> <span class="nav-text">参考网址</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_bridge/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux下搭建网桥及脚本编写 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux下搭建网桥及脚本编写
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-11-14 00:00:00" itemprop="dateCreated datePublished" datetime="2013-11-14T00:00:00+00:00">2013-11-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>网桥工作在数据链路层，将两个LAN连起来，根据MAC地址来转发帧。Linux下要配置网桥的方法有两种，一种是通过修改配置文件，另外一种是通过brctl工具。修改配置文件的方式是通过修改&#x2F;etc&#x2F;sysconfig&#x2F;network-scripts&#x2F;ifcgg-eth*文件来完成的，这种方式没有仔细研究。本文将编写两个脚本来完成网桥的创建和删除，脚本的功能为将机器上的网卡eth1和eth2桥接，而网桥本身未设置ip。</p>
+<h1 id="网桥创建脚本"><a href="#网桥创建脚本" class="headerlink" title="网桥创建脚本"></a>网桥创建脚本</h1><p>本脚本利用brctl命令将网卡eth1和eth2桥接，可以通过<code>brctl show</code>命令查看结果。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"># 脚本作用为将两个网卡桥接</span><br><span class="line"></span><br><span class="line"># 检测brctl命令是否存在</span><br><span class="line">brctl &gt; /dev/null</span><br><span class="line">if [ $? != 1 ]; then</span><br><span class="line">	echo Command brctl not exist, please setup it. The setup execute command is \&quot;yum install bridge-utils\&quot;</span><br><span class="line">	exit 0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line"># 检测网桥br0是否存在，如果存在首先删除</span><br><span class="line">declare -i result=$(brctl show | grep eth0 | wc -l)</span><br><span class="line">if [ $result &gt; 0 ]; then</span><br><span class="line">	echo detect the bridge br0 have already exist, first delete it	</span><br><span class="line">	ifconfig br0 down</span><br><span class="line">	brctl delbr br0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line">ifconfig eth1 0.0.0.0</span><br><span class="line">ifconfig eth2 0.0.0.0</span><br><span class="line">brctl addbr br0</span><br><span class="line">brctl addif br0 eth1</span><br><span class="line">brctl addif br0 eth2</span><br><span class="line">ifconfig br0 up</span><br><span class="line">echo create bridge br0 success, you can use command : \&quot;brctl show\&quot; to check</span><br></pre></td></tr></table></figure>
+
+<h1 id="网桥删除脚本"><a href="#网桥删除脚本" class="headerlink" title="网桥删除脚本"></a>网桥删除脚本</h1><p>本脚本将桥接网卡br0删除</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"></span><br><span class="line"># 检测是否存在网桥br0</span><br><span class="line">declare -i result=$(brctl show | grep br0 | wc -l)</span><br><span class="line">if [ $result == 0 ]; then</span><br><span class="line">	echo &quot;bridge br0 not exists, exit immediately&quot;</span><br><span class="line">	exit 0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line"># 删除网桥br0</span><br><span class="line">ifconfig br0 down</span><br><span class="line">brctl delbr br0</span><br><span class="line">echo &quot;delete bridge br0 success&quot;</span><br></pre></td></tr></table></figure>
+
+<h1 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h1><p>brctl命令创建的桥接网卡在机器重启后会删除，最好将创建桥接网卡的命令放入到linux的开机启动脚本中，这样每次开机的时候都可以自动创建桥接网卡了。</p>
+<h1 id="参考网址"><a href="#参考网址" class="headerlink" title="参考网址"></a>参考网址</h1><p><a target="_blank" rel="noopener" href="http://www.linuxfoundation.org/collaborate/workgroups/networking/bridge">bridge命令介绍</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%BD%91%E7%BB%9C/" rel="tag"># 网络</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/ubuntu_change_mac/" rel="prev" title="在ubuntu中更改mac地址的方法">
+                  <i class="fa fa-chevron-left"></i> 在ubuntu中更改mac地址的方法
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/xrandr/" rel="next" title="Linux下更改屏幕分辨率">
+                  Linux下更改屏幕分辨率 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

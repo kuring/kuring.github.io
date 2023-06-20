@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Linux系统中提供了两个在堆中分配空间的底层函数，函数原型如下： void *sbrk(intptr_t increment);int brk(void *end_data_segment); 两个函数的作用均为从堆中分配空间，并且在内部维护一个指针，指针的值默认为NULL。如果内部指针为NULL，则得到一页的空闲地址，系统默认为4K字节。指针向后移动即为分配空间，指针向前移动为释放空间。当内部">
+<meta property="og:type" content="article">
+<meta property="og:title" content="sbrk和brk函数">
+<meta property="og:url" content="http://kuring.me/post/sbrk_and_brk/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="Linux系统中提供了两个在堆中分配空间的底层函数，函数原型如下： void *sbrk(intptr_t increment);int brk(void *end_data_segment); 两个函数的作用均为从堆中分配空间，并且在内部维护一个指针，指针的值默认为NULL。如果内部指针为NULL，则得到一页的空闲地址，系统默认为4K字节。指针向后移动即为分配空间，指针向前移动为释放空间。当内部">
+<meta property="og:locale">
+<meta property="article:published_time" content="2013-06-02T13:39:54.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.241Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/sbrk_and_brk/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/sbrk_and_brk/","path":"post/sbrk_and_brk/","title":"sbrk和brk函数"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>sbrk和brk函数 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#sbrk%E5%87%BD%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">sbrk函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#brk%E5%87%BD%E6%95%B0"><span class="nav-number">2.</span> <span class="nav-text">brk函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF%EF%BC%9A"><span class="nav-number">3.</span> <span class="nav-text">适用场景：</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/sbrk_and_brk/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="sbrk和brk函数 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          sbrk和brk函数
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-06-02 13:39:54" itemprop="dateCreated datePublished" datetime="2013-06-02T13:39:54+00:00">2013-06-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>Linux系统中提供了两个在堆中分配空间的底层函数，函数原型如下：</p>
+<p>void *sbrk(intptr_t increment);<br>int brk(void *end_data_segment);</p>
+<p>两个函数的作用均为从堆中分配空间，并且在内部维护一个指针，指针的值默认为NULL。如果内部指针为NULL，则得到一页的空闲地址，系统默认为4K字节。指针向后移动即为分配空间，指针向前移动为释放空间。当内部指针的位置移动到一个页的开始位置时，整个页会被操作系统回收。brk为绝对改变位置，sbrk为相对改变位置。</p>
+<h1 id="sbrk函数"><a href="#sbrk函数" class="headerlink" title="sbrk函数"></a>sbrk函数</h1><p>在sbrk函数中，参数increment为要增加的字节数，increment可以为负数。当increment为负数时表示释放空间。当increment&#x3D;&#x3D;0时，内部指针位置不动。函数调用成功返回内部指针改变前的值，失败返回(void *)-1。<br>函数使用举例如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> *p0 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 打印堆地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p0 is : %d\n&quot;</span>, p0);    </span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> *p1 = sbrk(<span class="number">1000</span>);</span><br><span class="line">    <span class="comment">// 这里仍然打印的是第一次的堆地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p1 is : %d\n&quot;</span>, p1);    </span><br><span class="line">    </span><br><span class="line">    <span class="type">int</span> *p2 = sbrk(<span class="number">1</span>);</span><br><span class="line">    <span class="comment">// 打印第一次堆地址+1000后的地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p2 is : %d\n&quot;</span>, p2);    </span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 回到初始堆地址，释放空间</span></span><br><span class="line">    sbrk(<span class="number">-1001</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="type">int</span> *p3 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 检查是否回到初始地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p3 is : %d\n&quot;</span>, p3);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出如下内容：<br>this site of p0 is : 264622080<br>this site of p1 is : 264622080<br>this site of p2 is : 264623080<br>this site of p3 is : 264622080</p>
+<h1 id="brk函数"><a href="#brk函数" class="headerlink" title="brk函数"></a>brk函数</h1><p>在brk函数中，函数作用为将当前的内部指针移动到end_data_segment位置。成功返回0，失败返回-1。<br>函数使用举例如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> *p0 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p0 is : %d\n&quot;</span>, p0);</span><br><span class="line">    </span><br><span class="line">    brk(p0 + <span class="number">1000</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">    </span><br><span class="line">    brk(p0 + <span class="number">1001</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">    </span><br><span class="line">    brk(p0);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>函数输出如下：<br>this site of p0 is : 206979072<br>this site is : 206983072<br>this site is : 206983076<br>this site is : 206979072</p>
+<h1 id="适用场景："><a href="#适用场景：" class="headerlink" title="适用场景："></a>适用场景：</h1><p>内存的管理方式比malloc和free更加灵活，适合申请不确定的内存空间的情况，特别适合同类型的大块数据。如果用malloc则可能存在申请内存空间过多浪费的情况，过少时需要重新调用realloc来重新申请内存的情况。速度比malloc快。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/farbox%E4%B8%8Ejekyll%E5%AF%B9%E6%AF%94/" rel="prev" title="farbox与jekyll对比">
+                  <i class="fa fa-chevron-left"></i> farbox与jekyll对比
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/linux_get_error_of_function/" rel="next" title="linux中获取错误信息的方式">
+                  linux中获取错误信息的方式 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

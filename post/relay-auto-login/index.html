@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="最近公司需要首先登录跳板机relay，然后通过跳板机才能登录服务器，操作上略显麻烦。为了节省登录服务器的时间，我编写了一个简单的脚本来简化登录操作。 实现效果为在本地terminal下，执行wrelay $host，即可自动登录到相应的主机。 在relay服务器上增加对其他服务器的免登录命令在relay服务器上ssh到其他主机时需要输入密码，使用expect命令来登录到其他主机时通过expect脚">
+<meta property="og:type" content="article">
+<meta property="og:title" content="自动通过跳板机登录到其他服务器">
+<meta property="og:url" content="http://kuring.me/post/relay-auto-login/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="最近公司需要首先登录跳板机relay，然后通过跳板机才能登录服务器，操作上略显麻烦。为了节省登录服务器的时间，我编写了一个简单的脚本来简化登录操作。 实现效果为在本地terminal下，执行wrelay $host，即可自动登录到相应的主机。 在relay服务器上增加对其他服务器的免登录命令在relay服务器上ssh到其他主机时需要输入密码，使用expect命令来登录到其他主机时通过expect脚">
+<meta property="og:locale">
+<meta property="article:published_time" content="2017-05-17T16:04:01.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.241Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/relay-auto-login/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/relay-auto-login/","path":"post/relay-auto-login/","title":"自动通过跳板机登录到其他服务器"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>自动通过跳板机登录到其他服务器 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8relay%E6%9C%8D%E5%8A%A1%E5%99%A8%E4%B8%8A%E5%A2%9E%E5%8A%A0%E5%AF%B9%E5%85%B6%E4%BB%96%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%9A%84%E5%85%8D%E7%99%BB%E5%BD%95%E5%91%BD%E4%BB%A4"><span class="nav-number">1.</span> <span class="nav-text">在relay服务器上增加对其他服务器的免登录命令</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E4%B8%BB%E6%9C%BA%E5%85%8D%E7%99%BB%E5%BD%95relay%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%8C%E5%B9%B6%E8%87%AA%E5%8A%A8%E7%99%BB%E5%BD%95%E5%88%B0%E5%AF%B9%E5%BA%94%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="nav-number">2.</span> <span class="nav-text">本地主机免登录relay服务器，并自动登录到对应的服务器</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/relay-auto-login/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="自动通过跳板机登录到其他服务器 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          自动通过跳板机登录到其他服务器
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-05-17 16:04:01" itemprop="dateCreated datePublished" datetime="2017-05-17T16:04:01+00:00">2017-05-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>最近公司需要首先登录跳板机relay，然后通过跳板机才能登录服务器，操作上略显麻烦。为了节省登录服务器的时间，我编写了一个简单的脚本来简化登录操作。</p>
+<p>实现效果为在本地terminal下，执行<code>wrelay $host</code>，即可自动登录到相应的主机。</p>
+<h1 id="在relay服务器上增加对其他服务器的免登录命令"><a href="#在relay服务器上增加对其他服务器的免登录命令" class="headerlink" title="在relay服务器上增加对其他服务器的免登录命令"></a>在relay服务器上增加对其他服务器的免登录命令</h1><p>在relay服务器上ssh到其他主机时需要输入密码，使用expect命令来登录到其他主机时通过expect脚本来实现自动输入密码并登录的功能。</p>
+<p>在&#x2F;home&#x2F;$user目录下新建mybin文件夹，并将mybin文件夹添加到$PATH环境变量中，具体修改方法不展开。</p>
+<p>在mybin目录下增加gw脚本，内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/expect</span><br><span class="line"></span><br><span class="line">if &#123;$argc &lt; 1&#125; &#123;</span><br><span class="line">    puts &quot;Usage:cmd &lt;host&gt;&quot;</span><br><span class="line">    exit 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">set host [lindex $argv 0]</span><br><span class="line"># 在这里填写要登录的用户</span><br><span class="line">set username &quot;worker&quot;</span><br><span class="line"># 在这里填写要登录的密码</span><br><span class="line">set password &quot;worker&quot;</span><br><span class="line"></span><br><span class="line">spawn ssh $username@$host</span><br><span class="line">set timeout 2</span><br><span class="line">expect &#123;</span><br><span class="line">    &quot;*password:&quot; &#123;</span><br><span class="line">        send &quot;$password\n&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &quot;Are you sure you want to continue connecting (yes/no)?&quot; &#123;</span><br><span class="line">        send &quot;yes\r&quot;</span><br><span class="line">        exp_continue</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">expect &quot;*#&quot;</span><br><span class="line">interact</span><br></pre></td></tr></table></figure>
+
+<p>执行<code>gw 10.1.1.8</code>，即可登录到对应的主机上。</p>
+<h1 id="本地主机免登录relay服务器，并自动登录到对应的服务器"><a href="#本地主机免登录relay服务器，并自动登录到对应的服务器" class="headerlink" title="本地主机免登录relay服务器，并自动登录到对应的服务器"></a>本地主机免登录relay服务器，并自动登录到对应的服务器</h1><p>在本地自动登录relay主机同样使用expect的方式，脚本名称为wrelay，内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/expect</span><br><span class="line"></span><br><span class="line">if &#123;$argc &lt; 1&#125; &#123;</span><br><span class="line">    puts &quot;Usage:cmd &lt;remote_host&gt;&quot;</span><br><span class="line">    exit 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># 下面指定relay主机</span><br><span class="line">set host &quot;relay.name&quot;</span><br><span class="line"># 这里输入relay的用户名</span><br><span class="line">set username &quot;&quot;</span><br><span class="line"># 这里输入relay的密码</span><br><span class="line">set password &quot;&quot;</span><br><span class="line">set remote_host [lindex $argv 0]</span><br><span class="line"></span><br><span class="line">spawn ssh $username@$host</span><br><span class="line">set timeout 2</span><br><span class="line">expect &#123;</span><br><span class="line">    &quot;*password:&quot; &#123;</span><br><span class="line">        send &quot;$password\n&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &quot;Are you sure you want to continue connecting (yes/no)?&quot; &#123;</span><br><span class="line">        send &quot;yes\r&quot;</span><br><span class="line">        exp_continue</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">expect &quot;*#&quot;</span><br><span class="line"></span><br><span class="line">sleep 0.1</span><br><span class="line"># 在relay上自动登录到其他服务器主机</span><br><span class="line">send &quot;gw $remote_host\n&quot;</span><br><span class="line">interact</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/mv-farbox-to-hexo/" rel="prev" title="blog从farbox迁移到了hexo">
+                  <i class="fa fa-chevron-left"></i> blog从farbox迁移到了hexo
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/rsync-bypass-ralay/" rel="next" title="通过rsync来绕过relay同步文件">
+                  通过rsync来绕过relay同步文件 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

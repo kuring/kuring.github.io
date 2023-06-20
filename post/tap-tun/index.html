@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Linux虚拟网络设备tap&#x2F;tuntap&#x2F;tun常用于隧道通讯，通过一个字符设备来实现用户态和内核态的通讯，字符设备一端连接着用户空间，一端连接着内核空间。 与物理网卡的最大不同是，tap&#x2F;tun的数据源来自于用户态的程序，而物理网卡的数据源来自于物理链路。 对应的字符设备文件位置：  tap: &#x2F;dev&#x2F;tap0 tun: &#x2F;dev&amp;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux中的tap&#x2F;tun设备">
+<meta property="og:url" content="http://kuring.me/post/tap-tun/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="Linux虚拟网络设备tap&#x2F;tuntap&#x2F;tun常用于隧道通讯，通过一个字符设备来实现用户态和内核态的通讯，字符设备一端连接着用户空间，一端连接着内核空间。 与物理网卡的最大不同是，tap&#x2F;tun的数据源来自于用户态的程序，而物理网卡的数据源来自于物理链路。 对应的字符设备文件位置：  tap: &#x2F;dev&#x2F;tap0 tun: &#x2F;dev&amp;">
+<meta property="og:locale">
+<meta property="article:published_time" content="2020-01-31T00:55:34.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.241Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/tap-tun/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/tap-tun/","path":"post/tap-tun/","title":"Linux中的tap/tun设备"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux中的tap/tun设备 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux%E8%99%9A%E6%8B%9F%E7%BD%91%E7%BB%9C%E8%AE%BE%E5%A4%87tap-x2F-tun"><span class="nav-number">1.</span> <span class="nav-text">Linux虚拟网络设备tap&#x2F;tun</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#tun%E8%AE%BE%E5%A4%87%E5%BA%94%E7%94%A8%E4%B8%BE%E4%BE%8B"><span class="nav-number">1.1.</span> <span class="nav-text">tun设备应用举例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#reference"><span class="nav-number">1.2.</span> <span class="nav-text">reference</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/tap-tun/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux中的tap/tun设备 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux中的tap/tun设备
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2020-01-31 00:55:34" itemprop="dateCreated datePublished" datetime="2020-01-31T00:55:34+00:00">2020-01-31</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="Linux虚拟网络设备tap-x2F-tun"><a href="#Linux虚拟网络设备tap-x2F-tun" class="headerlink" title="Linux虚拟网络设备tap&#x2F;tun"></a>Linux虚拟网络设备tap&#x2F;tun</h1><p>tap&#x2F;tun常用于隧道通讯，通过一个字符设备来实现用户态和内核态的通讯，字符设备一端连接着用户空间，一端连接着内核空间。</p>
+<p>与物理网卡的最大不同是，tap&#x2F;tun的数据源来自于用户态的程序，而物理网卡的数据源来自于物理链路。</p>
+<p>对应的字符设备文件位置：</p>
+<ul>
+<li>tap: &#x2F;dev&#x2F;tap0</li>
+<li>tun: &#x2F;dev&#x2F;net&#x2F;tun</li>
+</ul>
+<p>当应用程序打开字符设备文件时，驱动程序会创建并注册相应的虚拟设备接口，以tunX或tapX命名。应用程序关闭设备文件时，驱动程序会删除tunX和tapX网络虚拟设备，并删除建立起来的路由信息。</p>
+<p>两个设备的不同点：</p>
+<ul>
+<li>tap是一个二层网络设备，只能处理二层的以太网帧，可以与物理网卡做桥接</li>
+<li>tun是一个点对点的三层网络设备，只能处理处理三层的IP数据包，无法与物理网卡做桥接，可以通过三层交换方式与物理网卡连通。Linux下的隧道协议基于该tun设备实现，如ipip、gre。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">                ┌──────────────┐</span><br><span class="line">                │              │</span><br><span class="line">                │     APP      │</span><br><span class="line">                │              │</span><br><span class="line">                └───────┬──────┘</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">           ┌────────────▼──────────┐</span><br><span class="line">           │                       │</span><br><span class="line">─ ─ ─ ─ ─ ─│     /dev/net/tun      ├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─</span><br><span class="line">           │                       │</span><br><span class="line">           └────────────┬──────────┘</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                ┌───────▼──────┐                 ┌──────────────┐</span><br><span class="line">                │              │                 │              │</span><br><span class="line">                │     tunX     ├────────────────▶│Network Stack │</span><br><span class="line">                │              │                 │              │</span><br><span class="line">                └──────────────┘                 └──────────────┘</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="tun设备应用举例"><a href="#tun设备应用举例" class="headerlink" title="tun设备应用举例"></a>tun设备应用举例</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">          ┌──────────────┐         ┌──────────────┐</span><br><span class="line">          │              │         │              │</span><br><span class="line">          │    APP A     │         │    APP B     │◀┐</span><br><span class="line">          │              │         │              │ │</span><br><span class="line">          └───────┬──────┘         └───────┬──────┘ │</span><br><span class="line">                  │                        │        │</span><br><span class="line">                  │                        │        │</span><br><span class="line">                 1│                        │        │</span><br><span class="line">                  │                       5│        │</span><br><span class="line">                  │                        │        │</span><br><span class="line">  ─ ─ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ─ ─ ─ ┼ ─ ─ ─ ─ ─</span><br><span class="line">                  │                        │        │</span><br><span class="line">                  │                        │       4│</span><br><span class="line">                  │                        │        │</span><br><span class="line">     ┌────────────▼────────────────────────▼─────┐  │</span><br><span class="line">     │                                           │  │</span><br><span class="line">     │               Network Stack               │  │</span><br><span class="line">     │                                           │  │</span><br><span class="line">     └────────────┬───────────────────────┬──────┘  │</span><br><span class="line">                  │                       │         │</span><br><span class="line">                 6│                      3│         │</span><br><span class="line">                  │                       │         │</span><br><span class="line">          ┌───────▼──────┐              ┌─▼─────────┴──┐</span><br><span class="line">          │              │              │              │</span><br><span class="line">10.1.1.11 │     eth0     │              │     tun0     │ 192.168.1.11</span><br><span class="line">          │              │              │              │</span><br><span class="line">          └───────┬──────┘              └──────────────┘</span><br><span class="line">                  │</span><br><span class="line">                 7│</span><br><span class="line">                  │</span><br><span class="line">                  ▼</span><br><span class="line"></span><br><span class="line">             10.1.1.100 / 192.168.1.100</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>应用程序A要发送数据到其他物理机192.168.1.100，由于物理网络环境下只有10.1.1.11和10.1.1.100是相互连通的，192.168.1.11和192.168.1.100是不通的，为了192.168.1.11和192.168.1.100能够进行通讯，需要将数据包进行一次封装。</p>
+<p>应用程序B是通过打开字符设备文件&#x2F;dev&#x2F;net&#x2F;tun0的方式来打开网络设备</p>
+<p>流程如下：</p>
+<ol>
+<li>A构造数据包，目的ip为192.168.1.100，并发送给协议栈</li>
+<li>协议栈根据数据包中的ip地址，匹配路由规则，要从tun0出去</li>
+<li>内核协议栈将数据包发送给tun0网络设备</li>
+<li>tun0发送应用程序B打开，于是将数据发送给应用程序B</li>
+<li>B收到数据包后，在用户态构造一个新的数据包，源IP为eth0的IP 10.1.1.11，目的IP为配置的对端10.1.1.100，并封装原来的数据包</li>
+<li>协议栈根据当前数据包的IP地址选择路由，将数据包发送给eth0</li>
+</ol>
+<h2 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/bakari/p/10450711.html">详解云计算网络底层技术——虚拟网络设备 tap&#x2F;tun 原理解析</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/bakari/p/10449664.html">Linux 网络工具详解之 ip tuntap 和 tunctl 创建 tap&#x2F;tun 设备</a></li>
+<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000009249039">Linux虚拟网络设备之tun&#x2F;tap</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/if-promiscuous/" rel="prev" title="Linux下网卡混杂模式">
+                  <i class="fa fa-chevron-left"></i> Linux下网卡混杂模式
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/ipip/" rel="next" title="Linux IPIP隧道协议">
+                  Linux IPIP隧道协议 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

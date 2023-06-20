@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="大页内存介绍一个操作系统上一台机器的物理内存是有限的，而操作系统上却运行着大量的进程，为了对进程屏蔽物理内存的差异，操作系统引入了虚拟内存的概念。Linux系统中虚拟内存是按照页的方式来进行管理的，每个页的默认大小为4K。如果物理内存非常大，就会导致虚拟内存和物理内存映射的页表（TLB）非常大。为了减少页表，一个可行的方法为增加页的大小。​ 可以通过如下命令来查看默认页大小： 12$ getcon">
+<meta property="og:type" content="article">
+<meta property="og:title" content="大页内存">
+<meta property="og:url" content="http://kuring.me/post/huge-page/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="大页内存介绍一个操作系统上一台机器的物理内存是有限的，而操作系统上却运行着大量的进程，为了对进程屏蔽物理内存的差异，操作系统引入了虚拟内存的概念。Linux系统中虚拟内存是按照页的方式来进行管理的，每个页的默认大小为4K。如果物理内存非常大，就会导致虚拟内存和物理内存映射的页表（TLB）非常大。为了减少页表，一个可行的方法为增加页的大小。​ 可以通过如下命令来查看默认页大小： 12$ getcon">
+<meta property="og:locale">
+<meta property="article:published_time" content="2022-03-07T18:20:17.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.233Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/huge-page/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/huge-page/","path":"post/huge-page/","title":"大页内存"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>大页内存 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%A7%E9%A1%B5%E5%86%85%E5%AD%98%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">大页内存介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E5%A4%A7%E9%A1%B5%E5%86%85%E5%AD%98%E6%93%8D%E4%BD%9C"><span class="nav-number">2.</span> <span class="nav-text">静态大页内存操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%8F%E6%98%8E%E5%A4%A7%E9%A1%B5%E5%86%85%E5%AD%98%E6%93%8D%E4%BD%9C%EF%BC%88%E5%BE%85%E8%A1%A5%E5%85%85%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">透明大页内存操作（待补充）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%A7%E9%A1%B5%E5%86%85%E5%AD%98%E5%9C%A8k8s%E7%9A%84%E6%94%AF%E6%8C%81%E6%83%85%E5%86%B5"><span class="nav-number">4.</span> <span class="nav-text">大页内存在k8s的支持情况</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/huge-page/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="大页内存 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          大页内存
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-07 18:20:17" itemprop="dateCreated datePublished" datetime="2022-03-07T18:20:17+00:00">2022-03-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="大页内存介绍"><a href="#大页内存介绍" class="headerlink" title="大页内存介绍"></a>大页内存介绍</h2><p>一个操作系统上一台机器的物理内存是有限的，而操作系统上却运行着大量的进程，为了对进程屏蔽物理内存的差异，操作系统引入了虚拟内存的概念。Linux系统中虚拟内存是按照页的方式来进行管理的，每个页的默认大小为4K。如果物理内存非常大，就会导致虚拟内存和物理内存映射的页表（TLB）非常大。为了减少页表，一个可行的方法为增加页的大小。<br>​</p>
+<p>可以通过如下命令来查看默认页大小：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">getconf</span> <span class="string">PAGE_SIZE</span></span><br><span class="line"><span class="number">4096</span></span><br></pre></td></tr></table></figure>
+<p>在对内存要求特别严格的场景下，比如很多数据库的场景，都有巨页的需求，比如将页设置为1GB，甚至几十GB。<br>​</p>
+<p>通常在大页内存的场景下，会将Linux的swap功能关闭，避免当页换出时导致的性能下降。<br>​</p>
+<p>在Linux中Huge Page有2MB和1GB两种规则，其中2MB适用于GB级别的内存，1GB适用于TB级别的内存。<br>​</p>
+<p>大页内存可以分为静态大页和透明大页两类。</p>
+<ul>
+<li>静态大页需要用户自行控制大页的分配、释放和使用。但该方式需要事先配置大页内存的量，因此用起来不够灵活。配置可以在系统启动的时候配置hugepages（页数量）和hugepagesz（页大小）两个参数。也可以使用修改内核参数的方式来预留。</li>
+<li>透明大页由操作系统的后台内核线程khugepaged控制大页的分配、释放和使用。</li>
+</ul>
+<h2 id="静态大页内存操作"><a href="#静态大页内存操作" class="headerlink" title="静态大页内存操作"></a>静态大页内存操作</h2><p>预留大页内存</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">echo 20 &gt;  /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages</span><br></pre></td></tr></table></figure>
+<p>可以通过&#x2F;proc&#x2F;meminfo文件系统看到大页内存的使用情况</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash"><span class="built_in">cat</span> /proc/meminfo | grep Huge</span></span><br><span class="line">AnonHugePages:   2037760 kB</span><br><span class="line">HugePages_Total:      20 # 预先分配的大页数量</span><br><span class="line">HugePages_Free:       20 # 空闲大页数量</span><br><span class="line">HugePages_Rsvd:        0 </span><br><span class="line">HugePages_Surp:        0</span><br><span class="line">Hugepagesize:       2048 kB</span><br></pre></td></tr></table></figure>
+<p>挂载hugetlb文件系统</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t hugetlbfs none /mnt/huge</span><br></pre></td></tr></table></figure>
+<p>在应用程序中mmap映射hugetlb文件系统即可使用，对内存的操作类似于访问文件。</p>
+<h2 id="透明大页内存操作（待补充）"><a href="#透明大页内存操作（待补充）" class="headerlink" title="透明大页内存操作（待补充）"></a>透明大页内存操作（待补充）</h2><p>cat &#x2F;sys&#x2F;kernel&#x2F;mm&#x2F;transparent_hugepage&#x2F;enabled</p>
+<h2 id="大页内存在k8s的支持情况"><a href="#大页内存在k8s的支持情况" class="headerlink" title="大页内存在k8s的支持情况"></a>大页内存在k8s的支持情况</h2><p>HugePage是k8s 1.9版本中引入的特性，1.10变为beta版本，1.23版本stable版本。k8s大于1.10版本该feature默认开启。</p>
+<p>在节点上配置了大页内存后，kubelet会自动感知到大页内存的配置，会修改node配置。会在hugepages-2Mi中有对应的大页内存容量，memory字段会去掉对应的大页内存量。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">allocatable:</span></span><br><span class="line">  <span class="attr">cpu:</span> <span class="string">&quot;15&quot;</span></span><br><span class="line">  <span class="attr">ephemeral-storage:</span> <span class="string">41152812Ki</span></span><br><span class="line">  <span class="attr">hugepages-1Gi:</span> <span class="string">&quot;0&quot;</span></span><br><span class="line">  <span class="attr">hugepages-2Mi:</span> <span class="string">40Mi</span></span><br><span class="line">  <span class="attr">memory:</span> <span class="string">63998924Ki</span></span><br><span class="line">  <span class="attr">pods:</span> <span class="string">&quot;110&quot;</span></span><br><span class="line"><span class="attr">capacity:</span></span><br><span class="line">  <span class="attr">cpu:</span> <span class="string">&quot;16&quot;</span></span><br><span class="line">  <span class="attr">ephemeral-storage:</span> <span class="string">41152812Ki</span></span><br><span class="line">  <span class="attr">hugepages-1Gi:</span> <span class="string">&quot;0&quot;</span></span><br><span class="line">  <span class="attr">hugepages-2Mi:</span> <span class="string">40Mi</span></span><br><span class="line">  <span class="attr">memory:</span> <span class="string">64756684Ki</span></span><br><span class="line">  <span class="attr">pods:</span> <span class="string">&quot;110&quot;</span></span><br></pre></td></tr></table></figure>
+<p>pod在使用大页内存的时候，需要以volume的方式挂载到pod中，pod对大页内存的使用跟普通文件系统相同。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/nandubeigui/" rel="prev" title="《南渡北归》读后感">
+                  <i class="fa fa-chevron-left"></i> 《南渡北归》读后感
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/ack/" rel="next" title="阿里云容器服务ack技术调研（个人笔记）">
+                  阿里云容器服务ack技术调研（个人笔记） <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

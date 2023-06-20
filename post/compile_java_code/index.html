@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="通过Eclipse编写java程序久了，发现已经不会用命令来编译java程序了。今天在windows下搭建了一个solr环境，想放到linux下去跑一下，在windows上打成jar包后放在linux下不能运行，是时候回顾一下java的编译命令了。而且网上的资料比较零散，没有特别系统的资料。 本文在linux测试，同windows下的命令行工具差别不大。 编译并执行单个文件1. 在目录下~&#x2F;tes">
+<meta property="og:type" content="article">
+<meta property="og:title" content="通过命令编译java程序">
+<meta property="og:url" content="http://kuring.me/post/compile_java_code/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="通过Eclipse编写java程序久了，发现已经不会用命令来编译java程序了。今天在windows下搭建了一个solr环境，想放到linux下去跑一下，在windows上打成jar包后放在linux下不能运行，是时候回顾一下java的编译命令了。而且网上的资料比较零散，没有特别系统的资料。 本文在linux测试，同windows下的命令行工具差别不大。 编译并执行单个文件1. 在目录下~&#x2F;tes">
+<meta property="og:locale">
+<meta property="article:published_time" content="2013-07-01T11:04:01.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.229Z">
+<meta property="article:tag" content="Java">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/compile_java_code/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/compile_java_code/","path":"post/compile_java_code/","title":"通过命令编译java程序"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>通过命令编译java程序 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E5%B9%B6%E6%89%A7%E8%A1%8C%E5%8D%95%E4%B8%AA%E6%96%87%E4%BB%B6"><span class="nav-number">1.</span> <span class="nav-text">编译并执行单个文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E5%B9%B6%E6%89%A7%E8%A1%8C%E5%A4%9A%E4%B8%AA%E6%96%87%E4%BB%B6"><span class="nav-number">2.</span> <span class="nav-text">编译并执行多个文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%89%93%E5%8C%85"><span class="nav-number">3.</span> <span class="nav-text">打包</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8jar%E5%91%BD%E4%BB%A4"><span class="nav-number">4.</span> <span class="nav-text">常用jar命令</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E6%A1%A3"><span class="nav-number">5.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/compile_java_code/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="通过命令编译java程序 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          通过命令编译java程序
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-07-01 11:04:01" itemprop="dateCreated datePublished" datetime="2013-07-01T11:04:01+00:00">2013-07-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>通过Eclipse编写java程序久了，发现已经不会用命令来编译java程序了。今天在windows下搭建了一个solr环境，想放到linux下去跑一下，在windows上打成jar包后放在linux下不能运行，是时候回顾一下java的编译命令了。而且网上的资料比较零散，没有特别系统的资料。</p>
+<p>本文在linux测试，同windows下的命令行工具差别不大。</p>
+<h1 id="编译并执行单个文件"><a href="#编译并执行单个文件" class="headerlink" title="编译并执行单个文件"></a>编译并执行单个文件</h1><p>1. 在目录下<code>~/test_java/com/kuring</code>下新建HelloWorld.java的文件，文件内容为</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HellowWorld</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;hello world&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>2. 在目录<code>~/test_java</code>下执行<code>javac com/kuring/HelloWorld.java</code>命令来编译文件。此时会在HelloWorld.java文件所在的目录下生成HelloWorld.class的二进制文件。</p>
+<p>3. 在目录<code>~/test_java</code>下执行<code>java com.kuring.HelloWorld</code>来执行HelloWorld.class。屏幕会输出<code>hello world</code>，说明文件执行成功。<br>也可以在任意路径下指定classpath路径来执行，命令为<code>java -classpath  ~/test_java com.kuring.HelloWorld</code>，其中classpath指定了类的搜索路径。</p>
+<h1 id="编译并执行多个文件"><a href="#编译并执行多个文件" class="headerlink" title="编译并执行多个文件"></a>编译并执行多个文件</h1><p>1. 在目录下<code>~/test_java/com/kuring</code>下新建HelloWorld2.java和Main.java的文件，HelloWorld2.java文件内容为</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HellowWorld2</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">print</span><span class="params">()</span> &#123;</span><br><span class="line">		System.out.println(<span class="string">&quot;hello world too&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Main.java的文件内容为</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">		<span class="type">HelloWorld2</span> <span class="variable">hello</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HelloWorld2</span>();</span><br><span class="line">		hello.print();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>2. 在目录<code>~/test_java</code>下执行<code>javac com/kuring/Main.java</code>命令来编译文件。此时会在Main.java文件所在的目录下生成Main.class和HelloWorld2.class两个文件，可以看出javac有自动推导编译的功能。</p>
+<p>3. 在目录<code>~/test_java</code>下执行<code>java com.kuring.Main</code>。屏幕会输出<code>hello world too</code>，说明文件执行成功。</p>
+<h1 id="打包"><a href="#打包" class="headerlink" title="打包"></a>打包</h1><p>将上述例子中的程序打成jar包，可以在<code>~/test_java</code>目录下通过执行命令<code>jar cvf my.jar com</code>来生成jar文件。其中my.jar为要生成的jar文件的名字。<br>通过<code>java -classpath my.jar com.kuring.Main</code>来执行jar文件。<br>上述命令需要指定要执行的类名Main，如果想通过<code>java -jar my.jar</code>命令即可执行程序需要在jar包的META-INF&#x2F;MANIFEST.MF文件中增加一行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Main-Class: SolrTest</span><br></pre></td></tr></table></figure>
+<p>来执行含有main函数的类。然后通过<code>jar -cfm my.jar MANIFEST.MF路径 要打包的目录或文件</code>来重新生成jar包。这样就可以通过<code>java -jar my.jar</code>来执行jar包了。</p>
+<p>关于如何创建并执行引用了其他jar包的jar包，可以参考我的另外一篇博客《<a href="/post/solr_setup">在Linux上搭建solr环境</a>》，这里不再赘述。</p>
+<h1 id="常用jar命令"><a href="#常用jar命令" class="headerlink" title="常用jar命令"></a>常用jar命令</h1><table border="1" cellpadding="3" cellspacing="0" summary="" width="100%">
+    <tr>
+        <td><strong>功能</strong></td>
+        <td><strong>命令</strong></td>
+    </tr>
+    <tr>
+        <td>用一个单独的文件创建一个 JAR 文件</td>
+        <td>jar cf jar-file input-file...</td>
+    </tr>
+    <tr>
+        <td>用一个目录创建一个 JAR 文件</td>
+        <td>jar cf jar-file dir-name</td>
+    </tr>
+    <tr>
+        <td>创建一个未压缩的 JAR 文件</td>
+        <td>jar cf0 jar-file dir-name</td>
+    </tr>
+    <tr>
+        <td>更新一个 JAR 文件</td>
+        <td>jar uf jar-file input-file...</td>
+    </tr>
+    <tr>
+        <td>查看一个 JAR 文件的内容</td>
+        <td>jar tf jar-file</td>
+    </tr>
+    <tr>
+        <td>提取一个 JAR 文件的内容</td>
+        <td>jar xf jar-file</td>
+    </tr>
+    <tr>
+        <td>从一个 JAR 文件中提取特定的文件</td>
+        <td>jar xf jar-file archived-file...</td>
+    </tr>
+    <tr>
+        <td>运行一个打包为可执行 JAR 文件的应用程序</td>
+        <td>java -jar app.jar</td>
+    </tr>
+</table>
+
+<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p><a target="_blank" rel="noopener" href="http://www.ibm.com/developerworks/cn/java/j-jar/">JAR 文件揭密</a><br><a target="_blank" rel="noopener" href="http://blog.sina.com.cn/s/blog_774c75080100q73w.html">Java程序的编译、执行和打包</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Java/" rel="tag"># Java</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/hadoop_setup/" rel="prev" title="在Linux上搭建Hadoop集群环境">
+                  <i class="fa fa-chevron-left"></i> 在Linux上搭建Hadoop集群环境
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/solr_setup/" rel="next" title="在Linux上搭建solr环境">
+                  在Linux上搭建solr环境 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

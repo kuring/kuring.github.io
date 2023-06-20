@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="为了其他主机可访问docker registry，必须采用https协议。 1234mkdir -p ~&#x2F;docker_registry&#x2F;certssigndomain&#x3D;103-17-184-lg-201-k08openssl req -nodes -subj &quot;&#x2F;C&#x3D;CN&#x2F;ST&#x3D;BeiJing&#x2F;L&#x3D;BeiJing&#x2F;CN&#x3D;$signdomain&quot; -newkey rsa:409">
+<meta property="og:type" content="article">
+<meta property="og:title" content="docker私有仓库搭建">
+<meta property="og:url" content="http://kuring.me/post/docker-registry/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="为了其他主机可访问docker registry，必须采用https协议。 1234mkdir -p ~&#x2F;docker_registry&#x2F;certssigndomain&#x3D;103-17-184-lg-201-k08openssl req -nodes -subj &quot;&#x2F;C&#x3D;CN&#x2F;ST&#x3D;BeiJing&#x2F;L&#x3D;BeiJing&#x2F;CN&#x3D;$signdomain&quot; -newkey rsa:409">
+<meta property="og:locale">
+<meta property="article:published_time" content="2017-12-07T18:44:59.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.233Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/docker-registry/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/docker-registry/","path":"post/docker-registry/","title":"docker私有仓库搭建"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>docker私有仓库搭建 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#api"><span class="nav-number">1.</span> <span class="nav-text">api</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ref"><span class="nav-number">2.</span> <span class="nav-text">ref</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/docker-registry/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="docker私有仓库搭建 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          docker私有仓库搭建
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-12-07 18:44:59" itemprop="dateCreated datePublished" datetime="2017-12-07T18:44:59+00:00">2017-12-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>为了其他主机可访问docker registry，必须采用https协议。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p ~/docker_registry/certs</span><br><span class="line">signdomain=103-17-184-lg-201-k08</span><br><span class="line">openssl req -nodes -subj &quot;/C=CN/ST=BeiJing/L=BeiJing/CN=$signdomain&quot; -newkey rsa:4096 -keyout ~/docker_registry/certs/$signdomain.key -out ~/docker_registry/certs/$signdomain.csr</span><br><span class="line">openssl x509 -req -days 3650 -in ~/docker_registry/certs/$signdomain.csr -signkey ~/docker_registry/certs/$signdomain.key -out ~/docker_registry/certs/$signdomain.crt</span><br></pre></td></tr></table></figure>
+
+<p>从docker hub拉取registry镜像，并启动镜像</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">docker run -d -p 5000:5000 --restart=always --name registry \</span><br><span class="line">  -v /data/docker_registry:/var/lib/registry \</span><br><span class="line">  -v /home/worker/docker_registry/certs:/certs \</span><br><span class="line">  -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/103-17-184-lg-201-k08.yidian.com.crt \</span><br><span class="line">  -e REGISTRY_HTTP_TLS_KEY=/certs/103-17-184-lg-201-k08.yidian.com.key \</span><br><span class="line">  registry:2</span><br></pre></td></tr></table></figure>
+
+<p>停止registry镜像并删除的命令为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker stop registry &amp;&amp; docker rm -v registry</span><br></pre></td></tr></table></figure>
+
+<p>下载最新的centos7镜像</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker pull centos:7.3.1611</span><br></pre></td></tr></table></figure>
+
+<p>将centos7镜像增加tag</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">docker tag centos:7.3.1611 103-17-184-lg-201-k08.yidian.com:5000/centos:7.3</span><br><span class="line"></span><br><span class="line"># 可以看到列表中会多出一个镜像</span><br><span class="line">[root@103-17-184-lg-201-k08 data]# docker images</span><br><span class="line">REPOSITORY                                     TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">docker.io/registry                             2                   047218491f8c        4 weeks ago         33.17 MB</span><br><span class="line">103-17-184-lg-201-k08.yidian.com:5000/centos   7.3                 67591570dd29        3 months ago        191.8 MB</span><br><span class="line">docker.io/centos                               7.3.1611            67591570dd29        3 months ago        191.8 MB</span><br></pre></td></tr></table></figure>
+
+<p>docker push命令仅支持https协议，签名已经启动了自签名的https协议的registry，为了能够让docker能够信任registry，需要在&#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;目录下增加相应的crt文件，增加后的目录结构为&#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;103-17-184-lg-201-k08.yidian.com:5000&#x2F;103-17-184-lg-201-k08.yidian.com.crt，添加完成后需要重启docker服务。</p>
+<p>将image push到registry</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker push 103-17-184-lg-201-k08.yidian.com:5000/centos:7.3 </span><br></pre></td></tr></table></figure>
+
+<h1 id="api"><a href="#api" class="headerlink" title="api"></a>api</h1><ul>
+<li>列出images：<a target="_blank" rel="noopener" href="https://10.103.17.184:5000/v2/_catalog">https://10.103.17.184:5000/v2/_catalog</a></li>
+<li>列出image的tags：<a target="_blank" rel="noopener" href="https://10.103.17.184:5000/v2/centos/tags/list">https://10.103.17.184:5000/v2/centos/tags/list</a></li>
+</ul>
+<p>可以直接通过curl命令来访问api：<code>curl --cacert 103-17-184-lg-201-k08.yidian.com.crt -v https://103-17-184-lg-201-k08.yidian.com:5000/v2</code></p>
+<h1 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://hub.docker.com/_/registry/">registry</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.cnblogs.com/fengzheng/p/5168951.html">docker创建私有仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.docker.com/registry/">Docker Registry</a>（官方教程）</li>
+<li><a target="_blank" rel="noopener" href="https://docs.docker.com/registry/spec/api/">Registry API</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/yum-build/" rel="prev" title="yum源搭建">
+                  <i class="fa fa-chevron-left"></i> yum源搭建
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/iptables/" rel="next" title="iptables基础知识">
+                  iptables基础知识 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

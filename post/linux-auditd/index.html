@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="audit简介audit为linux内核安全体系的重要组成部分，用来记录内核的系统调用，文件修改等事件，用于审计目的。   auditctl: 面向用户的工具，类似于iptables命令 auditd: 负责将审计信息写入到&#x2F;var&#x2F;  启动auditd服务auditd作为单独的服务运行在系统上，Redhat系统使用systemctl start auditd启动服务，启动后通">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux auditd">
+<meta property="og:url" content="http://kuring.me/post/linux-auditd/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="audit简介audit为linux内核安全体系的重要组成部分，用来记录内核的系统调用，文件修改等事件，用于审计目的。   auditctl: 面向用户的工具，类似于iptables命令 auditd: 负责将审计信息写入到&#x2F;var&#x2F;  启动auditd服务auditd作为单独的服务运行在系统上，Redhat系统使用systemctl start auditd启动服务，启动后通">
+<meta property="og:locale">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/linux_audit.png">
+<meta property="article:published_time" content="2022-03-28T11:57:28.000Z">
+<meta property="article:modified_time" content="2023-06-20T04:09:44.237Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/linux_audit.png">
+
+
+<link rel="canonical" href="http://kuring.me/post/linux-auditd/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/linux-auditd/","path":"post/linux-auditd/","title":"linux auditd"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>linux auditd | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#audit%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">audit简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8auditd%E6%9C%8D%E5%8A%A1"><span class="nav-number">2.</span> <span class="nav-text">启动auditd服务</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#auditctl"><span class="nav-number">3.</span> <span class="nav-text">auditctl</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E8%B7%B5"><span class="nav-number">4.</span> <span class="nav-text">实践</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7%E6%96%87%E4%BB%B6%E5%8F%98%E5%8C%96"><span class="nav-number">4.1.</span> <span class="nav-text">监控文件变化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7%E6%96%87%E4%BB%B6%E5%A4%B9%E5%8F%98%E5%8C%96"><span class="nav-number">4.2.</span> <span class="nav-text">监控文件夹变化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7%E7%B3%BB%E7%BB%9F%E5%AE%9A%E6%9C%9Freboot"><span class="nav-number">4.3.</span> <span class="nav-text">监控系统定期reboot</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E6%A1%A3"><span class="nav-number">5.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-auditd/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="linux auditd | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          linux auditd
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-28 11:57:28" itemprop="dateCreated datePublished" datetime="2022-03-28T11:57:28+00:00">2022-03-28</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-20 04:09:44" itemprop="dateModified" datetime="2023-06-20T04:09:44+00:00">2023-06-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="audit简介"><a href="#audit简介" class="headerlink" title="audit简介"></a>audit简介</h2><p>audit为linux内核安全体系的重要组成部分，用来记录内核的系统调用，文件修改等事件，用于审计目的。</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/linux_audit.png"></p>
+<ul>
+<li>auditctl: 面向用户的工具，类似于iptables命令</li>
+<li>auditd: 负责将审计信息写入到&#x2F;var&#x2F;</li>
+</ul>
+<h2 id="启动auditd服务"><a href="#启动auditd服务" class="headerlink" title="启动auditd服务"></a>启动auditd服务</h2><p>auditd作为单独的服务运行在系统上，Redhat系统使用<code>systemctl start auditd</code>启动服务，启动后通过 <code>ps -ef | grep auditd</code>查看进程是否启动成功。</p>
+<h2 id="auditctl"><a href="#auditctl" class="headerlink" title="auditctl"></a>auditctl</h2><p>查看auditd的运行状态</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -s</span><br><span class="line">enabled 1</span><br><span class="line">failure 1</span><br><span class="line">pid 638</span><br><span class="line">rate_limit 0</span><br><span class="line">backlog_limit 8192</span><br><span class="line">lost 0</span><br><span class="line">backlog 0</span><br><span class="line">loginuid_immutable 0 unlocked</span><br></pre></td></tr></table></figure>
+
+<p>查看当前环境规则</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -l</span><br><span class="line">-w /tmp/hosts -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries1 -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries2 -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries2 -p wa</span><br></pre></td></tr></table></figure>
+
+<p>删除所有的audit规则</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -D</span><br><span class="line">No rules</span><br></pre></td></tr></table></figure>
+
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="监控文件变化"><a href="#监控文件变化" class="headerlink" title="监控文件变化"></a>监控文件变化</h3><ol>
+<li>执行 auditctl -w $file -p wa 来监控文件，比如监控内核参数 auditctl -w &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2 -p wa，其中-p指定了监控文件的行为，支持rwxa。</li>
+<li>查看文件 cat &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2。</li>
+<li>使用vim打开文件 vim &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2。</li>
+<li>执行 ausearch -f &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2 命令查看，可以看到如下的日志</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ ausearch -f /proc/sys/net/ipv4/tcp_retries1</span><br><span class="line">----</span><br><span class="line">time-&gt;Mon Mar 28 12:44:48 2022</span><br><span class="line">type=PROCTITLE msg=audit(1648442688.159:6232591): proctitle=76696D002F70726F632F7379732F6E65742F697076342F7463705F7265747269657331</span><br><span class="line">type=PATH msg=audit(1648442688.159:6232591): item=1 name=&quot;/proc/sys/net/ipv4/tcp_retries1&quot; inode=46629229 dev=00:03 mode=0100644 ouid=0 ogid=0 rdev=00:00 objtype=NORMAL cap_fp=0000000000000000 cap_fi=0000000000000000 cap_fe=0 cap_fver=0</span><br><span class="line">type=PATH msg=audit(1648442688.159:6232591): item=0 name=&quot;/proc/sys/net/ipv4/&quot; inode=8588 dev=00:03 mode=040555 ouid=0 ogid=0 rdev=00:00 objtype=PARENT cap_fp=0000000000000000 cap_fi=0000000000000000 cap_fe=0 cap_fver=0</span><br><span class="line">type=CWD msg=audit(1648442688.159:6232591):  cwd=&quot;/root&quot;</span><br><span class="line">type=SYSCALL msg=audit(1648442688.159:6232591): arch=c000003e syscall=2 success=yes exit=3 a0=11687a0 a1=241 a2=1a4 a3=7ffe33dc14e0 items=2 ppid=8375 pid=8629 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts1 ses=250225 comm=&quot;vim&quot; exe=&quot;/usr/bin/vim&quot; key=(null)</span><br></pre></td></tr></table></figure>
+
+<h3 id="监控文件夹变化"><a href="#监控文件夹变化" class="headerlink" title="监控文件夹变化"></a>监控文件夹变化</h3><p>监控文件夹同样采用跟上述文件相同的方式，但有个问题是如果文件夹下内容较多，会一起监控，从而导致audit的log内容过多。</p>
+<h3 id="监控系统定期reboot"><a href="#监控系统定期reboot" class="headerlink" title="监控系统定期reboot"></a>监控系统定期reboot</h3><p>执行如下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">auditctl -w /bin/systemctl -p rwxa -k systemd_call</span><br><span class="line">auditctl -a always,exit -F arch=b64 -S reboot -k reboot_call</span><br></pre></td></tr></table></figure>
+
+<p>待系统重启后执行如下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ausearch -f reboot</span><br></pre></td></tr></table></figure>
+
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a target="_blank" rel="noopener" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/security_guide/chap-system_auditing">RedHat auditd文档</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/shell-often/" rel="prev" title="常用shell命令（持续更新）">
+                  <i class="fa fa-chevron-left"></i> 常用shell命令（持续更新）
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/post/firewalld/" rel="next" title="firewalld">
+                  firewalld <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
