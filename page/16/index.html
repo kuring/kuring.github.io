@@ -183,91 +183,6 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/my_makefile/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/my_makefile/" class="post-title-link" itemprop="url">我的Makefile文件</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2014-11-23 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-23T00:00:00+00:00">2014-11-23</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-20 06:41:25" itemprop="dateModified" datetime="2023-06-20T06:41:25+00:00">2023-06-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>最近学习了《GNU Make项目管理》，改进了我之前一直在用的Makefile文件，解决我之前的Makefile中一直存在的修改依赖头文件后不能自动编译cpp文件的问题。本文列举了我常用的两个Makefile文件，其中第一个为我常用的Makefile，第二个为从网上找到的其他Makefile文件。</p>
-<h1 id="第一个Makefile"><a href="#第一个Makefile" class="headerlink" title="第一个Makefile"></a>第一个Makefile</h1><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">all:</span></span><br><span class="line">INCLUDE = -I./</span><br><span class="line"></span><br><span class="line">FLAGS = -g -Wall <span class="variable">$(INCLUDE)</span></span><br><span class="line">FLAGS += -fPIC</span><br><span class="line"></span><br><span class="line">LIBDIR = -lz -lm -lcrypto</span><br><span class="line"></span><br><span class="line">LINK = <span class="variable">$(LIBDIR)</span> -lpthread</span><br><span class="line"></span><br><span class="line">GCC = g++</span><br><span class="line"></span><br><span class="line"><span class="comment"># for C++ language</span></span><br><span class="line">CODE.cpp = main.cpp \</span><br><span class="line">			trim.cpp</span><br><span class="line"></span><br><span class="line">CPP.o = $(CODE.cpp:.cpp=.o)</span><br><span class="line">OBJS.d = $(CODE.cpp:.cpp=.d)</span><br><span class="line"></span><br><span class="line">OBJS.o = $(CPP.o)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 解决头文件依赖</span></span><br><span class="line"><span class="keyword">-include</span> <span class="variable">$(<span class="built_in">subst</span> .cpp,.d,$(CODE.cpp)</span>)</span><br><span class="line"></span><br><span class="line"><span class="section">%.d: %.cpp</span></span><br><span class="line">	<span class="variable">$(GCC)</span> -M <span class="variable">$(FLAGS)</span> <span class="variable">$&lt;</span> &gt; <span class="variable">$@</span>.$$$$;		\</span><br><span class="line">	sed &#x27;s,\(<span class="variable">$*</span>\)\.o[ :]*,\1.o <span class="variable">$@</span> : ,g&#x27; &lt; <span class="variable">$@</span>.$$$$ &gt; <span class="variable">$@</span>;	\</span><br><span class="line">	rm -f <span class="variable">$@</span>.$$$$</span><br><span class="line"></span><br><span class="line"><span class="comment"># rule for C++ language</span></span><br><span class="line">%.o : %.cpp	</span><br><span class="line">	<span class="variable">$(GCC)</span> <span class="variable">$(FLAGS)</span> -o <span class="variable">$@</span> -c <span class="variable">$&lt;</span>	</span><br><span class="line">	@echo <span class="variable">$*</span>.o build successfully!......</span><br><span class="line"></span><br><span class="line">TARGET = main</span><br><span class="line">	</span><br><span class="line"><span class="variable">$(TARGET)</span> : $(OBJS.o) </span><br><span class="line">	<span class="variable">$(GCC)</span> $(OBJS.o) -o <span class="variable">$(TARGET)</span> <span class="variable">$(LINK)</span></span><br><span class="line">	@echo <span class="variable">$(TARGET)</span> BUILD OK!.........</span><br><span class="line"></span><br><span class="line">all : <span class="variable">$(TARGET)</span></span><br><span class="line"></span><br><span class="line"><span class="meta"><span class="keyword">.PHONY</span>:</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm -rf <span class="variable">$(TARGET)</span></span><br><span class="line">	rm -rf $(OBJS.o)</span><br><span class="line">	rm -rf $(OBJS.d)</span><br><span class="line">	rm -rf *.d</span><br></pre></td></tr></table></figure>
-
-<p>该文件特点为需要手工将需要编译的源文件手动添加到Makefile中，可能比较麻烦，但是编译时比较灵活。可以随意修改需要编译源文件的顺序和是否需要编译源文件。</p>
-<h1 id="第二个Makefile"><a href="#第二个Makefile" class="headerlink" title="第二个Makefile"></a>第二个Makefile</h1><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">###########################################################</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># KEFILE FOR C/C++ PROJECT</span></span><br><span class="line"><span class="comment"># Author: swm8023 &lt;swm8023@gmail.com&gt;</span></span><br><span class="line"><span class="comment"># Date:   2014/01/30</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">###########################################################</span></span><br><span class="line"></span><br><span class="line"><span class="meta"><span class="keyword">.PHONY</span>: all clean</span></span><br><span class="line"><span class="section">all: </span></span><br><span class="line"></span><br><span class="line"><span class="comment"># annotation when release version</span></span><br><span class="line">DEBUG       := y</span><br><span class="line">TARGET_PROG := main</span><br><span class="line"></span><br><span class="line"><span class="comment"># project directory	</span></span><br><span class="line">DEBUG_DIR   := ./Debug</span><br><span class="line">RELEASE_DIR := ./Release</span><br><span class="line">BIN_DIR     := <span class="variable">$(<span class="built_in">if</span> <span class="variable">$(DEBUG)</span>, <span class="variable">$(DEBUG_DIR)</span>, <span class="variable">$(RELEASE_DIR)</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># shell command</span></span><br><span class="line">CC    := gcc</span><br><span class="line">CXX   := g++</span><br><span class="line">RM    := rm -rf</span><br><span class="line">MKDIR := mkdir -p</span><br><span class="line">SED   := sed</span><br><span class="line">MV    := mv</span><br><span class="line"></span><br><span class="line"><span class="comment"># init sources &amp; objects &amp; depends</span></span><br><span class="line">sources_all := <span class="variable">$(<span class="built_in">shell</span> find . -name &quot;*.c&quot; -o -name &quot;*.cpp&quot; -o -name &quot;*.h&quot;)</span></span><br><span class="line">sources_c   := <span class="variable">$(<span class="built_in">filter</span> %.c, <span class="variable">$(sources_all)</span>)</span></span><br><span class="line">sources_cpp := <span class="variable">$(<span class="built_in">filter</span> %.cpp, <span class="variable">$(sources_all)</span>)</span></span><br><span class="line">sources_h   := <span class="variable">$(<span class="built_in">filter</span> %.h, <span class="variable">$(sources_all)</span>)</span></span><br><span class="line">objs        := <span class="variable">$(<span class="built_in">addprefix</span> <span class="variable">$(BIN_DIR)</span>/,$(<span class="built_in">strip</span> $(sources_cpp:.cpp=.o)</span> $(sources_c:.c=.o)))</span><br><span class="line">deps        := <span class="variable">$(<span class="built_in">addprefix</span> <span class="variable">$(BIN_DIR)</span>/,$(<span class="built_in">strip</span> $(sources_cpp:.cpp=.d)</span> $(sources_c:.c=.d)))</span><br><span class="line"></span><br><span class="line"><span class="comment"># create directory</span></span><br><span class="line"><span class="variable">$(<span class="built_in">foreach</span> dirname,$(<span class="built_in">sort</span> $(<span class="built_in">dir</span> <span class="variable">$(sources_c)</span> <span class="variable">$(sources_cpp)</span>)</span>),\</span><br><span class="line">  <span class="variable">$(<span class="built_in">shell</span> <span class="variable">$(MKDIR)</span> <span class="variable">$(BIN_DIR)</span>/<span class="variable">$(dirname)</span>)</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># complie &amp; link variable</span></span><br><span class="line">CFLAGS     := <span class="variable">$(<span class="built_in">if</span> <span class="variable">$(DEBUG)</span>,-g -O, -O2)</span></span><br><span class="line">CFLAGS     += <span class="variable">$(<span class="built_in">addprefix</span> -I ,$(<span class="built_in">sort</span> $(<span class="built_in">dir</span> <span class="variable">$(sources_h)</span>)</span>))</span><br><span class="line">CXXFLAGS    = <span class="variable">$(CFLAGS)</span></span><br><span class="line">LDFLAGS    := </span><br><span class="line">LOADLIBES  += <span class="comment">#-L/usr/include/mysql</span></span><br><span class="line">LDLIBS     += <span class="comment">#-lpthread -lmysqlclient</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># add vpath</span></span><br><span class="line"><span class="keyword">vpath</span> %.h <span class="variable">$(<span class="built_in">sort</span> $(<span class="built_in">dir</span> <span class="variable">$(sources_h)</span>)</span>)</span><br><span class="line"><span class="keyword">vpath</span> %.c <span class="variable">$(<span class="built_in">sort</span> $(<span class="built_in">dir</span> <span class="variable">$(sources_c)</span>)</span>)</span><br><span class="line"><span class="keyword">vpath</span> %.cpp <span class="variable">$(<span class="built_in">sort</span> $(<span class="built_in">dir</span> <span class="variable">$(sources_cpp)</span>)</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># generate depend files</span></span><br><span class="line"><span class="comment"># actually generate after object generated, beacasue it only used when next make)</span></span><br><span class="line"><span class="keyword">ifneq</span> <span class="string">&quot;<span class="variable">$(MAKECMDGOALS)</span>&quot;</span> <span class="string">&quot;clean&quot;</span></span><br><span class="line"><span class="keyword">sinclude</span> <span class="variable">$(deps)</span></span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># make-depend(depend-file,source-file,object-file,cc)</span></span><br><span class="line"><span class="keyword">define</span> make-depend</span><br><span class="line">  <span class="variable">$(RM)</span> $1;                                     \</span><br><span class="line">  $4 <span class="variable">$(CFLAGS)</span> -MM $2 |                         \</span><br><span class="line">  <span class="variable">$(SED)</span> &#x27;s,\(<span class="variable">$(<span class="built_in">notdir</span> $3)</span>\): ,$3: ,&#x27; &gt; $1.tmp; \</span><br><span class="line">  <span class="variable">$(SED)</span> -e &#x27;s/<span class="comment">#.*//&#x27;                           \</span></span><br><span class="line">         -e &#x27;s/^[^:]*: *//&#x27;                     \</span><br><span class="line">         -e &#x27;s/ *\\$$//&#x27;                        \</span><br><span class="line">         -e &#x27;/^$$/ d&#x27;                           \</span><br><span class="line">         -e &#x27;s/$$/ :/&#x27; &lt; $1.tmp &gt;&gt; $1.tmp;      \</span><br><span class="line">  <span class="variable">$(MV)</span> $1.tmp $1;</span><br><span class="line"><span class="keyword">endef</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># rules to generate objects file</span></span><br><span class="line"><span class="variable">$(BIN_DIR)</span>/%.o: %.c</span><br><span class="line">	@<span class="variable">$(<span class="built_in">call</span> make-depend,$(<span class="built_in">patsubst</span> %.o,%.d,<span class="variable">$@</span>)</span>,<span class="variable">$&lt;</span>,<span class="variable">$@</span>,<span class="variable">$(CC)</span>)</span><br><span class="line">	<span class="variable">$(CC)</span> <span class="variable">$(CFLAGS)</span> -o <span class="variable">$@</span> -c <span class="variable">$&lt;</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$(BIN_DIR)</span>/%.o: %.cpp</span><br><span class="line">	@<span class="variable">$(<span class="built_in">call</span> make-depend,$(<span class="built_in">patsubst</span> %.o,%.d,<span class="variable">$@</span>)</span>,<span class="variable">$&lt;</span>,<span class="variable">$@</span>,<span class="variable">$(CXX)</span>)</span><br><span class="line">	<span class="variable">$(CXX)</span> <span class="variable">$(CXXFLAGS)</span> -o <span class="variable">$@</span> -c <span class="variable">$&lt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># add-target(target,objs,cc)</span></span><br><span class="line"><span class="keyword">define</span> add-target</span><br><span class="line">  REAL_TARGET += <span class="variable">$(BIN_DIR)</span>/$1</span><br><span class="line">  <span class="variable">$(BIN_DIR)</span>/$1: $2</span><br><span class="line">	$3 <span class="variable">$(LDFLAGS)</span> $<span class="variable">$^</span> <span class="variable">$(LOADLIBES)</span> <span class="variable">$(LDLIBS)</span> -o $<span class="variable">$@</span></span><br><span class="line"><span class="keyword">endef</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># call add-target</span></span><br><span class="line"><span class="variable">$(<span class="built_in">foreach</span> targ,<span class="variable">$(TARGET_PROG)</span>,$(<span class="built_in">eval</span> $(<span class="built_in">call</span> add-target,<span class="variable">$(targ)</span>,<span class="variable">$(objs)</span>,<span class="variable">$(CXX)</span>)</span>))</span><br><span class="line"></span><br><span class="line"><span class="section">all: <span class="variable">$(REAL_TARGET)</span> <span class="variable">$(TARGET_LIBS)</span></span></span><br><span class="line"></span><br><span class="line"><span class="section">clean: </span></span><br><span class="line">	<span class="variable">$(RM)</span> <span class="variable">$(BIN_DIR)</span></span><br></pre></td></tr></table></figure>
-
-<p>该Makefile为从<a target="_blank" rel="noopener" href="http://c4fun.cn/blog/2014/01/30/common-makefile/">一个通用的C&#x2F;C++ Makefile</a>中直接获得的，为了避免原博客以后不能访问的情况，这里备份一下。</p>
-<p>该Makefile可以动检测Makefile所在目录及其子目录中的.c和.cpp文件，并进行编译，不需要手动修改Makefile来填写需要编译的源文件，比较自动化。</p>
-<h1 id="相关参考"><a href="#相关参考" class="headerlink" title="相关参考"></a>相关参考</h1><p>第二个Makefile文件的作者博客中的两篇文章：<a target="_blank" rel="noopener" href="http://c4fun.cn/blog/2014/01/13/gnu-make-study01/">GNU Make学习总结（一）</a>和<a target="_blank" rel="noopener" href="http://c4fun.cn/blog/2014/01/13/gnu-make-study02/">GNU Make学习总结（二）</a></p>
-<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/s/1jGDo5ls">一个包含上述两个Makefile的例子</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
     <link itemprop="mainEntityOfPage" href="http://kuring.me/post/programming_pearls_1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -304,7 +219,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-20 06:41:25" itemprop="dateModified" datetime="2023-06-20T06:41:25+00:00">2023-06-20</time>
+      <time title="Modified: 2023-06-21 08:13:02" itemprop="dateModified" datetime="2023-06-21T08:13:02+00:00">2023-06-21</time>
     </span>
 
   
@@ -415,6 +330,91 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/my_makefile/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/my_makefile/" class="post-title-link" itemprop="url">我的Makefile文件</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2014-11-23 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-23T00:00:00+00:00">2014-11-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-21 08:13:02" itemprop="dateModified" datetime="2023-06-21T08:13:02+00:00">2023-06-21</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>最近学习了《GNU Make项目管理》，改进了我之前一直在用的Makefile文件，解决我之前的Makefile中一直存在的修改依赖头文件后不能自动编译cpp文件的问题。本文列举了我常用的两个Makefile文件，其中第一个为我常用的Makefile，第二个为从网上找到的其他Makefile文件。</p>
+<h1 id="第一个Makefile"><a href="#第一个Makefile" class="headerlink" title="第一个Makefile"></a>第一个Makefile</h1><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">all:</span></span><br><span class="line">INCLUDE = -I./</span><br><span class="line"></span><br><span class="line">FLAGS = -g -Wall <span class="variable">$(INCLUDE)</span></span><br><span class="line">FLAGS += -fPIC</span><br><span class="line"></span><br><span class="line">LIBDIR = -lz -lm -lcrypto</span><br><span class="line"></span><br><span class="line">LINK = <span class="variable">$(LIBDIR)</span> -lpthread</span><br><span class="line"></span><br><span class="line">GCC = g++</span><br><span class="line"></span><br><span class="line"><span class="comment"># for C++ language</span></span><br><span class="line">CODE.cpp = main.cpp \</span><br><span class="line">			trim.cpp</span><br><span class="line"></span><br><span class="line">CPP.o = $(CODE.cpp:.cpp=.o)</span><br><span class="line">OBJS.d = $(CODE.cpp:.cpp=.d)</span><br><span class="line"></span><br><span class="line">OBJS.o = $(CPP.o)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 解决头文件依赖</span></span><br><span class="line"><span class="keyword">-include</span> <span class="variable">$(<span class="built_in">subst</span> .cpp,.d,$(CODE.cpp)</span>)</span><br><span class="line"></span><br><span class="line"><span class="section">%.d: %.cpp</span></span><br><span class="line">	<span class="variable">$(GCC)</span> -M <span class="variable">$(FLAGS)</span> <span class="variable">$&lt;</span> &gt; <span class="variable">$@</span>.$$$$;		\</span><br><span class="line">	sed &#x27;s,\(<span class="variable">$*</span>\)\.o[ :]*,\1.o <span class="variable">$@</span> : ,g&#x27; &lt; <span class="variable">$@</span>.$$$$ &gt; <span class="variable">$@</span>;	\</span><br><span class="line">	rm -f <span class="variable">$@</span>.$$$$</span><br><span class="line"></span><br><span class="line"><span class="comment"># rule for C++ language</span></span><br><span class="line">%.o : %.cpp	</span><br><span class="line">	<span class="variable">$(GCC)</span> <span class="variable">$(FLAGS)</span> -o <span class="variable">$@</span> -c <span class="variable">$&lt;</span>	</span><br><span class="line">	@echo <span class="variable">$*</span>.o build successfully!......</span><br><span class="line"></span><br><span class="line">TARGET = main</span><br><span class="line">	</span><br><span class="line"><span class="variable">$(TARGET)</span> : $(OBJS.o) </span><br><span class="line">	<span class="variable">$(GCC)</span> $(OBJS.o) -o <span class="variable">$(TARGET)</span> <span class="variable">$(LINK)</span></span><br><span class="line">	@echo <span class="variable">$(TARGET)</span> BUILD OK!.........</span><br><span class="line"></span><br><span class="line">all : <span class="variable">$(TARGET)</span></span><br><span class="line"></span><br><span class="line"><span class="meta"><span class="keyword">.PHONY</span>:</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm -rf <span class="variable">$(TARGET)</span></span><br><span class="line">	rm -rf $(OBJS.o)</span><br><span class="line">	rm -rf $(OBJS.d)</span><br><span class="line">	rm -rf *.d</span><br></pre></td></tr></table></figure>
+
+<p>该文件特点为需要手工将需要编译的源文件手动添加到Makefile中，可能比较麻烦，但是编译时比较灵活。可以随意修改需要编译源文件的顺序和是否需要编译源文件。</p>
+<h1 id="第二个Makefile"><a href="#第二个Makefile" class="headerlink" title="第二个Makefile"></a>第二个Makefile</h1><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">###########################################################</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># KEFILE FOR C/C++ PROJECT</span></span><br><span class="line"><span class="comment"># Author: swm8023 &lt;swm8023@gmail.com&gt;</span></span><br><span class="line"><span class="comment"># Date:   2014/01/30</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">###########################################################</span></span><br><span class="line"></span><br><span class="line"><span class="meta"><span class="keyword">.PHONY</span>: all clean</span></span><br><span class="line"><span class="section">all: </span></span><br><span class="line"></span><br><span class="line"><span class="comment"># annotation when release version</span></span><br><span class="line">DEBUG       := y</span><br><span class="line">TARGET_PROG := main</span><br><span class="line"></span><br><span class="line"><span class="comment"># project directory	</span></span><br><span class="line">DEBUG_DIR   := ./Debug</span><br><span class="line">RELEASE_DIR := ./Release</span><br><span class="line">BIN_DIR     := <span class="variable">$(<span class="built_in">if</span> <span class="variable">$(DEBUG)</span>, <span class="variable">$(DEBUG_DIR)</span>, <span class="variable">$(RELEASE_DIR)</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># shell command</span></span><br><span class="line">CC    := gcc</span><br><span class="line">CXX   := g++</span><br><span class="line">RM    := rm -rf</span><br><span class="line">MKDIR := mkdir -p</span><br><span class="line">SED   := sed</span><br><span class="line">MV    := mv</span><br><span class="line"></span><br><span class="line"><span class="comment"># init sources &amp; objects &amp; depends</span></span><br><span class="line">sources_all := <span class="variable">$(<span class="built_in">shell</span> find . -name &quot;*.c&quot; -o -name &quot;*.cpp&quot; -o -name &quot;*.h&quot;)</span></span><br><span class="line">sources_c   := <span class="variable">$(<span class="built_in">filter</span> %.c, <span class="variable">$(sources_all)</span>)</span></span><br><span class="line">sources_cpp := <span class="variable">$(<span class="built_in">filter</span> %.cpp, <span class="variable">$(sources_all)</span>)</span></span><br><span class="line">sources_h   := <span class="variable">$(<span class="built_in">filter</span> %.h, <span class="variable">$(sources_all)</span>)</span></span><br><span class="line">objs        := <span class="variable">$(<span class="built_in">addprefix</span> <span class="variable">$(BIN_DIR)</span>/,$(<span class="built_in">strip</span> $(sources_cpp:.cpp=.o)</span> $(sources_c:.c=.o)))</span><br><span class="line">deps        := <span class="variable">$(<span class="built_in">addprefix</span> <span class="variable">$(BIN_DIR)</span>/,$(<span class="built_in">strip</span> $(sources_cpp:.cpp=.d)</span> $(sources_c:.c=.d)))</span><br><span class="line"></span><br><span class="line"><span class="comment"># create directory</span></span><br><span class="line"><span class="variable">$(<span class="built_in">foreach</span> dirname,$(<span class="built_in">sort</span> $(<span class="built_in">dir</span> <span class="variable">$(sources_c)</span> <span class="variable">$(sources_cpp)</span>)</span>),\</span><br><span class="line">  <span class="variable">$(<span class="built_in">shell</span> <span class="variable">$(MKDIR)</span> <span class="variable">$(BIN_DIR)</span>/<span class="variable">$(dirname)</span>)</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># complie &amp; link variable</span></span><br><span class="line">CFLAGS     := <span class="variable">$(<span class="built_in">if</span> <span class="variable">$(DEBUG)</span>,-g -O, -O2)</span></span><br><span class="line">CFLAGS     += <span class="variable">$(<span class="built_in">addprefix</span> -I ,$(<span class="built_in">sort</span> $(<span class="built_in">dir</span> <span class="variable">$(sources_h)</span>)</span>))</span><br><span class="line">CXXFLAGS    = <span class="variable">$(CFLAGS)</span></span><br><span class="line">LDFLAGS    := </span><br><span class="line">LOADLIBES  += <span class="comment">#-L/usr/include/mysql</span></span><br><span class="line">LDLIBS     += <span class="comment">#-lpthread -lmysqlclient</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># add vpath</span></span><br><span class="line"><span class="keyword">vpath</span> %.h <span class="variable">$(<span class="built_in">sort</span> $(<span class="built_in">dir</span> <span class="variable">$(sources_h)</span>)</span>)</span><br><span class="line"><span class="keyword">vpath</span> %.c <span class="variable">$(<span class="built_in">sort</span> $(<span class="built_in">dir</span> <span class="variable">$(sources_c)</span>)</span>)</span><br><span class="line"><span class="keyword">vpath</span> %.cpp <span class="variable">$(<span class="built_in">sort</span> $(<span class="built_in">dir</span> <span class="variable">$(sources_cpp)</span>)</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># generate depend files</span></span><br><span class="line"><span class="comment"># actually generate after object generated, beacasue it only used when next make)</span></span><br><span class="line"><span class="keyword">ifneq</span> <span class="string">&quot;<span class="variable">$(MAKECMDGOALS)</span>&quot;</span> <span class="string">&quot;clean&quot;</span></span><br><span class="line"><span class="keyword">sinclude</span> <span class="variable">$(deps)</span></span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># make-depend(depend-file,source-file,object-file,cc)</span></span><br><span class="line"><span class="keyword">define</span> make-depend</span><br><span class="line">  <span class="variable">$(RM)</span> $1;                                     \</span><br><span class="line">  $4 <span class="variable">$(CFLAGS)</span> -MM $2 |                         \</span><br><span class="line">  <span class="variable">$(SED)</span> &#x27;s,\(<span class="variable">$(<span class="built_in">notdir</span> $3)</span>\): ,$3: ,&#x27; &gt; $1.tmp; \</span><br><span class="line">  <span class="variable">$(SED)</span> -e &#x27;s/<span class="comment">#.*//&#x27;                           \</span></span><br><span class="line">         -e &#x27;s/^[^:]*: *//&#x27;                     \</span><br><span class="line">         -e &#x27;s/ *\\$$//&#x27;                        \</span><br><span class="line">         -e &#x27;/^$$/ d&#x27;                           \</span><br><span class="line">         -e &#x27;s/$$/ :/&#x27; &lt; $1.tmp &gt;&gt; $1.tmp;      \</span><br><span class="line">  <span class="variable">$(MV)</span> $1.tmp $1;</span><br><span class="line"><span class="keyword">endef</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># rules to generate objects file</span></span><br><span class="line"><span class="variable">$(BIN_DIR)</span>/%.o: %.c</span><br><span class="line">	@<span class="variable">$(<span class="built_in">call</span> make-depend,$(<span class="built_in">patsubst</span> %.o,%.d,<span class="variable">$@</span>)</span>,<span class="variable">$&lt;</span>,<span class="variable">$@</span>,<span class="variable">$(CC)</span>)</span><br><span class="line">	<span class="variable">$(CC)</span> <span class="variable">$(CFLAGS)</span> -o <span class="variable">$@</span> -c <span class="variable">$&lt;</span></span><br><span class="line"></span><br><span class="line"><span class="variable">$(BIN_DIR)</span>/%.o: %.cpp</span><br><span class="line">	@<span class="variable">$(<span class="built_in">call</span> make-depend,$(<span class="built_in">patsubst</span> %.o,%.d,<span class="variable">$@</span>)</span>,<span class="variable">$&lt;</span>,<span class="variable">$@</span>,<span class="variable">$(CXX)</span>)</span><br><span class="line">	<span class="variable">$(CXX)</span> <span class="variable">$(CXXFLAGS)</span> -o <span class="variable">$@</span> -c <span class="variable">$&lt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># add-target(target,objs,cc)</span></span><br><span class="line"><span class="keyword">define</span> add-target</span><br><span class="line">  REAL_TARGET += <span class="variable">$(BIN_DIR)</span>/$1</span><br><span class="line">  <span class="variable">$(BIN_DIR)</span>/$1: $2</span><br><span class="line">	$3 <span class="variable">$(LDFLAGS)</span> $<span class="variable">$^</span> <span class="variable">$(LOADLIBES)</span> <span class="variable">$(LDLIBS)</span> -o $<span class="variable">$@</span></span><br><span class="line"><span class="keyword">endef</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># call add-target</span></span><br><span class="line"><span class="variable">$(<span class="built_in">foreach</span> targ,<span class="variable">$(TARGET_PROG)</span>,$(<span class="built_in">eval</span> $(<span class="built_in">call</span> add-target,<span class="variable">$(targ)</span>,<span class="variable">$(objs)</span>,<span class="variable">$(CXX)</span>)</span>))</span><br><span class="line"></span><br><span class="line"><span class="section">all: <span class="variable">$(REAL_TARGET)</span> <span class="variable">$(TARGET_LIBS)</span></span></span><br><span class="line"></span><br><span class="line"><span class="section">clean: </span></span><br><span class="line">	<span class="variable">$(RM)</span> <span class="variable">$(BIN_DIR)</span></span><br></pre></td></tr></table></figure>
+
+<p>该Makefile为从<a target="_blank" rel="noopener" href="http://c4fun.cn/blog/2014/01/30/common-makefile/">一个通用的C&#x2F;C++ Makefile</a>中直接获得的，为了避免原博客以后不能访问的情况，这里备份一下。</p>
+<p>该Makefile可以动检测Makefile所在目录及其子目录中的.c和.cpp文件，并进行编译，不需要手动修改Makefile来填写需要编译的源文件，比较自动化。</p>
+<h1 id="相关参考"><a href="#相关参考" class="headerlink" title="相关参考"></a>相关参考</h1><p>第二个Makefile文件的作者博客中的两篇文章：<a target="_blank" rel="noopener" href="http://c4fun.cn/blog/2014/01/13/gnu-make-study01/">GNU Make学习总结（一）</a>和<a target="_blank" rel="noopener" href="http://c4fun.cn/blog/2014/01/13/gnu-make-study02/">GNU Make学习总结（二）</a></p>
+<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/s/1jGDo5ls">一个包含上述两个Makefile的例子</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
     <link itemprop="mainEntityOfPage" href="http://kuring.me/post/http_range/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -451,7 +451,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-20 06:41:25" itemprop="dateModified" datetime="2023-06-20T06:41:25+00:00">2023-06-20</time>
+      <time title="Modified: 2023-06-21 08:13:02" itemprop="dateModified" datetime="2023-06-21T08:13:02+00:00">2023-06-21</time>
     </span>
 
   
@@ -546,7 +546,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-20 06:41:25" itemprop="dateModified" datetime="2023-06-20T06:41:25+00:00">2023-06-20</time>
+      <time title="Modified: 2023-06-21 08:13:02" itemprop="dateModified" datetime="2023-06-21T08:13:02+00:00">2023-06-21</time>
     </span>
 
   
@@ -627,7 +627,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-20 06:41:25" itemprop="dateModified" datetime="2023-06-20T06:41:25+00:00">2023-06-20</time>
+      <time title="Modified: 2023-06-21 08:13:02" itemprop="dateModified" datetime="2023-06-21T08:13:02+00:00">2023-06-21</time>
     </span>
 
   
@@ -735,7 +735,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-20 06:41:25" itemprop="dateModified" datetime="2023-06-20T06:41:25+00:00">2023-06-20</time>
+      <time title="Modified: 2023-06-21 08:13:02" itemprop="dateModified" datetime="2023-06-21T08:13:02+00:00">2023-06-21</time>
     </span>
 
   
@@ -823,7 +823,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-20 06:41:25" itemprop="dateModified" datetime="2023-06-20T06:41:25+00:00">2023-06-20</time>
+      <time title="Modified: 2023-06-21 08:13:02" itemprop="dateModified" datetime="2023-06-21T08:13:02+00:00">2023-06-21</time>
     </span>
 
   
@@ -916,7 +916,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-20 06:41:25" itemprop="dateModified" datetime="2023-06-20T06:41:25+00:00">2023-06-20</time>
+      <time title="Modified: 2023-06-21 08:13:02" itemprop="dateModified" datetime="2023-06-21T08:13:02+00:00">2023-06-21</time>
     </span>
 
   
@@ -1014,7 +1014,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-20 06:41:25" itemprop="dateModified" datetime="2023-06-20T06:41:25+00:00">2023-06-20</time>
+      <time title="Modified: 2023-06-21 08:13:02" itemprop="dateModified" datetime="2023-06-21T08:13:02+00:00">2023-06-21</time>
     </span>
 
   
@@ -1102,7 +1102,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-20 06:41:25" itemprop="dateModified" datetime="2023-06-20T06:41:25+00:00">2023-06-20</time>
+      <time title="Modified: 2023-06-21 08:13:02" itemprop="dateModified" datetime="2023-06-21T08:13:02+00:00">2023-06-21</time>
     </span>
 
   
