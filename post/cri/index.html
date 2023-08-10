@@ -27,7 +27,7 @@
 <meta property="og:description" content="CRI为k8s提供的kubelet扩展接口，用来支持多种容器运行时。CRI协议为protobuf格式，kubelet作为客户端，容器运行时作为服务端，两者通过gRpc协议通讯。下面主要解读 CRI的协议定义 spec解读RuntimeService包括了Pod和容器相关的操作。 Pod相关的操作包括：  启：RunPodSandbox 停：StopPodSandbox 删：RemovePodSan">
 <meta property="og:locale">
 <meta property="article:published_time" content="2022-06-29T22:20:52.000Z">
-<meta property="article:modified_time" content="2023-06-21T09:46:33.805Z">
+<meta property="article:modified_time" content="2023-08-10T11:44:18.880Z">
 <meta name="twitter:card" content="summary">
 
 
@@ -138,7 +138,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#spec%E8%A7%A3%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">spec解读</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RuntimeService"><span class="nav-number">1.1.</span> <span class="nav-text">RuntimeService</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ImageService"><span class="nav-number">1.2.</span> <span class="nav-text">ImageService</span></a></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#spec%E8%A7%A3%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">spec解读</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RuntimeService"><span class="nav-number">1.1.</span> <span class="nav-text">RuntimeService</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ImageService"><span class="nav-number">1.2.</span> <span class="nav-text">ImageService</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CRI-CLI"><span class="nav-number">2.</span> <span class="nav-text">CRI CLI</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -225,7 +225,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-21 09:46:33" itemprop="dateModified" datetime="2023-06-21T09:46:33+00:00">2023-06-21</time>
+      <time title="Modified: 2023-08-10 11:44:18" itemprop="dateModified" datetime="2023-08-10T11:44:18+00:00">2023-08-10</time>
     </span>
 
   
@@ -265,6 +265,9 @@
 </ol>
 <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ImageService defines the public APIs for managing images.</span></span><br><span class="line">service ImageService <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="comment">// ListImages lists existing images.</span></span><br><span class="line">    rpc ListImages(ListImagesRequest) returns (ListImagesResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ImageStatus returns the status of the image. If the image is not</span></span><br><span class="line">    <span class="comment">// present, returns a response with ImageStatusResponse.Image set to</span></span><br><span class="line">    <span class="comment">// nil.</span></span><br><span class="line">    rpc ImageStatus(ImageStatusRequest) returns (ImageStatusResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// PullImage pulls an image with authentication config.</span></span><br><span class="line">    rpc PullImage(PullImageRequest) returns (PullImageResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// RemoveImage removes the image.</span></span><br><span class="line">    <span class="comment">// This call is idempotent, and must not return an error if the image has</span></span><br><span class="line">    <span class="comment">// already been removed.</span></span><br><span class="line">    rpc RemoveImage(RemoveImageRequest) returns (RemoveImageResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ImageFSInfo returns information of the filesystem that is used to store images.</span></span><br><span class="line">    rpc ImageFsInfo(ImageFsInfoRequest) returns (ImageFsInfoResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
 
+<h2 id="CRI-CLI"><a href="#CRI-CLI" class="headerlink" title="CRI CLI"></a>CRI CLI</h2><p>CRI 自带了命令行工具 crictl。</p>
+<p>Linux 下安装脚本：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">VERSION=&quot;v1.26.0&quot; # check latest version in /releases page</span><br><span class="line">wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$VERSION-linux-amd64.tar.gz</span><br><span class="line">sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin</span><br><span class="line">rm -f crictl-$VERSION-linux-amd64.tar.gz</span><br></pre></td></tr></table></figure>
 
     </div>
 

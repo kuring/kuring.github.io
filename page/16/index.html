@@ -219,7 +219,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-21 09:46:33" itemprop="dateModified" datetime="2023-06-21T09:46:33+00:00">2023-06-21</time>
+      <time title="Modified: 2023-08-10 11:44:18" itemprop="dateModified" datetime="2023-08-10T11:44:18+00:00">2023-08-10</time>
     </span>
 
   
@@ -304,7 +304,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-21 09:46:33" itemprop="dateModified" datetime="2023-06-21T09:46:33+00:00">2023-06-21</time>
+      <time title="Modified: 2023-08-10 11:44:18" itemprop="dateModified" datetime="2023-08-10T11:44:18+00:00">2023-08-10</time>
     </span>
 
   
@@ -415,87 +415,6 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_listen_shell/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux_listen_shell/" class="post-title-link" itemprop="url">一个Linux下的监听脚本程序</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2014-11-06 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-06T00:00:00+00:00">2014-11-06</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-21 09:46:33" itemprop="dateModified" datetime="2023-06-21T09:46:33+00:00">2023-06-21</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>为了避免linux下的控制台程序A死掉，可以通过一个另外一个程序B来监听A程序，当A程序异常退出时将B程序带起来。当然程序设计的最好方式为程序不崩溃，但是程序中存在bug很难避免，该方法还是有一定的实践意义。对于B程序可以通过shell脚本或者单独一个应用程序来解决。本文将通过shell脚本来解决此问题。</p>
-<h1 id="shell脚本的内容"><a href="#shell脚本的内容" class="headerlink" title="shell脚本的内容"></a>shell脚本的内容</h1><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash">!/bin/bash</span></span><br><span class="line"></span><br><span class="line">check_process()</span><br><span class="line">&#123;</span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">check parameter</span></span><br><span class="line">	if [ $1 = &quot;&quot; ];</span><br><span class="line">	then</span><br><span class="line">		return -1</span><br><span class="line">	fi</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">get the running process</span></span><br><span class="line">	process_names=$(ps -ef | grep $1 | grep -v grep | awk &#x27;&#123;print $8&#125;&#x27;)</span><br><span class="line">	for process_name in $process_names</span><br><span class="line">	do</span><br><span class="line">		if [ $process_name = $1 ] ;</span><br><span class="line">		then</span><br><span class="line">			return 1</span><br><span class="line">		fi</span><br><span class="line">	done</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">not run and run the process</span></span><br><span class="line">	echo &quot;$(date) : process $1 not run, just run it&quot;</span><br><span class="line"><span class="meta prompt_">	$</span><span class="language-bash">1</span></span><br><span class="line">	return 0</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">while [ 1 ];do</span><br><span class="line">	check_process &quot;/usr/bin/app/process&quot;	# programe path</span><br><span class="line">	sleep 5</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
-
-<h1 id="将shell脚本在脱离控制台下可以运行"><a href="#将shell脚本在脱离控制台下可以运行" class="headerlink" title="将shell脚本在脱离控制台下可以运行"></a>将shell脚本在脱离控制台下可以运行</h1><p>一旦断开了控制台，shell脚本就会由于接收到SIGHUP信号而退出。这里有两种思路来解决该问题，一种是通过系统的crontab来定期调用脚本程序，另外一种是通过神奇的screen程序来解决该问题，我这里通过screen程序来解决该问题，具体screen程序的应用见我的另外一篇文章《》。</p>
-<h1 id="应用程序为daemon方式运行"><a href="#应用程序为daemon方式运行" class="headerlink" title="应用程序为daemon方式运行"></a>应用程序为daemon方式运行</h1><p>为了能够保证该脚本监控多个应用程序，需要将应用程序设置为daemon方式运行，可以调用函数daemon实现。也可以调用单独实现的daemon函数，具体代码如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">void init_daemon(void) </span><br><span class="line">&#123; </span><br><span class="line">    int pid; </span><br><span class="line">    int i;  </span><br><span class="line"></span><br><span class="line">    if(pid=fork()) </span><br><span class="line">        exit(0);//是父进程，结束父进程 </span><br><span class="line">    else if(pid&lt; 0)  </span><br><span class="line">        exit(1);//fork失败，退出 </span><br><span class="line">    //是第一子进程，后台继续执行 </span><br><span class="line"></span><br><span class="line">    setsid();//第一子进程成为新的会话组长和进程组长 </span><br><span class="line">    //并与控制终端分离 </span><br><span class="line">    if(pid=fork()) </span><br><span class="line">        exit(0);//是第一子进程，结束第一子进程 </span><br><span class="line">    else if(pid&lt; 0)  </span><br><span class="line">        exit(1);//fork失败，退出 </span><br><span class="line">    //是第二子进程，继续 </span><br><span class="line">    //第二子进程不再是会话组长 </span><br><span class="line"></span><br><span class="line">    for(i=0;i&lt; NOFILE;++i)//关闭打开的文件描述符 </span><br><span class="line">        close(i); </span><br><span class="line">    chdir(&quot;/tmp&quot;);//改变工作目录到/tmp </span><br><span class="line">    umask(0);//重设文件创建掩模 </span><br><span class="line">    return; </span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
     <link itemprop="mainEntityOfPage" href="http://kuring.me/post/http_range/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -532,7 +451,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-21 09:46:33" itemprop="dateModified" datetime="2023-06-21T09:46:33+00:00">2023-06-21</time>
+      <time title="Modified: 2023-08-10 11:44:18" itemprop="dateModified" datetime="2023-08-10T11:44:18+00:00">2023-08-10</time>
     </span>
 
   
@@ -565,6 +484,87 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
 <h1 id="第二次服务器的HTTP响应报文如下："><a href="#第二次服务器的HTTP响应报文如下：" class="headerlink" title="第二次服务器的HTTP响应报文如下："></a>第二次服务器的HTTP响应报文如下：</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 8289510</span><br><span class="line">Content-Range: bytes 32768-8322277/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=98</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
 
 <p>表示服务器已经相应完成了32768-8322277之间的数据。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_listen_shell/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux_listen_shell/" class="post-title-link" itemprop="url">一个Linux下的监听脚本程序</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2014-11-06 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-06T00:00:00+00:00">2014-11-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-08-10 11:44:18" itemprop="dateModified" datetime="2023-08-10T11:44:18+00:00">2023-08-10</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>为了避免linux下的控制台程序A死掉，可以通过一个另外一个程序B来监听A程序，当A程序异常退出时将B程序带起来。当然程序设计的最好方式为程序不崩溃，但是程序中存在bug很难避免，该方法还是有一定的实践意义。对于B程序可以通过shell脚本或者单独一个应用程序来解决。本文将通过shell脚本来解决此问题。</p>
+<h1 id="shell脚本的内容"><a href="#shell脚本的内容" class="headerlink" title="shell脚本的内容"></a>shell脚本的内容</h1><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash">!/bin/bash</span></span><br><span class="line"></span><br><span class="line">check_process()</span><br><span class="line">&#123;</span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">check parameter</span></span><br><span class="line">	if [ $1 = &quot;&quot; ];</span><br><span class="line">	then</span><br><span class="line">		return -1</span><br><span class="line">	fi</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">get the running process</span></span><br><span class="line">	process_names=$(ps -ef | grep $1 | grep -v grep | awk &#x27;&#123;print $8&#125;&#x27;)</span><br><span class="line">	for process_name in $process_names</span><br><span class="line">	do</span><br><span class="line">		if [ $process_name = $1 ] ;</span><br><span class="line">		then</span><br><span class="line">			return 1</span><br><span class="line">		fi</span><br><span class="line">	done</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">not run and run the process</span></span><br><span class="line">	echo &quot;$(date) : process $1 not run, just run it&quot;</span><br><span class="line"><span class="meta prompt_">	$</span><span class="language-bash">1</span></span><br><span class="line">	return 0</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">while [ 1 ];do</span><br><span class="line">	check_process &quot;/usr/bin/app/process&quot;	# programe path</span><br><span class="line">	sleep 5</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<h1 id="将shell脚本在脱离控制台下可以运行"><a href="#将shell脚本在脱离控制台下可以运行" class="headerlink" title="将shell脚本在脱离控制台下可以运行"></a>将shell脚本在脱离控制台下可以运行</h1><p>一旦断开了控制台，shell脚本就会由于接收到SIGHUP信号而退出。这里有两种思路来解决该问题，一种是通过系统的crontab来定期调用脚本程序，另外一种是通过神奇的screen程序来解决该问题，我这里通过screen程序来解决该问题，具体screen程序的应用见我的另外一篇文章《》。</p>
+<h1 id="应用程序为daemon方式运行"><a href="#应用程序为daemon方式运行" class="headerlink" title="应用程序为daemon方式运行"></a>应用程序为daemon方式运行</h1><p>为了能够保证该脚本监控多个应用程序，需要将应用程序设置为daemon方式运行，可以调用函数daemon实现。也可以调用单独实现的daemon函数，具体代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">void init_daemon(void) </span><br><span class="line">&#123; </span><br><span class="line">    int pid; </span><br><span class="line">    int i;  </span><br><span class="line"></span><br><span class="line">    if(pid=fork()) </span><br><span class="line">        exit(0);//是父进程，结束父进程 </span><br><span class="line">    else if(pid&lt; 0)  </span><br><span class="line">        exit(1);//fork失败，退出 </span><br><span class="line">    //是第一子进程，后台继续执行 </span><br><span class="line"></span><br><span class="line">    setsid();//第一子进程成为新的会话组长和进程组长 </span><br><span class="line">    //并与控制终端分离 </span><br><span class="line">    if(pid=fork()) </span><br><span class="line">        exit(0);//是第一子进程，结束第一子进程 </span><br><span class="line">    else if(pid&lt; 0)  </span><br><span class="line">        exit(1);//fork失败，退出 </span><br><span class="line">    //是第二子进程，继续 </span><br><span class="line">    //第二子进程不再是会话组长 </span><br><span class="line"></span><br><span class="line">    for(i=0;i&lt; NOFILE;++i)//关闭打开的文件描述符 </span><br><span class="line">        close(i); </span><br><span class="line">    chdir(&quot;/tmp&quot;);//改变工作目录到/tmp </span><br><span class="line">    umask(0);//重设文件创建掩模 </span><br><span class="line">    return; </span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
 
       
     </div>
@@ -627,7 +627,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-21 09:46:33" itemprop="dateModified" datetime="2023-06-21T09:46:33+00:00">2023-06-21</time>
+      <time title="Modified: 2023-08-10 11:44:18" itemprop="dateModified" datetime="2023-08-10T11:44:18+00:00">2023-08-10</time>
     </span>
 
   
@@ -735,7 +735,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-21 09:46:33" itemprop="dateModified" datetime="2023-06-21T09:46:33+00:00">2023-06-21</time>
+      <time title="Modified: 2023-08-10 11:44:18" itemprop="dateModified" datetime="2023-08-10T11:44:18+00:00">2023-08-10</time>
     </span>
 
   
@@ -823,7 +823,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-21 09:46:33" itemprop="dateModified" datetime="2023-06-21T09:46:33+00:00">2023-06-21</time>
+      <time title="Modified: 2023-08-10 11:44:18" itemprop="dateModified" datetime="2023-08-10T11:44:18+00:00">2023-08-10</time>
     </span>
 
   
@@ -916,7 +916,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-21 09:46:33" itemprop="dateModified" datetime="2023-06-21T09:46:33+00:00">2023-06-21</time>
+      <time title="Modified: 2023-08-10 11:44:18" itemprop="dateModified" datetime="2023-08-10T11:44:18+00:00">2023-08-10</time>
     </span>
 
   
@@ -1014,7 +1014,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-21 09:46:33" itemprop="dateModified" datetime="2023-06-21T09:46:33+00:00">2023-06-21</time>
+      <time title="Modified: 2023-08-10 11:44:18" itemprop="dateModified" datetime="2023-08-10T11:44:18+00:00">2023-08-10</time>
     </span>
 
   
@@ -1102,7 +1102,7 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-06-21 09:46:33" itemprop="dateModified" datetime="2023-06-21T09:46:33+00:00">2023-06-21</time>
+      <time title="Modified: 2023-08-10 11:44:18" itemprop="dateModified" datetime="2023-08-10T11:44:18+00:00">2023-08-10</time>
     </span>
 
   
