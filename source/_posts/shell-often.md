@@ -100,3 +100,25 @@ split [-bl] file [prefix]
 拆分文件：split -b 200m ip_config.gzip ip_config.gzip
 
 文件合并：cat ip_config.gzip* > ip_config.gzip
+
+## python
+
+快速开启一个http server `python -m SimpleHTTPServer 8080`。
+
+在python3环境下该命令变更为：`python3 -m http.server 8080`
+
+格式化 json: `cat 1.json | python -m json.tool`
+
+## awk
+
+按照,打印出一每一列 `awk -F, '{for(i=1;i<=NF;i++){print $i;}}'`
+
+## docker registry
+
+- 列出镜像：`curl http://127.0.0.1:5000/v2/_catalog?n=1000`
+- 查询镜像的tag: `curl http://127.0.0.1:5000/v2/nginx/tags/list`，如果遇到镜像名类似`aa/bb`的情况，需要转移一下 `curl http://127.0.0.1:5000/v2/aa\/bb/tags/list`
+
+## socat 
+
+- 向本地的 socket 文件发送数据：`echo "test" | socat - unix-connect:/tmp/unix.sock`
+- 通过交互的方式输入命令：`socat - UNIX-CONNECT:/var/lib/kubelet/pod-resources/kubelet.sock`

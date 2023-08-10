@@ -509,9 +509,62 @@ Manifest为json格式的描述文件，包含了如下三个用途：
 }
 ```
 
+## 镜像分发规范
+
+### pull 
+
+#### pull manifest
+
+接口定义：`GET /v2/<name>/manifests/<reference>`
+
+`<name>`： 镜像的 namespace。
+`<reference>`：镜像的 tag 或者摘要信息。
+
+#### pull bolb
+
+接口定义：`GET /v2/<name>/blobs/<digest>`
+
+### push
+
+`POST /v2/<name>/blobs/uploads/?digest=<digest>`
+`PUT /v2/<name>/manifests/<reference>`
+
+### list tag
+
+接口定义：`GET /v2/<name>/tags/list`
+
+返回格式如下：
+
+```
+{
+  "name": "<name>",
+  "tags": [
+    "<tag1>",
+    "<tag2>",
+    "<tag3>"
+  ]
+}
+```
+
+### list references
+
+接口定义： `GET /v2/<name>/referrers/<digest>`
+
+### delete tag
+
+接口定义： `DELETE /v2/<name>/manifests/<tag>`
+
+### delete manifest
+
+接口定义： `DELETE /v2/<name>/manifests/<digest>`
+
+### delete blobs
+
+接口定义： `DELETE /v2/<name>/blobs/<digest>`
+
 ## k8s支持情况
 
-K8s可以通过 pod 的spec.runtimeClassName 来指定 oci runtime 的实现方式。
+K8s可以通过 pod 的 spec.runtimeClassName 来指定 oci runtime 的实现方式。
 
 ## 参考
 

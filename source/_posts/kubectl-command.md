@@ -7,7 +7,7 @@ tags:
 ## 1. 统计k8s node上的污点信息
 
 ```
-kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers
+kubectl get nodes -o=custom-columns=NodeName:.metadata.name,TaintKey:.spec.taints[*].key,TaintValue:.spec.taints[*].value,TaintEffect:.spec.taints[*].effect
 ```
 
 ## 2. 查看不ready的pod
