@@ -122,3 +122,10 @@ split [-bl] file [prefix]
 
 - 向本地的 socket 文件发送数据：`echo "test" | socat - unix-connect:/tmp/unix.sock`
 - 通过交互的方式输入命令：`socat - UNIX-CONNECT:/var/lib/kubelet/pod-resources/kubelet.sock`
+
+## git
+
+- 删除远程分支 `git push origin --delete xxx`
+- 强制更新远程分支：`git push --force-with-lease origin feature/statefulset`
+- 删除本地分支：`git branch -D local-branch`
+- 拉取远程分支并切换分支：`git checkout -b develop origin/remote-branch` develop为本地分支，origin/remote-branch为远程分支
