@@ -32,7 +32,7 @@ kubectl proxy --port=10999
 
 在本地即可通过curl的方式来访问k8s的apiserver，而无需考虑鉴权问题。例如，`curl http://127.0.0.1:10999/apis/batch/v1`，即可直接返回结果。
 
-## 5. --raw命令
+## 5. `--raw`命令
 
 该命令经常用在开发的场景下，用来测试k8s api的结果。执行如下的命令，即可返回json格式的结果。
 
@@ -91,7 +91,7 @@ kubectl get secret -n ark-system ark.cmdb.https.origin.tls -o jsonpath='{.data.c
 导出 configmap 中特定的 key：
 
 ```
-kubectl get cm -n kube-system  networkpolicy-config -o jsonpath='{.data.config\.yaml}' -o yaml 
+kubectl get cm -n kube-system  networkpolicy-config -o jsonpath='{.data.config\.yaml}' -o yaml
 ```
 
 修改完成后，将文件重新 apply cm
@@ -107,4 +107,3 @@ kubectl create --save-config cm  networkpolicy-config -n kube-system --from-file
 ```
 kubectl get pods --all-namespaces -o wide --no-headers | grep -v Running | awk '{print $1 " " $2}' | while read AA BB; do kubectl get pod -n $AA $BB --no-headers; done
 ```
-

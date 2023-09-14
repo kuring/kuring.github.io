@@ -89,7 +89,7 @@ www-data   47357  0.0  0.0  60052  1832 pts/2    R+   20:21   0:00 ps aux
 
 ## split
 
-split [-bl] file [prefix] 
+split [-bl] file [prefix]
 
 - -b, --bytes=SIZE：对file进行切分，每个小文件大小为SIZE。可以指定单位b,k,m。
 
@@ -118,7 +118,7 @@ split [-bl] file [prefix]
 - 列出镜像：`curl http://127.0.0.1:5000/v2/_catalog?n=1000`
 - 查询镜像的tag: `curl http://127.0.0.1:5000/v2/nginx/tags/list`，如果遇到镜像名类似`aa/bb`的情况，需要转移一下 `curl http://127.0.0.1:5000/v2/aa\/bb/tags/list`
 
-## socat 
+## socat
 
 - 向本地的 socket 文件发送数据：`echo "test" | socat - unix-connect:/tmp/unix.sock`
 - 通过交互的方式输入命令：`socat - UNIX-CONNECT:/var/lib/kubelet/pod-resources/kubelet.sock`
@@ -129,3 +129,10 @@ split [-bl] file [prefix]
 - 强制更新远程分支：`git push --force-with-lease origin feature/statefulset`
 - 删除本地分支：`git branch -D local-branch`
 - 拉取远程分支并切换分支：`git checkout -b develop origin/remote-branch` develop为本地分支，origin/remote-branch为远程分支
+
+## rpm
+
+- `rpm -ivh xx.rpm`：用来安装一个 rpm 包
+- `rpm -qa`：查看已经安装的包
+- `rpm -qpR *.rpm`: 查看rpm包的依赖
+- `rpm -e *`：要删除的rpm包

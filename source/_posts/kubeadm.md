@@ -30,7 +30,7 @@ modprobe br_netfilter
 
 #### 手工安装
 
-安装 containerd
+安装 containerd，containerd 的版本可以从这里获取 https://github.com/containerd/containerd/releases
 
 ```
 wget https://github.com/containerd/containerd/releases/download/v1.6.11/containerd-1.6.11-linux-amd64.tar.gz
@@ -91,14 +91,14 @@ sudo systemctl enable --now kubelet
 | 节点                | 角色        |
 | ------------------- | ----------- |
 | 172.21.115.190<br/> | master 节点 |
-| 172.21.115.191      | 普通节点    |
 
 ### kubeadm 初始化
 
-创建文件 kubeadm-config.yaml
+创建文件 kubeadm-config.yaml，文件内容如下：
 
 ```
 apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
 kubernetesVersion: v1.25.4
 ---
 kind: KubeletConfiguration
@@ -106,9 +106,9 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 cgroupDriver: systemd
 ```
 
-kubeadm init --config kubeadm-config.yaml 
-
+执行命令：
 ```
+kubeadm init --config kubeadm-config.yaml
 kubeadm config print init-defaults --component-configs KubeletConfiguration > cluster.yaml
 kubeadm init --config cluster.yaml
 ```
@@ -122,10 +122,13 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
 
-
 ### 安装网络插件
 
-刚部署完成的节点处于NotReady 的状态，原因是因为还没有安装网络插件。本文直接使用 cilim 网络插件。
+刚部署完成的节点处于NotReady 的状态，原因是因为还没有安装网络插件。
+
+#### cilim 网络插件
+
+cilim 网络插件比较火爆，下面介绍其安装步骤：
 
 
 ```
@@ -159,6 +162,33 @@ kube-system   kube-controller-manager-k8s002   1/1     Running   0          14m
 kube-system   kube-proxy-bhpqr                 1/1     Running   0          14m
 kube-system   kube-scheduler-k8s002            1/1     Running   0          14m
 ```
+
+#### k8s 自带的 bridge 插件
+
+在单节点的场景下，pod 不需要跨节点通讯，k8s 自带的 bridge 插件也可以满足单节点内的 pod 相互通讯，类似于 docker 的 bridge 网络模式。
+
+```
+mkdir -p /etc/cni/net.d
+cat > /etc/cni/net.d/10-mynet.conf <<EOF
+{
+  "cniVersion": "0.2.0",
+  "name": "mynet",
+  "type": "bridge",
+  "bridge": "cni0",
+  "isGateway": true,
+  "ipMasq": true,
+  "ipam": {
+    "type": "host-local",
+    "subnet": "172.19.0.0/24",
+    "routes": [
+      { "dst": "0.0.0.0/0" }
+    ]
+  }
+}
+EOF
+```
+
+如果 k8s 节点已经部署完成，需要重启下 kubelet 进程该配置即可生效。
 
 ### 添加其他节点
 
