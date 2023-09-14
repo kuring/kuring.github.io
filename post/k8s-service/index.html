@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.18.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="k8s Service 是 k8s 的核心对象，本文主要是针对 k8s Service 的一些细节进行说明。 ExternalName Serviceservice 的 spec.type 为 ExternalName，该种类型的服务会向 dns 中注册 CNAME 记录，CNAME 记录指向 externalName 字段。例子如下： 12345678apiVersion: v1kind: Se">
+<meta property="og:type" content="article">
+<meta property="og:title" content="k8s service">
+<meta property="og:url" content="http://kuring.me/post/k8s-service/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="k8s Service 是 k8s 的核心对象，本文主要是针对 k8s Service 的一些细节进行说明。 ExternalName Serviceservice 的 spec.type 为 ExternalName，该种类型的服务会向 dns 中注册 CNAME 记录，CNAME 记录指向 externalName 字段。例子如下： 12345678apiVersion: v1kind: Se">
+<meta property="og:locale">
+<meta property="article:published_time" content="2023-09-12T12:05:42.000Z">
+<meta property="article:modified_time" content="2023-09-14T06:21:00.023Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/k8s-service/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/k8s-service/","path":"post/k8s-service/","title":"k8s service"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>k8s service | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ExternalName-Service"><span class="nav-number">1.</span> <span class="nav-text">ExternalName Service</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#externalIPs-%E5%AD%97%E6%AE%B5"><span class="nav-number">2.</span> <span class="nav-text">externalIPs 字段</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Headless-Service"><span class="nav-number">3.</span> <span class="nav-text">Headless Service</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#DNS"><span class="nav-number">4.</span> <span class="nav-text">DNS</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B5%84%E6%96%99"><span class="nav-number">5.</span> <span class="nav-text">资料</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">228</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/k8s-service/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="k8s service | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          k8s service
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2023-09-12 12:05:42" itemprop="dateCreated datePublished" datetime="2023-09-12T12:05:42+00:00">2023-09-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-09-14 06:21:00" itemprop="dateModified" datetime="2023-09-14T06:21:00+00:00">2023-09-14</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>k8s Service 是 k8s 的核心对象，本文主要是针对 k8s Service 的一些细节进行说明。</p>
+<h1 id="ExternalName-Service"><a href="#ExternalName-Service" class="headerlink" title="ExternalName Service"></a>ExternalName Service</h1><p>service 的 <code>spec.type</code> 为 <code>ExternalName</code>，该种类型的服务会向 dns 中注册 CNAME 记录，CNAME 记录指向 externalName 字段。例子如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: my-service</span><br><span class="line">  namespace: prod</span><br><span class="line">spec:</span><br><span class="line">  type: ExternalName</span><br><span class="line">  externalName: my.database.example.com</span><br></pre></td></tr></table></figure>
+
+<p>当访问 <code>my-service.prod.svc.cluster.local</code> 时，DNS 服务会返回 CNAME 记录，指向地址为 <code>my.database.example.com</code>。</p>
+<h1 id="externalIPs-字段"><a href="#externalIPs-字段" class="headerlink" title="externalIPs 字段"></a>externalIPs 字段</h1><p>可以针对所有类型的 Service 生效，用来配置多个外部的 ip 地址（该 ip 地址不是 k8s 分配），kube-proxy 会设置该 ip 地址的规则，确保在 k8s 集群内部访问该 ip 地址时，可以路由到后端的 pod。效果就跟访问普通的 ClusterIP 类型 Service 没有区别。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: my-service</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    app.kubernetes.io/name: MyApp</span><br><span class="line">  ports:</span><br><span class="line">    - name: http</span><br><span class="line">      protocol: TCP</span><br><span class="line">      port: 80</span><br><span class="line">      targetPort: 49152</span><br><span class="line">  externalIPs:</span><br><span class="line">    - 198.51.100.32</span><br></pre></td></tr></table></figure>
+
+<p>当在集群内部访问 <code>198.51.100.32:80</code> 时，流量会被 kube-proxy 路由到当前 Service 的 Endpoint。</p>
+<p>该字段存在中间人攻击的风险，不推荐使用。<a target="_blank" rel="noopener" href="https://sysdig.com/blog/detect-cve-2020-8554-using-falco/">Detect CVE-2020-8554 – Unpatched Man-In-The-Middle (MITM) Attack in Kubernetes</a></p>
+<h1 id="Headless-Service"><a href="#Headless-Service" class="headerlink" title="Headless Service"></a>Headless Service</h1><p>翻译成中文又叫无头 Service，显式的将 Service <code>spec.clusterIP</code> 设置为 <code>&quot;None&quot;</code>，表示该 Service 为 Headless Service。此时，该 Service 不会分配 clusterIP。因为没有 clusterIP，因此 kube-proxy 并不会处理该 service。</p>
+<p>Headless Service 按照是否配置了 <code>spec.selector</code> 在实现上又有不同的区分。</p>
+<p>未配置 <code>spec.selector</code> 的 Service，不会创建 EndpointSlice 对象，但是会注册如下的记录：</p>
+<ul>
+<li>对于 ExternalName Service，配置 CNAME 记录。</li>
+<li>对于非 ExternalName Service，配置 A&#x2F;AAAA 记录，指向 EndPoint 的所有 ip 地址。如果未配置 Endpoint，但配置了 externalIPs 字段，则指向 externalIPs。</li>
+</ul>
+<p>配置 <code>spec.selector</code> 的 Service，会创建 EndpointSlice 对象，并修改 DNS 配置返回 A 或者 AAAA 记录，指向 pod 的集合。</p>
+<h1 id="DNS"><a href="#DNS" class="headerlink" title="DNS"></a>DNS</h1><p>除了 headless service 之外的其他 service 会在 DNS 中生成 <code>my-svc.my-namespace.svc.cluster-domain.example</code> 的 A 或者 AAAA 记录，A 记录指向 ClusterIP。</p>
+<p>headless service 会在 DNS 中生成 <code>my-svc.my-namespace.svc.cluster-domain.example</code> 的 A 或者 AAAA 记录，但指向的为 pod ip 地址集合。</p>
+<p>k8s 在 pod 的 &#x2F;etc&#x2F;resolv.conf 配置如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nameserver 10.32.0.10</span><br><span class="line">search &lt;namespace&gt;.svc.cluster.local svc.cluster.local cluster.local</span><br><span class="line">options ndots:5</span><br></pre></td></tr></table></figure>
+
+<p>对于跟 pod 同一个 namespace 下的 service，要访问可以直接使用 service 名字接口。跟 pod 不在同一个 namespace 下的 service，访问 service 必须为 <code>service name.service namespace</code>。</p>
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/">k8s 官方 Service 文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/zh-cn/docs/concepts/services-networking/dns-pod-service/">k8s 官方 Service 与 Pod 的 DNS</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/json-patch/" rel="prev" title="json patch">
+                  <i class="fa fa-angle-left"></i> json patch
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder"></span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">227</span>
+          <span class="site-state-item-count">228</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,109 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/k8s-service/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/k8s-service/" class="post-title-link" itemprop="url">k8s service</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2023-09-12 12:05:42" itemprop="dateCreated datePublished" datetime="2023-09-12T12:05:42+00:00">2023-09-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-09-14 06:21:00" itemprop="dateModified" datetime="2023-09-14T06:21:00+00:00">2023-09-14</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>k8s Service 是 k8s 的核心对象，本文主要是针对 k8s Service 的一些细节进行说明。</p>
+<h1 id="ExternalName-Service"><a href="#ExternalName-Service" class="headerlink" title="ExternalName Service"></a>ExternalName Service</h1><p>service 的 <code>spec.type</code> 为 <code>ExternalName</code>，该种类型的服务会向 dns 中注册 CNAME 记录，CNAME 记录指向 externalName 字段。例子如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: my-service</span><br><span class="line">  namespace: prod</span><br><span class="line">spec:</span><br><span class="line">  type: ExternalName</span><br><span class="line">  externalName: my.database.example.com</span><br></pre></td></tr></table></figure>
+
+<p>当访问 <code>my-service.prod.svc.cluster.local</code> 时，DNS 服务会返回 CNAME 记录，指向地址为 <code>my.database.example.com</code>。</p>
+<h1 id="externalIPs-字段"><a href="#externalIPs-字段" class="headerlink" title="externalIPs 字段"></a>externalIPs 字段</h1><p>可以针对所有类型的 Service 生效，用来配置多个外部的 ip 地址（该 ip 地址不是 k8s 分配），kube-proxy 会设置该 ip 地址的规则，确保在 k8s 集群内部访问该 ip 地址时，可以路由到后端的 pod。效果就跟访问普通的 ClusterIP 类型 Service 没有区别。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: my-service</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    app.kubernetes.io/name: MyApp</span><br><span class="line">  ports:</span><br><span class="line">    - name: http</span><br><span class="line">      protocol: TCP</span><br><span class="line">      port: 80</span><br><span class="line">      targetPort: 49152</span><br><span class="line">  externalIPs:</span><br><span class="line">    - 198.51.100.32</span><br></pre></td></tr></table></figure>
+
+<p>当在集群内部访问 <code>198.51.100.32:80</code> 时，流量会被 kube-proxy 路由到当前 Service 的 Endpoint。</p>
+<p>该字段存在中间人攻击的风险，不推荐使用。<a target="_blank" rel="noopener" href="https://sysdig.com/blog/detect-cve-2020-8554-using-falco/">Detect CVE-2020-8554 – Unpatched Man-In-The-Middle (MITM) Attack in Kubernetes</a></p>
+<h1 id="Headless-Service"><a href="#Headless-Service" class="headerlink" title="Headless Service"></a>Headless Service</h1><p>翻译成中文又叫无头 Service，显式的将 Service <code>spec.clusterIP</code> 设置为 <code>&quot;None&quot;</code>，表示该 Service 为 Headless Service。此时，该 Service 不会分配 clusterIP。因为没有 clusterIP，因此 kube-proxy 并不会处理该 service。</p>
+<p>Headless Service 按照是否配置了 <code>spec.selector</code> 在实现上又有不同的区分。</p>
+<p>未配置 <code>spec.selector</code> 的 Service，不会创建 EndpointSlice 对象，但是会注册如下的记录：</p>
+<ul>
+<li>对于 ExternalName Service，配置 CNAME 记录。</li>
+<li>对于非 ExternalName Service，配置 A&#x2F;AAAA 记录，指向 EndPoint 的所有 ip 地址。如果未配置 Endpoint，但配置了 externalIPs 字段，则指向 externalIPs。</li>
+</ul>
+<p>配置 <code>spec.selector</code> 的 Service，会创建 EndpointSlice 对象，并修改 DNS 配置返回 A 或者 AAAA 记录，指向 pod 的集合。</p>
+<h1 id="DNS"><a href="#DNS" class="headerlink" title="DNS"></a>DNS</h1><p>除了 headless service 之外的其他 service 会在 DNS 中生成 <code>my-svc.my-namespace.svc.cluster-domain.example</code> 的 A 或者 AAAA 记录，A 记录指向 ClusterIP。</p>
+<p>headless service 会在 DNS 中生成 <code>my-svc.my-namespace.svc.cluster-domain.example</code> 的 A 或者 AAAA 记录，但指向的为 pod ip 地址集合。</p>
+<p>k8s 在 pod 的 &#x2F;etc&#x2F;resolv.conf 配置如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nameserver 10.32.0.10</span><br><span class="line">search &lt;namespace&gt;.svc.cluster.local svc.cluster.local cluster.local</span><br><span class="line">options ndots:5</span><br></pre></td></tr></table></figure>
+
+<p>对于跟 pod 同一个 namespace 下的 service，要访问可以直接使用 service 名字接口。跟 pod 不在同一个 namespace 下的 service，访问 service 必须为 <code>service name.service namespace</code>。</p>
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/">k8s 官方 Service 文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/zh-cn/docs/concepts/services-networking/dns-pod-service/">k8s 官方 Service 与 Pod 的 DNS</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +322,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-08-15 15:13:53" itemprop="dateModified" datetime="2023-08-15T15:13:53+00:00">2023-08-15</time>
+      <time title="Modified: 2023-09-14 06:21:00" itemprop="dateModified" datetime="2023-09-14T06:21:00+00:00">2023-09-14</time>
     </span>
 
   
@@ -470,7 +573,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-08-15 15:13:53" itemprop="dateModified" datetime="2023-08-15T15:13:53+00:00">2023-08-15</time>
+      <time title="Modified: 2023-09-14 06:21:00" itemprop="dateModified" datetime="2023-09-14T06:21:00+00:00">2023-09-14</time>
     </span>
 
   
@@ -489,7 +592,7 @@
 
 
 <h3 id="安装containerd"><a href="#安装containerd" class="headerlink" title="安装containerd"></a>安装containerd</h3><p>由于 dockerd 从 k8s 1.24 版本开始不再支持，这里选择 containerd。</p>
-<h4 id="手工安装"><a href="#手工安装" class="headerlink" title="手工安装"></a>手工安装</h4><p>安装 containerd</p>
+<h4 id="手工安装"><a href="#手工安装" class="headerlink" title="手工安装"></a>手工安装</h4><p>安装 containerd，containerd 的版本可以从这里获取 <a target="_blank" rel="noopener" href="https://github.com/containerd/containerd/releases">https://github.com/containerd/containerd/releases</a></p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/containerd/containerd/releases/download/v1.6.11/containerd-1.6.11-linux-amd64.tar.gz</span><br><span class="line">tar Cxzvf /usr/local containerd-1.6.11-linux-amd64.tar.gz</span><br><span class="line">wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service -P /usr/local/lib/systemd/system/</span><br><span class="line">systemctl daemon-reload</span><br><span class="line">systemctl enable --now containerd</span><br></pre></td></tr></table></figure>
 
 <p>安装 runc</p>
@@ -513,29 +616,29 @@
 <td>172.21.115.190<br/></td>
 <td>master 节点</td>
 </tr>
-<tr>
-<td>172.21.115.191</td>
-<td>普通节点</td>
-</tr>
 </tbody></table>
-<h3 id="kubeadm-初始化"><a href="#kubeadm-初始化" class="headerlink" title="kubeadm 初始化"></a>kubeadm 初始化</h3><p>创建文件 kubeadm-config.yaml</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: kubeadm.k8s.io/v1beta3</span><br><span class="line">kubernetesVersion: v1.25.4</span><br><span class="line">---</span><br><span class="line">kind: KubeletConfiguration</span><br><span class="line">apiVersion: kubelet.config.k8s.io/v1beta1</span><br><span class="line">cgroupDriver: systemd</span><br></pre></td></tr></table></figure>
+<h3 id="kubeadm-初始化"><a href="#kubeadm-初始化" class="headerlink" title="kubeadm 初始化"></a>kubeadm 初始化</h3><p>创建文件 kubeadm-config.yaml，文件内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: kubeadm.k8s.io/v1beta3</span><br><span class="line">kind: ClusterConfiguration</span><br><span class="line">kubernetesVersion: v1.25.4</span><br><span class="line">---</span><br><span class="line">kind: KubeletConfiguration</span><br><span class="line">apiVersion: kubelet.config.k8s.io/v1beta1</span><br><span class="line">cgroupDriver: systemd</span><br></pre></td></tr></table></figure>
 
-<p>kubeadm init –config kubeadm-config.yaml </p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">kubeadm config print init-defaults --component-configs KubeletConfiguration &gt; cluster.yaml</span><br><span class="line">kubeadm init --config cluster.yaml</span><br></pre></td></tr></table></figure>
+<p>执行命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">kubeadm init --config kubeadm-config.yaml</span><br><span class="line">kubeadm config print init-defaults --component-configs KubeletConfiguration &gt; cluster.yaml</span><br><span class="line">kubeadm init --config cluster.yaml</span><br></pre></td></tr></table></figure>
 
 <p>接下来初始化 kubeconfig 文件，这样即可通过 kubectl 命令来访问 k8s 了。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p $HOME/.kube</span><br><span class="line">sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span><br><span class="line">sudo chown $(id -u):$(id -g) $HOME/.kube/config</span><br></pre></td></tr></table></figure>
 
 
-
-<h3 id="安装网络插件"><a href="#安装网络插件" class="headerlink" title="安装网络插件"></a>安装网络插件</h3><p>刚部署完成的节点处于NotReady 的状态，原因是因为还没有安装网络插件。本文直接使用 cilim 网络插件。</p>
+<h3 id="安装网络插件"><a href="#安装网络插件" class="headerlink" title="安装网络插件"></a>安装网络插件</h3><p>刚部署完成的节点处于NotReady 的状态，原因是因为还没有安装网络插件。</p>
+<h4 id="cilim-网络插件"><a href="#cilim-网络插件" class="headerlink" title="cilim 网络插件"></a>cilim 网络插件</h4><p>cilim 网络插件比较火爆，下面介绍其安装步骤：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># 安装 cilium 客户端</span><br><span class="line">CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/master/stable.txt)</span><br><span class="line">CLI_ARCH=amd64</span><br><span class="line">if [ &quot;$(uname -m)&quot; = &quot;aarch64&quot; ]; then CLI_ARCH=arm64; fi</span><br><span class="line">curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/$&#123;CILIUM_CLI_VERSION&#125;/cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz&#123;,.sha256sum&#125;</span><br><span class="line">sha256sum --check cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz.sha256sum</span><br><span class="line">sudo tar xzvfC cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz /usr/local/bin</span><br><span class="line">rm cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz&#123;,.sha256sum&#125;</span><br><span class="line"></span><br><span class="line"># 网络插件初始化</span><br><span class="line">cilium install</span><br></pre></td></tr></table></figure>
 
 <p>在安装完网络插件后，node 节点即可变为 ready 状态。</p>
 <p>查看环境中包含如下的 pod:</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl  get pod  -A</span><br><span class="line">NAMESPACE     NAME                             READY   STATUS    RESTARTS   AGE</span><br><span class="line">kube-system   cilium-7zj7t                     1/1     Running   0          82s</span><br><span class="line">kube-system   cilium-operator-bc4d5b54-kvqqx   1/1     Running   0          82s</span><br><span class="line">kube-system   coredns-565d847f94-hrm9b         1/1     Running   0          14m</span><br><span class="line">kube-system   coredns-565d847f94-z5kwr         1/1     Running   0          14m</span><br><span class="line">kube-system   etcd-k8s002                      1/1     Running   0          14m</span><br><span class="line">kube-system   kube-apiserver-k8s002            1/1     Running   0          14m</span><br><span class="line">kube-system   kube-controller-manager-k8s002   1/1     Running   0          14m</span><br><span class="line">kube-system   kube-proxy-bhpqr                 1/1     Running   0          14m</span><br><span class="line">kube-system   kube-scheduler-k8s002            1/1     Running   0          14m</span><br></pre></td></tr></table></figure>
 
+<h4 id="k8s-自带的-bridge-插件"><a href="#k8s-自带的-bridge-插件" class="headerlink" title="k8s 自带的 bridge 插件"></a>k8s 自带的 bridge 插件</h4><p>在单节点的场景下，pod 不需要跨节点通讯，k8s 自带的 bridge 插件也可以满足单节点内的 pod 相互通讯，类似于 docker 的 bridge 网络模式。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /etc/cni/net.d</span><br><span class="line">cat &gt; /etc/cni/net.d/10-mynet.conf &lt;&lt;EOF</span><br><span class="line">&#123;</span><br><span class="line">  &quot;cniVersion&quot;: &quot;0.2.0&quot;,</span><br><span class="line">  &quot;name&quot;: &quot;mynet&quot;,</span><br><span class="line">  &quot;type&quot;: &quot;bridge&quot;,</span><br><span class="line">  &quot;bridge&quot;: &quot;cni0&quot;,</span><br><span class="line">  &quot;isGateway&quot;: true,</span><br><span class="line">  &quot;ipMasq&quot;: true,</span><br><span class="line">  &quot;ipam&quot;: &#123;</span><br><span class="line">    &quot;type&quot;: &quot;host-local&quot;,</span><br><span class="line">    &quot;subnet&quot;: &quot;172.19.0.0/24&quot;,</span><br><span class="line">    &quot;routes&quot;: [</span><br><span class="line">      &#123; &quot;dst&quot;: &quot;0.0.0.0/0&quot; &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<p>如果 k8s 节点已经部署完成，需要重启下 kubelet 进程该配置即可生效。</p>
 <h3 id="添加其他节点"><a href="#添加其他节点" class="headerlink" title="添加其他节点"></a>添加其他节点</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">kubeadm join 172.21.115.189:6443 --token abcdef.0123456789abcdef \</span><br><span class="line">        --discovery-token-ca-cert-hash sha256:457fba2c4181a5b02d2a4f202dfe20f9ce5b9f2274bf40b6d25a8a8d4a7ce440 </span><br></pre></td></tr></table></figure>
 
 <p>此时即可以将节点添加到 k8s 集群中</p>
@@ -611,7 +714,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-08-15 15:13:53" itemprop="dateModified" datetime="2023-08-15T15:13:53+00:00">2023-08-15</time>
+      <time title="Modified: 2023-09-14 06:21:00" itemprop="dateModified" datetime="2023-09-14T06:21:00+00:00">2023-09-14</time>
     </span>
 
   
@@ -730,7 +833,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-08-15 15:13:53" itemprop="dateModified" datetime="2023-08-15T15:13:53+00:00">2023-08-15</time>
+      <time title="Modified: 2023-09-14 06:21:00" itemprop="dateModified" datetime="2023-09-14T06:21:00+00:00">2023-09-14</time>
     </span>
 
   
@@ -877,7 +980,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-08-15 15:13:53" itemprop="dateModified" datetime="2023-08-15T15:13:53+00:00">2023-08-15</time>
+      <time title="Modified: 2023-09-14 06:21:00" itemprop="dateModified" datetime="2023-09-14T06:21:00+00:00">2023-09-14</time>
     </span>
 
   
@@ -1018,7 +1121,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-08-15 15:13:53" itemprop="dateModified" datetime="2023-08-15T15:13:53+00:00">2023-08-15</time>
+      <time title="Modified: 2023-09-14 06:21:00" itemprop="dateModified" datetime="2023-09-14T06:21:00+00:00">2023-09-14</time>
     </span>
 
   
@@ -1124,7 +1227,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-08-15 15:13:53" itemprop="dateModified" datetime="2023-08-15T15:13:53+00:00">2023-08-15</time>
+      <time title="Modified: 2023-09-14 06:21:00" itemprop="dateModified" datetime="2023-09-14T06:21:00+00:00">2023-09-14</time>
     </span>
 
   
@@ -1228,7 +1331,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-08-15 15:13:53" itemprop="dateModified" datetime="2023-08-15T15:13:53+00:00">2023-08-15</time>
+      <time title="Modified: 2023-09-14 06:21:00" itemprop="dateModified" datetime="2023-09-14T06:21:00+00:00">2023-09-14</time>
     </span>
 
   
@@ -1382,7 +1485,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-08-15 15:13:53" itemprop="dateModified" datetime="2023-08-15T15:13:53+00:00">2023-08-15</time>
+      <time title="Modified: 2023-09-14 06:21:00" itemprop="dateModified" datetime="2023-09-14T06:21:00+00:00">2023-09-14</time>
     </span>
 
   
@@ -1415,103 +1518,6 @@
 
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
 <li><a target="_blank" rel="noopener" href="https://docs.docker.com/registry/spec/manifest-v2-2/">Image Manifest V 2, Schema 2</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/resolv-conf/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/resolv-conf/" class="post-title-link" itemprop="url">/etc/resolv.conf文件</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-06-16 21:57:43" itemprop="dateCreated datePublished" datetime="2022-06-16T21:57:43+00:00">2022-06-16</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-08-15 15:13:53" itemprop="dateModified" datetime="2023-08-15T15:13:53+00:00">2023-08-15</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>&#x2F;etc&#x2F;resolv.conf文件为Linux主机的DNS配置文件，在 Linux 主机上可以执行 <code>man resolv.conf</code> 查看帮助信息。</p>
-<h2 id="配置文件说明"><a href="#配置文件说明" class="headerlink" title="配置文件说明"></a>配置文件说明</h2><p>整个配置文件分为了4个部分：nameserver、search、sortlist和options</p>
-<h3 id="nameserver"><a href="#nameserver" class="headerlink" title="nameserver"></a>nameserver</h3><p>用来配置DNS服务器地址。支持ipv4和ipv6地址。如果要配置多个DNS服务器，可以增加多条配置，域名按照DNS服务器配置的顺序来解析。配置多条的例子如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nameserver 100.100.2.136</span><br><span class="line">nameserver 100.100.2.138</span><br></pre></td></tr></table></figure>
-
-<h3 id="search"><a href="#search" class="headerlink" title="search"></a>search</h3><p>在默认情况下，如果要查找的域名中不包含domain信息（即不包含<code>.</code>字符），此时会以当前hostname的domain信息来进行查找。可以通过search字段来修改该行为，即可以通过在域名的后面增加配置的后缀来进行查找。</p>
-<p>如果存在多条search记录，则以最后一条search记录为准。</p>
-<p>比如k8s的pod中的search域格式如下，如果要查找defaultnamespace下的service的svc1，此时系统会自动追加 svc1.default.svc.cluster.local来进行查找：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">search default.svc.cluster.local svc.cluster.local cluster.local</span><br></pre></td></tr></table></figure>
-
-<h3 id="sortlist"><a href="#sortlist" class="headerlink" title="sortlist"></a>sortlist</h3><p>该字段极少场景下会用到。在做域名解析时，如果返回的A记录为多条，可以对结果进行排序，排序的依据为当前的字段配置。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sortlist 130.155.160.0/255.255.240.0 130.155.0.0</span><br></pre></td></tr></table></figure>
-
-<h4 id="options"><a href="#options" class="headerlink" title="options"></a>options</h4><p>该配置必须加载一行中，格式如下，其中option部分可以为多个，多个之间用空格分割：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">options option ...</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>inet6: 应用程序在执行系统调用 gethostbyname 时，会优先执行 AAAA 记录的查询。如果查询不到 ipv6 地址，再去查询 ipv4 地址。</li>
-</ul>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/resolv.conf.5.html">resolv.conf(5) - Linux manual page (man7.org)</a></li>
 </ul>
 
       
