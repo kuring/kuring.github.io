@@ -4,6 +4,8 @@ date: 2018-12-01 21:24:07
 tags:
 ---
 
+![](https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_connect.webp)
+
 一个正常的tcp server在处理请求时会经过如下的系统调用：socket() bind() listen() accept() read() write() close()。一个请求在被应用程序读取之前，可能处于SYN_RCVD和ESTABLISHED两种状态。
 
 SYN_RCVD状态是server端接收到了client端的SYN包，server端会将该连接放到半连接队列中，并向客户端发送SYN+ACK包，此时连接处于半连接状态。

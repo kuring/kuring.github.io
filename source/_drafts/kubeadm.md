@@ -1,12 +1,8 @@
-
-
 title: 使用 kubeadm 安装 k8s 集群
 date: 2022-12-07 00:07:20
 tags:
-
 author:
 ---
-
 本文将通过 kubeadm 实现单 master 节点模式和集群模式两种部署方式。
 
 ## 所有节点均需初始化操作
@@ -29,7 +25,7 @@ modprobe br_netfilter
 
 ### 安装containerd
 
-由于 dockerd 从 k8s 1.24 版本开始不再支持，这里选择 containerd。
+由于 dockerd 从 k8s 1.24 版本开始不再支持，这里选择 containerd。参考: [Getting started with containerd](https://github.com/containerd/containerd/blob/main/docs/getting-started.md)
 
 #### 手工安装
 
@@ -42,6 +38,8 @@ wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.ser
 systemctl daemon-reload
 systemctl enable --now containerd
 ```
+
+执行 `containerd config default > /etc/containerd/config.toml` 生成 containerd 的默认配置文件。
 
 安装 runc
 
