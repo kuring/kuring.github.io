@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">228</span>
+          <span class="site-state-item-count">229</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,170 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/OpenKruise/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/OpenKruise/" class="post-title-link" itemprop="url">OpenKruise调研</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-08 21:14:34" itemprop="dateCreated datePublished" datetime="2022-03-08T21:14:34+00:00">2022-03-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>OpenKruise是阿里云开源的一系列基于k8s的扩展组件的集合，其中包含了像增强版的workload、sidecar容器管理、高可用性防护等特性，包含了很多的“黑科技”。</p>
+<p>如果k8s的kube-controller-manager组件可以提供非常强的扩展能力，可以实现自定义的Deployment、StatefulSet的controller，而不是使用原生的kube-controller-manager的功能，类似于实现自定义的调度器扩展功能。那么很有可能OpenKruise的实现方案就不再会采用CRD扩展的方式，而是直接在原生的Deployment、StatefulSet等对象上通过annotation的方式来实现。</p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>可以直接使用helm的方式安装</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">helm</span> <span class="string">repo</span> <span class="string">add</span> <span class="string">openkruise</span> <span class="string">https://openkruise.github.io/charts/</span></span><br><span class="line"><span class="string">helm</span> <span class="string">install</span> <span class="string">kruise</span> <span class="string">openkruise/kruise</span> <span class="string">--version</span> <span class="number">1.0</span><span class="number">.1</span></span><br></pre></td></tr></table></figure>
+<p>安装完成后，可以看到在kruise-system下创建了一个DeamonSet和一个Deployment。并且安装了很多的CRD和webhook组件。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span>  <span class="string">get</span> <span class="string">pod</span> <span class="string">-n</span> <span class="string">kruise-system</span></span><br><span class="line"><span class="string">NAME</span>                                        <span class="string">READY</span>   <span class="string">STATUS</span>    <span class="string">RESTARTS</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">kruise-controller-manager-67878b65d-cv6f4</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"><span class="string">kruise-controller-manager-67878b65d-jrmnd</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"><span class="string">kruise-daemon-ktwvv</span>                         <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"><span class="string">kruise-daemon-nf84r</span>                         <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"><span class="string">kruise-daemon-rjs26</span>                         <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"><span class="string">kruise-daemon-vghw4</span>                         <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">crd</span> <span class="string">|</span> <span class="string">grep</span> <span class="string">kruise.io</span></span><br><span class="line"><span class="string">advancedcronjobs.apps.kruise.io</span>                           <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">broadcastjobs.apps.kruise.io</span>                              <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">clonesets.apps.kruise.io</span>                                  <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">containerrecreaterequests.apps.kruise.io</span>                  <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">daemonsets.apps.kruise.io</span>                                 <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">imagepulljobs.apps.kruise.io</span>                              <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">nodeimages.apps.kruise.io</span>                                 <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">podunavailablebudgets.policy.kruise.io</span>                    <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">resourcedistributions.apps.kruise.io</span>                      <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">sidecarsets.apps.kruise.io</span>                                <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">statefulsets.apps.kruise.io</span>                               <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">uniteddeployments.apps.kruise.io</span>                          <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">workloadspreads.apps.kruise.io</span>                            <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span>  <span class="string">get</span> <span class="string">validatingwebhookconfigurations</span> <span class="string">kruise-validating-webhook-configuration</span> </span><br><span class="line"><span class="string">NAME</span>                                      <span class="string">WEBHOOKS</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">kruise-validating-webhook-configuration</span>   <span class="number">17</span>         <span class="string">17m</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span>  <span class="string">get</span> <span class="string">mutatingwebhookconfigurations</span> <span class="string">kruise-mutating-webhook-configuration</span> </span><br><span class="line"><span class="string">NAME</span>                                    <span class="string">WEBHOOKS</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">kruise-mutating-webhook-configuration</span>   <span class="number">11</span>         <span class="string">17m</span></span><br></pre></td></tr></table></figure>
+<h2 id="功能"><a href="#功能" class="headerlink" title="功能"></a>功能</h2><table>
+<thead>
+<tr>
+<th>大类</th>
+<th>子类</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>通用工作负载</td>
+<td>CloneSet</td>
+<td>定位是用来代替k8s的Deployment，但做了很多能力的增强。增强的功能点：<br>1. 支持声明pvc，给pod来申请pv。当pod销毁后，pvc会同步销毁。<br>2. 指定pod来进行缩容。<br>3. 流式扩容，可以指定扩容的步长等更高级的库容特性。<br >4. 分批灰度。<br>5. 通过partition回滚。<br>6. 控制pod的升级顺序。<br>7. 发布暂停。<br>8. 原地升级自动镜像预热。<br>9. 生命周期钩子。pod的多个声明周期之间可以读取finalizer，如果finalizer中有指定的值，则controller会停止。该行为作为k8s的一种hook方式，用户可以自定义controller来控制finalizer的行为。</td>
+</tr>
+<tr>
+<td>通用工作负载</td>
+<td>Advanced StatefulSet</td>
+<td>用来取代k8s原生的StatefulSet，很多增强特性跟CloneSet比较类似。<br>1. 原地升级。<br>2. 升级顺序增强。<br>3. 发布暂停。<br>4. 原地升级自动预热。<br>5. 序号跳过。StatefulSet创建的pod的后缀会从0开始依次累加，可以指定某个特定的序号跳过。<br>6. 流式扩容。</td>
+</tr>
+<tr>
+<td>通用工作负载</td>
+<td>Advanced DaemonSet</td>
+<td>用来取代k8s原生的DaemonSet。1. 热升级<br>2. 暂停升级<br></td>
+</tr>
+<tr>
+<td>任务工作负载</td>
+<td>BroadcastJob</td>
+<td>agent类型的job，每个节点上都会执行</td>
+</tr>
+<tr>
+<td>任务工作负载</td>
+<td>AdvancedCronJob</td>
+<td>原生的CronJob的扩展版本，可以周期性创建BroadcastJob。</td>
+</tr>
+<tr>
+<td>Sidecar容器管理</td>
+<td>SidecarSet</td>
+<td>用来管理Sidecar容器，其最核心的功能是支持在pod不重启的情况下Sidecar容器的热升级</td>
+</tr>
+<tr>
+<td>多区域管理</td>
+<td>WorkloadSpread</td>
+<td>将workload按照不同的策略来打散，随着k8s功能不断完善，部分功能k8s已经具备。支持Deployment、ReplicaSet、CloneSet。</td>
+</tr>
+<tr>
+<td>多区域管理</td>
+<td>UnitedDeployment</td>
+<td>k8s集群内可能存在不同种类型的node，该特性通过UnitedDeployment对象来管理将一个workload的不同pod分发到不同类型的节点上，并且可以指定不同类型节点的pod副本数。</td>
+</tr>
+<tr>
+<td>增强运维</td>
+<td>重启一个pod中的某个容器</td>
+<td>该特性依赖于kurise-daemon组件实现，通过将容器进程停掉，kubelet检测到容器停掉后会自动将容器拉起。停掉容器的方式跟kubelet实现一致。</td>
+</tr>
+<tr>
+<td>增强运维</td>
+<td>镜像预热</td>
+<td>通过ImagePullJob CR提供操作入口，底层的实现通过调用CRI的pod image接口实现</td>
+</tr>
+<tr>
+<td>增强运维</td>
+<td>控制pod中容器的启动顺序</td>
+<td>kruise创建一个ConfigMap，并在pod中注入来挂载该ConfigMap，每个容器使用ConfigMap中的不同key。kruise依次往CM中增加key来实现控制容器启动顺序的目的。</td>
+</tr>
+<tr>
+<td>增强运维</td>
+<td>资源分发ResourceDestribution</td>
+<td>可以跨namespace来分发CM、Secret，保证每个namespace下均有</td>
+</tr>
+<tr>
+<td>应用安全防护</td>
+<td>资源删除防护</td>
+<td>通过webhook技术实现</td>
+</tr>
+<tr>
+<td>应用安全防护</td>
+<td>PodUnavailableBudget</td>
+<td>通过webhook实现的k8s原生的pdb能力的增强，覆盖pdb不具备的场景</td>
+</tr>
+</tbody></table>
+<h2 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://openkruise.io/zh/docs/installation">https://openkruise.io/zh/docs/installation</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/0YulmrteQSARXHa2NOBLeA">如何基于 OpenKruise 打破原生 Kubernetes 中的容器运行时操作局限？</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +383,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -695,7 +859,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -793,7 +957,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -880,7 +1044,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -1060,7 +1224,7 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -1159,7 +1323,7 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -1264,7 +1428,7 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -1366,7 +1530,7 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -1470,7 +1634,7 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -1513,118 +1677,6 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 <li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/245165617">使用 EndpointSlice 扩展 Kubernetes 网络</a></li>
 <li><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/setup/best-practices/multiple-zones/">Running in multiple zones</a></li>
 </ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/disk-command/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/disk-command/" class="post-title-link" itemprop="url">Linux下磁盘常用命令</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-01-18 21:27:07" itemprop="dateCreated datePublished" datetime="2022-01-18T21:27:07+00:00">2022-01-18</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="查看磁盘是否为ssd"><a href="#查看磁盘是否为ssd" class="headerlink" title="查看磁盘是否为ssd"></a>查看磁盘是否为ssd</h1><p>如果其中的rota值为1，说明为hdd磁盘；如果rota值为0，说明为ssd。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># lsblk -o name,size,type,rota,mountpoint</span><br><span class="line">NAME    SIZE TYPE ROTA MOUNTPOINT</span><br><span class="line">vdc      20G disk    1 /var/lib/kubelet/pods/eea3a54c-b211-4ee3-bcbe-70ba3fe84c05/volumes/kubernetes.io~csi/d-t4n36xdqey47v9e0ej8r/mount</span><br><span class="line">vda     120G disk    1</span><br><span class="line">└─vda1  120G part    1 /</span><br></pre></td></tr></table></figure>
-
-<p>但该规则在很多虚拟机的场景下并不成立，即使虚拟机的磁盘为ssd，但rota值仍然为1。可以通过修改rota的值的方式来标记磁盘的类型：echo ‘0’&gt; &#x2F;sys&#x2F;block&#x2F;vdd&#x2F;queue&#x2F;rotational</p>
-<h1 id="iostat"><a href="#iostat" class="headerlink" title="iostat"></a>iostat</h1><p>只能观察磁盘整体性能，不能看到进程级别的</p>
-<ul>
-<li>iops &#x3D; r&#x2F;s+w&#x2F;s</li>
-<li>吞吐量 &#x3D; rkB&#x2F;s + wkB&#x2F;s</li>
-<li>响应时间 &#x3D; r_await + w_await</li>
-</ul>
-<p>iostat -xm $interval: interval为秒</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ iostat -xm 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-52-sh-100-I03.yidian.com)      12/11/2016      _x86_64_        (32 CPU)</span><br><span class="line"></span><br><span class="line">avg-cpu:  %user   %nice %system %iowait  %steal   %idle</span><br><span class="line">           4.99    0.00    1.46    0.01    0.00   93.54</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">sda               0.00     0.26    0.02    1.62     0.00     0.02    29.31     0.00    0.89    3.37    0.87   0.05   0.01</span><br><span class="line">sdb               0.00     0.81   10.23   67.59     1.19    29.07   796.57     0.01    0.10    0.85    2.85   0.19   1.46</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>r&#x2F;s: 每秒发送给磁盘的读请求数</li>
-<li>w&#x2F;s: 每秒发送给磁盘的写请求数</li>
-<li>rMB&#x2F;s: 每秒从磁盘读取的数据量</li>
-<li>wMB&#x2F;s: 每秒向磁盘写入的数据量</li>
-<li>%iowait：cpu等待磁盘时间</li>
-<li>%util：表示磁盘使用率，该值较大说明磁盘性能存在问题，io队列不为空的时间。由于存在并行io，100%不代表磁盘io饱和</li>
-<li>r_await：读请求处理完成时间，包括队列中的等待时间和设备实际处理时间，单位为毫秒</li>
-<li>w_await：写请求处理完成时间，包括队列中的等待时间和设备实际处理时间，单位为毫秒</li>
-<li>svctm: 瓶颈每次io操作的时间，单位为毫秒，可以反映出磁盘的瓶颈</li>
-<li>avgrq-sz：平均每次请求的数据大小</li>
-<li>avgqu-sz：平均请求io队列长度</li>
-<li>svctm：处理io请求所需要的平均时间，不包括等待时间，单位为毫秒</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">$ iostat -d -x 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-42-sh-100-i08.yidian.com)      01/19/2019      _x86_64_        (24 CPU)</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">sda               0.00     7.58    0.31  266.07     9.54   888.01     6.74     0.03    0.12    8.84    0.11   0.03   0.90</span><br><span class="line">sdb               0.00     0.67    4.39   40.68   386.20  9277.38   428.79     0.03    0.64    3.10    0.37   0.30   1.33</span><br><span class="line">sdd               0.00     0.82    5.08   66.78   451.99 15587.89   446.42     0.02    0.30    3.50    0.05   0.28   2.01</span><br><span class="line">sde               0.00     0.67    4.14   53.77   312.74 12121.84   429.43     0.00    0.03    4.00    1.44   0.30   1.72</span><br><span class="line">sdc               0.00     0.50    0.05   27.47     2.74  6098.56   443.28     0.03    0.95   12.42    0.93   0.21   0.58</span><br><span class="line">sdf               0.00     0.47    1.07   34.58    57.05  7504.68   424.24     0.00    0.05    2.60    2.63   0.25   0.88</span><br><span class="line">sdg               0.00     0.72    0.14   63.87    13.79 14876.74   465.22     0.03    0.42   10.57    0.40   0.19   1.24</span><br><span class="line">sdj               0.00     0.79    1.85   37.81   206.01  7881.89   407.90     0.03    0.67    2.27    0.59   0.36   1.42</span><br><span class="line">sdi               0.00     0.65    0.29   59.54    22.01 13501.71   452.05     0.01    0.25    5.27    0.22   0.19   1.14</span><br><span class="line">sdk               0.00     0.50    0.30   29.46    16.74  6330.68   426.57     0.05    1.58    4.03    1.55   0.24   0.70</span><br><span class="line">sdm               0.00     0.63    0.73   55.70    63.73 13008.16   463.34     0.02    0.35    5.98    0.28   0.23   1.29</span><br><span class="line">sdh               0.00     0.47    0.06   15.68     5.16  2970.09   378.01     0.03    1.82    7.22    1.80   0.27   0.42</span><br><span class="line">sdl               0.00     0.56    1.32   38.14    81.04  8945.16   457.50     0.09    2.22    4.30    2.15   0.19   0.76</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>wrqm: 每秒合并的写请求数</li>
-<li>rrqm：每秒合并的读请求数</li>
-</ul>
-<h1 id="pidstat"><a href="#pidstat" class="headerlink" title="pidstat"></a>pidstat</h1><p>如果要想查看进程级别的磁盘 io 使用情况，可以使用 <code>pidstat -d</code> 指令。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ pidstat -d 1</span><br><span class="line">Linux 3.10.0-1160.88.1.el7.x86_64 (izbp1feliilr5yri84y6saz)     05/08/2023      _x86_64_        (16 CPU)</span><br><span class="line"></span><br><span class="line">09:44:24 AM   UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s  Command</span><br><span class="line">09:44:25 AM     0       371      0.00    184.91      0.00  jbd2/vda1-8</span><br><span class="line">09:44:25 AM     0      1395      0.00     22.64      7.55  rsyslogd</span><br><span class="line">09:44:25 AM     0     19053      0.00      3.77      0.00  jbd2/dm-0-8</span><br><span class="line">09:44:25 AM  1000     25479      0.00      3.77      0.00  org_start</span><br><span class="line">09:44:25 AM  1000     25754      0.00      3.77      0.00  org_start</span><br><span class="line">09:44:25 AM     0     38784      0.00    505.66      0.00  systemd-journal</span><br><span class="line">09:44:25 AM     0     40474      0.00    143.40      0.00  jbd2/dm-1-8</span><br><span class="line">09:44:25 AM     0     41130      0.00     11.32      0.00  jbd2/dm-2-8</span><br><span class="line">09:44:25 AM  1000     41675      0.00      3.77      0.00  start</span><br><span class="line">09:44:25 AM     0     41730      0.00      3.77      0.00  org_start</span><br></pre></td></tr></table></figure>
-
-<h1 id="iotop"><a href="#iotop" class="headerlink" title="iotop"></a>iotop</h1><p>该命令可以查看所有进程读写 io 情况，该命令通常 os 不会默认安装。在 CentOS 下可以执行 <code>yum install iotop</code> 命令安装。</p>
 
       
     </div>

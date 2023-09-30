@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">228</span>
+          <span class="site-state-item-count">229</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,103 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/docker-bridge-network/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/docker-bridge-network/" class="post-title-link" itemprop="url">docker bridge network</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2020-02-01 21:34:53" itemprop="dateCreated datePublished" datetime="2020-02-01T21:34:53+00:00">2020-02-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>docker bridge是默认的网络模式</p>
+<h2 id="容器访问外网"><a href="#容器访问外网" class="headerlink" title="容器访问外网"></a>容器访问外网</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/docker_bridge_network.png"></p>
+<p>默认情况下，容器即可访问外网。</p>
+<p>启动一个容器：<code>docker run -d nginx</code></p>
+<p>容器中访问外网的请求如<a target="_blank" rel="noopener" href="http://www.baidu.com,内核协议栈根据路由信息,会选择默认路由,将请求发送到容器中的eth0网卡,目的mac地址为网关172.17.0.1的mac地址./">www.baidu.com，内核协议栈根据路由信息，会选择默认路由，将请求发送到容器中的eth0网卡，目的mac地址为网关172.17.0.1的mac地址。</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ route -n</span><br><span class="line">Kernel IP routing table</span><br><span class="line">Destination     Gateway         Genmask         Flags Metric Ref    Use Iface</span><br><span class="line">0.0.0.0         172.17.0.1      0.0.0.0         UG    0      0        0 eth0</span><br><span class="line">172.17.0.0      0.0.0.0         255.255.0.0     U     0      0        0 eth0</span><br></pre></td></tr></table></figure>
+
+<p>eth0网卡接收到数据包后，会将数据包转发到veth pair的另外一端，即宿主机网络中的veth6b173fd设备。</p>
+<p>veth6b173fd设备是挂在网桥上的，会将数据包转发到网桥br0，br0即为网关172.17.0.1。</p>
+<p>br0接收到数据包后，会将数据包转发给内核协议栈。</p>
+<p>宿主机上的&#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;ip_forward为1，表示转发功能开启，即目的ip不是本机的会根据路由规则进行转发，而不是丢弃。</p>
+<p>仅在宿主机上开启了ip_forward后，包即使转发了，还是无法回来的，因为包中的源ip地址为172.17.0.1，是私有网段的ip地址。需要做一次SNAT才可以，docker会在iptabels的nat表中的postrouting链中增加SNAT规则，下面规则的意思是源地址为172.17.0.0&#x2F;16的会做一次地址伪装，即SNAT。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># iptables -nL -t nat</span><br><span class="line"></span><br><span class="line">Chain POSTROUTING (policy ACCEPT)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line">MASQUERADE  all  --  172.17.0.0/16        0.0.0.0/0</span><br></pre></td></tr></table></figure>
+
+<p>在eth0网卡上抓包，可以发现源ip已经是eth0的网卡ip地址。</p>
+<h2 id="端口映射"><a href="#端口映射" class="headerlink" title="端口映射"></a>端口映射</h2><p>命令格式：<code>-p $&#123;host_port&#125;:$&#123;container_port&#125;</code></p>
+<p>启动一个容器：<code>docker run -d -p 8080:80 nginx</code></p>
+<p>查看本地的iptables规则</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">$ iptables -nL -t nat</span><br><span class="line">Chain PREROUTING (policy ACCEPT)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line">DOCKER     all  --  0.0.0.0/0            0.0.0.0/0            ADDRTYPE match dst-type LOCAL</span><br><span class="line"></span><br><span class="line">Chain INPUT (policy ACCEPT)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line"></span><br><span class="line">Chain OUTPUT (policy ACCEPT)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line">DOCKER     all  --  0.0.0.0/0           !127.0.0.0/8          ADDRTYPE match dst-type LOCAL</span><br><span class="line"></span><br><span class="line">Chain POSTROUTING (policy ACCEPT)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line">MASQUERADE  all  --  172.17.0.0/16        0.0.0.0/0</span><br><span class="line">MASQUERADE  tcp  --  172.17.0.2           172.17.0.2           tcp dpt:80</span><br><span class="line"></span><br><span class="line">Chain DOCKER (2 references)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line">RETURN     all  --  0.0.0.0/0            0.0.0.0/0</span><br><span class="line">## prerouting链引用，外面发往本机的8080端口的数据包，会dnat为172.17.0.2:80</span><br><span class="line">DNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:8080 to:172.17.0.2:80</span><br></pre></td></tr></table></figure>
+
+<h2 id="丢包问题"><a href="#丢包问题" class="headerlink" title="丢包问题"></a>丢包问题</h2><p>SNAT在并发比较高的情况下，会存在少量的丢包现象，具体原因跟conntrack模式的实现有关。conntrack在SNAT端口的分配和插入conntrack表之间有个延时，如果在这中间存在冲突的话会导致插入失败，从而出现丢包的问题。</p>
+<p>该问题没有根治的解决办法，能大大缓解的解决办法为使用iptabels的–random-fully选项，SNAT选择端口为随机，大大降低出现冲突的概率。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +316,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -320,7 +417,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -430,7 +527,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -508,7 +605,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -613,7 +710,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -746,7 +843,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -827,7 +924,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -914,7 +1011,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -998,7 +1095,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -1045,117 +1142,6 @@
 <li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/bakari/p/10449664.html">Linux 网络工具详解之 ip tuntap 和 tunctl 创建 tap&#x2F;tun 设备</a></li>
 <li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000009249039">Linux虚拟网络设备之tun&#x2F;tap</a></li>
 </ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/qinghai-5/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/qinghai-5/" class="post-title-link" itemprop="url">北京自驾青海甘肃大环线系列 - 5</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2019-05-29 02:22:36" itemprop="dateCreated datePublished" datetime="2019-05-29T02:22:36+00:00">2019-05-29</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-1.png"></p>
-<p>行程：海南藏族自治州黑马河乡（9:30） -&gt; 茶卡盐湖（11:30 - 15:00）-&gt; 柴达木盆地 -&gt; 可鲁克湖（18:00 - 18:30） -&gt; 大柴旦镇（21:00）</p>
-<p>路程：500+公里</p>
-<p>日期：2019.4.22</p>
-<p>今天是整个行程的第五天，第四天晚上到达了青海湖西端的黑马河乡，今天的主要行程是茶卡盐湖，以及横穿几乎整个柴达木盆地。</p>
-<h2 id="黑马河日出"><a href="#黑马河日出" class="headerlink" title="黑马河日出"></a>黑马河日出</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-2.jpg"></p>
-<p>黑马河地处青海湖最西端，往东边看去是平静的湖水，完全没有任何遮挡，加上高原的空气通透性特别好，况且地处干旱地带，以晴天为主，是个看日出的绝佳地点。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-3.jpg"></p>
-<p>从黑马河赶往茶卡镇需要经过橡皮山，橡皮山口的海拔在3800米+，是整个行程中的海拔最高点。此时的橡皮山还完全是一座雪山，是整个行程中的第二次到达雪山。同时也是由于这些山脉的原因，才阻隔了青海湖和茶卡盐湖，使其分别成为了只进不出的咸水湖。</p>
-<h2 id="茶卡盐湖"><a href="#茶卡盐湖" class="headerlink" title="茶卡盐湖"></a>茶卡盐湖</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-6.jpg"></p>
-<p>茶卡盐湖几乎是青海旅游的毕竟之地，无论是环青海湖小环线，还是青海甘肃大环线，同时也是网红景点，网络上有太多穿着红色裙子的漂亮的小姐姐的照片和视频。</p>
-<p>茶卡盐湖地处柴达木盆地，周边地势较低，在离盐湖十几公里的地方湖泊就清晰可见，天上的白云倒影在湖中，宛如一面镜子，因此素有“天空之境”之称。远处的昆仑山脉和祁连山脉的雪山清晰可见，由于天空太过透彻，使常年生活在华北地区的我很难判断出雪山的距离。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-4.jpg" alt="采盐船"><br>(图为采盐船)</p>
-<p>茶卡盐湖的开发利用相当充分，一方面是用来开发采盐，并建有盐厂，湖面上可以看到开采盐矿的船只。另一方面，通过旅游来进一步最大化其价值，其实整个柴达木盆地有很多的盐湖，但最为大众所熟知的仅此一家。而且旅游跟采盐是完全分离的，互不相干，毕竟大部分游客都是来拍照的，旅游占用的盐湖面积比重相对较小。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-5.jpg"></p>
-<p>茶卡盐湖的含盐量实在太高，大部分地方湖面的水都较浅，仅有薄薄的一层，下面全是沉积的盐矿，我此行并没有看到有数米深的湖水。很多地方是可以穿着靴子进入到里面的，但要小心盐坑，看似平坦的盐矿其实有很多的暗洞，很容易就陷进去，好在游客能去的地方盐洞都给堵住了，没啥安全问题。上图中黄色的网状结构为防止游客陷入的盖子。</p>
-<p>死海的含盐量肯定没有盐湖的含量高的，尚且人体可以漂浮在表面，我想茶卡盐湖如果有较深的地方，人体一定是可以漂浮在表面的，可惜盐湖并未提供该项旅游体验服务，要不还真想一试。</p>
-<p>茶卡盐湖的最佳拍照时机是清晨和傍晚，中午烈日当头的时候晒得人很不舒服，紫外线相当强烈，尤其是对于我这种没有墨镜装备的近视眼游客。在烈日下，去拍人像也很难拍的漂亮，眼睛是很难睁开的，手机在拍人像时，由于背景实在太亮，人像总是会偏黑一些。对于我而言，是很难做到早起的，也就赶不上清晨的茶卡盐湖，实际上到达盐湖景区的时候已经是中午了。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-7.jpeg"><center>(盐湖的路都是用盐结晶铺成的，好不奢侈)</center></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-8.jpeg"><center>(在湖中的沉淀物捞出来随手一攥都能成为一个大疙瘩)</center></p>
-<h2 id="柴达木盆地"><a href="#柴达木盆地" class="headerlink" title="柴达木盆地"></a>柴达木盆地</h2><p>游览完茶卡盐湖已经是下午三点钟了，接下来还有400多公里的路程要走，好在高原的天黑时间要到晚上八点半。离开茶卡镇后，就进入了漫长的柴达木盆地。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-9.jpeg" alt="http://p3.pstatp.com/large/pgc-image/1528418882025edccd91e79"></p>
-<hr>
-<p>我原以为柴达木盆地是属于新疆地区的，后来一看地图才发现彻头彻尾的属于青海省，夹在昆仑山、祁连山和阿尔金山三大山脉之间，而今天的行程几乎就是横穿整个柴达木盆地。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-10.jpg"></p>
-<p>刚离开茶卡镇，还能看到一些牧民养的成群的牛羊，地上也长有一些枯草，但后来地上随着枯草的减少，牛羊也就看不到了。到后面几乎就是戈壁，看不到任何的动物，完全的荒原，让我想起了《北方的空地》中描述的羌塘无人区中的画面，我感觉无人区中也不过如此罢了。地理课本上说柴达木盆地是“聚宝盆”，矿产资源异常丰富，抛开这些埋藏在地底下的矿产不说，但就感官而言，是极其的荒凉。好在一路上，总有雪山陪伴，也不至于太孤单。一路上有很多动物出没的指示牌，好想看到一个活物，但都以失望告终。</p>
-<p>由于地广人稀，这段高速公路的管理也相对简陋，曾看到了一辆当地的三轮车在高速的快车道上逆行，吓得我一脸懵，估计是要按正常的路线行驶要多走出好多路。</p>
-<h2 id="可鲁克湖"><a href="#可鲁克湖" class="headerlink" title="可鲁克湖"></a>可鲁克湖</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-11.jpg"></p>
-<p>可鲁克湖位于高速公路旁的大约两公里处，甚至都不用下高速就可以到达，属于3A级景区。到达可鲁克湖时已经是下午6点钟，对于进入景区本不报太大的希望，经询问景区居然营业到晚上八点钟，高原地区果然天黑的晚。景区主要是一个偌大的可鲁克湖，可供游玩的地方特别少，简单拍照走人。如果在这里拍张照，拿给别人看，说是青海湖拍的，没有人能够看得出破绽。如果时间紧迫，该景区完全可以不去参观。</p>
-<p>可鲁克湖景区旁边还有个比其更大的托素湖，托素湖是可鲁克湖的三倍大小，可鲁克湖的湖水最终会流入托素湖中。比较有意思的是，可鲁克湖的湖水属于淡水湖，而托素湖却属于典型的内陆咸水湖。咸水湖的形成离不开封闭的环境，托素湖由于没有排水渠道，只能靠蒸发来消耗水分，水分被蒸发后，水分中的盐分却不会被蒸发，日积月累就会形成咸水湖。而可鲁克湖由于会流向托素湖，湖水是流动的，因此没有形成咸水湖。</p>
-<p>托素湖离高速较远，要开车过去需要沿着可鲁克湖的湖边，来回至少还得要一个半小时的时间，时间不太允许，且可玩性较差，就直接忽略了该景区。</p>
-<p>托素湖旁边还有个外星人遗址，单看景区的名字是我特别感兴趣的类型，网上一搜，景区居然暂未开放!</p>
-<h2 id="当天终点-大柴旦"><a href="#当天终点-大柴旦" class="headerlink" title="当天终点 - 大柴旦"></a>当天终点 - 大柴旦</h2><p>又是在晚上的时候到达了当天的终点站大柴旦县。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">天空之镜湖</span><br><span class="line">白雪皑皑山</span><br><span class="line">漫漫柴达木</span><br><span class="line">渺渺无人烟</span><br><span class="line">盆地全是宝</span><br><span class="line">可惜只见草</span><br><span class="line">戈壁连成片</span><br><span class="line">夜宿大柴旦</span><br></pre></td></tr></table></figure>
-
-<p>未完待续…</p>
 
       
     </div>

@@ -19,16 +19,18 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.18.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="time_wait状态客户端在收到服务器端发送的FIN报文后发送ACK报文，并进入TIME_WAIT状态，等待2MSL（最大报文生存时间）后才断开连接，MSL在Linux中值为30s。 之所以设计time_wait主要用来解决以下异常场景：  确保对端处于关闭状态。主动断开连接一段发送最后一个ack报文，如果丢失，被动断开连接一端会重新发送fin报文。如果主动断开连接一方直接关闭，被动方会一直处于">
+    <meta name="description" content="time_wait状态客户端在收到服务器端发送的FIN报文后发送ACK报文，并进入TIME_WAIT状态，等待2MSL（最大报文生存时间）后才断开连接，MSL在Linux中值为30s。 之所以设计time_wait主要用来解决以下异常场景：  确保对端处于关闭状态。主动断开连接一段发送最后一个ack报文，如果丢失，被动断开连接一端会重新发送fin报文。如果主动断开连接一方直接关闭，被动方会一直处">
 <meta property="og:type" content="article">
 <meta property="og:title" content="TCP TIME_WAIT">
 <meta property="og:url" content="http://kuring.me/post/time-wait/index.html">
 <meta property="og:site_name" content="404频道">
-<meta property="og:description" content="time_wait状态客户端在收到服务器端发送的FIN报文后发送ACK报文，并进入TIME_WAIT状态，等待2MSL（最大报文生存时间）后才断开连接，MSL在Linux中值为30s。 之所以设计time_wait主要用来解决以下异常场景：  确保对端处于关闭状态。主动断开连接一段发送最后一个ack报文，如果丢失，被动断开连接一端会重新发送fin报文。如果主动断开连接一方直接关闭，被动方会一直处于">
+<meta property="og:description" content="time_wait状态客户端在收到服务器端发送的FIN报文后发送ACK报文，并进入TIME_WAIT状态，等待2MSL（最大报文生存时间）后才断开连接，MSL在Linux中值为30s。 之所以设计time_wait主要用来解决以下异常场景：  确保对端处于关闭状态。主动断开连接一段发送最后一个ack报文，如果丢失，被动断开连接一端会重新发送fin报文。如果主动断开连接一方直接关闭，被动方会一直处">
 <meta property="og:locale">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_state.png">
 <meta property="article:published_time" content="2018-12-17T23:02:09.000Z">
-<meta property="article:modified_time" content="2023-09-26T09:14:44.696Z">
+<meta property="article:modified_time" content="2023-09-30T16:01:08.095Z">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_state.png">
 
 
 <link rel="canonical" href="http://kuring.me/post/time-wait/">
@@ -138,7 +140,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#time-wait%E7%8A%B6%E6%80%81"><span class="nav-number">1.</span> <span class="nav-text">time_wait状态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#time-wait%E8%BF%87%E5%A4%9A%E7%9A%84%E8%A7%A3%E5%86%B3%E6%80%9D%E8%B7%AF"><span class="nav-number">2.</span> <span class="nav-text">time_wait过多的解决思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E5%86%85%E6%A0%B8%E5%8F%82%E6%95%B0"><span class="nav-number">3.</span> <span class="nav-text">相关内核参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#tcp-timestamp"><span class="nav-number">3.1.</span> <span class="nav-text">tcp_timestamp</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcp-tw-reuse"><span class="nav-number">3.2.</span> <span class="nav-text">tcp_tw_reuse</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcp-tw-recycle"><span class="nav-number">3.3.</span> <span class="nav-text">tcp_tw_recycle</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#In-Action"><span class="nav-number">4.</span> <span class="nav-text">In Action</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#nginx"><span class="nav-number">4.1.</span> <span class="nav-text">nginx</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number">5.</span> <span class="nav-text">引用</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#time-wait%E7%8A%B6%E6%80%81"><span class="nav-number">1.</span> <span class="nav-text">time_wait状态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#time-wait%E8%BF%87%E5%A4%9A%E7%9A%84%E8%A7%A3%E5%86%B3%E6%80%9D%E8%B7%AF"><span class="nav-number">2.</span> <span class="nav-text">time_wait过多的解决思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E5%86%85%E6%A0%B8%E5%8F%82%E6%95%B0"><span class="nav-number">3.</span> <span class="nav-text">相关内核参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#net-ipv4-tcp-max-tw-buckets"><span class="nav-number">3.1.</span> <span class="nav-text">net.ipv4.tcp_max_tw_buckets</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#net-ipv4-tcp-tw-timeout"><span class="nav-number">3.2.</span> <span class="nav-text">net.ipv4.tcp_tw_timeout</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcp-timestamp"><span class="nav-number">3.3.</span> <span class="nav-text">tcp_timestamp</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#net-ipv4-tcp-tw-reuse"><span class="nav-number">3.4.</span> <span class="nav-text">net.ipv4.tcp_tw_reuse</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#net-ipv4-tcp-tw-recycle"><span class="nav-number">3.5.</span> <span class="nav-text">net.ipv4.tcp_tw_recycle</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#In-Action"><span class="nav-number">4.</span> <span class="nav-text">In Action</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#nginx"><span class="nav-number">4.1.</span> <span class="nav-text">nginx</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E7%94%A8"><span class="nav-number">5.</span> <span class="nav-text">引用</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -151,7 +153,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">228</span>
+          <span class="site-state-item-count">229</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -225,7 +227,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-26 09:14:44" itemprop="dateModified" datetime="2023-09-26T09:14:44+00:00">2023-09-26</time>
+      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
     </span>
 
   
@@ -237,7 +239,8 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h2 id="time-wait状态"><a href="#time-wait状态" class="headerlink" title="time_wait状态"></a>time_wait状态</h2><p>客户端在收到服务器端发送的FIN报文后发送ACK报文，并进入TIME_WAIT状态，等待2MSL（最大报文生存时间）后才断开连接，MSL在Linux中值为30s。</p>
+    <div class="post-body" itemprop="articleBody"><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_state.png"></p>
+<h2 id="time-wait状态"><a href="#time-wait状态" class="headerlink" title="time_wait状态"></a>time_wait状态</h2><p>客户端在收到服务器端发送的FIN报文后发送ACK报文，并进入TIME_WAIT状态，等待2MSL（最大报文生存时间）后才断开连接，MSL在Linux中值为30s。</p>
 <p>之所以设计time_wait主要用来解决以下异常场景：</p>
 <ol>
 <li>确保对端处于关闭状态。主动断开连接一段发送最后一个ack报文，如果丢失，被动断开连接一端会重新发送fin报文。如果主动断开连接一方直接关闭，被动方会一直处于last-ack状态。</li>
@@ -252,12 +255,20 @@
 <li>采用长连接</li>
 </ol>
 <p>tcp有个tcp时间戳选项，第一个是发送方的当前时钟时间戳（4个字节），第二个4字节为从远程主机接收到的最新时间戳</p>
-<h2 id="相关内核参数"><a href="#相关内核参数" class="headerlink" title="相关内核参数"></a>相关内核参数</h2><h3 id="tcp-timestamp"><a href="#tcp-timestamp" class="headerlink" title="tcp_timestamp"></a>tcp_timestamp</h3><p>用来控制tcp option字段，发送方在发送报文时会将当前时钟的时间值放入到时间戳字段。</p>
-<h3 id="tcp-tw-reuse"><a href="#tcp-tw-reuse" class="headerlink" title="tcp_tw_reuse"></a>tcp_tw_reuse</h3><p>tcp_tw_reuse意思为主动关闭连接的一方可以复用之前的time_wait状态的连接。</p>
+<h2 id="相关内核参数"><a href="#相关内核参数" class="headerlink" title="相关内核参数"></a>相关内核参数</h2><h3 id="net-ipv4-tcp-max-tw-buckets"><a href="#net-ipv4-tcp-max-tw-buckets" class="headerlink" title="net.ipv4.tcp_max_tw_buckets"></a><code>net.ipv4.tcp_max_tw_buckets</code></h3><blockquote>
+<p>(integer; default: see below; since Linux 2.4) The maximum number of sockets in TIME_WAIT state allowed in the system.  This limit exists only to prevent simple denial-of-service attacks.  The default value of NR_FILE*2 is adjusted depending on the memory in the system.  If this number is exceeded, the socket is closed and a warning is printed.</p>
+</blockquote>
+<p>系统中允许的 time_wait 数量的最大值，当达到最大值后，新的连接会被拒绝。</p>
+<h3 id="net-ipv4-tcp-tw-timeout"><a href="#net-ipv4-tcp-tw-timeout" class="headerlink" title="net.ipv4.tcp_tw_timeout"></a><code>net.ipv4.tcp_tw_timeout</code></h3><p>time_wait 的超时时间，默认为 2MSL，即 60s，在大部分的 linux 系统下该值没法修改，仅在某些 OS 系统下可用。比如：<a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/ecs/user-guide/change-the-tcp-time-wait-timeout-period">Alibaba Cloud Linux 修改TCP TIME-WAIT超时时间</a>。</p>
+<h3 id="tcp-timestamp"><a href="#tcp-timestamp" class="headerlink" title="tcp_timestamp"></a>tcp_timestamp</h3><p>用来控制tcp option字段，发送方在发送报文时会将当前时钟的时间值放入到时间戳字段。</p>
+<h3 id="net-ipv4-tcp-tw-reuse"><a href="#net-ipv4-tcp-tw-reuse" class="headerlink" title="net.ipv4.tcp_tw_reuse"></a><code>net.ipv4.tcp_tw_reuse</code></h3><blockquote>
+<p>(Boolean; default: disabled; since Linux 2.4.19&#x2F;2.6) Allow to reuse TIME_WAIT sockets for new connections when it is safe from protocol viewpoint.  It should not be changed without advice&#x2F;request of technical experts.</p>
+</blockquote>
+<p>tcp_tw_reuse意思为主动关闭连接的一方可以复用之前的time_wait状态的连接。</p>
 <p>复用连接后，这条连接的时间更改为当前时间，延迟数据到达时，延迟数据时间小于新连接时间。</p>
 <p>需要连接双方都打开timestamp选项。</p>
 <p>该选项适用的范围为作为客户端主动断开连接，复用客户端的time_wait的状态，对服务端无影响。</p>
-<h3 id="tcp-tw-recycle"><a href="#tcp-tw-recycle" class="headerlink" title="tcp_tw_recycle"></a>tcp_tw_recycle</h3><p>内核会在一个RTO的时间内快速销毁掉time_wait状态，RTO时间为数据包重传的超时时间，该时间通过RTT动态计算，远小于2MSL。</p>
+<h3 id="net-ipv4-tcp-tw-recycle"><a href="#net-ipv4-tcp-tw-recycle" class="headerlink" title="net.ipv4.tcp_tw_recycle"></a><code>net.ipv4.tcp_tw_recycle</code></h3><p>内核会在一个RTO的时间内快速销毁掉time_wait状态，RTO时间为数据包重传的超时时间，该时间通过RTT动态计算，远小于2MSL。</p>
 <p>需要连接双方都打开timestamp选项。</p>
 <p>适用场景为服务端主动断开连接，time_wait状态位于服务端，服务端适用该选项快速回收time_wait状态的连接。</p>
 <p><em>弊端</em>：如果客户端在NAT网络中，如果配置了tcp_tw_recycle，可能会出现在一个RTO的时间内，只有一个客户端和自己连接成功的情况。</p>
