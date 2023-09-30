@@ -10,6 +10,8 @@ CRI为k8s提供的kubelet扩展接口，用来支持多种容器运行时。CRI�
 
 ### RuntimeService
 
+![https://github.com/kata-containers/kata-containers/blob/main/docs/design/arch-images/api-to-construct.png](https://kuring.oss-cn-beijing.aliyuncs.com/common/cri-api-to-construct.png)
+
 包括了Pod和容器相关的操作。
 
 Pod相关的操作包括：

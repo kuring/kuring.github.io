@@ -2,6 +2,9 @@ title: TCP TIME_WAIT
 date: 2018-12-17 23:02:09
 tags:
 ---
+
+![](https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_state.png)
+
 ## time_wait状态
 
 客户端在收到服务器端发送的FIN报文后发送ACK报文，并进入TIME_WAIT状态，等待2MSL（最大报文生存时间）后才断开连接，MSL在Linux中值为30s。
@@ -25,11 +28,23 @@ tcp有个tcp时间戳选项，第一个是发送方的当前时钟时间戳（4�
 
 ## 相关内核参数
 
+### `net.ipv4.tcp_max_tw_buckets`
+
+> (integer; default: see below; since Linux 2.4) The maximum number of sockets in TIME_WAIT state allowed in the system.  This limit exists only to prevent simple denial-of-service attacks.  The default value of NR_FILE*2 is adjusted depending on the memory in the system.  If this number is exceeded, the socket is closed and a warning is printed.
+
+系统中允许的 time_wait 数量的最大值，当达到最大值后，新的连接会被拒绝。
+
+### `net.ipv4.tcp_tw_timeout`
+
+time_wait 的超时时间，默认为 2MSL，即 60s，在大部分的 linux 系统下该值没法修改，仅在某些 OS 系统下可用。比如：[Alibaba Cloud Linux 修改TCP TIME-WAIT超时时间](https://help.aliyun.com/zh/ecs/user-guide/change-the-tcp-time-wait-timeout-period)。
+
 ### tcp_timestamp
 
 用来控制tcp option字段，发送方在发送报文时会将当前时钟的时间值放入到时间戳字段。
 
-### tcp_tw_reuse
+### `net.ipv4.tcp_tw_reuse`
+
+> (Boolean; default: disabled; since Linux 2.4.19/2.6) Allow to reuse TIME_WAIT sockets for new connections when it is safe from protocol viewpoint.  It should not be changed without advice/request of technical experts.
 
 tcp_tw_reuse意思为主动关闭连接的一方可以复用之前的time_wait状态的连接。
 
@@ -39,7 +54,7 @@ tcp_tw_reuse意思为主动关闭连接的一方可以复用之前的time_wait�
 
 该选项适用的范围为作为客户端主动断开连接，复用客户端的time_wait的状态，对服务端无影响。
 
-### tcp_tw_recycle
+### `net.ipv4.tcp_tw_recycle`
 
 内核会在一个RTO的时间内快速销毁掉time_wait状态，RTO时间为数据包重传的超时时间，该时间通过RTT动态计算，远小于2MSL。
 
@@ -50,7 +65,6 @@ tcp_tw_reuse意思为主动关闭连接的一方可以复用之前的time_wait�
 *弊端*：如果客户端在NAT网络中，如果配置了tcp_tw_recycle，可能会出现在一个RTO的时间内，只有一个客户端和自己连接成功的情况。
 
 4.10之后，Linux内核修改了时间戳生成机制，该选项已经抛弃。
-
 
 ## In Action
 
