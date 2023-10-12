@@ -28,7 +28,7 @@
 <meta property="og:locale">
 <meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_connect.webp">
 <meta property="article:published_time" content="2018-12-01T21:24:07.000Z">
-<meta property="article:modified_time" content="2023-09-30T16:01:08.091Z">
+<meta property="article:modified_time" content="2023-10-12T12:13:52.702Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_connect.webp">
 
@@ -140,7 +140,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%8F%82%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">内核参数</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E5%8F%82%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">内核参数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%BA%90%E7%A0%81"><span class="nav-number">2.</span> <span class="nav-text">内核源码</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%8F%82%E7%9C%8B"><span class="nav-number">3.</span> <span class="nav-text">如何参看</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -153,7 +153,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">229</span>
+          <span class="site-state-item-count">230</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -227,7 +227,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -241,8 +241,8 @@
     
     <div class="post-body" itemprop="articleBody"><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_connect.webp"></p>
 <p>一个正常的tcp server在处理请求时会经过如下的系统调用：socket() bind() listen() accept() read() write() close()。一个请求在被应用程序读取之前，可能处于SYN_RCVD和ESTABLISHED两种状态。</p>
-<p>第一个队列：SYN_RCVD状态是server端接收到了client端的SYN包，server端会将该连接放到半连接队列中，并向客户端发送SYN+ACK包，此时连接处于半连接状态。</p>
-<p>第二个队列：ESTABLISHED状态为已经完成了三次握手，但是server端的应用程序还未调用accept系统调用的情况。</p>
+<p>第一个队列：SYN_RCVD状态是server端接收到了client端的SYN包，server端会将该连接放到半连接队列中，并向客户端发送SYN+ACK包，此时连接处于半连接状态。通常该队列被称为半连接队列。</p>
+<p>第二个队列：ESTABLISHED状态为已经完成了三次握手，但是server端的应用程序还未调用accept系统调用的情况。通常该队列被称为全连接队列。</p>
 <p>这两种情况下都需要操作系统提供相应队列来保存连接状态。</p>
 <p>backlog用来设置这两个队列的最大值，但在不同的操作系统中有不同的含义，下面的说明以linux操作系统为准。</p>
 <p>其中第一个维护SYN_RCVD状态的队列使用内核参数<code>net.ipv4.tcp_max_syn_backlog</code>来控制，如果队列超过这一阈值，连接会被拒绝。该值默认为1000.</p>
@@ -267,6 +267,16 @@
 </ol>
 <p>在三次握手完成后，该连接会进入到 ESTABLISHED 状态，并将该连接放入到用户程序队列中。若该队列已满，默认会将该连接重新设置为 SYN_ACK 状态，相当于是服务端没有接收到客户端的 syn + ack 报文，后续可以利用客户端的重传机制重新接收报文。</p>
 <p>一旦开启了 <code>net.ipv4.tcp_abort_on_overflow</code> 选项后，会直接发送 RST 报文给到客户端，客户端会终止该连接，并报错 <code>104 Connection reset by peer</code>。</p>
+<ol start="4">
+<li>net.core.somaxconn</li>
+</ol>
+<p>全连接队列的最大值，该配置为全局默认配置。单个 socket 的全连接队列的长度选择为 Min(backlog, somaxconn)。</p>
+<h1 id="内核源码"><a href="#内核源码" class="headerlink" title="内核源码"></a>内核源码</h1><p>队列位于内核代码的 include&#x2F;net&#x2F;inet_connection_sock.h 中的如下位置:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">inet_connection_sock</span> &#123;</span></span><br><span class="line">	<span class="comment">/* inet_sock has to be the first member! */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">inet_sock</span>	  <span class="title">icsk_inet</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">request_sock_queue</span> <span class="title">icsk_accept_queue</span>;</span> <span class="comment">// 队列</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">inet_bind_bucket</span>	  *<span class="title">icsk_bind_hash</span>;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="如何参看"><a href="#如何参看" class="headerlink" title="如何参看"></a>如何参看</h1><p>查看 tcp 状态为 SYN_RECV 的链接即为半连接状态的请求：<code>netstat -napt | grep SYN_RECV</code>。也可以通过 <code>netstat -s | grep &#39;SYNs to LISTEN&#39;</code> 查看。</p>
+<p>全连接队列可以使用 <code>ss -nlt | grep 8080</code> 的方式查看 Recv-Q 的值。<br>也可通过如下命令来查看全连接队列的溢出情况。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$</span><span class="language-bash">netstat -s | grep overflow</span></span><br><span class="line">    3255 times the listen queue of a socket overflowed</span><br></pre></td></tr></table></figure>
 
     </div>
 

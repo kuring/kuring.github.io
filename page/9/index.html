@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">229</span>
+          <span class="site-state-item-count">230</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,100 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/golang-panic/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/golang-panic/" class="post-title-link" itemprop="url">Golang中的panic和recover用法</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2019-03-19 23:52:04" itemprop="dateCreated datePublished" datetime="2019-03-19T23:52:04+00:00">2019-03-19</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>golang中的panic用于异常处理，个人感觉没有try catch finally方式直观和易用。</p>
+<p><code>func panic(v interface&#123;&#125;)</code>函数的作用为抛出一个错误信息，同时函数的执行流程会结束，但panic之前的defer语句会执行，之后该goroutine会立即停止执行，进而当前进程会退出执行。</p>
+<p><code>func recover() interface&#123;&#125;</code>定义在panic之前的defer语句中，用于将panic()进行捕获，这样触发panic时，当前gotoutine不会被退出。</p>
+<p>recover所返回的内容为panic的函数参数，如果没有捕获到panic，则返回nil。</p>
+<p>注意：recover仅能定义在defer中使用，在普通语句中无法捕获recover异常。recover可以不跟panic定义在同一个函数中使用。</p>
+<h2 id="example-1"><a href="#example-1" class="headerlink" title="example 1"></a>example 1</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">import &quot;fmt&quot;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">	defer fmt.Println(1)</span><br><span class="line">	fmt.Println(2)</span><br><span class="line">	panic(3)</span><br><span class="line">	fmt.Println(4)</span><br><span class="line">	defer fmt.Println(5)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>panic()执行后，会先调用defer函数，然后打印<code>panic: 3</code>，当前goroutine退出，后续语句不再执行，程序输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">2</span><br><span class="line">1</span><br><span class="line">panic: 3</span><br><span class="line"></span><br><span class="line">goroutine 1 [running]:</span><br><span class="line">main.main()</span><br><span class="line">	/Users/lvkai/src_test/go/panic/panic.go:8 +0xd5</span><br><span class="line">exit status 2</span><br></pre></td></tr></table></figure>
+
+<h2 id="example-2"><a href="#example-2" class="headerlink" title="example 2"></a>example 2</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import &quot;fmt&quot;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">	func() &#123;</span><br><span class="line">		defer func() &#123;</span><br><span class="line">			if r := recover(); r != nil &#123;</span><br><span class="line">				fmt.Println(&quot;recover: &quot;, r)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;()</span><br><span class="line">		defer fmt.Println(1)</span><br><span class="line">		fmt.Println(2)</span><br><span class="line">		panic(3)</span><br><span class="line">		fmt.Println(4)</span><br><span class="line">		defer fmt.Println(5)</span><br><span class="line">	&#125;()</span><br><span class="line">	fmt.Println(6)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在执行panic后，触发当前函数中的defer中的recover函数，此时panic后的当前函数中的语句同样是不再执行，但当前goroutine不会退出。也就是说panic被recover后，会影响到当前函数中的后续语句的执行，但不影响当前goroutine的继续执行，输出内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">2</span><br><span class="line">1</span><br><span class="line">recover:  3</span><br><span class="line">6</span><br></pre></td></tr></table></figure>
+
+<h2 id="example-3"><a href="#example-3" class="headerlink" title="example 3"></a>example 3</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import &quot;fmt&quot;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">	func() &#123;</span><br><span class="line">		defer func() &#123;</span><br><span class="line">			if r := recover(); r != nil &#123;</span><br><span class="line">				fmt.Println(&quot;recover: &quot;, r)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;()</span><br><span class="line">		func() &#123;</span><br><span class="line">			defer fmt.Println(1)</span><br><span class="line">			panic(2)</span><br><span class="line">		&#125;()</span><br><span class="line">		fmt.Println(3)</span><br><span class="line">		defer fmt.Println(4)</span><br><span class="line">	&#125;()</span><br><span class="line">	fmt.Println(5)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>recover跟panic定义在不同的函数中，仍然可以发挥作用。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1</span><br><span class="line">recover:  2</span><br><span class="line">5</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +313,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -326,7 +420,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -439,7 +533,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -547,7 +641,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -645,7 +739,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -758,7 +852,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -878,7 +972,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -990,7 +1084,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -1113,7 +1207,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -1152,92 +1246,6 @@
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TokenBucket</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line"></span><br><span class="line">    <span class="comment"># rate是令牌发放速度，capacity是桶的大小</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, rate, capacity</span>):</span><br><span class="line">        self._rate = rate</span><br><span class="line">        self._capacity = capacity</span><br><span class="line">        self._current_amount = <span class="number">0</span></span><br><span class="line">        self._last_consume_time = <span class="built_in">int</span>(time.time())</span><br><span class="line"></span><br><span class="line">    <span class="comment"># token_amount是发送数据需要的令牌数</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">consume</span>(<span class="params">self, token_amount</span>):</span><br><span class="line">        increment = (<span class="built_in">int</span>(time.time()) - self._last_consume_time) * self._rate  <span class="comment"># 计算从上次发送到这次发送，新发放的令牌数量</span></span><br><span class="line">        self._current_amount = <span class="built_in">min</span>(</span><br><span class="line">            increment + self._current_amount, self._capacity)  <span class="comment"># 令牌数量不能超过桶的容量</span></span><br><span class="line">        <span class="keyword">if</span> token_amount &gt; self._current_amount:  <span class="comment"># 如果没有足够的令牌，则不能发送数据</span></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">False</span></span><br><span class="line">        self._last_consume_time = <span class="built_in">int</span>(time.time())</span><br><span class="line">        self._current_amount -= token_amount</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">True</span></span><br></pre></td></tr></table></figure>
 
 <h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><p><a target="_blank" rel="noopener" href="https://juejin.im/post/5ab10045518825557005db65">15行Python代码，帮你理解令牌桶算法</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/iowait/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/iowait/" class="post-title-link" itemprop="url">linux iowait</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-12-08 22:58:53" itemprop="dateCreated datePublished" datetime="2018-12-08T22:58:53+00:00">2018-12-08</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>iowait和load一样，都是非常容易让人产生误解的系统指标。</p>
-<p>iowait表示cpu空闲且有未完成的io请求的时间，iowait高并不能反映出磁盘是系统的性能瓶颈。iowait高的时候cpu正处于空闲状态，没有任务可以执行。此时存在已经发出的磁盘io，此时的cpu空闲状态称之为iowait。本质上，iowait是一种特殊的cpu空闲状态。</p>
-<p>iowait状态的cpu是运行在pid为0的idle线程上。</p>
-<p>cpu此时之所以进入睡眠状态，是因为进程处于睡眠状态，在等待某个特定的事件（比如网络数据，io操作完成等）。</p>
-<p>iowait仅能反应磁盘io的指标，并不能反应其他io设备的指标，比如网络丢包。</p>
-<p>在io wait的进程处于不可中断状态，通过top命令可以看到进程状态为</p>
-<p>由此可见，iowait包含的信息量非常少，仅凭iowait升高不能判断出系统io有问题。要想判断系统io有问题，还需要使用iostat等命令来查看系统的svctm、util、avgqu-sz等指标。</p>
-<h2 id="case-1"><a href="#case-1" class="headerlink" title="case 1"></a>case 1</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/iowait1.png" alt="http://linuxperf.com/wp-content/uploads/2015/02/iowait1.png"></p>
-<p>仅cpu的繁忙程度变化的情况下，会影响到iowait的值。</p>
-<h2 id="case-2"><a href="#case-2" class="headerlink" title="case 2"></a>case 2</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/iowait2.png" alt="http://linuxperf.com/wp-content/uploads/2015/02/iowait.png"></p>
-<p>在cpu繁忙程序不变的情况下，发起io请求的时间不同也会影响到iowait的值。</p>
 
       
     </div>

@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">229</span>
+          <span class="site-state-item-count">230</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,87 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/cond-example/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/cond-example/" class="post-title-link" itemprop="url">sync.Cond的例子</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-08-29 00:31:14" itemprop="dateCreated datePublished" datetime="2018-08-29T00:31:14+00:00">2018-08-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>sync.Cond类似于pthread中的条件变量，但等待的为goroutine，而不是线程。比较难理解的为Wait函数，在调用该函数时必须L为Lock状态，调用Wait函数后，goroutine会自动解锁，并等待条件的到来，等条件到来后会重新加锁。</p>
+<p>代码量并不多，下面是去掉注释后的代码。</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> sync</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;sync/atomic&quot;</span></span><br><span class="line">	<span class="string">&quot;unsafe&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Cond <span class="keyword">struct</span> &#123;</span><br><span class="line">	noCopy noCopy</span><br><span class="line"></span><br><span class="line">	<span class="comment">// L is held while observing or changing the condition</span></span><br><span class="line">	L Locker</span><br><span class="line"></span><br><span class="line">	notify  notifyList</span><br><span class="line">	checker copyChecker</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewCond</span><span class="params">(l Locker)</span></span> *Cond &#123;</span><br><span class="line">	<span class="keyword">return</span> &amp;Cond&#123;L: l&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Cond)</span></span> Wait() &#123;</span><br><span class="line">	c.checker.check()</span><br><span class="line">	t := runtime_notifyListAdd(&amp;c.notify)</span><br><span class="line">	c.L.Unlock()</span><br><span class="line">	runtime_notifyListWait(&amp;c.notify, t)</span><br><span class="line">	c.L.Lock()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Cond)</span></span> Signal() &#123;</span><br><span class="line">	c.checker.check()</span><br><span class="line">	runtime_notifyListNotifyOne(&amp;c.notify)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Cond)</span></span> Broadcast() &#123;</span><br><span class="line">	c.checker.check()</span><br><span class="line">	runtime_notifyListNotifyAll(&amp;c.notify)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// copyChecker holds back pointer to itself to detect object copying.</span></span><br><span class="line"><span class="keyword">type</span> copyChecker <span class="type">uintptr</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *copyChecker)</span></span> check() &#123;</span><br><span class="line">	<span class="keyword">if</span> <span class="type">uintptr</span>(*c) != <span class="type">uintptr</span>(unsafe.Pointer(c)) &amp;&amp;</span><br><span class="line">		!atomic.CompareAndSwapUintptr((*<span class="type">uintptr</span>)(c), <span class="number">0</span>, <span class="type">uintptr</span>(unsafe.Pointer(c))) &amp;&amp;</span><br><span class="line">		<span class="type">uintptr</span>(*c) != <span class="type">uintptr</span>(unsafe.Pointer(c)) &#123;</span><br><span class="line">		<span class="built_in">panic</span>(<span class="string">&quot;sync.Cond is copied&quot;</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// noCopy may be embedded into structs which must not be copied</span></span><br><span class="line"><span class="comment">// after the first use.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// See https://github.com/golang/go/issues/8005#issuecomment-190753527</span></span><br><span class="line"><span class="comment">// for details.</span></span><br><span class="line"><span class="keyword">type</span> noCopy <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Lock is a no-op used by -copylocks checker from `go vet`.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(*noCopy)</span></span> Lock() &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>具体的使用例子如下：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;sync&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	mutex := &amp;sync.Mutex&#123;&#125;</span><br><span class="line">	cond := sync.NewCond(mutex)</span><br><span class="line"></span><br><span class="line">	wg := &amp;sync.WaitGroup&#123;&#125;</span><br><span class="line"></span><br><span class="line">	wait := <span class="function"><span class="keyword">func</span><span class="params">(i <span class="type">int</span>, c <span class="keyword">chan</span> <span class="type">int</span>)</span></span> &#123;</span><br><span class="line">		<span class="keyword">defer</span> wg.Done()</span><br><span class="line">		fmt.Println(<span class="string">&quot;start chan &quot;</span>, i)</span><br><span class="line">		cond.L.Lock()</span><br><span class="line">		<span class="keyword">defer</span> cond.L.Unlock()</span><br><span class="line">		fmt.Printf(<span class="string">&quot;chan %d wait before\n&quot;</span>, i)</span><br><span class="line">		c &lt;- i</span><br><span class="line">		<span class="comment">// Wait是理解起来稍微麻烦的点，Cond.Wait会自动释放锁等待信号的到来，当信号到来后，第一个获取到信号的Wait将继续往下执行并从新上锁</span></span><br><span class="line">		cond.Wait()</span><br><span class="line">		fmt.Printf(<span class="string">&quot;chan %d wait end\n&quot;</span>, i)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	signal := <span class="function"><span class="keyword">func</span><span class="params">(count <span class="type">int</span>, c <span class="keyword">chan</span> <span class="type">int</span>)</span></span> &#123;</span><br><span class="line">		<span class="keyword">defer</span> wg.Done()</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; count; i++ &#123;</span><br><span class="line">			fmt.Printf(<span class="string">&quot;read chan %d ready\n&quot;</span>, &lt;-c)</span><br><span class="line">		&#125;</span><br><span class="line">		fmt.Println(<span class="string">&quot;call signal&quot;</span>)</span><br><span class="line">		cond.Signal()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	broadcast := <span class="function"><span class="keyword">func</span><span class="params">(count <span class="type">int</span>, c <span class="keyword">chan</span> <span class="type">int</span>)</span></span> &#123;</span><br><span class="line">		<span class="keyword">defer</span> wg.Done()</span><br><span class="line">		<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; count; i++ &#123;</span><br><span class="line">			fmt.Printf(<span class="string">&quot;read chan %d ready\n&quot;</span>, &lt;-c)</span><br><span class="line">		&#125;</span><br><span class="line">		fmt.Println(<span class="string">&quot;call broadcast&quot;</span>)</span><br><span class="line">		cond.Broadcast()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	c := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">int</span>)</span><br><span class="line">	wg.Add(<span class="number">2</span>)</span><br><span class="line">	<span class="keyword">go</span> wait(<span class="number">0</span>, c)</span><br><span class="line">	<span class="keyword">go</span> signal(<span class="number">1</span>, c)</span><br><span class="line">	wg.Wait()</span><br><span class="line">	fmt.Println(<span class="string">&quot;signal test finished\n\n&quot;</span>)</span><br><span class="line"></span><br><span class="line">	count := <span class="number">3</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; count; i++ &#123;</span><br><span class="line">		wg.Add(<span class="number">1</span>)</span><br><span class="line">		<span class="keyword">go</span> wait(i, c)</span><br><span class="line">	&#125;</span><br><span class="line">	wg.Add(<span class="number">1</span>)</span><br><span class="line">	<span class="keyword">go</span> broadcast(count, c)</span><br><span class="line">	wg.Wait()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +300,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -317,7 +398,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -415,7 +496,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -501,7 +582,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -615,7 +696,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -830,7 +911,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -918,7 +999,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -999,7 +1080,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -1106,7 +1187,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -1253,111 +1334,6 @@
 <h1 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h1><ul>
 <li><a target="_blank" rel="noopener" href="http://www.zsythink.net/archives/tag/iptables/page/2/">iptables详解系列</a></li>
 <li><a target="_blank" rel="noopener" href="https://www.frozentux.net/iptables-tutorial/iptables-tutorial.html#ACCEPTTARGET">Iptables Tutorial 1.2.2</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/docker-registry/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/docker-registry/" class="post-title-link" itemprop="url">docker私有仓库搭建</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2017-12-07 18:44:59" itemprop="dateCreated datePublished" datetime="2017-12-07T18:44:59+00:00">2017-12-07</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>为了其他主机可访问docker registry，必须采用https协议。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p ~/docker_registry/certs</span><br><span class="line">signdomain=103-17-184-lg-201-k08</span><br><span class="line">openssl req -nodes -subj &quot;/C=CN/ST=BeiJing/L=BeiJing/CN=$signdomain&quot; -newkey rsa:4096 -keyout ~/docker_registry/certs/$signdomain.key -out ~/docker_registry/certs/$signdomain.csr</span><br><span class="line">openssl x509 -req -days 3650 -in ~/docker_registry/certs/$signdomain.csr -signkey ~/docker_registry/certs/$signdomain.key -out ~/docker_registry/certs/$signdomain.crt</span><br></pre></td></tr></table></figure>
-
-<p>从docker hub拉取registry镜像，并启动镜像</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">docker run -d -p 5000:5000 --restart=always --name registry \</span><br><span class="line">  -v /data/docker_registry:/var/lib/registry \</span><br><span class="line">  -v /home/worker/docker_registry/certs:/certs \</span><br><span class="line">  -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/103-17-184-lg-201-k08.yidian.com.crt \</span><br><span class="line">  -e REGISTRY_HTTP_TLS_KEY=/certs/103-17-184-lg-201-k08.yidian.com.key \</span><br><span class="line">  registry:2</span><br></pre></td></tr></table></figure>
-
-<p>停止registry镜像并删除的命令为</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker stop registry &amp;&amp; docker rm -v registry</span><br></pre></td></tr></table></figure>
-
-<p>下载最新的centos7镜像</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker pull centos:7.3.1611</span><br></pre></td></tr></table></figure>
-
-<p>将centos7镜像增加tag</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">docker tag centos:7.3.1611 103-17-184-lg-201-k08.yidian.com:5000/centos:7.3</span><br><span class="line"></span><br><span class="line"># 可以看到列表中会多出一个镜像</span><br><span class="line">[root@103-17-184-lg-201-k08 data]# docker images</span><br><span class="line">REPOSITORY                                     TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">docker.io/registry                             2                   047218491f8c        4 weeks ago         33.17 MB</span><br><span class="line">103-17-184-lg-201-k08.yidian.com:5000/centos   7.3                 67591570dd29        3 months ago        191.8 MB</span><br><span class="line">docker.io/centos                               7.3.1611            67591570dd29        3 months ago        191.8 MB</span><br></pre></td></tr></table></figure>
-
-<p>docker push命令仅支持https协议，签名已经启动了自签名的https协议的registry，为了能够让docker能够信任registry，需要在&#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;目录下增加相应的crt文件，增加后的目录结构为&#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;103-17-184-lg-201-k08.yidian.com:5000&#x2F;103-17-184-lg-201-k08.yidian.com.crt，添加完成后需要重启docker服务。</p>
-<p>将image push到registry</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker push 103-17-184-lg-201-k08.yidian.com:5000/centos:7.3 </span><br></pre></td></tr></table></figure>
-
-<h1 id="api"><a href="#api" class="headerlink" title="api"></a>api</h1><ul>
-<li>列出images：<a target="_blank" rel="noopener" href="https://10.103.17.184:5000/v2/_catalog">https://10.103.17.184:5000/v2/_catalog</a></li>
-<li>列出image的tags：<a target="_blank" rel="noopener" href="https://10.103.17.184:5000/v2/centos/tags/list">https://10.103.17.184:5000/v2/centos/tags/list</a></li>
-</ul>
-<p>可以直接通过curl命令来访问api：<code>curl --cacert 103-17-184-lg-201-k08.yidian.com.crt -v https://103-17-184-lg-201-k08.yidian.com:5000/v2</code></p>
-<h1 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h1><ul>
-<li><a target="_blank" rel="noopener" href="https://hub.docker.com/_/registry/">registry</a></li>
-<li><a target="_blank" rel="noopener" href="http://www.cnblogs.com/fengzheng/p/5168951.html">docker创建私有仓库</a></li>
-<li><a target="_blank" rel="noopener" href="https://docs.docker.com/registry/">Docker Registry</a>（官方教程）</li>
-<li><a target="_blank" rel="noopener" href="https://docs.docker.com/registry/spec/api/">Registry API</a></li>
 </ul>
 
       

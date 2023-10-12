@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">229</span>
+          <span class="site-state-item-count">230</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -183,7 +183,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_convert_ary/">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/traverse_tree/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -201,7 +201,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux_convert_ary/" class="post-title-link" itemprop="url">Linux下通过命令行进行进制转换</a>
+          <a href="/post/traverse_tree/" class="post-title-link" itemprop="url">二叉树的遍历</a>
         </h2>
 
         <div class="post-meta-container">
@@ -212,14 +212,14 @@
       </span>
       <span class="post-meta-item-text">Posted on</span>
 
-      <time title="Created: 2014-09-27 00:00:00" itemprop="dateCreated datePublished" datetime="2014-09-27T00:00:00+00:00">2014-09-27</time>
+      <time title="Created: 2014-09-28 00:00:00" itemprop="dateCreated datePublished" datetime="2014-09-28T00:00:00+00:00">2014-09-28</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -232,19 +232,29 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <p>在Windows下可以通过计算器进行进制之间的转换，非常方便。本文总结Linux下可用的进行进制之间的转换方法。</p>
-<h1 id="利用shell"><a href="#利用shell" class="headerlink" title="利用shell"></a>利用shell</h1><p>shell脚本默认数值是由10进制数处理，除非这个数字某种特殊的标记法或前缀开头，才可以表示其它进制类型数值。如：以0开头就是8进制、以0x开头就是16进制数。使用“BASE#NUMBER”这种形式可以表示其它进制。BASE值的范围为2-64。</p>
-<p>其他进制转10进制</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">kuring@T420:~$ echo $((16#4000000))</span><br><span class="line">67108864</span><br><span class="line">kuring@T420:~$ echo $((2#111))</span><br><span class="line">7</span><br><span class="line">kuring@T420:~$ echo $((0x10))</span><br><span class="line">16</span><br><span class="line">kuring@T420:~$ echo $((010))</span><br><span class="line">8</span><br><span class="line"></span><br><span class="line">// 对进制转换为10进制进行运算，稍显啰嗦</span><br><span class="line">kuring@T420:~$ echo $(($((16#4000000))/1014/1024));</span><br><span class="line">64</span><br></pre></td></tr></table></figure>
+          <p>[TOC]</p>
+<p>近期准备复习数据结构和算法的知识，参照了网络上各路大神的学习攻略，大部分算法学习的思路为参照一些经典书籍（如算法导论）并结合一些代码的实践来完成，并未找到一条适合我的算法学习之路。经过思考后决定采用代码编写曾经的教科书中代码实例的方式来学习，曾经接触的算法教科书包括《数据结构（C语言版）》和《计算机算法基础》。一来这些算法已经基本熟悉，只是时间久远有些已经忘记；二来，通过思考后编写代码增强自己的记忆。</p>
+<p>同时我编写的这些实例可以作为leetcode上的很多题目的基础，为下一个阶段刷leetcode上的题目打好基础。</p>
+<p>树的存储形式包括了顺序存储（采用数组形式）和链式存储，其中链式存储更为灵活，可以表示任意形式的树，本文中的代码将采用树的链式存储方式。</p>
+<h1 id="树的构建"><a href="#树的构建" class="headerlink" title="树的构建"></a>树的构建</h1><p>树的构建有多种方式，本文使用字符串采用了自顶向下、自左到右的顺序构建树，跟leetcode的形式一致。其中’#’表示该节点为空，如果该节点为空节点，其左右子孩子节点也要用’#’表示，而不能不用任何字符表示。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 二叉树的链式存储结构</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">TreeNode</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span> data;</span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">TreeNode</span> *left;</span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">TreeNode</span> *right;</span><br><span class="line">    <span class="built_in">TreeNode</span>(<span class="type">char</span> data) : <span class="built_in">data</span>(data), <span class="built_in">left</span>(<span class="literal">NULL</span>), <span class="built_in">right</span>(<span class="literal">NULL</span>) &#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 构造二叉树，要构造的字符串采用了自顶向下、自左到右的顺序，跟leetcode的形式一致</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">TreeNode *<span class="title">create_binary_tree</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *str)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!str || <span class="built_in">strlen</span>(str) == <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 对每个节点分配存储空间</span></span><br><span class="line">    <span class="type">int</span> node_size = <span class="built_in">strlen</span>(str);</span><br><span class="line">    TreeNode **tree = <span class="keyword">new</span> TreeNode*[node_size];</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;node_size; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (str[i] == <span class="string">&#x27;#&#x27;</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            tree[i] = <span class="literal">NULL</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            tree[i] = <span class="keyword">new</span> <span class="built_in">TreeNode</span>(str[i]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>, j=<span class="number">0</span>; i&lt;node_size &amp;&amp; j&lt;node_size; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (tree[i] != <span class="literal">NULL</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span> ((j + <span class="number">1</span>) &lt; node_size)</span><br><span class="line">            &#123;</span><br><span class="line">                tree[i]-&gt;left = tree[++j];</span><br><span class="line">                tree[i]-&gt;right = tree[++j];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            j += <span class="number">2</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> *tree;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h1 id="利用let命令"><a href="#利用let命令" class="headerlink" title="利用let命令"></a>利用let命令</h1><p>let用来执行算数运算和数值表达式测试。可以利用该命令完成简单的计算，并将计算结果赋给其他变量。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// 对进制转换为10进制后进行运算，比纯shell方式简洁</span><br><span class="line">kuring@T420:~$ let a=$((16#4000000))/1014/1024;</span><br><span class="line">kuring@T420:~$ echo $a</span><br><span class="line">64</span><br></pre></td></tr></table></figure>
+<h1 id="二叉树的先序遍历"><a href="#二叉树的先序遍历" class="headerlink" title="二叉树的先序遍历"></a>二叉树的先序遍历</h1><h2 id="递归实现"><a href="#递归实现" class="headerlink" title="递归实现"></a>递归实现</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 先序遍历二叉树的递归形式</span><br><span class="line"> */</span><br><span class="line">void preorder_traverse_recursion(TreeNode *root)</span><br><span class="line">&#123;</span><br><span class="line">    if (!root)</span><br><span class="line">    &#123;</span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    printf(&quot;%c\t&quot;, root-&gt;data);</span><br><span class="line">    </span><br><span class="line">    preorder_traverse_recursion(root-&gt;left);</span><br><span class="line"></span><br><span class="line">    preorder_traverse_recursion(root-&gt;right);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h1 id="利用bc命令"><a href="#利用bc命令" class="headerlink" title="利用bc命令"></a>利用bc命令</h1><p>该命令是一个强大的计算器软件，可以利用其中的ibase和obase进行输入进制的转换，ibase表示输入数字的进制，obase表示输出数字的进制。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// 如果没有制定，则默认为10进制</span><br><span class="line">// 对于16进制，要使用F，而不能使用f</span><br><span class="line">kuring@T420:~$ echo &quot;ibase=16;FF&quot; | bc</span><br><span class="line">255</span><br><span class="line">kuring@T420:~$ echo &quot;obase=2;ibase=16;FF&quot; | bc</span><br><span class="line">11111111</span><br></pre></td></tr></table></figure>
+<h2 id="非递归实现"><a href="#非递归实现" class="headerlink" title="非递归实现"></a>非递归实现</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 先序遍历的非递归形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">preorder_traverse_not_recursion</span><span class="params">(TreeNode *root)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> ;</span><br><span class="line">    &#125;</span><br><span class="line">    std::stack&lt;TreeNode *&gt; tree_stack;</span><br><span class="line">    tree_stack.<span class="built_in">push</span>(root);</span><br><span class="line">    <span class="keyword">while</span> (tree_stack.<span class="built_in">size</span>() &gt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        TreeNode *node = tree_stack.<span class="built_in">top</span>();</span><br><span class="line">        tree_stack.<span class="built_in">pop</span>();</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%c\t&quot;</span>, node-&gt;data);</span><br><span class="line">        <span class="keyword">if</span> (node-&gt;right != <span class="literal">NULL</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            tree_stack.<span class="built_in">push</span>(node-&gt;right);   </span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (node-&gt;left != <span class="literal">NULL</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            tree_stack.<span class="built_in">push</span>(node-&gt;left);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a target="_blank" rel="noopener" href="http://www.cnblogs.com/chengmo/archive/2010/10/14/1851570.html">linux shell 不同进制数据转换（二进制，八进制，十六进制，base64)</a></p>
-<p><a target="_blank" rel="noopener" href="http://blog.csdn.net/fengyuxing168/article/details/8896955">Shell进制转换小结</a></p>
+<h1 id="二叉树的中序遍历"><a href="#二叉树的中序遍历" class="headerlink" title="二叉树的中序遍历"></a>二叉树的中序遍历</h1><h2 id="递归实现-1"><a href="#递归实现-1" class="headerlink" title="递归实现"></a>递归实现</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 中序遍历二叉树的递归形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">inorder_traverse_recursion</span><span class="params">(TreeNode *root)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">inorder_traverse_recursion</span>(root-&gt;left);</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%c\t&quot;</span>, root-&gt;data);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">inorder_traverse_recursion</span>(root-&gt;right);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="非递归实现-1"><a href="#非递归实现-1" class="headerlink" title="非递归实现"></a>非递归实现</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 中序遍历二叉树的非递归形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">inorder_traverse_not_recursion</span><span class="params">(TreeNode *root)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> ;</span><br><span class="line">    &#125;</span><br><span class="line">    std::stack&lt;TreeNode *&gt; tree_stack;</span><br><span class="line">    <span class="keyword">while</span> (root != <span class="literal">NULL</span> || tree_stack.<span class="built_in">size</span>() &gt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 遍历到左子树的叶子节点</span></span><br><span class="line">        <span class="keyword">while</span> (root)</span><br><span class="line">        &#123;</span><br><span class="line">            tree_stack.<span class="built_in">push</span>(root);</span><br><span class="line">            root = root-&gt;left;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 遍历栈顶节点</span></span><br><span class="line">        root = tree_stack.<span class="built_in">top</span>();</span><br><span class="line">        tree_stack.<span class="built_in">pop</span>();</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%c\t&quot;</span>, root-&gt;data);</span><br><span class="line"></span><br><span class="line">        root = root-&gt;right;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="二叉树的后序遍历"><a href="#二叉树的后序遍历" class="headerlink" title="二叉树的后序遍历"></a>二叉树的后序遍历</h1><h2 id="递归实现-2"><a href="#递归实现-2" class="headerlink" title="递归实现"></a>递归实现</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 后序遍历二叉树的递归形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">postorder_traverse_recursion</span><span class="params">(TreeNode *root)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">postorder_traverse_recursion</span>(root-&gt;left);</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">postorder_traverse_recursion</span>(root-&gt;right);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%c\t&quot;</span>, root-&gt;data);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="非递归实现-2"><a href="#非递归实现-2" class="headerlink" title="非递归实现"></a>非递归实现</h2><p>仅用一个栈不能够实现后序遍历非递归算法，需要保存一个上次访问过节点的变量。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 后序遍历二叉树的非递归形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">postorder_traverse_not_recursion</span><span class="params">(TreeNode *root)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!root)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> ;</span><br><span class="line">    &#125;</span><br><span class="line">    std::stack&lt;TreeNode *&gt; tree_stack;</span><br><span class="line">    TreeNode *visited = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">while</span> (root != <span class="literal">NULL</span> || tree_stack.<span class="built_in">size</span>() &gt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 遍历到左子树的叶子节点</span></span><br><span class="line">        <span class="keyword">while</span> (root)</span><br><span class="line">        &#123;</span><br><span class="line">            tree_stack.<span class="built_in">push</span>(root);</span><br><span class="line">            root = root-&gt;left;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        root = tree_stack.<span class="built_in">top</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (root-&gt;right == <span class="literal">NULL</span> || root-&gt;right == visited)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 如果没有右孩子，或者右孩子刚刚访问过，则访问当前节点</span></span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;%c\t&quot;</span>, root-&gt;data);</span><br><span class="line">            tree_stack.<span class="built_in">pop</span>();</span><br><span class="line">            visited = root;</span><br><span class="line">            root = <span class="literal">NULL</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            root = root-&gt;right;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>二叉树遍历的递归形式程序结构类似，编写相对简单。但是递归方法在C语言中存在执行效率差（需要维护函数栈），容易出现栈溢出的异常的问题。任何递归问题问题都可以转化为非递归问题，转化的思路包括了直接转化法和间接转化法。直接转化法可以通过循环来解决，间接转化法需要借助栈加循环来解决。</p>
+<p>二叉树遍历的非递归形式相对复杂，二叉树的先序遍历的非递归形式容易理解，二叉树的中序遍历稍微困难，后序遍历的非递归形式最复杂。</p>
+<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/s/1eQmweSM">程序源代码</a></p>
 
       
     </div>
@@ -307,7 +317,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -337,6 +347,94 @@
 <p>经过考虑后可以通过在类内部维护存储最小值的栈来解决，存储最小值的栈除了需要存储最小值外，还需要维护最小值个数。</p>
 <p>实现代码如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MinStack</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">MinUnit</span></span></span><br><span class="line"><span class="class">	&#123;</span></span><br><span class="line">		<span class="type">int</span> count;</span><br><span class="line">		<span class="type">int</span> value;</span><br><span class="line">		MinUnit(<span class="type">int</span> count, <span class="type">int</span> value) : count(count), value(value) &#123;&#125;;</span><br><span class="line">	&#125;;</span><br><span class="line">public:</span><br><span class="line">    <span class="type">void</span> <span class="title function_">push</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">        data_stack.push(x);</span><br><span class="line">		<span class="keyword">if</span> (min_stack.empty() || x &lt; min_stack.top()-&gt;value)</span><br><span class="line">		&#123;</span><br><span class="line">			MinUnit *p_unit = new MinUnit(<span class="number">1</span>, x);</span><br><span class="line">			min_stack.push(p_unit);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> <span class="keyword">if</span> (x == min_stack.top()-&gt;value)</span><br><span class="line">		&#123;</span><br><span class="line">			min_stack.top()-&gt;count++;</span><br><span class="line">		&#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> <span class="title function_">pop</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (data_stack.top() == min_stack.top()-&gt;value)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="keyword">if</span> (min_stack.top()-&gt;count == <span class="number">1</span>)</span><br><span class="line">			&#123;</span><br><span class="line">				MinUnit *punit = min_stack.top();</span><br><span class="line">				min_stack.pop();</span><br><span class="line">				delete punit;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span></span><br><span class="line">			&#123;</span><br><span class="line">				min_stack.top()-&gt;count--;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		data_stack.pop();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> <span class="title function_">top</span><span class="params">()</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> data_stack.top();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> <span class="title function_">getMin</span><span class="params">()</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> min_stack.top()-&gt;value;</span><br><span class="line">    &#125;</span><br><span class="line">	</span><br><span class="line">private:</span><br><span class="line">	<span class="built_in">std</span>::<span class="built_in">stack</span>&lt;<span class="type">int</span>&gt; data_stack;</span><br><span class="line">	<span class="comment">// 最小栈，为了便于修改栈单元中的count值，采用存储指针方式</span></span><br><span class="line">	<span class="built_in">std</span>::<span class="built_in">stack</span>&lt;MinUnit*&gt; min_stack;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_convert_ary/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux_convert_ary/" class="post-title-link" itemprop="url">Linux下通过命令行进行进制转换</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2014-09-27 00:00:00" itemprop="dateCreated datePublished" datetime="2014-09-27T00:00:00+00:00">2014-09-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>在Windows下可以通过计算器进行进制之间的转换，非常方便。本文总结Linux下可用的进行进制之间的转换方法。</p>
+<h1 id="利用shell"><a href="#利用shell" class="headerlink" title="利用shell"></a>利用shell</h1><p>shell脚本默认数值是由10进制数处理，除非这个数字某种特殊的标记法或前缀开头，才可以表示其它进制类型数值。如：以0开头就是8进制、以0x开头就是16进制数。使用“BASE#NUMBER”这种形式可以表示其它进制。BASE值的范围为2-64。</p>
+<p>其他进制转10进制</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">kuring@T420:~$ echo $((16#4000000))</span><br><span class="line">67108864</span><br><span class="line">kuring@T420:~$ echo $((2#111))</span><br><span class="line">7</span><br><span class="line">kuring@T420:~$ echo $((0x10))</span><br><span class="line">16</span><br><span class="line">kuring@T420:~$ echo $((010))</span><br><span class="line">8</span><br><span class="line"></span><br><span class="line">// 对进制转换为10进制进行运算，稍显啰嗦</span><br><span class="line">kuring@T420:~$ echo $(($((16#4000000))/1014/1024));</span><br><span class="line">64</span><br></pre></td></tr></table></figure>
+
+<h1 id="利用let命令"><a href="#利用let命令" class="headerlink" title="利用let命令"></a>利用let命令</h1><p>let用来执行算数运算和数值表达式测试。可以利用该命令完成简单的计算，并将计算结果赋给其他变量。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// 对进制转换为10进制后进行运算，比纯shell方式简洁</span><br><span class="line">kuring@T420:~$ let a=$((16#4000000))/1014/1024;</span><br><span class="line">kuring@T420:~$ echo $a</span><br><span class="line">64</span><br></pre></td></tr></table></figure>
+
+<h1 id="利用bc命令"><a href="#利用bc命令" class="headerlink" title="利用bc命令"></a>利用bc命令</h1><p>该命令是一个强大的计算器软件，可以利用其中的ibase和obase进行输入进制的转换，ibase表示输入数字的进制，obase表示输出数字的进制。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// 如果没有制定，则默认为10进制</span><br><span class="line">// 对于16进制，要使用F，而不能使用f</span><br><span class="line">kuring@T420:~$ echo &quot;ibase=16;FF&quot; | bc</span><br><span class="line">255</span><br><span class="line">kuring@T420:~$ echo &quot;obase=2;ibase=16;FF&quot; | bc</span><br><span class="line">11111111</span><br></pre></td></tr></table></figure>
+
+<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a target="_blank" rel="noopener" href="http://www.cnblogs.com/chengmo/archive/2010/10/14/1851570.html">linux shell 不同进制数据转换（二进制，八进制，十六进制，base64)</a></p>
+<p><a target="_blank" rel="noopener" href="http://blog.csdn.net/fengyuxing168/article/details/8896955">Shell进制转换小结</a></p>
 
       
     </div>
@@ -399,7 +497,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -488,7 +586,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -652,7 +750,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -740,7 +838,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -820,7 +918,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -964,7 +1062,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -1081,7 +1179,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
+      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
     </span>
 
   
@@ -1102,97 +1200,6 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        sleep(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>例子比较简单，不作过多解释。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/my_perfect_work/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/my_perfect_work/" class="post-title-link" itemprop="url">我目前的理想工作状态</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2014-05-20 00:00:00" itemprop="dateCreated datePublished" datetime="2014-05-20T00:00:00+00:00">2014-05-20</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-09-30 16:01:08" itemprop="dateModified" datetime="2023-09-30T16:01:08+00:00">2023-09-30</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>在外地出差，趁着午休时间躺在机房走廊的地板上想小憩一会却怎么也进入不了状态。突然写着可以写写我心中目前的理想工作状态。随着年龄、阅历和知识水平的增长，每个人心中理想的工作状态也会在变。我现在的理想工作状态跟我刚毕业时肯定是有区别的，刚毕业那会初入茅庐，对公司的很多事情还是懵懂，自然期望找个高手带一带。</p>
-<hr>
-<p>我期望加入一家技术为王的公司。</p>
-<p>技术才是科技公司真正的核心竞争力，而非销售和公关能力。从硅谷中做大做强的公司哪个不是以技术作为领先竞争对手的筹码，十几年前的google的崛起、雅虎的衰落，近几年Github的火爆无不是技术因素在其决定作用。在中国软件行业还未发展成熟，觉大多数企业仍然在以销售为核心盈利方式的畸形发展方式中，但技术为王绝对是个趋势，这个不是靠关系靠政策可以改变的事实，这个是大势所趋、历史必然。</p>
-<p>我不奢望技术为王的公司中牛人辈出但是期望能多几个牛人就多几个牛人，至少不期望在公司中见到一看就没有做技术潜质的同事（一个人适不适合做技术有时候是可以看出来的）。</p>
-<hr>
-<p>我期望加入一家互联网行业的公司。</p>
-<p>软件行业按照产品类型大致可以分三类：外包、卖产品和做平台。</p>
-<p>外包公司完全以订单为导向，往往涉及到复杂的业务逻辑，技术含量低，自然不在我的考虑范围内。</p>
-<p>我之前从事的公司都是在卖产品的公司，往往卖产品的公司需要有一定的技术含量，但是技术不能决定公司发展，这一类公司是以销售为导向的公司，一套产品往往可以卖上多年，甚至十几年也不奇怪。</p>
-<p>做平台的公司往往不需要过多的销售，大多数是以用户量为王的，而要想拉拢用户到平台上往往需要靠技术或销售取胜，而技术因素相对更加关键。以Dota对战平台为例，前几年比较火爆的是浩方和VS，现在成了11对战平台的天下了。11对战平台后来者居上就是因为11对战平台率先推出了天梯模式和路人模式，从而落下了竞争对手一大截。互联网行业属于第三类，而济南几乎找不到这类公司。就算有一些这样的公司，往往也是以销售为导向的公司。韩都衣舍也有自己的网站，但是流量应该没有淘宝大，估计网站技术上的投入也一般般。银座集团在电商火爆了后也搞了个网上商城，单从界面看可跟苏宁拉在同一个档次，但效果如何影响怎么样可想而知，估计技术都是外包的，仅是领导拍拍脑袋的产物。我实在想不到在济南有什么互联网公司了，如果你知道请告诉我。</p>
-<hr>
-<p>我期望加入一家创业型的公司。</p>
-<p>我现在还不具备单独创业的实力，但我一直梦想能够加入一家有梦想有激情的创业公司。加入创业公司就意味着不会清闲，我只期望每天能够过的充实并快乐着。《黑客与画家》中提到快速致富的手段就是加入一家创业公司，在美国如此，在中国亦如此。</p>
-<hr>
-<p>总结一下，我想加入一家技术为王的互联网行业的创业公司。如果你知道在济南有哪家公司可以满足我的要求，请告诉我，谢谢！</p>
 
       
     </div>
