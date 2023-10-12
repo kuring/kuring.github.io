@@ -8,9 +8,9 @@ tags:
 
 一个正常的tcp server在处理请求时会经过如下的系统调用：socket() bind() listen() accept() read() write() close()。一个请求在被应用程序读取之前，可能处于SYN_RCVD和ESTABLISHED两种状态。
 
-第一个队列：SYN_RCVD状态是server端接收到了client端的SYN包，server端会将该连接放到半连接队列中，并向客户端发送SYN+ACK包，此时连接处于半连接状态。
+第一个队列：SYN_RCVD状态是server端接收到了client端的SYN包，server端会将该连接放到半连接队列中，并向客户端发送SYN+ACK包，此时连接处于半连接状态。通常该队列被称为半连接队列。
 
-第二个队列：ESTABLISHED状态为已经完成了三次握手，但是server端的应用程序还未调用accept系统调用的情况。
+第二个队列：ESTABLISHED状态为已经完成了三次握手，但是server端的应用程序还未调用accept系统调用的情况。通常该队列被称为全连接队列。
 
 这两种情况下都需要操作系统提供相应队列来保存连接状态。
 
@@ -50,3 +50,32 @@ tcp_syncookies (Boolean; since Linux 2.2) Enable TCP syncookies. The kernel must
 在三次握手完成后，该连接会进入到 ESTABLISHED 状态，并将该连接放入到用户程序队列中。若该队列已满，默认会将该连接重新设置为 SYN_ACK 状态，相当于是服务端没有接收到客户端的 syn + ack 报文，后续可以利用客户端的重传机制重新接收报文。
 
 一旦开启了 `net.ipv4.tcp_abort_on_overflow` 选项后，会直接发送 RST 报文给到客户端，客户端会终止该连接，并报错 `104 Connection reset by peer`。
+
+4. net.core.somaxconn
+
+全连接队列的最大值，该配置为全局默认配置。单个 socket 的全连接队列的长度选择为 Min(backlog, somaxconn)。
+
+# 内核源码
+
+队列位于内核代码的 include/net/inet_connection_sock.h 中的如下位置:
+
+```c
+struct inet_connection_sock {
+	/* inet_sock has to be the first member! */
+	struct inet_sock	  icsk_inet;
+	struct request_sock_queue icsk_accept_queue; // 队列
+	struct inet_bind_bucket	  *icsk_bind_hash;
+}
+```
+
+# 如何参看
+
+查看 tcp 状态为 SYN_RECV 的链接即为半连接状态的请求：`netstat -napt | grep SYN_RECV`。也可以通过 `netstat -s | grep 'SYNs to LISTEN'` 查看。
+
+全连接队列可以使用 `ss -nlt | grep 8080` 的方式查看 Recv-Q 的值。
+也可通过如下命令来查看全连接队列的溢出情况。
+
+```shell
+$netstat -s | grep overflow
+    3255 times the listen queue of a socket overflowed
+```
