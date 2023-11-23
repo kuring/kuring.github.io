@@ -57,7 +57,7 @@ tcp_syncookies (Boolean; since Linux 2.2) Enable TCP syncookies. The kernel must
 
 # 内核源码
 
-队列位于内核代码的 include/net/inet_connection_sock.h 中的如下位置:
+在整个内核模块中主要涉及到 listen() 和 accept() 系统调用，listen() 系统调用的作用是申请和初始化半连接队列和全连接队列。队列位于内核代码的 include/net/inet_connection_sock.h 中的如下位置:
 
 ```c
 struct inet_connection_sock {

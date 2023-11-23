@@ -107,7 +107,6 @@ gcr.io 可以在 console 上直接看到信息，比如: [nginx镜像](https://c
 可以使用docker buildx命令，比如 `docker buildx build -t <image-name> --platform=linux/arm64,linux/amd64 . --push` 可以同时构建出arm64和amd64的镜像。
 
 
-
 ## 查看镜像的构建历史
 
 可以使用 `docker history --no-trunc ${image}` 来查看镜像的每层构建命令

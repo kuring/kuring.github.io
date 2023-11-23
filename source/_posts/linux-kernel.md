@@ -62,7 +62,13 @@ syn 队列又称为半连接队列。服务端在接收到客户端的 SYN 包�
 
 [TCP TIME_WAIT](/post/time-wait)
 
+## 文件子系统
 
+### fs.mount-max
+
+> The value in this file specifies the maximum number of mounts that may exist in a mount namespace. The default value in this file is 100,000.
+
+Linux 4.19 内核引入。当 mount namespace 中加载的文件数超过该值后，会报错 "No space left on device"。
 
 ## 内核参数在k8s的支持情况
 | 大类 | 子类 | 备注 |
