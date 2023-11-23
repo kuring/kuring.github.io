@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">230</span>
+          <span class="site-state-item-count">231</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,100 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/k8s-CSI/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/k8s-CSI/" class="post-title-link" itemprop="url">k8s CSI</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2023-11-23 22:56:40 / Modified: 14:58:11" itemprop="dateCreated datePublished" datetime="2023-11-23T22:56:40+00:00">2023-11-23</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p><a target="_blank" rel="noopener" href="https://github.com/container-storage-interface/spec/blob/master/spec.md">CSI</a>：Container Storage Interface (CSI)</p>
+<p>Volume 的三个阶段：</p>
+<ol>
+<li>Provision and Delete：负责卷的创建以及销毁。</li>
+<li>Attaching and Detaching：将卷设备挂载到本地或者从本地卸载。</li>
+<li>Mount and Umount：将 Attaching 的块设备以目录形式挂载到 pod中，或者从 pod 中卸载块设备。</li>
+</ol>
+<h1 id="开发"><a href="#开发" class="headerlink" title="开发"></a>开发</h1><p>CSI 插件分为三个部分：</p>
+<ol>
+<li>CSI Identity：用来获取 CSI 的身份信息</li>
+<li>CSI Controller</li>
+<li>CSI Node</li>
+</ol>
+<p>参考 k8s 官方的 hostpath 项目：<a target="_blank" rel="noopener" href="https://github.com/kubernetes-csi/csi-driver-host-path">https://github.com/kubernetes-csi/csi-driver-host-path</a></p>
+<p>为了方便开发，在每个阶段 k8s 官方均实现了对应的 SideCarSet 容器。要想研发，仅需要实现 grpc server，又 SideCarSet 容器调用自研的容器。</p>
+<p>自研的容器需要实现如下的接口即可。</p>
+<h2 id="CSI-Identity"><a href="#CSI-Identity" class="headerlink" title="CSI Identity"></a>CSI Identity</h2><figure class="highlight protobuf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">service </span><span class="title class_">Identity</span> &#123;</span><br><span class="line">  <span class="comment">// 返回插件名字以及版本号</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> GetPluginInfo(GetPluginInfoRequest) <span class="keyword">returns</span> (GetPluginInfoResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 返回插件的包含的功能</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> GetPluginCapabilities(GetPluginCapabilitiesRequest) <span class="keyword">returns</span> (GetPluginCapabilitiesResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> Probe (ProbeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (ProbeResponse) </span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>External provisioner 会调用该接口。</p>
+<h2 id="CSI-Controller"><a href="#CSI-Controller" class="headerlink" title="CSI Controller"></a>CSI Controller</h2><p>实现 Volume 中的 Provisioning and Deleting 和 Attaching and Detaching 两个阶段的功能。只有块存储 CSI 插件才需要 Attach 功能。<br>该部分以中心化组件的方式部署，比如 Deployment。Provision 功能对应的 SidecarSet 为 <a target="_blank" rel="noopener" href="https://github.com/kubernetes-csi/external-provisioner">external-provisioner</a>，Attach 对应的 SidecarSet 为 <a target="_blank" rel="noopener" href="https://github.com/kubernetes-csi/external-attacher">external-attacher</a>。</p>
+<figure class="highlight protobuf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">service </span><span class="title class_">Controller</span> &#123;</span><br><span class="line">  <span class="comment">// Provisioning， External provisioner调用</span></span><br><span class="line">  <span class="comment">// hostPath 实现中会调用 fallocate 实现</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> CreateVolume (CreateVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (CreateVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Deleting， External provisioner调用</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> DeleteVolume (DeleteVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (DeleteVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Attaching, 只有块设备才需要实现，比如云盘，由External attach 调用</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> ControllerPublishVolume (ControllerPublishVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (ControllerPublishVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Detaching，External attach 调用</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> ControllerUnpublishVolume (ControllerUnpublishVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (ControllerUnpublishVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> ValidateVolumeCapabilities (ValidateVolumeCapabilitiesRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (ValidateVolumeCapabilitiesResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> ListVolumes (ListVolumesRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (ListVolumesResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> GetCapacity (GetCapacityRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (GetCapacityResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> ControllerGetCapabilities (ControllerGetCapabilitiesRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (ControllerGetCapabilitiesResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 创建快照功能</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> CreateSnapshot (CreateSnapshotRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (CreateSnapshotResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 删除快照功能</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> DeleteSnapshot (DeleteSnapshotRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (DeleteSnapshotResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> ListSnapshots (ListSnapshotsRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (ListSnapshotsResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> ControllerExpandVolume (ControllerExpandVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (ControllerExpandVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> ControllerGetVolume (ControllerGetVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (ControllerGetVolumeResponse) </span>&#123;</span><br><span class="line">        <span class="keyword">option</span> (alpha_method) = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> ControllerModifyVolume (ControllerModifyVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (ControllerModifyVolumeResponse) </span>&#123;</span><br><span class="line">        <span class="keyword">option</span> (alpha_method) = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="CSI-Node"><a href="#CSI-Node" class="headerlink" title="CSI Node"></a>CSI Node</h2><p>实现 Volume 中的Mount 和 Umount 阶段，由 kubelet 负责调用。<br>该部分以 DaemonSet 的形式部署在每个 k8s node 上，对应的 SidecarSet 容器为 <a target="_blank" rel="noopener" href="https://github.com/kubernetes-csi/node-driver-registrar">node-driver-registrer</a>。</p>
+<figure class="highlight protobuf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">service </span><span class="title class_">Node</span> &#123;</span><br><span class="line">  <span class="comment">// 针对块存储类型，将块设备格式化后先挂载到一个临时全局目录</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeStageVolume (NodeStageVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeStageVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeUnstageVolume (NodeUnstageVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeUnstageVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果是块存储设备，在执行完 NodeStageVolume 后，使用 linux 的 bind mount 技术将全局目录挂载到pod 中的对应目录</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodePublishVolume (NodePublishVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodePublishVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeUnpublishVolume (NodeUnpublishVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeUnpublishVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeGetVolumeStats (NodeGetVolumeStatsRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeGetVolumeStatsResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeExpandVolume(NodeExpandVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeExpandVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeGetCapabilities (NodeGetCapabilitiesRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeGetCapabilitiesResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeGetInfo (NodeGetInfoRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeGetInfoResponse) </span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><p>协议：<a target="_blank" rel="noopener" href="https://github.com/container-storage-interface/spec/blob/master/spec.md">https://github.com/container-storage-interface/spec/blob/master/spec.md</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -211,9 +305,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">Posted on</span>
-      
 
-      <time title="Created: 2023-10-12 20:12:55 / Modified: 12:13:52" itemprop="dateCreated datePublished" datetime="2023-10-12T20:12:55+00:00">2023-10-12</time>
+      <time title="Created: 2023-10-12 20:12:55" itemprop="dateCreated datePublished" datetime="2023-10-12T20:12:55+00:00">2023-10-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
     </span>
 
   
@@ -319,7 +419,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
+      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
     </span>
 
   
@@ -411,7 +511,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
+      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
     </span>
 
   
@@ -514,7 +614,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
+      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
     </span>
 
   
@@ -765,7 +865,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
+      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
     </span>
 
   
@@ -906,7 +1006,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
+      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
     </span>
 
   
@@ -1025,7 +1125,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
+      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
     </span>
 
   
@@ -1172,7 +1272,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
+      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
     </span>
 
   
@@ -1313,7 +1413,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
+      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
     </span>
 
   
@@ -1376,112 +1476,8 @@
 
 
 
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/aliyun-3years/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/aliyun-3years/" class="post-title-link" itemprop="url">阿里巴巴入职三周年感悟</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-06-28 21:58:02" itemprop="dateCreated datePublished" datetime="2022-06-28T21:58:02+00:00">2022-06-28</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-10-12 12:13:52" itemprop="dateModified" datetime="2023-10-12T12:13:52+00:00">2023-10-12</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>今年六月份入职阿里正好三周年，在阿里入职三年被称为”三年醇”，三年才称之为真正的阿里人。我个人在这三年的时间里也变化了许多，值得反思总结一下。</p>
-<h2 id="阿里缘起"><a href="#阿里缘起" class="headerlink" title="阿里缘起"></a>阿里缘起</h2><p>三年前，从上家公司离开。当时可选择的机会还是比较多的，基本上职位比较match的面试都通过了，甚至有公司经过了七面。之所以最终选择了阿里，主要如下两个原因：</p>
-<ol>
-<li>阿里的技术在国内的知名度是响当当的。从技术深度和广度而言，阿里的技术都可圈可点，进入阿里我想多接触一下牛人，技术更进一层。</li>
-<li>过往工作经历没有一线大厂，需要丰富下阅历。大厂的经历还是比较关键，不光是为了给自己的职业生涯中增加一份光鲜的经历，更多的是想看大厂是如何运作的，同样一件事情，在不同规模的公司有着不同的处理思路。</li>
-</ol>
-<p>主要是基于上述原因，即使不是最好选择，即使做出了部分牺牲，毅然决定加入阿里云，加入了国内最领先的云计算厂商之一。</p>
-<h2 id="工作内容及感受"><a href="#工作内容及感受" class="headerlink" title="工作内容及感受"></a>工作内容及感受</h2><p>上家公司为互联网公司，处理的业务为高并发的在线业务，在互联网公司摸爬滚打积累了大量经验。来到阿里云后，加入了混合云，场景变为了专有云，虽然工作内容同样为云原生领域，但本质上为离线业务，跟互联网的在线业务在工作内容上有了较大的区别。互联网业务在线化，仅需要几套在线环境即可满足需求，专有云场景却需要维护大量的测试环境和客户的离线环境，从而导致业务复杂度急剧上升。主要体现在如下方面：</p>
-<ol>
-<li>专有云场景强化对版本的概念。由于大量环境的存在，要想做到统一的管理和运维，必须用版本来强管理，否则维护大量环境将成为灾难。</li>
-<li>专有云对自动化部署的要求变高。几套环境的情况下，考虑到ROI，并不需要很高的自动化程度，相反引入自动化会给变更引入额外的复杂性。但如果成百上千套环境，自动化部署成为了强需求，混合云的很多能力都是围绕着自动化部署展开的。</li>
-<li>专有云场景对自动化运维的要求变高。运维场景包括了升级、扩缩容、故障处理等，由于是离线的场景，运维的流程变成了：客户 -&gt; 驻场运维 -&gt; 远程运维支持 -&gt; 研发，相比在线业务的支持流程会更长，更难找到bug的真正owner。一方面需要对支持链路上的人员进行相关的培训，更为重要的是需要通过增强平台的自动化运维能力来降低运维成本。</li>
-<li>bug在客户环境的问题收敛非常慢。由于有大量的客户环境存在，一旦发现bug，需要在客户现场打hotfix，由于绝大多数环境无法远程，需要人工在客户现场操作，受限于人力、客户变更窗口等限制，hotfix patch的速度很难快起来。从而导致一个bug，会在多个客户现场环境爆发。</li>
-<li>墨菲定律凸显，只要是 bug 暴露出来的概率明显增加。由于大量环境的存在，且客户现场运行着多个历史版本，非常难以拉齐版本，哪怕是多年前的旧 bug，在客户现场也极有可能会被发现。</li>
-<li>专有云场景下忌架构变更大，架构复杂。专有云场景下经常出现的问题是，一个组件在版本一的架构，还没等一线的运维熟悉架构，在版本二下更换为了另外一套方案，导致运维性特别差。在引入“高大上”的高级特性时也一定要慎重，避免将架构搞复杂，将学习成本变高，专有云的试错成本太高。专有云场景下做好的架构解决方案是，使用尽可能通用简洁的方案来解决复杂的业务问题。</li>
-</ol>
-<p>虽然两份工作内容都是云原生领域，但因为业务场景的不同，却对工作的重心产生了质的差异，量变产生了质变。正是因为质变，导致用互联网的“快糙猛”、“短平快”的思路来做需要精心打磨的专有云业务，路子非常容易走偏。</p>
-<p>从工作量上来看，虽然上一份工作也不怎么轻松，但跟当前工作相比，却是小巫见大巫。尤其是前两年的时间，正处在业务从0到1的阶段，基本上一直处于高度运转的状态，每天都会有大量的钉钉消息和大量的会议，不是在救火就是在救火的路上，钉钉消息泛滥到惨不忍睹。能休息的周末也非常少，基本上周末都用来加班干一周攒下来的工作了。下面为相对卷的轻一些的2021年度的钉钉报告，一年光钉钉的会议就有三万多分钟，平均一天有两个小时，还不包含阿里内部的阿里郎会议和会议室中参加的线下会议。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/3ago-1.jpg"></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/3ago-2.jpg"></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/3ago-3.jpg"></p>
-<h2 id="成长"><a href="#成长" class="headerlink" title="成长"></a>成长</h2><p>最大的成长是在工作方法上有了比较大的进步。阿里有一套工作处事的方法论，“搞不定就上升问题”，“责任边界”，“总结思考”等基本上是行走江湖必备技能，在网络上大家也可以看到大量的带有“阿里味”的文章，虽然处理起工作我还是比较喜欢按照自己的方式，但实在搞不定的时候可作为兜底处理思路的，在阿里的江湖里要想风生水起除了靠技术实力，做事方法也极为关键。</p>
-<p>文档能力有了很大提升。在过往的工作经历中，很多事情想好了直接就开干了，反正使用方也不会很多，导致写的文档比较少，毕竟写一篇文档有可能花费时间比写代码的时间还要长。但目前我基本上已经养成了写文档的好习惯，写文档是一个整理思路的好方法，同时也可以将方案分享出去。在阿里的这几年深切体会到文档的重要性，因为业务方特别多，哪怕是一个技术点也会被多个人频繁提问，这时候扔一篇文档是比较好的减负方法。</p>
-<p>另一个比较大的转变是很少失眠了。上一份工作经历大概是处理在线业务的原因，或者是工作不够饱和，经常出现失眠的情况。来阿里之前还比较担心失眠的问题发生，顶不住阿里高强度的工作压力。结果后来发现失眠根本就不存在，当每天都处理N件事情后，超卖非常严重，已经从原来的脑力劳动变成了体力加脑力劳动，根本不存在失眠的情况。到现在为止，即使工作没有刚加入阿里时那么饱和，失眠的情况也比较少了。</p>
-<h2 id="不足"><a href="#不足" class="headerlink" title="不足"></a>不足</h2><p>面向钉钉的工作方式没有改掉。刚加入阿里的时候，看到同事的钉钉怎么那么多群，而且都把消息清一色设置为了屏蔽状态，我还特别的不理解。入职没多长时间就渐渐习惯了，每天总会加入几个群，刚开始的时候还会关注群消息，后来发现大部分群都是跟自己无关的。由于会随时被@，所以就把消息提醒给关掉了，否则会特别影响注意力。关掉消息提醒后，消息的查看方式就从push模式变了定期pull模式，基本上每隔几分钟就会打开一次钉钉。虽然大部分情况下都能看到新的消息要处理，但也养成了一个坏习惯，一旦不打开钉钉，总感觉心里不舒服。我不知道这个坏习惯算不算一种医学上的疾病，至少我扣手指的坏习惯在医学上找到了对应的名称“强迫性皮肤剥离症”。这个坏习惯一度尝试修正，比如采用“番茄工作法”的方式，每隔十五分钟再打开一次钉钉，但一直没有强有力的推动下去，总是忍不住打开钉钉看一眼消息。钉钉俨然成为了我工作效率的最大杀手，这句话也不完全对，因为钉钉本来就是我工作的一部分。如果这个问题可以解掉，我的工作效率会上一个大大的台阶。</p>
-<p>能力陷阱问题突出。工作中有大量时间是作为客服来答疑解惑各类问题，前期阶段不管我是不是owner，只要是我力所能及的都尽可能提供帮助，直到我实在扛不住。虽然一方面服务了大量的客户，但另一方面我自己可支配的时间变的非常少。后面渐渐将不是我的问题路由到其他同学，自己才释放出一些时间。但路由器其实不是那么好当的，平台有大量组件，而且不同的组件往往归属不同的owner，有很多问题其实并不能直观看出具体是哪个组件，很多情况下都是多个组件配合的问题，因此还需要充当问题初步定位的工作以及没有owner问题的默认路由。</p>
-<p>自身的学习投入比重偏少。工作时间多的最突出问题就是没有太多的精力来投入到新技术新知识的学习，虽然最近一年有很大的改善，但相比上家公司学习的技术的投入是完全不能比的。更别提，刚工作那几年曾经看过满满一书架的技术书籍了，现在想来真是一种奢侈。</p>
-<p>前瞻性不够。每天都有很多问题在排队的后果就是规划能力不够。阿里还是特别强调抬头看路，但现实中，我却大部分的时间消耗在了低头解问题，思考的时间偏少。长此以往，渐渐发现自己的创造性是不够的。多花时间独立思考，这条路永远是正确的。</p>
-<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>自己对未来有很多的期待，这里最想提升的点为：打造个人品牌影响力。个人影响力方面过去不够重视，期望将来能够行动起来。要想做到这一点并非易事，需要很多基础能力，比如需要大量的知识积累，需要大量的工作实践等。期望借着阿里的平台，能够最大化个人影响力，未来可期！</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/23/">23</a><a class="extend next" rel="next" title="Next page" aria-label="Next page" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/24/">24</a><a class="extend next" rel="next" title="Next page" aria-label="Next page" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 </div>
