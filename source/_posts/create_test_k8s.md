@@ -96,13 +96,33 @@ apiVersion: kind.x-k8s.io/v1alpha4
 name: kind
 nodes:
 - role: control-plane
-  image: kindest/node:v1.23.17 # 指定 k8s 版本
+  # 如果需要 ingress，则需要指定该参数
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
+  # 指定 k8s 版本，默认不指定
+  # image: kindest/node:v1.23.17
+- role: worker
+- role: worker
+- role: worker
 networking:
   apiServerAddress: "$ip"
   apiServerPort: 6443
 EOF
 kind create cluster --config kind.conf
 ```
+
+如果使用 nginx ingress，额外执行命令 `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml`
 
 # 其他周边工具
 
@@ -145,3 +165,7 @@ echo -e '\n# kubectl krew' >> ~/.bash_profile
 echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"' >> ~/.bash_profile
 source ~/.bash_profile
 ```
+
+# 资料
+
+- [kind](https://kind.sigs.k8s.io/)
