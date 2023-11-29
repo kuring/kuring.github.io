@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.18.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="术语 host cluster：virtual cluster 中的宿主 k8s 集群，承载了所有的计算资源。也会被叫做 super cluster。 virtual cluster：virtual cluster 中的租户 k8s 集群，通常简写 vc。也会被叫做 tenant cluster。 vCluster：k8s virtual cluster 的实现之一，即本文中要介绍的方案。  项目">
+<meta property="og:type" content="article">
+<meta property="og:title" content="k8s virtual cluster 方案 - vCluster">
+<meta property="og:url" content="http://kuring.me/post/vcluster/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="术语 host cluster：virtual cluster 中的宿主 k8s 集群，承载了所有的计算资源。也会被叫做 super cluster。 virtual cluster：virtual cluster 中的租户 k8s 集群，通常简写 vc。也会被叫做 tenant cluster。 vCluster：k8s virtual cluster 的实现之一，即本文中要介绍的方案。  项目">
+<meta property="og:locale">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/vcluster-compare.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/vcluster-arch.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/vcluster-pv.png">
+<meta property="article:published_time" content="2023-11-29T20:23:05.000Z">
+<meta property="article:modified_time" content="2023-11-29T12:29:46.615Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/vcluster-compare.png">
+
+
+<link rel="canonical" href="http://kuring.me/post/vcluster/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/vcluster/","path":"post/vcluster/","title":"k8s virtual cluster 方案 - vCluster"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>k8s virtual cluster 方案 - vCluster | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD"><span class="nav-number">1.</span> <span class="nav-text">术语</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E7%AE%80%E4%BB%8B"><span class="nav-number">2.</span> <span class="nav-text">项目简介</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#k8s-%E7%9A%84%E5%A4%9A%E7%A7%9F%E5%8A%9F%E8%83%BD"><span class="nav-number">2.1.</span> <span class="nav-text">k8s 的多租功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#vCluster-%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.2.</span> <span class="nav-text">vCluster 介绍</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Getting-Started"><span class="nav-number">3.</span> <span class="nav-text">Getting Started</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#k8s-%E9%9B%86%E7%BE%A4%E5%87%86%E5%A4%87"><span class="nav-number">3.1.</span> <span class="nav-text">k8s 集群准备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85-vcluster"><span class="nav-number">3.2.</span> <span class="nav-text">安装 vcluster</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81-service"><span class="nav-number">3.3.</span> <span class="nav-text">验证 service</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81-Ingress"><span class="nav-number">3.4.</span> <span class="nav-text">验证 Ingress</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%80%E6%AF%81"><span class="nav-number">3.5.</span> <span class="nav-text">销毁</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84"><span class="nav-number">4.</span> <span class="nav-text">架构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%84%E4%BB%B6"><span class="nav-number">4.1.</span> <span class="nav-text">组件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#controller-plane"><span class="nav-number">4.1.1.</span> <span class="nav-text">controller plane</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#syncer"><span class="nav-number">4.1.2.</span> <span class="nav-text">syncer</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#k8s-node-%E5%90%8C%E6%AD%A5"><span class="nav-number">4.1.2.1.</span> <span class="nav-text">k8s node 同步</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pod-%E8%B0%83%E5%BA%A6"><span class="nav-number">4.2.</span> <span class="nav-text">pod 调度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C"><span class="nav-number">4.3.</span> <span class="nav-text">网络</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Service-%E7%BD%91%E7%BB%9C"><span class="nav-number">4.3.1.</span> <span class="nav-text">Service 网络</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Ingress-%E7%BD%91%E7%BB%9C"><span class="nav-number">4.3.2.</span> <span class="nav-text">Ingress 网络</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DNS-%E8%A7%A3%E6%9E%90"><span class="nav-number">4.3.3.</span> <span class="nav-text">DNS 解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NetworkPolicy"><span class="nav-number">4.3.4.</span> <span class="nav-text">NetworkPolicy</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%98%E5%82%A8"><span class="nav-number">4.4.</span> <span class="nav-text">存储</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7"><span class="nav-number">4.5.</span> <span class="nav-text">可观测性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#monitoring"><span class="nav-number">4.5.1.</span> <span class="nav-text">monitoring</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#logging"><span class="nav-number">4.5.2.</span> <span class="nav-text">logging</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E5%85%A8"><span class="nav-number">4.6.</span> <span class="nav-text">安全</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9A%94%E7%A6%BB%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.6.1.</span> <span class="nav-text">隔离模式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#virtual-cluster-%E9%9B%86%E7%BE%A4%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">4.7.</span> <span class="nav-text">virtual cluster 集群的创建</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#virtual-cluster-%E9%9B%86%E7%BE%A4%E5%AF%B9%E5%A4%96%E6%9A%B4%E9%9C%B2%E6%96%B9%E6%B3%95"><span class="nav-number">4.8.</span> <span class="nav-text">virtual cluster 集群对外暴露方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96-kubeconfig"><span class="nav-number">4.8.1.</span> <span class="nav-text">获取 kubeconfig</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#vcluster-connect-%E5%91%BD%E4%BB%A4"><span class="nav-number">4.8.1.1.</span> <span class="nav-text">vcluster connect 命令</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#host-cluster-secret-%E4%B8%AD%E8%8E%B7%E5%8F%96%E5%88%B0-kubeconfig"><span class="nav-number">4.8.1.2.</span> <span class="nav-text">host cluster secret 中获取到 kubeconfig</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vc-%E9%9B%86%E7%BE%A4%E4%B8%AD%E7%9A%84-apiserver-%E7%9A%84%E6%9A%B4%E9%9C%B2%E5%9C%B0%E5%9D%80"><span class="nav-number">4.8.2.</span> <span class="nav-text">vc 集群中的 apiserver 的暴露地址</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8%E8%AE%BE%E8%AE%A1"><span class="nav-number">4.9.</span> <span class="nav-text">高可用设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#control-plane-%E9%AB%98%E5%8F%AF%E7%94%A8"><span class="nav-number">4.9.1.</span> <span class="nav-text">control plane 高可用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%87%E4%BB%BD%E4%B8%8E%E6%81%A2%E5%A4%8D"><span class="nav-number">4.9.2.</span> <span class="nav-text">备份与恢复</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B6%E4%BB%96"><span class="nav-number">6.</span> <span class="nav-text">其他</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">232</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/vcluster/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="k8s virtual cluster 方案 - vCluster | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          k8s virtual cluster 方案 - vCluster
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2023-11-29 20:23:05 / Modified: 12:29:46" itemprop="dateCreated datePublished" datetime="2023-11-29T20:23:05+00:00">2023-11-29</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="术语"><a href="#术语" class="headerlink" title="术语"></a>术语</h1><ul>
+<li>host cluster：virtual cluster 中的宿主 k8s 集群，承载了所有的计算资源。也会被叫做 super cluster。</li>
+<li>virtual cluster：virtual cluster 中的租户 k8s 集群，通常简写 vc。也会被叫做 tenant cluster。</li>
+<li>vCluster：k8s virtual cluster 的实现之一，即本文中要介绍的方案。</li>
+</ul>
+<h1 id="项目简介"><a href="#项目简介" class="headerlink" title="项目简介"></a>项目简介</h1><h2 id="k8s-的多租功能"><a href="#k8s-的多租功能" class="headerlink" title="k8s 的多租功能"></a>k8s 的多租功能</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/vcluster-compare.png" alt="image.png"><br>k8s 自身在多租的能力上支持较差，提供了 namespace 级别的隔离，不同的租户使用不同的 namespace，但该隔离功能较弱。很多组件部署在同一个 workload 会存在诸多问题：</p>
+<ol>
+<li>使用全局对象存在冲突，比如 CRD。</li>
+<li>存在诸多安全性问题，比如多个租户之间的 pod 完全可以互访，没有任何隔离机制。</li>
+<li>不同组件对于 k8s 的版本不统一。</li>
+</ol>
+<p>为了解决多租的问题，最简单的思路就是使用多 k8s 集群，业界的 KubeFed v2、karmada、clusternet、OCM 等均为多 k8s 集群的实现。但多 k8s 集群因为存在独立的控制面和计算资源，存在资源消耗过多的问题。</p>
+<p>还有一个中间思路为仅做 k8s 的控制面隔离，计算资源仍然共享，即 pod 也可以解决很多的多租隔离问题。k8s 的控制面隔离又存在两个主要方案：</p>
+<ol>
+<li>独立的 kube-apiserver 和 etcd、kube-controller-manager， kube-scheduler 共享 host cluster。该方案中有独立的 kube-apiserver 组件，这里的 etcd 可以被 sqllite、mysql 等存储取代。该方案统称为 virtual cluster，简称为 vc。</li>
+<li>独立的 proxy apiserver，kube-apiserver、kube-controller-manager、kube-scheduler 共享 host cluster。访问 k8s 的请求先到 proxy apiserver，proxy apiserver 转发到 host cluster 的 kube-apiserver。可以在 proxy apiserver 中提供独立的 RBAC 机制，实现一定程度的隔离。该方案在开源中未看到具体的实现。</li>
+</ol>
+<h2 id="vCluster-介绍"><a href="#vCluster-介绍" class="headerlink" title="vCluster 介绍"></a>vCluster 介绍</h2><p><a target="_blank" rel="noopener" href="https://github.com/loft-sh/vcluster">vCluster</a> 为 virtual cluster 的开源实现之一，由 Loft Labs 提供，Github Star 3.7K，代码行数 4 万行。除了开源版本外，还提供了商业版本 vCluster PRO。</p>
+<p>vCluster 设计原则：</p>
+<ol>
+<li>最小化资源占用。在实现上使用了单 pod 的 k3s 作为 k8s 的控制面。</li>
+<li>复用 host cluster 的计算、存储和网络资源。</li>
+<li>降低对 host cluster 的请求。</li>
+<li>简单灵活。</li>
+<li>不需要 host cluster 的管理员权限。</li>
+<li>vCluster 多个 namespace 下的对象映射到 host cluster 的同一个 namespace 下。同时也可以支持 vCluster 的一个 namespace 对应 host cluster 的一个 namespace。</li>
+<li>易清理。</li>
+</ol>
+<h1 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h1><h2 id="k8s-集群准备"><a href="#k8s-集群准备" class="headerlink" title="k8s 集群准备"></a>k8s 集群准备</h2><p>k8s 集群这里使用了 kind 方案，kind 配置 kind.conf 如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">kind:</span> <span class="string">Cluster</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">kind.x-k8s.io/v1alpha4</span></span><br><span class="line"><span class="attr">name:</span> <span class="string">vcluster</span></span><br><span class="line"><span class="attr">nodes:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">role:</span> <span class="string">control-plane</span></span><br><span class="line">  <span class="comment"># 如果需要 ingress，则需要指定该参数</span></span><br><span class="line">  <span class="attr">kubeadmConfigPatches:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">|</span></span><br><span class="line"><span class="string">    kind: InitConfiguration</span></span><br><span class="line"><span class="string">    nodeRegistration:</span></span><br><span class="line"><span class="string">      kubeletExtraArgs:</span></span><br><span class="line"><span class="string">        node-labels: &quot;ingress-ready=true&quot;</span></span><br><span class="line"><span class="string"></span>  <span class="attr">extraPortMappings:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br><span class="line">    <span class="attr">hostPort:</span> <span class="number">80</span></span><br><span class="line">    <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">443</span></span><br><span class="line">    <span class="attr">hostPort:</span> <span class="number">443</span></span><br><span class="line">    <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">  <span class="comment"># 指定 k8s 版本，默认不指定</span></span><br><span class="line">  <span class="comment"># image: kindest/node:v1.23.17</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">role:</span> <span class="string">worker</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">role:</span> <span class="string">worker</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">role:</span> <span class="string">worker</span></span><br><span class="line"><span class="attr">networking:</span></span><br><span class="line">  <span class="attr">apiServerPort:</span> <span class="number">6443</span></span><br></pre></td></tr></table></figure>
+<p>执行 <code>kind create cluster --config kind.conf</code> 即可创建 k8s 集群，包含了一个 control-plane 节点，三个 worker 节点。</p>
+<h2 id="安装-vcluster"><a href="#安装-vcluster" class="headerlink" title="安装 vcluster"></a>安装 vcluster</h2><p>vCluster 提供了使用 vcluster cli、helm 和 kubectl 三种安装方式，使用 vcluster cli 最为简单，其底层同样采用 helm chart 的方式部署，下面采用 vcluster cli 的方式进行安装。<br>安装 vcluster cli 工具：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">curl</span> <span class="string">-L</span> <span class="string">-o</span> <span class="string">vcluster</span> <span class="string">&quot;https://github.com/loft-sh/vcluster/releases/latest/download/vcluster-darwin-arm64&quot;</span> <span class="string">&amp;&amp;</span> <span class="string">sudo</span> <span class="string">install</span> <span class="string">-c</span> <span class="string">-m</span> <span class="number">0755 </span><span class="string">vcluster</span> <span class="string">/usr/local/bin</span> <span class="string">&amp;&amp;</span> <span class="string">rm</span> <span class="string">-f</span> <span class="string">vcluster</span></span><br></pre></td></tr></table></figure>
+<p>或者执行 <code>brew install vcluster</code>安装 vcluster 命令行工具。</p>
+<p>执行命令 <code>vcluster create my-vcluster</code> 创建 virtual cluster。会在 host cluster 上创建 namespace <code>vcluster-my-vcluster</code>，该 namespace 下创建如下对象：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">all</span> <span class="string">-n</span> <span class="string">vcluster-my-vcluster</span></span><br><span class="line"><span class="string">NAME</span>                                                       <span class="string">READY</span>   <span class="string">STATUS</span>    <span class="string">RESTARTS</span>        <span class="string">AGE</span></span><br><span class="line"><span class="string">pod/coredns-68559449b6-l5whx-x-kube-system-x-my-vcluster</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">2</span> <span class="string">(5m45s</span> <span class="string">ago)</span>   <span class="string">3d</span></span><br><span class="line"><span class="string">pod/my-vcluster-0</span>                                          <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">2</span> <span class="string">(5m45s</span> <span class="string">ago)</span>   <span class="string">3d</span></span><br><span class="line"></span><br><span class="line"><span class="string">NAME</span>                                              <span class="string">TYPE</span>        <span class="string">CLUSTER-IP</span>     <span class="string">EXTERNAL-IP</span>   <span class="string">PORT(S)</span>                         <span class="string">AGE</span></span><br><span class="line"><span class="string">service/kube-dns-x-kube-system-x-my-vcluster</span>      <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.67</span><span class="number">.119</span>   <span class="string">&lt;none&gt;</span>        <span class="number">53</span><span class="string">/UDP,53/TCP,9153/TCP</span>          <span class="string">3d</span></span><br><span class="line"><span class="string">service/my-vcluster</span>                               <span class="string">NodePort</span>    <span class="number">10.96</span><span class="number">.214</span><span class="number">.58</span>   <span class="string">&lt;none&gt;</span>        <span class="number">443</span><span class="string">:30540/TCP,10250:31621/TCP</span>   <span class="string">3d</span></span><br><span class="line"><span class="string">service/my-vcluster-headless</span>                      <span class="string">ClusterIP</span>   <span class="string">None</span>           <span class="string">&lt;none&gt;</span>        <span class="number">443</span><span class="string">/TCP</span>                         <span class="string">3d</span></span><br><span class="line"><span class="string">service/my-vcluster-node-vcluster-control-plane</span>   <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.69</span><span class="number">.115</span>   <span class="string">&lt;none&gt;</span>        <span class="number">10250</span><span class="string">/TCP</span>                       <span class="string">3d</span></span><br><span class="line"></span><br><span class="line"><span class="string">NAME</span>                           <span class="string">READY</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">statefulset.apps/my-vcluster</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">3d</span></span><br></pre></td></tr></table></figure>
+<p>可以看到在该 namespace 下创建了 coredns 和 StatefulSet my-vcluster。每个租户有独立的 coredns 组件，用来做域名解析。my-vcluster 为 vCluster 的管控面组件，包括了 k8s controller plane 和 syncer 组件。</p>
+<p>执行  <code>vcluster connect my-vcluster</code> 后会在本地启动代理，并自动切换本地的 kubeconfig context，将 context 切换到 virtual cluster。执行 kubectl 命令即可连接到对应的 k8s 集群。virtual cluster 集群中的信息如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">all</span> <span class="string">-A</span></span><br><span class="line"><span class="string">NAMESPACE</span>     <span class="string">NAME</span>                           <span class="string">READY</span>   <span class="string">STATUS</span>    <span class="string">RESTARTS</span>      <span class="string">AGE</span></span><br><span class="line"><span class="string">kube-system</span>   <span class="string">pod/coredns-68559449b6-jg2bs</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">1</span> <span class="string">(20m</span> <span class="string">ago)</span>   <span class="string">51m</span></span><br><span class="line"></span><br><span class="line"><span class="string">NAMESPACE</span>     <span class="string">NAME</span>                 <span class="string">TYPE</span>        <span class="string">CLUSTER-IP</span>     <span class="string">EXTERNAL-IP</span>   <span class="string">PORT(S)</span>                  <span class="string">AGE</span></span><br><span class="line"><span class="string">kube-system</span>   <span class="string">service/kube-dns</span>     <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.120</span><span class="number">.59</span>   <span class="string">&lt;none&gt;</span>        <span class="number">53</span><span class="string">/UDP,53/TCP,9153/TCP</span>   <span class="string">51m</span></span><br><span class="line"><span class="string">default</span>       <span class="string">service/kubernetes</span>   <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.35</span><span class="number">.53</span>    <span class="string">&lt;none&gt;</span>        <span class="number">443</span><span class="string">/TCP</span>                  <span class="string">51m</span></span><br><span class="line"></span><br><span class="line"><span class="string">NAMESPACE</span>     <span class="string">NAME</span>                      <span class="string">READY</span>   <span class="string">UP-TO-DATE</span>   <span class="string">AVAILABLE</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">kube-system</span>   <span class="string">deployment.apps/coredns</span>   <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">51m</span></span><br><span class="line"></span><br><span class="line"><span class="string">NAMESPACE</span>     <span class="string">NAME</span>                                 <span class="string">DESIRED</span>   <span class="string">CURRENT</span>   <span class="string">READY</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">kube-system</span>   <span class="string">replicaset.apps/coredns-68559449b6</span>   <span class="number">1</span>         <span class="number">1</span>         <span class="number">1</span>       <span class="string">51m</span></span><br></pre></td></tr></table></figure>
+<p>在 virtual cluster 可以看到仅包含了 coredns 组件。</p>
+<p>在 virtual cluster 和在 host cluster 中的 node 信息：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">node</span> <span class="string">-o</span> <span class="string">wide</span></span><br><span class="line"><span class="string">NAME</span>               <span class="string">STATUS</span>   <span class="string">ROLES</span>    <span class="string">AGE</span>   <span class="string">VERSION</span>   <span class="string">INTERNAL-IP</span>     <span class="string">EXTERNAL-IP</span>   <span class="string">OS-IMAGE</span>                         <span class="string">KERNEL-VERSION</span>     <span class="string">CONTAINER-RUNTIME</span></span><br><span class="line"><span class="string">vcluster-worker3</span>   <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>   <span class="string">51m</span>   <span class="string">v1.27.3</span>   <span class="number">10.96</span><span class="number">.118</span><span class="number">.228</span>   <span class="string">&lt;none&gt;</span>        <span class="string">Debian</span> <span class="string">GNU/Linux</span> <span class="number">11</span> <span class="string">(bullseye)</span>   <span class="number">5.10</span><span class="number">.76</span><span class="string">-linuxkit</span>   <span class="string">containerd://1.7.1</span></span><br><span class="line"></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">node</span> <span class="string">-o</span> <span class="string">wide</span> <span class="string">--context</span> <span class="string">kind-vcluster</span></span><br><span class="line"><span class="string">NAME</span>                     <span class="string">STATUS</span>   <span class="string">ROLES</span>           <span class="string">AGE</span>   <span class="string">VERSION</span>   <span class="string">INTERNAL-IP</span>   <span class="string">EXTERNAL-IP</span>   <span class="string">OS-IMAGE</span>                         <span class="string">KERNEL-VERSION</span>     <span class="string">CONTAINER-RUNTIME</span></span><br><span class="line"><span class="string">vcluster-control-plane</span>   <span class="string">Ready</span>    <span class="string">control-plane</span>   <span class="string">86m</span>   <span class="string">v1.27.3</span>   <span class="number">172.19</span><span class="number">.0</span><span class="number">.3</span>    <span class="string">&lt;none&gt;</span>        <span class="string">Debian</span> <span class="string">GNU/Linux</span> <span class="number">11</span> <span class="string">(bullseye)</span>   <span class="number">5.10</span><span class="number">.76</span><span class="string">-linuxkit</span>   <span class="string">containerd://1.7.1</span></span><br><span class="line"><span class="string">vcluster-worker</span>          <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>          <span class="string">85m</span>   <span class="string">v1.27.3</span>   <span class="number">172.19</span><span class="number">.0</span><span class="number">.2</span>    <span class="string">&lt;none&gt;</span>        <span class="string">Debian</span> <span class="string">GNU/Linux</span> <span class="number">11</span> <span class="string">(bullseye)</span>   <span class="number">5.10</span><span class="number">.76</span><span class="string">-linuxkit</span>   <span class="string">containerd://1.7.1</span></span><br><span class="line"><span class="string">vcluster-worker2</span>         <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>          <span class="string">85m</span>   <span class="string">v1.27.3</span>   <span class="number">172.19</span><span class="number">.0</span><span class="number">.5</span>    <span class="string">&lt;none&gt;</span>        <span class="string">Debian</span> <span class="string">GNU/Linux</span> <span class="number">11</span> <span class="string">(bullseye)</span>   <span class="number">5.10</span><span class="number">.76</span><span class="string">-linuxkit</span>   <span class="string">containerd://1.7.1</span></span><br><span class="line"><span class="string">vcluster-worker3</span>         <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>          <span class="string">85m</span>   <span class="string">v1.27.3</span>   <span class="number">172.19</span><span class="number">.0</span><span class="number">.4</span>    <span class="string">&lt;none&gt;</span>        <span class="string">Debian</span> <span class="string">GNU/Linux</span> <span class="number">11</span> <span class="string">(bullseye)</span>   <span class="number">5.10</span><span class="number">.76</span><span class="string">-linuxkit</span>   <span class="string">containerd://1.7.1</span></span><br></pre></td></tr></table></figure>
+<p>可以看到在 virtual cluster 和 host cluster 中的 node 名字相同，这是因为 node 在 vCluster 中并没有做隔离，而是从 host cluster 中做了同步。但 virtual cluster 中的 node 节点仅包含 pod 在 host cluster 中已经使用的 node 节点，未使用的节点并不会在 virtual cluster 上。<br>同时可以看到 vc 和 host cluster 中的 node ip 地址并不相同，vc 中的 node ip 地址跟 host cluster 中的对应 service clusterip 相同，在 host cluster 中的对应 service 名字为 <code>$vClusterName-node-$hostClusterNodeName</code>。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">svc</span> <span class="string">--context</span> <span class="string">kind-vcluster</span> <span class="string">-n</span> <span class="string">vcluster-my-vcluster</span> <span class="string">my-vcluster-node-vcluster-worker3</span></span><br><span class="line"><span class="string">NAME</span>                                <span class="string">TYPE</span>        <span class="string">CLUSTER-IP</span>      <span class="string">EXTERNAL-IP</span>   <span class="string">PORT(S)</span>     <span class="string">AGE</span></span><br><span class="line"><span class="string">my-vcluster-node-vcluster-worker3</span>   <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.118</span><span class="number">.228</span>   <span class="string">&lt;none&gt;</span>        <span class="number">10250</span><span class="string">/TCP</span>   <span class="string">3h54m</span></span><br></pre></td></tr></table></figure>
+
+<p>在 virtual cluster 中创建 k8s 对象：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在 virtual cluster 创建 namespace</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">create</span> <span class="string">ns</span> <span class="string">demo-nginx</span></span><br><span class="line"><span class="string">namespace/demo-nginx</span> <span class="string">created</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建 Deployment</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">create</span> <span class="string">deployment</span> <span class="string">nginx-deployment</span> <span class="string">-n</span> <span class="string">demo-nginx</span> <span class="string">--image=nginx</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 在 virtual cluster 上创建出了 pod</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">pod</span> <span class="string">-n</span> <span class="string">demo-nginx</span> <span class="string">-o</span> <span class="string">wide</span></span><br><span class="line"><span class="string">NAME</span>                                <span class="string">READY</span>   <span class="string">STATUS</span>    <span class="string">RESTARTS</span>   <span class="string">AGE</span>   <span class="string">IP</span>           <span class="string">NODE</span>                     <span class="string">NOMINATED</span> <span class="string">NODE</span>   <span class="string">READINESS</span> <span class="string">GATES</span></span><br><span class="line"><span class="string">nginx-deployment-66fb7f764c-dn59g</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">11m</span>   <span class="number">10.244</span><span class="number">.0</span><span class="number">.7</span>   <span class="string">vcluster-control-plane</span>   <span class="string">&lt;none&gt;</span>           <span class="string">&lt;none&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 由于 pod 调度了 host cluster 新节点，在 virtual cluster 中可以看到新的 k8s node，k8s node 为刚刚创建</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">node</span></span><br><span class="line"><span class="string">NAME</span>               <span class="string">STATUS</span>   <span class="string">ROLES</span>    <span class="string">AGE</span>     <span class="string">VERSION</span></span><br><span class="line"><span class="string">vcluster-worker2</span>   <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>   <span class="string">2m45s</span>   <span class="string">v1.27.3</span></span><br><span class="line"><span class="string">vcluster-worker3</span>   <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>   <span class="string">57m</span>     <span class="string">v1.27.3</span></span><br></pre></td></tr></table></figure>
+<p>在 host cluster 中看到如下对象：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在 host cluster 上并没有对应的 namespace demo-nginx</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">ns</span> <span class="string">--context</span> <span class="string">kind-vcluster</span> <span class="string">demo-nginx</span></span><br><span class="line"><span class="string">Error</span> <span class="string">from</span> <span class="string">server</span> <span class="string">(NotFound):</span> <span class="string">namespaces</span> <span class="string">&quot;demo-nginx&quot;</span> <span class="string">not</span> <span class="string">found</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 在 host cluster 上并没有对应的 deployment nginx-deployment</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">deploy</span> <span class="string">-A</span> <span class="string">--context</span> <span class="string">kind-vcluster</span></span><br><span class="line"><span class="string">NAMESPACE</span>            <span class="string">NAME</span>                       <span class="string">READY</span>   <span class="string">UP-TO-DATE</span>   <span class="string">AVAILABLE</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">ingress-nginx</span>        <span class="string">ingress-nginx-controller</span>   <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">90m</span></span><br><span class="line"><span class="string">kube-system</span>          <span class="string">coredns</span>                    <span class="number">2</span><span class="string">/2</span>     <span class="number">2</span>            <span class="number">2</span>           <span class="string">91m</span></span><br><span class="line"><span class="string">local-path-storage</span>   <span class="string">local-path-provisioner</span>     <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">91m</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 但在 host cluster 上却看到了对应的 pod，位于 vcluster 统一的 namespace vcluster-my-vcluster 之下</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">pod</span> <span class="string">-n</span> <span class="string">vcluster-my-vcluster</span> <span class="string">--context</span> <span class="string">kind-vcluster</span></span><br><span class="line"><span class="string">NAME</span>                                                           <span class="string">READY</span>   <span class="string">STATUS</span>    <span class="string">RESTARTS</span>      <span class="string">AGE</span></span><br><span class="line"><span class="string">coredns-68559449b6-jg2bs-x-kube-system-x-my-vcluster</span>           <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">1</span> <span class="string">(26m</span> <span class="string">ago)</span>   <span class="string">57m</span></span><br><span class="line"><span class="string">my-vcluster-0</span>                                                  <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">1</span> <span class="string">(26m</span> <span class="string">ago)</span>   <span class="string">86m</span></span><br><span class="line"><span class="string">nginx-deployment-66fb7f764c-sffqt-x-demo-nginx-x-my-vcluster</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>             <span class="string">2m22s</span></span><br></pre></td></tr></table></figure>
+<p>可以看到仅 pod 在 host cluster 中同步存在，而 namespace、deployment 这些对象仅存在于 virtual cluster 中。在 virtual cluster 中创建的多个不同 namespace pod 仅会存在于 host cluster 的同一个 namespace 下。</p>
+<h2 id="验证-service"><a href="#验证-service" class="headerlink" title="验证 service"></a>验证 service</h2><p>在 virtual cluster 中创建 service 对象：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">kubernetes.io/cluster-service:</span> <span class="string">&quot;true&quot;</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">ipFamilies:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">IPv4</span></span><br><span class="line">  <span class="attr">ipFamilyPolicy:</span> <span class="string">SingleStack</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">80</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx-deployment</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">ClusterIP</span></span><br></pre></td></tr></table></figure>
+<p>在 virtual cluster 中包含如下的 Service 对象：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">svc</span> <span class="string">-n</span> <span class="string">demo-nginx</span></span><br><span class="line"><span class="string">NAME</span>    <span class="string">TYPE</span>        <span class="string">CLUSTER-IP</span>     <span class="string">EXTERNAL-IP</span>   <span class="string">PORT(S)</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">nginx</span>   <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.239</span><span class="number">.53</span>   <span class="string">&lt;none&gt;</span>        <span class="number">80</span><span class="string">/TCP</span>    <span class="string">2m11s</span></span><br></pre></td></tr></table></figure>
+<p>在 host cluster 中会同步创建如下的 Service 对象，内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">annotations:</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-name:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-uid:</span> <span class="string">5ab7aa9c-90b6-46f9-a162-9ea9ca9826f3</span></span><br><span class="line">  <span class="attr">creationTimestamp:</span> <span class="string">&quot;2023-11-28T09:32:22Z&quot;</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/label-my-vcluster-x-a172cedcae:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/label-my-vcluster-x-d9125f8911:</span> <span class="string">&quot;true&quot;</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/managed-by:</span> <span class="string">my-vcluster</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-x-demo-nginx-x-my-vcluster</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">vcluster-my-vcluster</span></span><br><span class="line">  <span class="attr">ownerReferences:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line">    <span class="attr">controller:</span> <span class="literal">false</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">my-vcluster</span></span><br><span class="line">    <span class="attr">uid:</span> <span class="string">463a503e-d889-49a7-94e0-0cba5299dd47</span></span><br><span class="line">  <span class="attr">resourceVersion:</span> <span class="string">&quot;12344&quot;</span></span><br><span class="line">  <span class="attr">uid:</span> <span class="string">fc9ea383-996e-471c-9c27-ee1c22fec7a3</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">clusterIP:</span> <span class="number">10.96</span><span class="number">.239</span><span class="number">.53</span></span><br><span class="line">  <span class="attr">clusterIPs:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="number">10.96</span><span class="number">.239</span><span class="number">.53</span></span><br><span class="line">  <span class="attr">internalTrafficPolicy:</span> <span class="string">Cluster</span></span><br><span class="line">  <span class="attr">ipFamilies:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">IPv4</span></span><br><span class="line">  <span class="attr">ipFamilyPolicy:</span> <span class="string">SingleStack</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http</span></span><br><span class="line">    <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line">    <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">    <span class="attr">targetPort:</span> <span class="number">80</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/label-my-vcluster-x-a172cedcae:</span> <span class="string">nginx-deployment</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/managed-by:</span> <span class="string">my-vcluster</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line">  <span class="attr">sessionAffinity:</span> <span class="string">None</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">ClusterIP</span></span><br><span class="line"><span class="attr">status:</span></span><br><span class="line">  <span class="attr">loadBalancer:</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到 host cluster 中的 service 的 ClusterIP 跟 virutal cluster 一致，但 spec.selector 字段已经被 syncer 修改，以便可以匹配到正确的 pod。</p>
+<h2 id="验证-Ingress"><a href="#验证-Ingress" class="headerlink" title="验证 Ingress"></a>验证 Ingress</h2><p>默认情况下 Ingress 不会同步到 host cluster，需要通过开关的方式启动。创建文件 values.yaml，内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">sync:</span></span><br><span class="line">  <span class="attr">ingresses:</span></span><br><span class="line">    <span class="attr">enabled:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<p>执行 <code>vcluster create my-vcluster --upgrade -f values.yaml</code> 即可修改现在 vcluster 集群配置。</p>
+<p>在 virtual cluster 中创建如下的 Ingress 对象：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">networking.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Ingress</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">rules:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">host:</span> <span class="string">nginx.aa.com</span></span><br><span class="line">      <span class="attr">http:</span></span><br><span class="line">        <span class="attr">paths:</span></span><br><span class="line">          <span class="bullet">-</span> <span class="attr">backend:</span></span><br><span class="line">              <span class="attr">service:</span></span><br><span class="line">                <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">                <span class="attr">port:</span></span><br><span class="line">                  <span class="attr">number:</span> <span class="number">80</span></span><br><span class="line">            <span class="attr">path:</span> <span class="string">/</span></span><br><span class="line">            <span class="attr">pathType:</span> <span class="string">ImplementationSpecific</span></span><br></pre></td></tr></table></figure>
+<p>查看 host cluster 中的 Ingress 信息如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">ingress</span> <span class="string">--context</span> <span class="string">kind-vcluster</span> <span class="string">-n</span> <span class="string">vcluster-my-vcluster</span> <span class="string">-o</span> <span class="string">yaml</span> <span class="string">nginx-x-demo-nginx-x-my-vcluster</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">networking.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Ingress</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">annotations:</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-name:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-uid:</span> <span class="string">4b8034a6-1513-4ccd-b80a-66807d862b4e</span></span><br><span class="line">  <span class="attr">creationTimestamp:</span> <span class="string">&quot;2023-11-28T10:07:52Z&quot;</span></span><br><span class="line">  <span class="attr">generation:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/label-my-vcluster-x-a172cedcae:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/managed-by:</span> <span class="string">my-vcluster</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-x-demo-nginx-x-my-vcluster</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">vcluster-my-vcluster</span></span><br><span class="line">  <span class="attr">ownerReferences:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line">    <span class="attr">controller:</span> <span class="literal">false</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">my-vcluster</span></span><br><span class="line">    <span class="attr">uid:</span> <span class="string">463a503e-d889-49a7-94e0-0cba5299dd47</span></span><br><span class="line">  <span class="attr">resourceVersion:</span> <span class="string">&quot;16292&quot;</span></span><br><span class="line">  <span class="attr">uid:</span> <span class="string">1d0de02b-5aad-4858-a8cf-2caa345ca85b</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">rules:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">host:</span> <span class="string">nginx.aa.com</span></span><br><span class="line">    <span class="attr">http:</span></span><br><span class="line">      <span class="attr">paths:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">backend:</span></span><br><span class="line">          <span class="attr">service:</span></span><br><span class="line">            <span class="attr">name:</span> <span class="string">nginx-x-demo-nginx-x-my-vcluster</span></span><br><span class="line">            <span class="attr">port:</span></span><br><span class="line">              <span class="attr">number:</span> <span class="number">80</span></span><br><span class="line">        <span class="attr">path:</span> <span class="string">/</span></span><br><span class="line">        <span class="attr">pathType:</span> <span class="string">ImplementationSpecific</span></span><br><span class="line"><span class="attr">status:</span></span><br><span class="line">  <span class="attr">loadBalancer:</span></span><br><span class="line">    <span class="attr">ingress:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">hostname:</span> <span class="string">localhost</span></span><br></pre></td></tr></table></figure>
+<p>可以看到 Ingress 中对应的 Service 名字已经修改了 host cluster 中对应的 Service 名字。</p>
+<h2 id="销毁"><a href="#销毁" class="headerlink" title="销毁"></a>销毁</h2><p>在使用完成后执行如下命令即可销毁 virtual cluster：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">切换本地的 context</span></span><br><span class="line">vcluster disconnect</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">删除 vcluster</span></span><br><span class="line">vcluster delete my-vcluster</span><br></pre></td></tr></table></figure>
+
+<h1 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h1><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/vcluster-arch.png" alt="image.png"></p>
+<h2 id="组件"><a href="#组件" class="headerlink" title="组件"></a>组件</h2><p>整个架构中，有两大核心组件：k8s Control Plane 和 syncer。其中 StatefulSet my-vcluster 中容器 syncer，默认情况下在该容器中同时启动了 k3s 容器作为 vCluster 控制平面和 vCluster 的 syncer 进程。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">kubectl <span class="built_in">exec</span> -it --context kind-vcluster -n vcluster-my-vcluster my-vcluster-0 -- ps -ef</span></span><br><span class="line">Defaulted container &quot;syncer&quot; out of: syncer, vcluster (init)</span><br><span class="line">PID   USER     TIME  COMMAND</span><br><span class="line">    1 root      2:57 /vcluster start --name=my-vcluster --kube-config=/data/k3s</span><br><span class="line">   17 root     18:35 /k3s-binary/k3s server</span><br><span class="line">   46 root      0:00 ps -ef</span><br></pre></td></tr></table></figure>
+
+<h3 id="controller-plane"><a href="#controller-plane" class="headerlink" title="controller plane"></a>controller plane</h3><p>控制平面默认使用 k3s，存储使用 sqllite，也可以使用 etcd、mysql、postgresql。k8s 发行版也可以使用 k0s、Vanilla（标准 k8s）、第三方镜像等。控制平面由如下几个组件组成：</p>
+<ol>
+<li>k8s apiserver。</li>
+<li>数据存储，比如 sqllite、etcd 等。</li>
+<li>kube-controller-manager</li>
+<li>kube-scheduler：可选组件，默认使用 host cluster 调度器。</li>
+</ol>
+<blockquote>
+<p>在 Pro 版本中，允许控制面跟 pod 部署在不同的 host cluster。</p>
+</blockquote>
+<h3 id="syncer"><a href="#syncer" class="headerlink" title="syncer"></a>syncer</h3><p>virtual cluster 中并不包含实际的计算、存储和网络资源，syncer 的职责为将对象从 virtual cluster 同步到 host cluster，也有少部分对象需要从 host cluster 同步到 virtual cluster。<br>vCluster 将 k8s 对象划分为 low level 和 high level，其中 high level 的对象仅存在于 virtual cluster 中，比如 Deployment、CRD 等对象。low level 的对象会通过 syncer 模块同步到 host cluster 上，包括 Pod、ConfigMap、Secret 等。low level 的对象在 virutal cluster 为多个 namespace，但均会映射到 host cluster 的一个 namespace 下。另外，vCluster 也支持将 virtual cluster 的多个 namespace 映射到 host cluster 的多个 namespace，该特性目前处于 alpha 状态。<br>vCluster 可以通过<a target="_blank" rel="noopener" href="https://www.vcluster.com/docs/syncer/other_resources/config_syntax">配置的方式</a>来定制资源的同步，更复杂的同步规则提供了<a target="_blank" rel="noopener" href="https://www.vcluster.com/docs/advanced-topics/plugins-overview">插件机制</a>实现。<br>vCluster 默认支持的同步资源列表：<a target="_blank" rel="noopener" href="https://www.vcluster.com/docs/syncer/core_resources">https://www.vcluster.com/docs/syncer/core_resources</a>。</p>
+<p>已经创建完成的 syncer 配置，可以通过 <code>vcluster create my-vcluster --upgrade -f values.yaml</code> 的方式修改，该命令会调用 helm update，helm update 命令最终会修改 StatefulSet syncer 的配置，并触发 pod 的重启。</p>
+<h4 id="k8s-node-同步"><a href="#k8s-node-同步" class="headerlink" title="k8s node 同步"></a>k8s node 同步</h4><p>支持多种 node 的同步行为，通过修改 syncer 的启动参数：</p>
+<ol>
+<li>Fake Node：默认行为。根据 pod 中的 spec.nodeName 创建 Fake Node。Fake Node 为 syncer 服务自动创建。如果没有 pod 调度到 Fake Node 上，则 Fake Node 会自动删除。</li>
+<li>Real Node：根据 pod 中的 spec.nodeName 创建 Real Node，Real Node 的信息从 host cluster 同步。如果没有 pod 调度到 Real Node 上，则 Real Node 会自动删除。</li>
+<li>Real Node All：同步 host cluster 的所有 node 到 virtual cluster。如果要使用 DaemonSet，需要使用该模式。</li>
+<li>Real Nodes Label Selector：仅同步 label selector 匹配的 host node 到 virtual cluster 中。</li>
+<li>Real Nodes + Label Selector：仅同步包含在 pod spec.nodeName 且 Label selector 可以选中的 host cluster node 到 virtual cluster 中。</li>
+</ol>
+<h2 id="pod-调度"><a href="#pod-调度" class="headerlink" title="pod 调度"></a>pod 调度</h2><p>默认情况下，virtual cluster 中的 pod 调度会使用 host cluster 的调度，但存在如下的问题：</p>
+<ol>
+<li>在 virtual cluster node 上的 label 对于 pod 调度不会生效。</li>
+<li>drait、trait 命令对于 virtual cluster 上的 pod 没有影响。</li>
+<li>virtual cluster 中使用自定义调度器不生效。</li>
+</ol>
+<p>基于上述限制，vCluster 支持如下两种方案：</p>
+<ol>
+<li>支持在 virtual cluster 中使用独立的调度器。可以给 virtual cluster 上的 node 增加标签、污点等信息，pod 的调度在 virtual cluster 中的调度器实现，syncer 组件仅将已经调度完成的 pod 同步到 host cluster。</li>
+<li>仍然复用 host cluster 调度器，但做了部分功能的增强：在 syncer 服务中指定仅同步部分 host node 到 virtual cluster 中，这样 pod 就仅会调度到 host cluster 的特定 node 上。</li>
+</ol>
+<h2 id="网络"><a href="#网络" class="headerlink" title="网络"></a>网络</h2><p>virutal cluster 中无独立的 pod 网络和 service 网络，完全复用 host cluster 的网络。</p>
+<h3 id="Service-网络"><a href="#Service-网络" class="headerlink" title="Service 网络"></a>Service 网络</h3><ol>
+<li>会从 virtual cluster 同步到 host cluster，两者的 clusterip 一致。</li>
+<li>允许将一些 host cluster 中的 service 同步到 virtual cluster 中，同时指定service 的名字。</li>
+<li>允许将 virtual cluster 中的 service 同步到 host cluster 中，同时指定service 的名字。</li>
+</ol>
+<h3 id="Ingress-网络"><a href="#Ingress-网络" class="headerlink" title="Ingress 网络"></a>Ingress 网络</h3><p>允许将 virtual cluster 中的 Ingress 同步到 host cluster，以便复用 host cluster 中的 Ingress Controller。</p>
+<h3 id="DNS-解析"><a href="#DNS-解析" class="headerlink" title="DNS 解析"></a>DNS 解析</h3><p>在 virtual cluster 中部署了单独的 coredns 组件，默认情况下，在 vritual cluster 中的域名仅能解析内部的域名，不能解析 host cluster 上的域名。可以通过开关的方式，将 virtual cluster 中的域名解析转发到 host cluster 的 coredns。</p>
+<blockquote>
+<p>在 PRO 版本中，coredns 组件可以集成到 syncer 组件内部，以便节省资源。</p>
+</blockquote>
+<h3 id="NetworkPolicy"><a href="#NetworkPolicy" class="headerlink" title="NetworkPolicy"></a>NetworkPolicy</h3><p>默认情况下，vcluster 中会忽略 virtual cluster 中的 NetworkPolicy 资源。可以通过开关的方式打开该配置，即可将 NetworkPolicy 规则同步到 host cluster。</p>
+<h2 id="存储"><a href="#存储" class="headerlink" title="存储"></a>存储</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/vcluster-pv.png" alt="image.png"><br>默认情况下，host StorageClass 不会同步到 vc，可以通过开关的方式打开同步。<br>默认情况下，pv 不会从 vc 同步到 host cluster，可以通过开关的方式打开。</p>
+<h2 id="可观测性"><a href="#可观测性" class="headerlink" title="可观测性"></a>可观测性</h2><h3 id="monitoring"><a href="#monitoring" class="headerlink" title="monitoring"></a>monitoring</h3><p>metrics-server 用来监控 k8s 的 Deployment、StatefulSet 等对象，metrics-server 可以复用 host cluster 中的，但需要启用 metrics server proxy 功能。也可以在 vc 中单独部署一套 metrics server。<br>在 vc 集群中，由于每个 k8s node 的 ip 地址为 host cluster 中的 service clusterip，在 vc 中网络是可达的，可以获取到对应的监控信息。</p>
+<h3 id="logging"><a href="#logging" class="headerlink" title="logging"></a>logging</h3><p>需要用到Hostpath Mapper组件，该组件为 DaemonSet 的形式。后续即可以部署 loki 等组件。</p>
+<h2 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h2><h3 id="隔离模式"><a href="#隔离模式" class="headerlink" title="隔离模式"></a>隔离模式</h3><p>在启动的时候指定<code>--isolate</code>，在该模式下对 workload 做了多种限制。</p>
+<ol>
+<li>对 vcluster pod 的 Pod Security 做限制，不符合规范的 pod 不会同步到 host cluster。</li>
+<li>可以对 vc 中 pod 的总资源量做限制。</li>
+<li>在 host cluster 上通过 NetworkPolicy 做隔离。</li>
+</ol>
+<h2 id="virtual-cluster-集群的创建"><a href="#virtual-cluster-集群的创建" class="headerlink" title="virtual cluster 集群的创建"></a>virtual cluster 集群的创建</h2><p>目前仅能通过 vcluster cli、helm 的方式来创建，底层均为 helm chart 的方式来管理，缺少服务化功能。</p>
+<h2 id="virtual-cluster-集群对外暴露方法"><a href="#virtual-cluster-集群对外暴露方法" class="headerlink" title="virtual cluster 集群对外暴露方法"></a>virtual cluster 集群对外暴露方法</h2><h3 id="获取-kubeconfig"><a href="#获取-kubeconfig" class="headerlink" title="获取 kubeconfig"></a>获取 kubeconfig</h3><h4 id="vcluster-connect-命令"><a href="#vcluster-connect-命令" class="headerlink" title="vcluster connect 命令"></a>vcluster connect 命令</h4><p>该命令可以修改本地的 kubeconfig 文件，并将 context 切换为 virtual cluster context。默认为 virutual cluster 的管理员权限，可以指定使用特定的 ServiceAccount。</p>
+<h4 id="host-cluster-secret-中获取到-kubeconfig"><a href="#host-cluster-secret-中获取到-kubeconfig" class="headerlink" title="host cluster secret 中获取到 kubeconfig"></a>host cluster secret 中获取到 kubeconfig</h4><p>在 host cluster 中，在 vc 的 namespace 下，存在一个以 <code>vc-</code> 开头的 Secret，该 Secret 中保存了 kubeconfig 完整信息。</p>
+<h3 id="vc-集群中的-apiserver-的暴露地址"><a href="#vc-集群中的-apiserver-的暴露地址" class="headerlink" title="vc 集群中的 apiserver 的暴露地址"></a>vc 集群中的 apiserver 的暴露地址</h3><p>可以在 syncer 启动的时候指定获取的 kubeconfig 中的 endpoint 地址。endpoint 地址即为 vc 集群中的 kube-apiserver 的地址，该 kube-apiserver 的地址可以通过 host cluster 中的 Ingress、LoadBalancer Service、NodePort Service 等方式对外暴露。</p>
+<h2 id="高可用设计"><a href="#高可用设计" class="headerlink" title="高可用设计"></a>高可用设计</h2><h3 id="control-plane-高可用"><a href="#control-plane-高可用" class="headerlink" title="control plane 高可用"></a>control plane 高可用</h3><p>k3s 可以支持高可用架构，在创建 vc 的时候通过指定的副本的方式来设置高可用。其他的 k8s 发行版同样类似的实现。</p>
+<h3 id="备份与恢复"><a href="#备份与恢复" class="headerlink" title="备份与恢复"></a>备份与恢复</h3><p>vCluster 本身并没有提供对于 vc 集群的数据备份与恢复功能，可以通过通用的 velero 方式实现备份与恢复功能。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>未做网络隔离，容器网络和 service 网络仍然在同一个平面，要想相互隔离，必须使用 NetworkPolicy。</p>
+<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><ol>
+<li>获取 helm chart 到本地</li>
+</ol>
+<pre><code class="shell">helm repo add lofts https://charts.loft.sh/
+helm fetch lofts/vcluster
+``
+</code></pre>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/k8s-CSI/" rel="prev" title="k8s CSI">
+                  <i class="fa fa-angle-left"></i> k8s CSI
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder"></span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">231</span>
+          <span class="site-state-item-count">232</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,129 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/time-wait/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/time-wait/" class="post-title-link" itemprop="url">TCP TIME_WAIT</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-12-17 23:02:09" itemprop="dateCreated datePublished" datetime="2018-12-17T23:02:09+00:00">2018-12-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_state.png"></p>
+<h2 id="time-wait状态"><a href="#time-wait状态" class="headerlink" title="time_wait状态"></a>time_wait状态</h2><p>客户端在收到服务器端发送的FIN报文后发送ACK报文，并进入TIME_WAIT状态，等待2MSL（最大报文生存时间）后才断开连接，MSL在Linux中值为30s。</p>
+<p>之所以设计time_wait主要用来解决以下异常场景：</p>
+<ol>
+<li>确保对端处于关闭状态。主动断开连接一段发送最后一个ack报文，如果丢失，被动断开连接一端会重新发送fin报文。如果主动断开连接一方直接关闭，被动方会一直处于last-ack状态。</li>
+<li>防止上一个连接中的包影响新的连接，上一个连接中的包在2MSL中一定可以到达对端。</li>
+</ol>
+<p>过多的危害：在客户端占用过多的端口号</p>
+<h2 id="time-wait过多的解决思路"><a href="#time-wait过多的解决思路" class="headerlink" title="time_wait过多的解决思路"></a>time_wait过多的解决思路</h2><ol>
+<li>将<code>net.ipv4.tcp_max_tw_buckets</code>值调小，当TIME_WAIT的数量到达该值后，TIME_WAIT状态会被清除，相当于没有遵守tcp协议</li>
+<li>修改TCP_TIMEWAIT_LEN的值，但需要重新编译内核，非常不建议修改</li>
+<li>打开tcp_tw_recycle和tcp_timestamps</li>
+<li>打开tcp_tw_reuse和tcp_timestamps</li>
+<li>采用长连接</li>
+</ol>
+<p>tcp有个tcp时间戳选项，第一个是发送方的当前时钟时间戳（4个字节），第二个4字节为从远程主机接收到的最新时间戳</p>
+<h2 id="相关内核参数"><a href="#相关内核参数" class="headerlink" title="相关内核参数"></a>相关内核参数</h2><h3 id="net-ipv4-tcp-max-tw-buckets"><a href="#net-ipv4-tcp-max-tw-buckets" class="headerlink" title="net.ipv4.tcp_max_tw_buckets"></a><code>net.ipv4.tcp_max_tw_buckets</code></h3><blockquote>
+<p>(integer; default: see below; since Linux 2.4) The maximum number of sockets in TIME_WAIT state allowed in the system.  This limit exists only to prevent simple denial-of-service attacks.  The default value of NR_FILE*2 is adjusted depending on the memory in the system.  If this number is exceeded, the socket is closed and a warning is printed.</p>
+</blockquote>
+<p>系统中允许的 time_wait 数量的最大值，当达到最大值后，新的连接会被拒绝。</p>
+<h3 id="net-ipv4-tcp-tw-timeout"><a href="#net-ipv4-tcp-tw-timeout" class="headerlink" title="net.ipv4.tcp_tw_timeout"></a><code>net.ipv4.tcp_tw_timeout</code></h3><p>time_wait 的超时时间，默认为 2MSL，即 60s，在大部分的 linux 系统下该值没法修改，仅在某些 OS 系统下可用。比如：<a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/ecs/user-guide/change-the-tcp-time-wait-timeout-period">Alibaba Cloud Linux 修改TCP TIME-WAIT超时时间</a>。</p>
+<h3 id="tcp-timestamp"><a href="#tcp-timestamp" class="headerlink" title="tcp_timestamp"></a>tcp_timestamp</h3><p>用来控制tcp option字段，发送方在发送报文时会将当前时钟的时间值放入到时间戳字段。</p>
+<h3 id="net-ipv4-tcp-tw-reuse"><a href="#net-ipv4-tcp-tw-reuse" class="headerlink" title="net.ipv4.tcp_tw_reuse"></a><code>net.ipv4.tcp_tw_reuse</code></h3><blockquote>
+<p>(Boolean; default: disabled; since Linux 2.4.19&#x2F;2.6) Allow to reuse TIME_WAIT sockets for new connections when it is safe from protocol viewpoint.  It should not be changed without advice&#x2F;request of technical experts.</p>
+</blockquote>
+<p>tcp_tw_reuse意思为主动关闭连接的一方可以复用之前的time_wait状态的连接。</p>
+<p>复用连接后，这条连接的时间更改为当前时间，延迟数据到达时，延迟数据时间小于新连接时间。</p>
+<p>需要连接双方都打开timestamp选项。</p>
+<p>该选项适用的范围为作为客户端主动断开连接，复用客户端的time_wait的状态，对服务端无影响。</p>
+<h3 id="net-ipv4-tcp-tw-recycle"><a href="#net-ipv4-tcp-tw-recycle" class="headerlink" title="net.ipv4.tcp_tw_recycle"></a><code>net.ipv4.tcp_tw_recycle</code></h3><p>内核会在一个RTO的时间内快速销毁掉time_wait状态，RTO时间为数据包重传的超时时间，该时间通过RTT动态计算，远小于2MSL。</p>
+<p>需要连接双方都打开timestamp选项。</p>
+<p>适用场景为服务端主动断开连接，time_wait状态位于服务端，服务端适用该选项快速回收time_wait状态的连接。</p>
+<p><em>弊端</em>：如果客户端在NAT网络中，如果配置了tcp_tw_recycle，可能会出现在一个RTO的时间内，只有一个客户端和自己连接成功的情况。</p>
+<p>4.10之后，Linux内核修改了时间戳生成机制，该选项已经抛弃。</p>
+<h2 id="In-Action"><a href="#In-Action" class="headerlink" title="In Action"></a>In Action</h2><p>解决time_wait状态过多的比较好的思路为采用http的keepalive功能。</p>
+<h3 id="nginx"><a href="#nginx" class="headerlink" title="nginx"></a>nginx</h3><p>nginx对于upstream，默认是使用http1.0协议的，要想启用keepalive，需要在location中增加</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">proxy_http_version 1.1;</span><br><span class="line">proxy_set_header Connection &quot;&quot;;</span><br></pre></td></tr></table></figure>
+
+<p>在upstream中增加keepalive参数，这里的参数含义为每个nginx worker连接所有后端的最大连接数。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keepalive 200;</span><br></pre></td></tr></table></figure>
+
+<p>如果keepalive连接过少，此时由于使用的是http1.1的协议，upstream端不会主动断开连接，nginx会主动断开连接，此时nginx端的time_wait就会过多，会占用端口号，导致nginx端没有端口号可以使用。</p>
+<h2 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.nosa.me/2014/12/18/%E5%85%B3%E4%BA%8E-nginx-upstream-keepalive-%E7%9A%84%E8%AF%B4%E6%98%8E/">关于 Nginx upstream keepalive 的说明
+</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.haproxy.com/blog/haproxy-and-http-errors-408-in-chrome/">HAProxy and HTTP errors 408 in Chrome</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzUxMDQxMDMyNg==&mid=2247484841&idx=1&sn=7e0923ea9204e126003e263dc8414261&chksm=f9022e90ce75a7865a985ddfb02016949b0c36a02f8fb805c957699ba64144682b9b40d58a1c&mpshare=1&scene=1&srcid=1212u1NkZyHItSo6HpPq7eer%23rd">被抛弃的tcp_recycle</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +342,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -320,7 +443,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -406,7 +529,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -507,7 +630,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -620,7 +743,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -733,7 +856,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -853,7 +976,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -1090,7 +1213,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -1170,7 +1293,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -1200,124 +1323,6 @@
 <li><a target="_blank" rel="noopener" href="https://blogs.oracle.com/java-platform-group/java-se-support-for-docker-cpu-and-memory-limits">Java SE support for Docker CPU and memory limits</a></li>
 <li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&mid=2651749434&idx=1&sn=92dcd59d05984eaa036e7fa804fccf20&chksm=bd12a5778a652c61f4a181c1967dbcf120dd16a47f63a5779fbf931b476e6e712e02d7c7e3a3&mpshare=1&scene=1&srcid=1115JtuwzXeezCv5UkmOcrFw%23rd">美团容器平台架构及容器技术实践</a></li>
 </ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/knowledge-share-6/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/knowledge-share-6/" class="post-title-link" itemprop="url">知识分享第6期</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-11-17 00:01:06" itemprop="dateCreated datePublished" datetime="2018-11-17T00:01:06+00:00">2018-11-17</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/leaves.jpeg"></p>
-<p>题图为公司楼下公园的杨树林。时光易逝弹指间，又到一年叶落时。</p>
-<h2 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h2><p>1.<a target="_blank" rel="noopener" href="https://github.com/hyperhq/runv">runV</a></p>
-<p>基于 hypervisor 的 OCI runtime</p>
-<p>2.<a target="_blank" rel="noopener" href="https://github.com/operator-framework/operator-sdk">operator-sdk</a></p>
-<p>operator机制利用CRD机制增强了kubernetes的灵活性，但operator的编写代码很多模式都是固定的，该项目提供了更高层次的抽象。</p>
-<p>3.<a target="_blank" rel="noopener" href="https://github.com/github/orchestrator">orchestrator</a></p>
-<p>用来管理mysql的集群拓扑和故障自动转移的工具。</p>
-<p>4.<a target="_blank" rel="noopener" href="https://github.com/TarsCloud/Tars">Tars</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/tars.png" alt="https://github.com/TarsCloud/Tars/blob/master/docs/images/tars_jiaohu.png"></p>
-<p>腾讯开源的RPC框架，在腾讯内部已经有多年的使用历史，目前支持多种语言。</p>
-<p>5.<a target="_blank" rel="noopener" href="https://github.com/yzprofile/ngx_http_dyups_module">ngx_http_dyups_module</a></p>
-<p>nginx module，可以提供Restful API的形式来动态修改upstream，而不用重新reload nginx。</p>
-<p>6.<a target="_blank" rel="noopener" href="https://github.com/alibaba/Dragonfly">Dragonfly</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/dragonfly.png" alt="https://github.com/alibaba/Dragonfly/raw/master/docs/images/logo/dragonfly-linear.png"></p>
-<p>阿里巴巴开源的基于P2P的容器镜像分发系统。</p>
-<p>7.<a target="_blank" rel="noopener" href="https://www.sonarqube.org/">SonarQube</a></p>
-<p>开源的代码检查和扫描工具，支持多种语言，并提供了友好的web界面用来查看分析结果。</p>
-<p>8.<a target="_blank" rel="noopener" href="https://www.chromium.org/quic">QUIC</a></p>
-<p>QUIC是Google开发的基于UDP的传输层协议，提供了像TCP一样的数据可靠性，但降低了数据的传输延时，并具有灵活的拥塞控制和流量控制。</p>
-<p>9.<a target="_blank" rel="noopener" href="http://openmessaging.cloud/">OpenMessaging</a></p>
-<p>阿里巴巴发起的分布式消息的应用开发标准，目前github上的star数还较少。</p>
-<p>10.<a target="_blank" rel="noopener" href="https://github.com/jpetazzo/nsenter">nsenter</a></p>
-<p>nsenter是一个命令行工具，用来进入到进程的linux namespace中。</p>
-<p>docker提供了exec命令可以进入到容器中，nsenter具有跟docker exec差不多的执行效果，但是更底层，特别是docker daemon进程异常的时候，nsenter的作用就显示出来了，因此可以用于排查线上的docker问题。</p>
-<h2 id="精彩文章"><a href="#精彩文章" class="headerlink" title="精彩文章"></a>精彩文章</h2><p>1.<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=MzIxNzYxMTU0OQ==&mid=2247486289&idx=1&sn=36950b6c33abbd0fd34dc04c231a1444&chksm=97f66723a081ee35c294fb332f5a530a29d5d69b39b6b77b128efd1260b2222bba622ec3c013&mpshare=1&scene=1&srcid=1026F66EebJRZ6bqonnBKBVi%23rd">为何程序员永远是高薪行业</a></p>
-<p>从记者的视角来了解阿里云的历史。</p>
-<p>2.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzIwODAzNTA2NQ==&mid=2651219445&idx=1&sn=2cf373851086355ae4ad26cd741480cf&chksm=8cfb8863bb8c01759b536ce04af5d04d8f149701626caa97e73a4012ba059584d63737cf8a3e&mpshare=1&scene=1&srcid=1029OVgZCxr32GyIFbfqKuEs%23rd">Harbor传奇（1）- Harbor前世</a></p>
-<p>3.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MjM5MDE0Mjc4MA==&mid=2651010202&idx=1&sn=742179879a25d526402a5b561b769ed1&chksm=bdbeccc98ac945df391f1b54f06495868a683002ac9fb71a80fc001e10344a991d36019ad1f4&mpshare=1&scene=1&srcid=1031sNSkczy7L8lzRXMgWXlv%23rd">蚂蚁金服 Service Mesh 实践探索</a></p>
-<p>4.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&mid=2651749434&idx=1&sn=92dcd59d05984eaa036e7fa804fccf20&chksm=bd12a5778a652c61f4a181c1967dbcf120dd16a47f63a5779fbf931b476e6e712e02d7c7e3a3&mpshare=1&scene=1&srcid=1115JtuwzXeezCv5UkmOcrFw%23rd">美团容器平台架构及容器技术实践</a></p>
-<p>美团内部的容器平台HULK已经从第一代的自研升级为第二代的基于kubernetes的容器管理平台。由此可以反映出kubernetes在容器管理领域的地位。</p>
-<p>5.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzAxOTAzMDEwMA==&mid=2652507564&idx=1&sn=cfedc29419e54987803197d8b975df62&chksm=8023e497b7546d81d4b68778c78cd3cc8fb7d0e746e385119c7b9e332ec599495da3017d0cda&mpshare=1&scene=1&srcid=1111C1S9Vcyb1bDDgLiCVIfS%23rd">Serverless：后端小程序的未来</a></p>
-<p>Serverless是未来软件架构的一个演进方向，包括BasS（Backend as a Service，后端即服务）和FaaS（Functions as a Service，函数即服务）两个组成部分。</p>
-<p>BaaS包括对象存储、数据库、消息队列等服务，并以API的形式提供应用依赖的后端服务。</p>
-<p>FaaS中的运行是通过事件触发的方式，代码执行完成后即运行结束，因此代码必须是无状态的。FaaS平台负责服务的自动扩容，并可做到按照服务的使用资源付费，以节省大量开支。</p>
-<p>Serverless给开发人员带来了非常大的便利性，但同时也软件跟云平台绑定特别紧密。</p>
-<h2 id="图书"><a href="#图书" class="headerlink" title="图书"></a>图书</h2><p>1.《<a target="_blank" rel="noopener" href="https://www.amazon.cn/dp/B07J34BKTL">奈飞文化手册:“硅谷重要文件”的深度解读</a>》</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/netflix_powerful.jpg" alt="https://images-na.ssl-images-amazon.com/images/I/51UmLKXW9%2BL._SX366_BO1,204,203,200_.jpg"></p>
-<p>Netflix公司的技术文化一直非常被业界推崇，可以从<a target="_blank" rel="noopener" href="https://netflix.github.io/">Netflix OSS</a>已经开源的软件项目，很多的开源项目在社区也有不错的影响力，本书值得每一位技术从业者一读。</p>
-<h2 id="精彩句子"><a href="#精彩句子" class="headerlink" title="精彩句子"></a>精彩句子</h2><blockquote>
-<p>我们要求大家做出的任何举动，出发点都是以对客户和公司最有利为出发点，而不是试图证明自己正确。</p>
-</blockquote>
-<p>- 奈飞文化手册:“硅谷重要文件”的深度解读</p>
 
       
     </div>

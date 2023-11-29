@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">231</span>
+          <span class="site-state-item-count">232</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,132 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/conntrack/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/conntrack/" class="post-title-link" itemprop="url">conntrack介绍</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2020-02-13 23:51:16" itemprop="dateCreated datePublished" datetime="2020-02-13T23:51:16+00:00">2020-02-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/Netfilter-packet-flow.svg">
+
+<p>conntrack是netfilter提供的连接跟踪机制，允许内核识别出数据包属于哪个连接。是iptables实现状态匹配(-m state)以及nat的基础，由单独的内核模块nf_conntrack实现。</p>
+<p>conntrack在图中有两处，一处位于prerouting，一处位于output。主机自身进程产生的数据包会经过output链的conntrack，主机的网络设备接收到的数据包会通过prerouting链的conntrack。</p>
+<p>每个通过conntrack的数据包，内核会判断是否为新的连接。如果是新的连接，则在连接跟踪表中插入一条记录。如果是已有连接，会更新连接跟踪表中的记录。</p>
+<p>需要特别注意的是，conntrack并不会修改数据包，如dnat、snat，而仅仅是维护连接跟踪表。</p>
+<h2 id="连接跟踪表的内容"><a href="#连接跟踪表的内容" class="headerlink" title="连接跟踪表的内容"></a>连接跟踪表的内容</h2><p><code>/proc/net/nf_conntrack</code>可以看到连接跟踪表的所有内容，通过hash表来实现。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ipv4     2 tcp      6 117 TIME_WAIT src=10.45.4.124 dst=10.45.8.10 sport=36903 dport=8080 src=10.45.8.10 dst=10.45.4.124 sport=8080 dport=36903 [ASSURED] mark=0 zone=0 use=2</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>117: 该连接的生存时间，每个连接都有一个timeout值，可以通过内核参数进行设置，如果超过该时间还没有报文到达，该连接将会删除。如果有新的数据到达，该计数会被重置。</li>
+<li>TIME_WAIT: 当前该连接的最新状态</li>
+</ul>
+<h2 id="涉及到的内核参数"><a href="#涉及到的内核参数" class="headerlink" title="涉及到的内核参数"></a>涉及到的内核参数</h2><ul>
+<li><code>net.netfilter.nf_conntrack_buckets</code>: 用来设置hash表的大小</li>
+<li><code>net.netfilter.nf_conntrack_max</code>: 用来设置连接跟踪表的数据条数上限</li>
+</ul>
+<h2 id="iptables与conntrack的关系"><a href="#iptables与conntrack的关系" class="headerlink" title="iptables与conntrack的关系"></a>iptables与conntrack的关系</h2><p>iptables使用<code>-m state</code>模块来从连接跟踪表查找数据包的状态，上面例子中的<code>TIME_WAIT</code>即为连接跟踪表中的状态，但这些状态对应到iptable中就只有五种状态。特别需要注意的是，这五种状态是跟具体的协议是tcp、udp无关的。</p>
+<table>
+<thead>
+<tr>
+<th>状态</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>NEW</td>
+<td>匹配连接的第一个包</td>
+</tr>
+<tr>
+<td>ESTABLISHED</td>
+<td>NEW状态后，如果对端有回复包，此时连接状态为NEW</td>
+</tr>
+<tr>
+<td>RELATED</td>
+<td>不是太好理解，当已经有一个状态为ESTABLISHED连接后，如果又产生了一个新的连接并且跟此时关联的，那么该连接就是RELATED状态的。对于ftp协议而言，有控制连接和数据连接，控制连接要先建立为ESTABLISHED，数据连接就变为控制连接的RELATED。那么conntrack怎么能够识别到两个连接是有关联的呢，即能够识别出协议相关的内容，这就需要通过扩展模块来完成了，比如ftp就需要nf_conntrack_ftp</td>
+</tr>
+<tr>
+<td>INVALID</td>
+<td>无法识别的或者有状态的数据包</td>
+</tr>
+<tr>
+<td>UNTRACKED</td>
+<td>匹配带有NOTRACK标签的数据包，raw表可以将数据包标记为NOTRACK，这种数据包的连接状态为NOTRACK</td>
+</tr>
+</tbody></table>
+<h2 id="conntrack-tools"><a href="#conntrack-tools" class="headerlink" title="conntrack-tools"></a>conntrack-tools</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 查看连接跟踪表</span><br><span class="line">conntrack -L</span><br></pre></td></tr></table></figure>
+
+<h2 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://opengers.github.io/openstack/openstack-base-netfilter-framework-overview/">云计算底层技术-netfilter框架研究</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +345,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -360,7 +486,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -522,7 +648,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -619,7 +745,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -720,7 +846,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -830,7 +956,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -908,7 +1034,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -1013,7 +1139,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -1146,7 +1272,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
+      <time title="Modified: 2023-11-29 12:29:46" itemprop="dateModified" datetime="2023-11-29T12:29:46+00:00">2023-11-29</time>
     </span>
 
   
@@ -1165,93 +1291,6 @@
 <p>另外还需要两个rpm包：kernel-debuginfo-3.10.0-957.el7.x86_64.rpm 和 kernel-debuginfo-common-x86_64-3.10.0-957.el7.x86_64.rpm，需要关注下操作系统的内核版本，这两个rpm包可以通过搜索引擎找到。</p>
 <p>下到包后即可执行<code>rpm -ivh *.rpm</code>的方式来安装rpm包。</p>
 <p>在机器上执行<code>crash /usr/lib/debug/lib/modules/3.10.0-957.el7.x86_64/vmlinux /var/crash/xx/vmcore</code>进行debug，可以输入<code>bt</code>命令来查看栈信息。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/go-mod/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/go-mod/" class="post-title-link" itemprop="url">go mod使用</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2019-09-18 11:39:13" itemprop="dateCreated datePublished" datetime="2019-09-18T11:39:13+00:00">2019-09-18</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-11-23 14:58:11" itemprop="dateModified" datetime="2023-11-23T14:58:11+00:00">2023-11-23</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>go mod从1.11开始已经成为了go的默认包管理工具，本文记录go mod的一些使用经验。</p>
-<p>要想使用go mod，需要将go升级到1.11或者更高版本。</p>
-<p>在没有go mod之前，项目源码必须是放在GOPATH目录下的，有了go mod之后项目即可以放在GOPATH目录下，也可以放在非GOPATH的目录下，在GOPATH目录下在执行时需要指定环境变量<code>GO111MODULE=on</code>,具体的写法可以是<code>GO111MODULE=on go mod init</code></p>
-<p>由于众所周知的原因，go的包相对还是比较难下载的，很多情况下还是需要vendor目录存在的，并将vendor目录中的包一并提交到代码库中。可以使用<code>go mod vendor</code>命令来完成，执行该命令后会将本地下载的包copy到vendor目录下。</p>
-<h2 id="坑1-提示unknown-revision"><a href="#坑1-提示unknown-revision" class="headerlink" title="坑1 提示unknown revision"></a>坑1 提示unknown revision</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># GO111MODULE=on go get gitlab.aa-inc.com/bb@v2</span><br><span class="line">go: finding gitlab.aa-inc.com/bb v2</span><br><span class="line">go: finding gitlab.aa-inc.com v2</span><br><span class="line">go get gitlab.aa-inc.com/bb@v2: unknown revision v2</span><br></pre></td></tr></table></figure>
-
-<p>在获取单个包的时候提示<code>unknown revision</code>错误，后发现是go get默认是使用的https协议，而不是git协议，而git仓库的https协议不支持导致的，解决办法为:</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global url.&quot;git@gitlab.aa-inc.com:&quot;.insteadOf &quot;https://gitlab.aa-inc.com/&quot;</span><br></pre></td></tr></table></figure>
-
-<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/65916369">Go 每日漫谈——Go Module 的一些坑</a></li>
-</ul>
 
       
     </div>

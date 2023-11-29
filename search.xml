@@ -1,53 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>理解OverlayFS</title>
-    <url>/post/overlayfs/</url>
-    <content><![CDATA[<h2 id="docker-image结构"><a href="#docker-image结构" class="headerlink" title="docker image结构"></a>docker image结构</h2><p>docker可以通过命令<code>docker image inspect $&#123;image&#125;</code>来查看image的详细信息，其中包含了所使用的底层文件系统及各层的信息。</p>
-<p>docker container的存储结构分为了只读层、init层和可读写层。</p>
-<p>只读层跟docker image的层次结构恰好对应，主要包含操作系统的文件、配置、目录等信息，不包含操作系统镜像。</p>
-<p>init层在只读层和读写层中间，用来专门存放&#x2F;etc&#x2F;hosts &#x2F;etc&#x2F;resolv.conf等信息，这些文件往往需要在启动的时候写入一些指定值，但不期望<code>docker commit</code>命令对其进行提交。</p>
-<p>可读写层为容器在运行中可以进行写入的层。</p>
-<h2 id="overlay"><a href="#overlay" class="headerlink" title="overlay"></a>overlay</h2><p><img src="https://arkingc.github.io/img/in-post/post-docker-filesystem/overlay_constructs.jpg" alt="image"></p>
-<p>采用了两层结构，lowerdir为镜像层，只读。upperdir为容器层。</p>
-<p>每层都会在&#x2F;var&#x2F;run&#x2F;docker&#x2F;overlay创建一个文件夹，文件夹中为实际层的内容，文件采用硬链接的方式链接到真实层中的文件，每一层都包含该层该拥有的所有文件，而该文件的真实存储可能是采用硬链接的方式链接到上层中的真实文件，因此比较耗费inode。</p>
-<p>创建一个容器时，会新增两个目录，一个为读写层，一个为初始层。初始层中保存了容器初始化时的环境信息，如hostname、hosts文件等。读写层用于记录容器的所有改动。</p>
-<h2 id="overlay2"><a href="#overlay2" class="headerlink" title="overlay2"></a>overlay2</h2><p>为了规避overlay消耗inode节点过多的问题，overlay2采用在每层中增加lower文件的方式来记录所有底层的信息，类似于链表的形式。</p>
-<p><code>docker pull ubuntu</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost runc]# docker pull ubuntu</span><br><span class="line">Using default tag: latest</span><br><span class="line">latest: Pulling from library/ubuntu</span><br><span class="line">c64513b74145: Pull complete</span><br><span class="line">01b8b12bad90: Pull complete</span><br><span class="line">c5d85cf7a05f: Pull complete</span><br><span class="line">b6b268720157: Pull complete</span><br><span class="line">e12192999ff1: Pull complete</span><br><span class="line">Digest: sha256:3f119dc0737f57f704ebecac8a6d8477b0f6ca1ca0332c7ee1395ed2c6a82be7</span><br><span class="line">Status: Downloaded newer image for ubuntu:latest</span><br></pre></td></tr></table></figure>
-
-<p>会在&#x2F;var&#x2F;run&#x2F;docker&#x2F;overlay2目录下创建如下文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 2</span><br><span class="line">.</span><br><span class="line">|-- 664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672    // 第0层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   `-- link    // MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- 783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba    // 第2层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // HXATFASQ4E2JBG434DUEN54EZZ</span><br><span class="line">|   |-- lower   // l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- 89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6    // 第3层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // 5PHT7S3MCZTTQOXVPA4CKJRRFD</span><br><span class="line">|   |-- lower   // l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- backingFsBlockDev</span><br><span class="line">|-- bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68    // 第4层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // QMKHIPSDT4JTPE4FLT7QGJ33ND</span><br><span class="line">|   |-- lower   // l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3    // 第1层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // WUZC5WSTQTPJUJ4KFAYCUT5IPD</span><br><span class="line">|   |-- lower   // l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">`-- l</span><br><span class="line">    |-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff</span><br><span class="line">    |-- HXATFASQ4E2JBG434DUEN54EZZ -&gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff</span><br><span class="line">    |-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff</span><br><span class="line">    |-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff</span><br><span class="line">    `-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff</span><br></pre></td></tr></table></figure>
-
-<p>l目录下为超链接，缩短后的目录，为了避免mount时超出页大小限制。</p>
-<p>每一层中的diff文件夹包含实际内容。</p>
-<p>每一层中都有一个link文件，内容为l目录中的超链接，超链接实际指向当前层目录中的diff文件夹。</p>
-<p>除去最底层的目录外，其余每一层中包含一个lower文件，包含了该层的所有更底层名称和顺序，可以根据该文件构建出整个镜像的层次结构。</p>
-<p>work目录用于OverlayFS内部使用。</p>
-<p>最底层只有link文件，无lower文件，因此664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672为最底层。</p>
-<p>以上五层为lower，只读。</p>
-<p>当使用<code>docker run -it ubuntu:latest /bin/bash</code>启动一个容器后，在overlay2目录下会多出两个文件夹。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 1 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08 l</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">|-- diff</span><br><span class="line">|-- link    // ZJVMGTB2IOJ6QF57TYM5O7EWXW</span><br><span class="line">|-- lower   // l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">|-- diff</span><br><span class="line">|-- link</span><br><span class="line">|-- lower   // l/ZJVMGTB2IOJ6QF57TYM5O7EWXW:l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">l</span><br><span class="line">|-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff</span><br><span class="line">|-- AOLYGFOHIAHWU5CBAJFULNAXI7 -&gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/diff</span><br><span class="line">|-- HXATFASQ4E2JBG434DUEN54EZZ -&gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff</span><br><span class="line">|-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff</span><br><span class="line">|-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff</span><br><span class="line">|-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff</span><br><span class="line">`-- ZJVMGTB2IOJ6QF57TYM5O7EWXW -&gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init/diff</span><br></pre></td></tr></table></figure>
-
-<p><code>0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</code>用于存放容器初始化时的信息，通过下面查看更直观。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost overlay2]# tree 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">|-- diff</span><br><span class="line">|   |-- dev</span><br><span class="line">|   |   `-- console</span><br><span class="line">|   `-- etc</span><br><span class="line">|       |-- hostname</span><br><span class="line">|       |-- hosts</span><br><span class="line">|       |-- mtab -&gt; /proc/mounts</span><br><span class="line">|       `-- resolv.conf</span><br><span class="line">|-- link</span><br><span class="line">|-- lower</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">    `-- work</span><br></pre></td></tr></table></figure>
-
-<p><code>0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</code>的直接底层为init层，更详细的目录结构如下。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 2  0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">|-- diff</span><br><span class="line">|-- link</span><br><span class="line">|-- lower</span><br><span class="line">|-- merged</span><br><span class="line">|   |-- bin</span><br><span class="line">|   |-- boot</span><br><span class="line">|   |-- dev</span><br><span class="line">|   |-- etc</span><br><span class="line">|   |-- home</span><br><span class="line">|   |-- lib</span><br><span class="line">|   |-- lib64</span><br><span class="line">|   |-- media</span><br><span class="line">|   |-- mnt</span><br><span class="line">|   |-- opt</span><br><span class="line">|   |-- proc</span><br><span class="line">|   |-- root</span><br><span class="line">|   |-- run</span><br><span class="line">|   |-- sbin</span><br><span class="line">|   |-- srv</span><br><span class="line">|   |-- sys</span><br><span class="line">|   |-- tmp</span><br><span class="line">|   |-- usr</span><br><span class="line">|   `-- var</span><br><span class="line">`-- work</span><br><span class="line">    `-- work</span><br></pre></td></tr></table></figure>
-
-<p>merged文件夹中内容较多，为overlay2的直接挂载点，对容器的修改会反应到该目录中。例如在容器中增加&#x2F;root&#x2F;hello.txt文件，在merged目录下会增加root&#x2F;hello.txt文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost overlay2]# mount  | grep overlay2</span><br><span class="line">/dev/mapper/centos-root on /var/lib/docker/overlay2 type xfs (rw,relatime,attr2,inode64,noquota)</span><br><span class="line">overlay on /var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/merged type overlay (rw,relatime,lowerdir=/var/lib/docker/overlay2/l/ZJVMGTB2IOJ6QF57TYM5O7EWXW:/var/lib/docker/overlay2/l/QMKHIPSDT4JTPE4FLT7QGJ33ND:/var/lib/docker/overlay2/l/5PHT7S3MCZTTQOXVPA4CKJRRFD:/var/lib/docker/overlay2/l/HXATFASQ4E2JBG434DUEN54EZZ:/var/lib/docker/overlay2/l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:/var/lib/docker/overlay2/l/MZUEUOFHBNVTRCJYJEG7QY4VWT,upperdir=/var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/diff,workdir=/var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/work)</span><br></pre></td></tr></table></figure>
-
-<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
-<li><a href="https://docs.docker.com/storage/storagedriver/overlayfs-driver/">Use the OverlayFS storage driver</a></li>
-<li><a href="https://arkingc.github.io/2017/05/05/docker-filesystem-overlay/">Docker存储驱动—Overlay&#x2F;Overlay2「译」</a></li>
-</ul>
-]]></content>
-      <tags>
-        <tag>overlay overlay2</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>12要素应用</title>
     <url>/post/12-factors-app/</url>
     <content><![CDATA[<p>2012 年，Heroku 创始人 Adam Wiggins 发布十二要素应用宣言，又被称为微服务十二要素。</p>
@@ -2772,11 +2725,16 @@
 <h1 id="安装kubectl-kind-helm"><a href="#安装kubectl-kind-helm" class="headerlink" title="安装kubectl kind helm"></a>安装kubectl kind helm</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 安装kubectl</span><br><span class="line">curl -LO &quot;https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl&quot;</span><br><span class="line">chmod +x kubectl</span><br><span class="line">mv kubectl /usr/bin/</span><br><span class="line"># 如果找不到rpm包，可以通过网络安全 rpm -ivh http://mirror.centos.org/centos/7/os/x86_64/Packages/bash-completion-2.1-8.el7.noarch.rpm</span><br><span class="line">yum install -y bash-completion</span><br><span class="line">echo -e &#x27;\n# kubectl&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;source &lt;(kubectl completion bash)&#x27; &gt;&gt;~/.bash_profile</span><br><span class="line">echo &#x27;alias k=kubectl&#x27; &gt;&gt;~/.bash_profile</span><br><span class="line">echo &#x27;complete -F __start_kubectl k&#x27; &gt;&gt;~/.bash_profile</span><br><span class="line">source ~/.bash_profile</span><br><span class="line"></span><br><span class="line"># 安装helm</span><br><span class="line">wget https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz</span><br><span class="line">tar zvxf helm-v3.7.2-linux-amd64.tar.gz</span><br><span class="line">mv linux-amd64/helm /usr/bin/</span><br><span class="line">rm -rf linux-amd64</span><br><span class="line"></span><br><span class="line"># 安装kubectx kubens</span><br><span class="line">git clone https://github.com/ahmetb/kubectx /tmp/kubectx</span><br><span class="line">cp /tmp/kubectx/kubens /usr/bin/kns</span><br><span class="line">cp /tmp/kubectx/kubectx /usr/bin/kctx</span><br><span class="line">wget https://github.com/junegunn/fzf/releases/download/0.29.0/fzf-0.29.0-linux_amd64.tar.gz -P /tmp</span><br><span class="line">tar zvxf /tmp/fzf-0.29.0-llinux_amd64.tar.gz -C /tmp/</span><br><span class="line">mv /tmp/fzf /usr/local/bin/</span><br><span class="line"></span><br><span class="line"># 安装kind</span><br><span class="line">curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64</span><br><span class="line">chmod +x ./kind</span><br><span class="line">mv ./kind /usr/local/bin/</span><br><span class="line">echo -e &quot;\n# kind&quot; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;source &lt;(kind completion bash)&#x27; &gt;&gt;~/.bash_profile</span><br></pre></td></tr></table></figure>
 
 <h1 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h1><p>其中将apiServerAddress指定为了本机，即创建出来的k8s集群仅允许本集群内访问。如果要是需要多个k8s集群之间的互访场景，由于kind拉起的k8s运行在docker容器中，而docker容器使用的是容器网络，此时如果设置apiserver地址为127.0.0.1，那么集群之间就没法直接通讯了，此时需要指定一个可以在docker容器中访问的宿主机ip地址。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if=eth0</span><br><span class="line">ip=`ifconfig $if|grep inet|grep -v 127.0.0.1|grep -v inet6|awk &#x27;&#123;print $2&#125;&#x27;|tr -d &quot;addr:&quot;`</span><br><span class="line">cat &gt; kind.conf &lt;&lt;EOF</span><br><span class="line">kind: Cluster</span><br><span class="line">apiVersion: kind.x-k8s.io/v1alpha4</span><br><span class="line">name: kind</span><br><span class="line">nodes:</span><br><span class="line">- role: control-plane</span><br><span class="line">  image: kindest/node:v1.23.17 # 指定 k8s 版本</span><br><span class="line">networking:</span><br><span class="line">  apiServerAddress: &quot;$ip&quot;</span><br><span class="line">  apiServerPort: 6443</span><br><span class="line">EOF</span><br><span class="line">kind create cluster --config kind.conf</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if=eth0</span><br><span class="line">ip=`ifconfig $if|grep inet|grep -v 127.0.0.1|grep -v inet6|awk &#x27;&#123;print $2&#125;&#x27;|tr -d &quot;addr:&quot;`</span><br><span class="line">cat &gt; kind.conf &lt;&lt;EOF</span><br><span class="line">kind: Cluster</span><br><span class="line">apiVersion: kind.x-k8s.io/v1alpha4</span><br><span class="line">name: kind</span><br><span class="line">nodes:</span><br><span class="line">- role: control-plane</span><br><span class="line">  # 如果需要 ingress，则需要指定该参数</span><br><span class="line">  kubeadmConfigPatches:</span><br><span class="line">  - |</span><br><span class="line">    kind: InitConfiguration</span><br><span class="line">    nodeRegistration:</span><br><span class="line">      kubeletExtraArgs:</span><br><span class="line">        node-labels: &quot;ingress-ready=true&quot;</span><br><span class="line">  extraPortMappings:</span><br><span class="line">  - containerPort: 80</span><br><span class="line">    hostPort: 80</span><br><span class="line">    protocol: TCP</span><br><span class="line">  - containerPort: 443</span><br><span class="line">    hostPort: 443</span><br><span class="line">    protocol: TCP</span><br><span class="line">  # 指定 k8s 版本，默认不指定</span><br><span class="line">  # image: kindest/node:v1.23.17</span><br><span class="line">- role: worker</span><br><span class="line">- role: worker</span><br><span class="line">- role: worker</span><br><span class="line">networking:</span><br><span class="line">  apiServerAddress: &quot;$ip&quot;</span><br><span class="line">  apiServerPort: 6443</span><br><span class="line">EOF</span><br><span class="line">kind create cluster --config kind.conf</span><br></pre></td></tr></table></figure>
 
+<p>如果使用 nginx ingress，额外执行命令 <code>kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml</code></p>
 <h1 id="其他周边工具"><a href="#其他周边工具" class="headerlink" title="其他周边工具"></a>其他周边工具</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 安装kustomize</span><br><span class="line">curl -s &quot;https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh&quot;  | bash</span><br><span class="line">mv kustomize /usr/local/bin/</span><br><span class="line"></span><br><span class="line"># 安装golang</span><br><span class="line">wget https://go.dev/dl/go1.17.5.linux-amd64.tar.gz -P /opt</span><br><span class="line">tar zvxf /opt/go1.17.5.linux-amd64.tar.gz -C /opt/</span><br><span class="line">mkdir /opt/gopath</span><br><span class="line">echo -e &#x27;\n# golang&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;export GOROOT=/opt/go&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;export GOPATH=/opt/gopath&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;export PATH=$PATH:$GOPATH/bin:$GOROOT/bin&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">source ~/.bash_profile</span><br><span class="line"></span><br><span class="line"># 安装controller-gen，会将controller-gen命令安装到GOPATH/bin目录下</span><br><span class="line">go install sigs.k8s.io/controller-tools/cmd/controller-gen@latest</span><br><span class="line"></span><br><span class="line"># 安装dlv工具</span><br><span class="line">go install github.com/go-delve/delve/cmd/dlv@latest</span><br></pre></td></tr></table></figure>
 
 <h2 id="安装krew"><a href="#安装krew" class="headerlink" title="安装krew"></a>安装krew</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">(</span><br><span class="line">  set -x; cd &quot;$(mktemp -d)&quot; &amp;&amp;</span><br><span class="line">  OS=&quot;$(uname | tr &#x27;[:upper:]&#x27; &#x27;[:lower:]&#x27;)&quot; &amp;&amp;</span><br><span class="line">  ARCH=&quot;$(uname -m | sed -e &#x27;s/x86_64/amd64/&#x27; -e &#x27;s/\(arm\)\(64\)\?.*/\1\2/&#x27; -e &#x27;s/aarch64$/arm64/&#x27;)&quot; &amp;&amp;</span><br><span class="line">  KREW=&quot;krew-$&#123;OS&#125;_$&#123;ARCH&#125;&quot; &amp;&amp;</span><br><span class="line">  curl -fsSLO &quot;https://github.com/kubernetes-sigs/krew/releases/latest/download/$&#123;KREW&#125;.tar.gz&quot; &amp;&amp;</span><br><span class="line">  tar zxvf &quot;$&#123;KREW&#125;.tar.gz&quot; &amp;&amp;</span><br><span class="line">  ./&quot;$&#123;KREW&#125;&quot; install krew</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">echo -e &#x27;\n# kubectl krew&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;export PATH=&quot;$&#123;KREW_ROOT:-$HOME/.krew&#125;/bin:$PATH&quot;&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">source ~/.bash_profile</span><br></pre></td></tr></table></figure>
+
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
+<li><a href="https://kind.sigs.k8s.io/">kind</a></li>
+</ul>
 ]]></content>
   </entry>
   <entry>
@@ -2843,188 +2801,6 @@
 <li><a href="https://kubevela.io/zh/docs/platform-engineers/cue/basic">CUE语言基础入门</a></li>
 <li><a href="https://cuetorials.com/zh/introduction/">Cuetorials</a></li>
 </ul>
-]]></content>
-  </entry>
-  <entry>
-    <title>市长热线12345</title>
-    <url>/post/mayor_hotline/</url>
-    <content><![CDATA[<p><img src="/ref/life/mayor_hotline.jpg" alt="Image Title"></p>
-<p>前段时间在家看书学习，难得的学习的好时机。</p>
-<p>楼下有一个卖饭的小摊及其猖狂，不仅占用了人行道来炒菜，而且还在马路上摆了一溜桌子供客人吃饭，不仅占用了人行道，连车行道都给占用了。这些也就罢了，对我影响都不算太大，更可气的是每天中午和晚上吃饭的时候会开着大音响放着恼人的音乐，我不想惹麻烦，我忍。</p>
-<p>今天中午我刚开始看书，看到难处需要精心思考，恼人的音乐又开始了，我实在忍不住了，TMD，维权。打市长热线12345投诉，市长热线让我打110投诉。继续打110投诉，然后跟110说了下具体情况后，说给相应的派出所去处理。派出所的小片警立刻就给我回电话了，说外放音乐正常经营范围，只要不在晚上或清晨放音乐就不算违规，他们管不着，建议我去下面跟卖饭的商量，好一个商量。然后我又说，他们非法占道经营，小片警又说这个归城管管，让我给城管打电话，好一个给城管打电话。好一个推卸责任，这些把我给惹毛了。</p>
-<p>挂断电话后，寻思这个理不太对，然后继续给市长热线12345打电话，告诉情况后，市长热线的妹子告诉我说这个事情我给你处理，好一个我给你处理，这才是为人民服务的态度，鼓掌。</p>
-<p>这是第二次机会接触小片警，每次都是让我失望，绝望，恨之入骨。第一次接触小片警我甚至kill him的心都有了。不一心想着为人民服务，却是一心想着推卸责任，处处刁难市民并从中谋取私利，对市民爱理不理，这就是小片警在我心中的形象，很难改变。越是权利小的小兵，架子越大，这也就决定了永远是个小兵的身份。</p>
-<p>如果没有市长热线那这件扰民的事情也就不了了之了，因为投诉110都不管用了，作为市民已经没有可以维权的机构了。还好有市长热线的存在给市民多了一个维权的途径。</p>
-<p>上周五打的电话，这个周一给我回复电话问我饭馆在哪一次，周二又打电话问我饭馆在哪，然后周三终于给处理了，下班途中派出所给我电话回复说：“已经处理好了，让小饭馆的音响声音调小了，以后如果再有这种情况可以继续打电话”。等我回家一看，果然音响不见了，世界一下子清净了，zf终于替我办事了。</p>
-<p>也许是因为我的事情不是很紧急的原因，整个处理流程过于慢了，等了足足五天的时间才处理好。</p>
-<p>当大家的权益受到损害时，请大家多给市长热线打电话维护自己的权益。</p>
-]]></content>
-  </entry>
-  <entry>
-    <title>从0开始学习微服务阅读笔记</title>
-    <url>/post/micro-service/</url>
-    <content><![CDATA[<p>本文为极客时间专栏从0开始学习微服务的阅读笔记。</p>
-<p>在了解微服务之前，先来了解一下单体应用。</p>
-<p>在上学那会，做过一些企业站，技术往往是基于LAMP（Linux + Apache + MySQL + PHP），这种业务较为简单的企业站，就是单体应用。所有的业务代码都是放在一个PHP程序中，代码只需要我自己来维护就可以了，测试、上线、运维全部搞定。</p>
-<p>但这种单体应用要是放到稍微有点规模的互联网公司中必然是行不通的。一个公司里有很多的人，不可能公司这么多技术人员共同维护一套代码，这样子团队的写作必然是个问题。系统的健壮性也会比较差，一旦单体应用中的一个模块出问题后往往会影响到其他的模块，导致整个系统不可用，比如PHP的服务业界通常使用php-fpm来管理，而php-fpm处理连接的方式一个请求一个线程，当一部分请求因为延时高时会消耗过多的线程资源，导致其他请求没有可用的线程可以处理。</p>
-<p>单体应用的其他缺点不再罗列，比如代码膨胀过度、发布较慢、系统高可用性差、团队协作成本高等。</p>
-<p>为了解决单体应用的这些缺点，方法只有一个就是将单体应用拆分为多个服务即服务化，服务之间通过RPC的方式相互调用。</p>
-<p>即服务化后，业界又提出了微服务的概念。</p>
-<p>维基百科中有如下定义：</p>
-<blockquote>
-<p>2014年，Martin Fowler 与 James Lewis 共同提出了微服务的概念，定义了微服务是由以单一应用程序构成的小服务，自己拥有自己的行程与轻量化处理，服务依业务功能设计，以全自动的方式部署，与其他服务使用 HTTP API 通讯。同时服务会使用最小的规模的集中管理 (例如 Docker) 能力，服务可以用不同的编程语言与数据库等元件实作。</p>
-</blockquote>
-<p>但看这个定义，看的我一脸懵逼，实在太过抽象。其实微服务也没有一个特别明确的定义。</p>
-<p>那么服务化和微服务之间有什么不同之处呢？</p>
-<ol>
-<li>服务拆分粒度更细。</li>
-<li>每个微服务都独立部署和维护。</li>
-<li>微服务需要服务治理。由于微服务会将服务变多，势必需要一个服务管理平台来对微服务进行管理。</li>
-</ol>
-<p>将单体应用向微服务拆分的方式可以分为纵向拆分和横向拆分。这里以一点资讯app为例来解释纵向拆分和横向拆分。</p>
-<p>一点资讯分为信息流、正文页等模块，而这些功能都依赖于用户信息获取模块，纵向拆分即将信息流、正文页拆分为微服务，横向拆分即将信息流、正文页都依赖的用户信息获取模块拆分为单独的服务。</p>
-<h2 id="微服务架构"><a href="#微服务架构" class="headerlink" title="微服务架构"></a>微服务架构</h2><p>采用微服务后会带来一系列复杂的问题，新技术在解决了一部分问题的同时，总会带来一些新的问题，比如服务怎么定义接口、服务的发布方式和服务发现、服务的监控、服务的治理（包括依赖关系梳理、熔断机制等）、故障快速定位等。</p>
-<p>那么一个标准的微服务架构应该长什么样子呢？</p>
-<p>服务提供方在服务启动时向服务注册中心注册服务，声明自己能够提供的服务及当前服务的地址等信息。</p>
-<p>服务调用者请求注册中心，查询所要调用服务的地址，并通过约定好的协议向服务提供者发起请求，获取到结果后按照数据协议格式将数据进行反序列化。</p>
-<p>在整个服务的调用过程中，服务的请求耗时、调用量、调用成功与否等信息都会作为监控记录下来，服务的调用关系会通过trace系统记录下来，以便用于后续的故障定位和追踪。如果服务调用失败，则需要服务治理的方式来保证调用方的正常运行。</p>
-<h2 id="服务的接口定义"><a href="#服务的接口定义" class="headerlink" title="服务的接口定义"></a>服务的接口定义</h2><p>需要解决的问题是服务的接口有哪些？每个接口的输入什么？每个接口的输出是什么？</p>
-<h3 id="RESTful-API"><a href="#RESTful-API" class="headerlink" title="RESTful API"></a>RESTful API</h3><p>HTTP协议的接口定义通常使用该协议，常见Wiki或者Swagger的方式来管理。</p>
-<h3 id="IDL文件"><a href="#IDL文件" class="headerlink" title="IDL文件"></a>IDL文件</h3><p>IDL（interface description language）用于描述接口，使得不同的编程语言不同的平台服务之间可以相互通讯。常见实现包括Thrift和protobuf，protobuf作为序列化方式的一种，通常会使用gRPC进行通讯。</p>
-<h3 id="XML文件方式"><a href="#XML文件方式" class="headerlink" title="XML文件方式"></a>XML文件方式</h3><p>服务提供者将接口描述信息保存在xml配置文件，服务启动后会加载配置文件，将服务暴露出去。</p>
-<p>服务消费者将要调用的接口信息写在xml配置文件中，进程启动后加载xml配置文件。</p>
-<h3 id="坑"><a href="#坑" class="headerlink" title="坑"></a>坑</h3><p>服务提供者通常需要提供服务的超时时间等参数，而消费者端也需要该信息，为了让消费者端能看到生产者端的配置，可以将信息放在配置中心中，但这却增大了配置中心的内容，当一旦配置变化需要同步时，同步的数据会变多。</p>
-<h2 id="注册中心"><a href="#注册中心" class="headerlink" title="注册中心"></a>注册中心</h2><p>要想实现服务之间的调用，通常会使用反向代理和服务注册中心的方法。</p>
-<p>反向代理的方法业界一般使用较多的包括nginx、haproxy以及业界新秀envoy等。</p>
-<p>在微服务架构中更多提及的方案为采用服务注册中心的方法，而注册中心的稳定性就显得尤其重要。</p>
-<p>业界注册中心采用较多的方案为zookeeper、etcd、consul、eureka。这些注册中心的存储数结构要么是树状接口，要么是key-value形式，其中k-v形式的可以变更key的值以实现类似树状结构。</p>
-<h3 id="注册中心的设计"><a href="#注册中心的设计" class="headerlink" title="注册中心的设计"></a>注册中心的设计</h3><h4 id="注册中心API及功能"><a href="#注册中心API及功能" class="headerlink" title="注册中心API及功能"></a>注册中心API及功能</h4><p>注册中心需要提供以下api以供服务提供方和服务调用方使用。</p>
-<ol>
-<li>服务注册接口，提供服务提供方使用</li>
-<li>服务反注册接口，提供服务提供方以便销毁服务</li>
-<li>心跳汇报接口，服务提供方通过心跳汇报服务是存活状态的。一旦当服务出现异常时，服务注册中心应该立即将服务从注册中心剔除。</li>
-<li>服务订阅接口，服务调用方用于获取服务提供方的实例列表</li>
-<li>服务变更接口，服务调用方用于获取最新可用服务。一旦注册中心探测到有新的服务实例或者实例减少，应该立即通知所有订阅该服务的服务调用者更新本地的节点信息。</li>
-</ol>
-<h4 id="注册中心存储哪些服务信息"><a href="#注册中心存储哪些服务信息" class="headerlink" title="注册中心存储哪些服务信息"></a>注册中心存储哪些服务信息</h4><p>通常可以按照“服务名-分组-节点信息”三层结构来存储，其中节点信息包括：节点ip地址、节点端口号、请求失败时重试次数、请求结果是否压缩。</p>
-<p>分组的划分原则包括：</p>
-<ol>
-<li>按照业务的核心程度</li>
-<li>按照机房维度</li>
-<li>线上环境、测试环境</li>
-</ol>
-<h4 id="注册中心如何工作"><a href="#注册中心如何工作" class="headerlink" title="注册中心如何工作"></a>注册中心如何工作</h4><h5 id="服务提供者注册节点"><a href="#服务提供者注册节点" class="headerlink" title="服务提供者注册节点"></a>服务提供者注册节点</h5><ol>
-<li>查看注册节点是否在白名单内，即是否可以向注册中心注册</li>
-<li>查看注册的服务名、服务分组是否存在</li>
-<li>将节点信息添加到对应的存储位置</li>
-</ol>
-<h5 id="服务提供者反注册"><a href="#服务提供者反注册" class="headerlink" title="服务提供者反注册"></a>服务提供者反注册</h5><ol>
-<li>查看服务名、服务分组对应的服务是否存在</li>
-<li>将节点删除</li>
-</ol>
-<h5 id="服务消费者查询节点信息"><a href="#服务消费者查询节点信息" class="headerlink" title="服务消费者查询节点信息"></a>服务消费者查询节点信息</h5><ol>
-<li>从本机内存中查找服务信息</li>
-<li>如果有本地快照存储可以从中查找</li>
-</ol>
-<h5 id="服务消费者订阅服务变更"><a href="#服务消费者订阅服务变更" class="headerlink" title="服务消费者订阅服务变更"></a>服务消费者订阅服务变更</h5><ol>
-<li>消费者获取到服务信息后，在本地保留cluster的sign值</li>
-<li>每个一段时间从注册中心获取cluster的sign值，如果不一致，就从注册中心拉取服务节点，并更新内存环境和本地快照</li>
-</ol>
-<h2 id="服务框架"><a href="#服务框架" class="headerlink" title="服务框架"></a>服务框架</h2><p>完整的服务框架包括：通讯框架、通讯协议、序列化和反序列化。</p>
-<h3 id="开源RPC框架"><a href="#开源RPC框架" class="headerlink" title="开源RPC框架"></a>开源RPC框架</h3><p>跟语言相关的框架：Dubbo、Motan（微博）、Tars（腾讯）、Spring Cloud</p>
-<p>跨平台的开源RPC框架：gRPC、Thrift</p>
-<h2 id="服务监控"><a href="#服务监控" class="headerlink" title="服务监控"></a>服务监控</h2><p>常用的开源监控软件包括：ELK、Graphite、TICK、Prometheus</p>
-<h2 id="服务追踪"><a href="#服务追踪" class="headerlink" title="服务追踪"></a>服务追踪</h2><p>使用分布式会话跟踪技术，利用traceid</p>
-<p>开源方案包括OpenZipkin、jaeger等</p>
-<h2 id="服务治理"><a href="#服务治理" class="headerlink" title="服务治理"></a>服务治理</h2><p>通过一系列的手段保证在意外情况下，服务仍然能够正常运行。</p>
-<h3 id="节点管理"><a href="#节点管理" class="headerlink" title="节点管理"></a>节点管理</h3><p>服务调用失败可能是服务提供者自身出现了问题，也可能是网络问题导致。</p>
-<p>1.注册中心自动摘除机制</p>
-<p>服务提供者和注册中心之间保持心跳，当超时后注册中心自动摘除服务提供者。</p>
-<p>2.服务消费者摘除</p>
-<p>将服务提供者的探活机制放到消费者端，消费者在探测到服务提供者失败后自动摘除服务提供者。这种情况可以避免服务提供者和注册中心之间网络出现异常，但是服务提供者和服务消费者之间可以通讯的情况。</p>
-<h3 id="负载均衡"><a href="#负载均衡" class="headerlink" title="负载均衡"></a>负载均衡</h3><p>常用的包括随机算法、轮询、加权轮询算法、最少活跃调用、一致性hash算法（可以配合着静态注册中心达到比较好的效果）</p>
-<p><strong>自适应最优选择算法</strong>：在客户端维护一份每一个服务节点的性能统计快照，每隔一段时间去更新快照。在发起请求时，根据二八原则，将服务节点分成两部分，找出20%的那部分响应最慢的节点并降低权重。也可称为动态加权轮询算法。1分钟的更新时间间隔是个不错的选择。</p>
-<p>个人感觉<strong>自适应最优选择算</strong>是个不错的选择，但还可以针对业务场景继续优化，比如权重进行动态调整。</p>
-<h3 id="服务路由"><a href="#服务路由" class="headerlink" title="服务路由"></a>服务路由</h3><p>用于限定服务消费者可选择服务提供者节点的范围。</p>
-<p>应用场景：分组调用（组的划分可以按照机房等维度）、灰度发布、流量切换（比如机房故障后，用于机房之间的流量调度）、读写分离（读接口部署在一起，写接口部署在一起）。</p>
-<h5 id="规则的写法"><a href="#规则的写法" class="headerlink" title="规则的写法"></a>规则的写法</h5><p>A.条件路由</p>
-<ul>
-<li>某个ip的消费者仅访问某个ip的服务提供者</li>
-<li>排除某个服务节点（所有的服务消费者都不能访问某个服务提供者）</li>
-<li>白名单和黑名单</li>
-<li>机房级别的隔离（可以基于ip地址的规则来做）</li>
-<li>读写分离（所有get类方法仅访问某些节点等）</li>
-</ul>
-<p>B.脚本路由</p>
-<p>使用脚本语言的形式来描述</p>
-<h4 id="路由的获取方式"><a href="#路由的获取方式" class="headerlink" title="路由的获取方式"></a>路由的获取方式</h4><ul>
-<li>本地配置：存储在服务消费者本地</li>
-<li>配置中心配置，可以修改规则后动态下发</li>
-</ul>
-<h3 id="服务容错"><a href="#服务容错" class="headerlink" title="服务容错"></a>服务容错</h3><p>手段包括超时、重试、双发、熔断等。</p>
-<p>双发的思路为服务调用者在发起一次服务调用后，在给定的时间内（该时间要比服务超时的时间短）没有得到结果，再发起另外一个请求。</p>
-<p>熔断的思路为在某一个时间内如果服务调用失败次数超过一定值，则触发熔断，不再向服务提供者发起请求。</p>
-<p>断路器中的状态包括：Closed、Open、Half Open（半打开状态，用于探测后端服务是否已经正常）</p>
-<p>Hystrix是最出名的熔断器，计算服务调用的失败率是通过滑动窗口来实现，滑动窗口内包含10个桶，每个桶为1秒内的服务调用情况。</p>
-<p>FailOver，失败自动切换。消费者调用失败后，自动从可以节点中选择下一个节点重新调用，可设置失败的次数。通常适合只读的场景。</p>
-<p>FailBack，失败通知。调用失败后，不能重试，而是根据失败的信息来决定后续的执行策略。通常用于写场景。</p>
-<p>FailCache，失败缓存。调用失败后，隔一段时间后再重试。</p>
-<p>FailFast，快速失败。调用失败后不再重试。</p>
-<h3 id="如何识别服务节点是否存活"><a href="#如何识别服务节点是否存活" class="headerlink" title="如何识别服务节点是否存活"></a>如何识别服务节点是否存活</h3><p>如果注册中心为zk，在服务节点变化的时候，注册中心会向服务调用方推送服务节点变化的通知。但当网络抖动的时候，可能会存在节点的状态频繁变化的问题，导致服务消费者频繁收到节点变更通知，或者导致注册中心获取到的服务节点过少。可通过以下手段来避免该问题。</p>
-<h3 id="服务端故障时的应对策略"><a href="#服务端故障时的应对策略" class="headerlink" title="服务端故障时的应对策略"></a>服务端故障时的应对策略</h3><p>故障包括：集群故障、单个idc故障、单机故障</p>
-<h4 id="集群故障"><a href="#集群故障" class="headerlink" title="集群故障"></a>集群故障</h4><p>比如触发bug、突发流量等</p>
-<p>限流：限制超出接口阈值的部分请求</p>
-<p>降级：一种思路为通过开关来实现。具体可以分为多种等级：一级降级对业务影响比较小，可以设置为自动降级；二级降级对业务有一定影响，设置为手工降级；三级降级需要谨慎操作。</p>
-<h4 id="单idc故障"><a href="#单idc故障" class="headerlink" title="单idc故障"></a>单idc故障</h4><p>基于dns的流量切换：延时稍高，比较适合入口流量。</p>
-<p>基于rpc的分组流量切换：将之前单个机房内访问的流量切换为多个机房访问。</p>
-<h4 id="单机故障"><a href="#单机故障" class="headerlink" title="单机故障"></a>单机故障</h4><p>可以通过自动重启服务的手段来解决。但要避免一次性重启服务过多的问题。</p>
-<h4 id="动态注册中心的保护机制"><a href="#动态注册中心的保护机制" class="headerlink" title="动态注册中心的保护机制"></a>动态注册中心的保护机制</h4><ol>
-<li>心跳开关保护机制，给注册中心设置一个开关，当开发打开时，即使网络频繁抖动，注册中心也不会通知消费者节点变更，后者设置一定的百分比打开该开关。正常情况下该开关可以不打开。</li>
-<li>服务节点摘除保护机制，设定一个阈值比例，在出现网络抖动的情况下，注册中心也不会将超过这个阈值的节点给下掉，防止一下子下掉过多节点。该机制正常情况下，应该开启。</li>
-</ol>
-<h4 id="静态注册中心的保护机制"><a href="#静态注册中心的保护机制" class="headerlink" title="静态注册中心的保护机制"></a>静态注册中心的保护机制</h4><p>在服务消费者端来判断是否服务提供者是否存活。服务消费者调用某一个节点失败超过一定次数就将节点标记为不可用。并隔一段时间后再去探测该节点是否存活。</p>
-<p>注册中心的服务正常情况下不改变的，只有当服务在发布的时候才去修改注册中心中的节点。注册中心中的节点变化后仍然通知服务消费者，只是在网络出现抖动的时候，不再去通知。</p>
-<p><strong>个人感觉这个思路更靠谱。</strong></p>
-<h3 id="服务治理平台"><a href="#服务治理平台" class="headerlink" title="服务治理平台"></a>服务治理平台</h3><p>1.服务管理 包括服务上下线、节点添加和删除、服务查询、服务节点查询等</p>
-<p>2.服务治理 限流、降级、切流量</p>
-<p>3.服务监控 可以包含服务的tracing监控等</p>
-<p>4.问题定位</p>
-<p>5.日志查询</p>
-<p>6.服务运维 发布部署和扩缩容</p>
-<h2 id="配置中心"><a href="#配置中心" class="headerlink" title="配置中心"></a>配置中心</h2><p>业内采用的开源配置中心包括:</p>
-<ul>
-<li>Spring Cloud 功能相对较弱，变更配置需要通过git操作</li>
-<li>Apollo 对Spring Boot的支持比较好</li>
-</ul>
-<h2 id="进阶内容"><a href="#进阶内容" class="headerlink" title="进阶内容"></a>进阶内容</h2><h3 id="做好容量规划"><a href="#做好容量规划" class="headerlink" title="做好容量规划"></a>做好容量规划</h3><p>包括容量评估和调度决策两方面。</p>
-<p>压测服务的单机最大容量可以采用区间加权的方式来计算，比如0 ~ 10ms区间权重为1，10 ~ 50ms区间权重为2,500ms以上权重为32，通过累加的方式计算出单机的权重，从而评估出单机最大容量。(<strong>该评估容量的方式非常实用</strong>)</p>
-<p>调度策略可以根据水位线来做决定，一条是安全线，一条是致命线。当水位线处于致命线需要立即扩容，当水位线回到安全线以上时可以进行缩容。（<strong>水位线的方式很赞</strong>）</p>
-<p>缩容的思路是采用逐步缩容，每隔5分钟判断一次水位线是否在致命线以上，并按照10%、30%的比例进行缩容。</p>
-<p>为了防止水位线的抖动，可以一分钟采集一个点，当5个点中的3个点都满足条件时才进行缩容。</p>
-<h3 id="多机房部署"><a href="#多机房部署" class="headerlink" title="多机房部署"></a>多机房部署</h3><p>1.主从架构</p>
-<p>所有的写请求都发给主机房，主机房更新本机房的缓存和数据库，其他机房的缓存和数据库从主机房同步。主机房出现问题后，就没法更新了。</p>
-<p>2.独立机房架构</p>
-<p>缓存层，每个机房都有写请求，每个机房的写请求通过消息同步组件将写请求同步给另外一个机房。数据库mysql只有一个主库，另外机房的mysql同步数据到该机房。</p>
-<p>以上缓存消息同步组件的实现大概如下：</p>
-<p>包括两个模块reship和collector，reship负责将本机房的写请求发一份给别的机房，collector负责从别的机房读取写请求，并发给本机房的处理服务器。</p>
-<p>可以通过消息队列和rpc调用来实现reship和collector的通讯。</p>
-<p>3.多机房的数据一致性</p>
-<p>可通过消息对账机制来保证一致性，原理为通过一个单独的程序后面来验证是否一个写请求是否已经被所有的机房都处理，如果没有处理，则重新发送写请求。</p>
-<h3 id="混合云部署"><a href="#混合云部署" class="headerlink" title="混合云部署"></a>混合云部署</h3><p>公有云上为了安全往往不部署数据库</p>
-<h3 id="DevOps实践"><a href="#DevOps实践" class="headerlink" title="DevOps实践"></a>DevOps实践</h3><p>持续集成：确保每一次代码的merge request都通过，分为四个阶段：build（开发分支代码的编译与单元测试）、package（开发分支代码打包成docker镜像）、deploy（开发分支代码部署到测试环境）、test（集成测试）。包括了代码检查和单元测试环节。</p>
-<p>持续交付：代码merge request到develop分支后，develop分支的代码能够在生产环境中测试通过，并进行小流量灰度验证，可以随时上线。分为五个阶段：build（develop分支的代码编译与单元测试）、package（develop分支代码打包）、deploy、test、canary（develop分支代码的小流量灰度验证）。</p>
-<p>持续部署：合并develop代码到master分支，并打包成docker镜像，并可随时上线。包括：build、package、clear、production。</p>
-<h3 id="Service-Mesh"><a href="#Service-Mesh" class="headerlink" title="Service Mesh"></a>Service Mesh</h3><p>Service Mesh技术以轻量级网络代理的方式与应用代码部署在一起，主要有两个关键点技术。</p>
-<p>SideCar用于转发服务之间的调用，在服务消费者端SideCar用于将请求转发到服务提供者端的SideCar中，在服务提供者端的SideCar在接收到请求后转发给本机上的服务提供者。</p>
-<p>SideCar实现方式有基于ipstables的网络拦截和直接转发请求两种方式。</p>
-<p>Control plane用于基于SideCar的服务调用的治理，用来取代微服务中需要服务框架干的事情，包括服务发现、负载均衡、请求路由、故障处理、安全认证、监控上报、日志记录、配额限制等。</p>
-<h3 id="Istio"><a href="#Istio" class="headerlink" title="Istio"></a>Istio</h3><p>Pilot主要用于流量控制，包括Rules API（提供API，用于流量控制）、Envoy API（给Envoy提供API，获取服务注册信息、流量控制信息等）、抽象模型（对服务注册信息、流量控制进行抽象）、平台适配层（适配k8s、Mesos等多个平台，将平台特定的注册信息转换成平台无关的抽象模型）。</p>
-<p>Pilot的流量控制功能包括服务发现和负载均衡、请求路由、超时重试、故障注入。</p>
-<p>Mixer实现策略控制和监控日志收集等功能，理论上Envoy发起的每次请求都会发送到Mixer，可以异步发送。</p>
-<p>Mixer的策略控制包括对服务的访问频率限制和访问控制。</p>
-<p>Citadel用于保证服务之间的安全，需要Envoy的配合。Citadel中存储了秘钥和证书，通过Pilot将授权策略和安全命名信息分发给Envoy，Envoy和Envoy之间通过双向TLS证书来进行通讯，由Mixer来管理授权和审计。</p>
-<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><p><a href="http://www.infoq.com/cn/articles/micro-service-technology-stack">微服务架构技术栈选型手册
-</a></p>
 ]]></content>
   </entry>
   <entry>
@@ -4229,6 +4005,14 @@
 ]]></content>
   </entry>
   <entry>
+    <title>Linux下网卡混杂模式</title>
+    <url>/post/if-promiscuous/</url>
+    <content><![CDATA[<p>网卡的混杂模式是指网卡将其接收的所有流量都交给cpu。非混杂模式下，网卡仅接收目的mac地址是自己mac地址的单播，以及多播和广播包，可以看出混杂模式是工作在二层的。</p>
+<p>通过ifconfig eth0的方式，如果输出中包含了PROMISC字段，说明网卡处于混杂模式。但是如果ifconfig 命令的输出中未包含PROMISC字段，并不能说明网卡处于非混杂模式下。</p>
+<p>可以通过查看 cat &#x2F;sys&#x2F;class&#x2F;net&#x2F;bond0&#x2F;flags 的输出得知，如果置位了0x100，说明处于混杂模式。</p>
+]]></content>
+  </entry>
+  <entry>
     <title>大页内存</title>
     <url>/post/huge-page/</url>
     <content><![CDATA[<h2 id="大页内存介绍"><a href="#大页内存介绍" class="headerlink" title="大页内存介绍"></a>大页内存介绍</h2><p>一个操作系统上一台机器的物理内存是有限的，而操作系统上却运行着大量的进程，为了对进程屏蔽物理内存的差异，操作系统引入了虚拟内存的概念。Linux系统中虚拟内存是按照页的方式来进行管理的，每个页的默认大小为4K。如果物理内存非常大，就会导致虚拟内存和物理内存映射的页表（TLB）非常大。为了减少页表，一个可行的方法为增加页的大小。<br>​</p>
@@ -4254,14 +4038,6 @@
 <p>在节点上配置了大页内存后，kubelet会自动感知到大页内存的配置，会修改node配置。会在hugepages-2Mi中有对应的大页内存容量，memory字段会去掉对应的大页内存量。</p>
 <figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">allocatable:</span></span><br><span class="line">  <span class="attr">cpu:</span> <span class="string">&quot;15&quot;</span></span><br><span class="line">  <span class="attr">ephemeral-storage:</span> <span class="string">41152812Ki</span></span><br><span class="line">  <span class="attr">hugepages-1Gi:</span> <span class="string">&quot;0&quot;</span></span><br><span class="line">  <span class="attr">hugepages-2Mi:</span> <span class="string">40Mi</span></span><br><span class="line">  <span class="attr">memory:</span> <span class="string">63998924Ki</span></span><br><span class="line">  <span class="attr">pods:</span> <span class="string">&quot;110&quot;</span></span><br><span class="line"><span class="attr">capacity:</span></span><br><span class="line">  <span class="attr">cpu:</span> <span class="string">&quot;16&quot;</span></span><br><span class="line">  <span class="attr">ephemeral-storage:</span> <span class="string">41152812Ki</span></span><br><span class="line">  <span class="attr">hugepages-1Gi:</span> <span class="string">&quot;0&quot;</span></span><br><span class="line">  <span class="attr">hugepages-2Mi:</span> <span class="string">40Mi</span></span><br><span class="line">  <span class="attr">memory:</span> <span class="string">64756684Ki</span></span><br><span class="line">  <span class="attr">pods:</span> <span class="string">&quot;110&quot;</span></span><br></pre></td></tr></table></figure>
 <p>pod在使用大页内存的时候，需要以volume的方式挂载到pod中，pod对大页内存的使用跟普通文件系统相同。</p>
-]]></content>
-  </entry>
-  <entry>
-    <title>Linux下网卡混杂模式</title>
-    <url>/post/if-promiscuous/</url>
-    <content><![CDATA[<p>网卡的混杂模式是指网卡将其接收的所有流量都交给cpu。非混杂模式下，网卡仅接收目的mac地址是自己mac地址的单播，以及多播和广播包，可以看出混杂模式是工作在二层的。</p>
-<p>通过ifconfig eth0的方式，如果输出中包含了PROMISC字段，说明网卡处于混杂模式。但是如果ifconfig 命令的输出中未包含PROMISC字段，并不能说明网卡处于非混杂模式下。</p>
-<p>可以通过查看 cat &#x2F;sys&#x2F;class&#x2F;net&#x2F;bond0&#x2F;flags 的输出得知，如果置位了0x100，说明处于混杂模式。</p>
 ]]></content>
   </entry>
   <entry>
@@ -4386,6 +4162,61 @@
       </tags>
   </entry>
   <entry>
+    <title>深度探索C++对象模型读书笔记_第四章：函数语意学</title>
+    <url>/post/inside_the_c++_object_model_chapter_4/</url>
+    <content><![CDATA[<h1 id="成员函数的各种调用方式"><a href="#成员函数的各种调用方式" class="headerlink" title="成员函数的各种调用方式"></a>成员函数的各种调用方式</h1><h2 id="非静态成员函数的调用方式"><a href="#非静态成员函数的调用方式" class="headerlink" title="非静态成员函数的调用方式"></a>非静态成员函数的调用方式</h2><p>在C++中必须要保证类的非静态成员函数必须和非成员函数的执行效率一致，在编译的过程中，编译期已经将类的非静态成员函数编译为了非成员函数。</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span>  <span class="title class_">Test</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="function"><span class="type">int</span> <span class="title">sum</span><span class="params">()</span> <span class="type">const</span></span></span><br><span class="line"><span class="function">	</span>&#123;</span><br><span class="line">		<span class="keyword">return</span> a + b;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="type">int</span> <span class="title">add</span><span class="params">()</span></span></span><br><span class="line"><span class="function">	</span>&#123;</span><br><span class="line">		<span class="keyword">return</span> a;		</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="function"><span class="type">int</span> <span class="title">add</span><span class="params">(<span class="type">int</span> size)</span></span></span><br><span class="line"><span class="function">	</span>&#123;</span><br><span class="line">	   <span class="keyword">return</span> a + size;</span><br><span class="line">	&#125;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	 <span class="type">int</span> a;</span><br><span class="line">	 <span class="type">int</span> b;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>在上述Test类中，编译器会在编译阶段对类中的成员函数做一些转换。下面列出了编译器可能会做出的变换，不同的编译器实现不太一致。</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">sum_TestFv</span><span class="params">(<span class="type">const</span> Test * <span class="type">const</span> <span class="keyword">this</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>-&gt;a + <span class="keyword">this</span>-&gt;b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">add_TestFv</span><span class="params">(Test * <span class="type">const</span> <span class="keyword">this</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">this</span>-&gt;a;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">add_Testi</span><span class="params">(<span class="type">int</span> size, Test * <span class="type">const</span> <span class="keyword">this</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">this</span>-&gt;a + size;</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+
+<p>通过上面的变换可以总结出如下规律：</p>
+<ul>
+<li>将成员函数重新改写为一个外部函数，并且对函数的名字进行处理，使在程序中唯一。一种可能的处理办法就是将函数名更改为：函数名_类名_函数参数。这样即解决了类之间函数名相同的问题，又解决了类之间函数重载的问题。</li>
+<li>在函数的参数末尾添加额外的this指针参数。对于const函数添加的this指针为双const类型，对于非const函数则添加的this指针为指向的内容可变的const指针。</li>
+<li>在函数内对成员函数的存取采用this指针来实现。</li>
+</ul>
+<h2 id="虚成员函数"><a href="#虚成员函数" class="headerlink" title="虚成员函数"></a>虚成员函数</h2><p>虚函数如果是通过指针类型访问，需要在运行时动态决定指针指向的类型，因此需要访问虚函数表才能够获取正确的虚函数地址。访问虚函数的方式为<code>(*ptr-&gt;vptr[i])(ptr)</code>，其中i代表要调用的虚函数在虚函数表中的索引，最后一个ptr代表要调用虚函数的编译器添加的this指针参数。</p>
+<p>关于虚成员函数的更详细问题会在下一个节中进行讨论。</p>
+<h2 id="静态成员函数"><a href="#静态成员函数" class="headerlink" title="静态成员函数"></a>静态成员函数</h2><p>静态成员函数中没有this指针，可以理解成带类作用域的全局函数，执行效率跟全局函数一致。</p>
+<h1 id="虚成员函数-1"><a href="#虚成员函数-1" class="headerlink" title="虚成员函数"></a>虚成员函数</h1><p>这部分内容是本书的核心内容，可以参考陈皓的博客相关文章，已经对C++中的虚成员函数和虚成员变量进行了说明。</p>
+<ul>
+<li><a href="http://blog.csdn.net/haoel/article/details/1948051">C++ 虚函数表解析</a></li>
+<li><a href="http://blog.csdn.net/haoel/article/details/3081328">C++ 对象的内存布局(上)</a></li>
+<li><a href="http://blog.csdn.net/haoel/article/details/3081385">C++ 对象的内存布局(下)</a></li>
+</ul>
+<h2 id="单一继承下的虚函数"><a href="#单一继承下的虚函数" class="headerlink" title="单一继承下的虚函数"></a>单一继承下的虚函数</h2><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Point</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="keyword">virtual</span> ~<span class="built_in">Point</span>()&#123;&#125;</span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> Point&amp; <span class="title">mult</span><span class="params">(<span class="type">float</span>)</span> </span>= <span class="number">0</span>;</span><br><span class="line">	<span class="function"><span class="type">float</span> <span class="title">x</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> _x;&#125;</span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> <span class="type">float</span> <span class="title">y</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> <span class="number">0</span>;&#125;</span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> <span class="type">float</span> <span class="title">z</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> <span class="number">0</span>;&#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">	<span class="built_in">Point</span>(<span class="type">float</span> x=<span class="number">0.0</span>) &#123;_x = x;&#125;</span><br><span class="line">	<span class="type">float</span> _x;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Point2d</span> : <span class="keyword">public</span> Point</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="built_in">Point2d</span>(<span class="type">float</span> x=<span class="number">0.0</span>, <span class="type">float</span> y=<span class="number">0.0</span>) : <span class="built_in">Point</span>(x), _y(y) &#123;&#125;</span><br><span class="line">	~<span class="built_in">Point2d</span>()&#123;&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function">Point2d&amp; <span class="title">mult</span><span class="params">(<span class="type">float</span>)</span></span>&#123;<span class="keyword">return</span> *<span class="keyword">this</span>;&#125;</span><br><span class="line">	<span class="function"><span class="type">float</span> <span class="title">y</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> _y;&#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">	<span class="type">float</span> _y;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Point3d</span> : <span class="keyword">public</span> Point2d</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="built_in">Point3d</span>(<span class="type">float</span> x=<span class="number">0.0</span>, <span class="type">float</span> y=<span class="number">0.0</span>, <span class="type">float</span> z=<span class="number">0.0</span>) : <span class="built_in">Point2d</span>(x, y), _z(z) &#123;&#125;</span><br><span class="line">	~<span class="built_in">Point3d</span>()&#123;&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function">Point3d &amp; <span class="title">mult</span><span class="params">(<span class="type">float</span>)</span> </span>&#123;<span class="keyword">return</span> *<span class="keyword">this</span>;&#125;</span><br><span class="line">	<span class="function"><span class="type">float</span> <span class="title">z</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> _z;&#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">	<span class="type">float</span> _z;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>三个类对应的虚函数表会转化成下图</p>
+<p><img src="/ref/c++/c++_object_model/chapter4_1.PNG" alt="Image Title"></p>
+<p>通过图中可以看出每个函数在虚函数表中的位置无论在基类还是在子类中位置总是固定的。图中的Point的实例应该是不存在的，因为类中含有纯虚函数mult。</p>
+<p>要想调用ptr-&gt;z()就变得非常容易，可以在编译器就可以确定虚函数的调用。虽然ptr所指向的对象在编译器并不能确定，但是编译器可以将其转化成为(*ptr-&gt;vptr[4])(ptr)。因为z()函数总是在虚函数表中的第四个位置，唯一需要在执行期确定的就是ptr所指的对象的实际类型。</p>
+<h2 id="多重继承下的虚函数"><a href="#多重继承下的虚函数" class="headerlink" title="多重继承下的虚函数"></a>多重继承下的虚函数</h2><p>避免重复造轮子，参考上面博文。</p>
+<h2 id="虚拟继承下的虚函数"><a href="#虚拟继承下的虚函数" class="headerlink" title="虚拟继承下的虚函数"></a>虚拟继承下的虚函数</h2><p>避免重复造轮子，参考上面博文。</p>
+<h1 id="函数的效率"><a href="#函数的效率" class="headerlink" title="函数的效率"></a>函数的效率</h1><p>非成员函数、静态成员函数、非静态成员函数都被转换成为了完全相同的形式。<br>inline函数的执行效率最高。<br>虚函数的效率最低。</p>
+<h1 id="指向成员函数的指针"><a href="#指向成员函数的指针" class="headerlink" title="指向成员函数的指针"></a>指向成员函数的指针</h1><p>这里学习到一个新的语法，之前没有接触过。即指向类成员函数的指针及使用方法。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#include &lt;iostream&gt;</span><br><span class="line">using namespace std;</span><br><span class="line">class Point</span><br><span class="line">&#123;</span><br><span class="line">public:</span><br><span class="line">	virtual ~Point() &#123;&#125;</span><br><span class="line">	float x() &#123;return _x;&#125;</span><br><span class="line">public:</span><br><span class="line">	Point(float x=0.0)</span><br><span class="line">	&#123;</span><br><span class="line">		_x = x;</span><br><span class="line">	&#125;</span><br><span class="line">	float _x;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">	Point point(1.0);</span><br><span class="line">	float (Point::*p)();   // 定义指向成员函数的指针</span><br><span class="line">	p = &amp;Point::x;        // 为指向成员函数的指针赋值</span><br><span class="line">	cout &lt;&lt; (point.*p)();  // 调用指向类成员函数的指针</span><br><span class="line">	return 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果成员函数的指针并不用于虚函数、多重继承、虚基类等情况，则成员函数的指针效率跟非成员函数指针的效率一致。</p>
+<h2 id="指向虚成员函数的指针"><a href="#指向虚成员函数的指针" class="headerlink" title="指向虚成员函数的指针"></a>指向虚成员函数的指针</h2><p>书中对于函数取地址的语法在gcc和vs2008下我试验不成功，语法错误。</p>
+<h2 id="多重继承下指向成员函数的指针"><a href="#多重继承下指向成员函数的指针" class="headerlink" title="多重继承下指向成员函数的指针"></a>多重继承下指向成员函数的指针</h2><p>依赖于编译器的实现，用到的情况比较少，没仔细看。</p>
+<h2 id="指向成员函数指针的效率"><a href="#指向成员函数指针的效率" class="headerlink" title="指向成员函数指针的效率"></a>指向成员函数指针的效率</h2><p>在引入了虚函数、多重继承、虚基类等情况后，指向成员函数的指针效率有所下降。</p>
+<h1 id="内联函数"><a href="#内联函数" class="headerlink" title="内联函数"></a>内联函数</h1><p>内联只是一个请求，编译器并不一定会将函数内联的展开。</p>
+<h2 id="形式参数"><a href="#形式参数" class="headerlink" title="形式参数"></a>形式参数</h2><p>内联时每一个形参都会被对应的实参取代。</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">inline</span> <span class="type">int</span> <span class="title">min</span><span class="params">(<span class="type">int</span> i, <span class="type">int</span> j)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> i &lt; j ? i : j;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">inline</span> <span class="type">int</span> <span class="title">bar</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">int</span> minval;</span><br><span class="line">	<span class="type">int</span> val1 = <span class="number">1024</span>;</span><br><span class="line">	<span class="type">int</span> val2 = <span class="number">2048</span>;</span><br><span class="line">	minval = <span class="built_in">min</span>(val1, val2);</span><br><span class="line">	minval = <span class="built_in">min</span>(<span class="number">1024</span>, <span class="number">2048</span>);</span><br><span class="line">	minval = <span class="built_in">min</span>(<span class="built_in">foo</span>(), <span class="built_in">bar</span>() + <span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>minval=min(val1, val2)</code>会被内联展开成<code>minval = val1 &lt; val2 ? val1 : val2</code>。<br><code>minval = min(1024, 2048)</code>会被扩展为<code>minval = 1024</code>。<br><code>minval = min(foo(), bar() + 1)</code>需要引入临时对象，被扩展为</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">int t1;</span><br><span class="line">int t2;</span><br><span class="line">minval = (t1 = foo()) , (t2 = bar() + 1), t1 &lt; t2 ? t1 : t2;</span><br></pre></td></tr></table></figure>
+
+<h2 id="局部变量"><a href="#局部变量" class="headerlink" title="局部变量"></a>局部变量</h2><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">inline</span> <span class="type">int</span> <span class="title">min</span><span class="params">(<span class="type">int</span> i, <span class="type">int</span> j)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">int</span> minval = i &lt; j ? i : j;</span><br><span class="line">	<span class="keyword">return</span> minval;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">inline</span> <span class="type">int</span> <span class="title">bar</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">int</span> minval;</span><br><span class="line">	<span class="type">int</span> val1 = <span class="number">1024</span>;</span><br><span class="line">	<span class="type">int</span> val2 = <span class="number">2048</span>;</span><br><span class="line">	minval = <span class="built_in">min</span>(val1, val2);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在内联函数中引入局部变量，内联函数在内联的时候局部变量会拥有一个唯一的名称。代码中的<code>minval = min(val1, val2)</code>会被内联为：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> _min_lv_minval;</span><br><span class="line">minval = (_min_lv_minval = val1 &lt; val2 ? val1 : val2), _min_lv_minval;</span><br></pre></td></tr></table></figure>
+
+<p>内联函数可以代替C语言中的#define宏定义，但是当内联函数调用次数过多，会产生大量的扩展代码，使程序的大小变大。</p>
+]]></content>
+      <tags>
+        <tag>C++</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>深度探索C++对象模型读书笔记_第三章：数据语意学</title>
     <url>/post/inside_the_c++_object_model_chapter_3/</url>
     <content><![CDATA[<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">class X &#123;&#125;;</span><br><span class="line">class Y : public virtual X &#123;&#125;;</span><br><span class="line">class Z : public virtual X &#123;&#125;;</span><br><span class="line">class A : public Y, public Z &#123;&#125;;</span><br></pre></td></tr></table></figure>
@@ -4442,61 +4273,6 @@
 <h1 id="对象成员的效率"><a href="#对象成员的效率" class="headerlink" title="对象成员的效率"></a>对象成员的效率</h1><p>作者经过试验测试，继承下的类成员读写效率跟读写普通变量效率相差不大，虚拟继承对程序的读写效率有影响。这跟理论上相差不大。</p>
 <h1 id="指向数据成员的指针"><a href="#指向数据成员的指针" class="headerlink" title="指向数据成员的指针"></a>指向数据成员的指针</h1><p>小技巧：可以通过<code>&amp;类名::变量名</code>的语法来获取类成员变量在类对象中的位置，即相对于类对象起始地址的偏移量。</p>
 <p>书中后面的内容个人感觉没有必要看了。</p>
-]]></content>
-      <tags>
-        <tag>C++</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>深度探索C++对象模型读书笔记_第四章：函数语意学</title>
-    <url>/post/inside_the_c++_object_model_chapter_4/</url>
-    <content><![CDATA[<h1 id="成员函数的各种调用方式"><a href="#成员函数的各种调用方式" class="headerlink" title="成员函数的各种调用方式"></a>成员函数的各种调用方式</h1><h2 id="非静态成员函数的调用方式"><a href="#非静态成员函数的调用方式" class="headerlink" title="非静态成员函数的调用方式"></a>非静态成员函数的调用方式</h2><p>在C++中必须要保证类的非静态成员函数必须和非成员函数的执行效率一致，在编译的过程中，编译期已经将类的非静态成员函数编译为了非成员函数。</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span>  <span class="title class_">Test</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="function"><span class="type">int</span> <span class="title">sum</span><span class="params">()</span> <span class="type">const</span></span></span><br><span class="line"><span class="function">	</span>&#123;</span><br><span class="line">		<span class="keyword">return</span> a + b;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="type">int</span> <span class="title">add</span><span class="params">()</span></span></span><br><span class="line"><span class="function">	</span>&#123;</span><br><span class="line">		<span class="keyword">return</span> a;		</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="function"><span class="type">int</span> <span class="title">add</span><span class="params">(<span class="type">int</span> size)</span></span></span><br><span class="line"><span class="function">	</span>&#123;</span><br><span class="line">	   <span class="keyword">return</span> a + size;</span><br><span class="line">	&#125;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	 <span class="type">int</span> a;</span><br><span class="line">	 <span class="type">int</span> b;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>在上述Test类中，编译器会在编译阶段对类中的成员函数做一些转换。下面列出了编译器可能会做出的变换，不同的编译器实现不太一致。</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">sum_TestFv</span><span class="params">(<span class="type">const</span> Test * <span class="type">const</span> <span class="keyword">this</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>-&gt;a + <span class="keyword">this</span>-&gt;b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">add_TestFv</span><span class="params">(Test * <span class="type">const</span> <span class="keyword">this</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">this</span>-&gt;a;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">add_Testi</span><span class="params">(<span class="type">int</span> size, Test * <span class="type">const</span> <span class="keyword">this</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">this</span>-&gt;a + size;</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
-
-<p>通过上面的变换可以总结出如下规律：</p>
-<ul>
-<li>将成员函数重新改写为一个外部函数，并且对函数的名字进行处理，使在程序中唯一。一种可能的处理办法就是将函数名更改为：函数名_类名_函数参数。这样即解决了类之间函数名相同的问题，又解决了类之间函数重载的问题。</li>
-<li>在函数的参数末尾添加额外的this指针参数。对于const函数添加的this指针为双const类型，对于非const函数则添加的this指针为指向的内容可变的const指针。</li>
-<li>在函数内对成员函数的存取采用this指针来实现。</li>
-</ul>
-<h2 id="虚成员函数"><a href="#虚成员函数" class="headerlink" title="虚成员函数"></a>虚成员函数</h2><p>虚函数如果是通过指针类型访问，需要在运行时动态决定指针指向的类型，因此需要访问虚函数表才能够获取正确的虚函数地址。访问虚函数的方式为<code>(*ptr-&gt;vptr[i])(ptr)</code>，其中i代表要调用的虚函数在虚函数表中的索引，最后一个ptr代表要调用虚函数的编译器添加的this指针参数。</p>
-<p>关于虚成员函数的更详细问题会在下一个节中进行讨论。</p>
-<h2 id="静态成员函数"><a href="#静态成员函数" class="headerlink" title="静态成员函数"></a>静态成员函数</h2><p>静态成员函数中没有this指针，可以理解成带类作用域的全局函数，执行效率跟全局函数一致。</p>
-<h1 id="虚成员函数-1"><a href="#虚成员函数-1" class="headerlink" title="虚成员函数"></a>虚成员函数</h1><p>这部分内容是本书的核心内容，可以参考陈皓的博客相关文章，已经对C++中的虚成员函数和虚成员变量进行了说明。</p>
-<ul>
-<li><a href="http://blog.csdn.net/haoel/article/details/1948051">C++ 虚函数表解析</a></li>
-<li><a href="http://blog.csdn.net/haoel/article/details/3081328">C++ 对象的内存布局(上)</a></li>
-<li><a href="http://blog.csdn.net/haoel/article/details/3081385">C++ 对象的内存布局(下)</a></li>
-</ul>
-<h2 id="单一继承下的虚函数"><a href="#单一继承下的虚函数" class="headerlink" title="单一继承下的虚函数"></a>单一继承下的虚函数</h2><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Point</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="keyword">virtual</span> ~<span class="built_in">Point</span>()&#123;&#125;</span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> Point&amp; <span class="title">mult</span><span class="params">(<span class="type">float</span>)</span> </span>= <span class="number">0</span>;</span><br><span class="line">	<span class="function"><span class="type">float</span> <span class="title">x</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> _x;&#125;</span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> <span class="type">float</span> <span class="title">y</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> <span class="number">0</span>;&#125;</span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> <span class="type">float</span> <span class="title">z</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> <span class="number">0</span>;&#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">	<span class="built_in">Point</span>(<span class="type">float</span> x=<span class="number">0.0</span>) &#123;_x = x;&#125;</span><br><span class="line">	<span class="type">float</span> _x;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Point2d</span> : <span class="keyword">public</span> Point</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="built_in">Point2d</span>(<span class="type">float</span> x=<span class="number">0.0</span>, <span class="type">float</span> y=<span class="number">0.0</span>) : <span class="built_in">Point</span>(x), _y(y) &#123;&#125;</span><br><span class="line">	~<span class="built_in">Point2d</span>()&#123;&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function">Point2d&amp; <span class="title">mult</span><span class="params">(<span class="type">float</span>)</span></span>&#123;<span class="keyword">return</span> *<span class="keyword">this</span>;&#125;</span><br><span class="line">	<span class="function"><span class="type">float</span> <span class="title">y</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> _y;&#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">	<span class="type">float</span> _y;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Point3d</span> : <span class="keyword">public</span> Point2d</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="built_in">Point3d</span>(<span class="type">float</span> x=<span class="number">0.0</span>, <span class="type">float</span> y=<span class="number">0.0</span>, <span class="type">float</span> z=<span class="number">0.0</span>) : <span class="built_in">Point2d</span>(x, y), _z(z) &#123;&#125;</span><br><span class="line">	~<span class="built_in">Point3d</span>()&#123;&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function">Point3d &amp; <span class="title">mult</span><span class="params">(<span class="type">float</span>)</span> </span>&#123;<span class="keyword">return</span> *<span class="keyword">this</span>;&#125;</span><br><span class="line">	<span class="function"><span class="type">float</span> <span class="title">z</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> _z;&#125;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">	<span class="type">float</span> _z;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>三个类对应的虚函数表会转化成下图</p>
-<p><img src="/ref/c++/c++_object_model/chapter4_1.PNG" alt="Image Title"></p>
-<p>通过图中可以看出每个函数在虚函数表中的位置无论在基类还是在子类中位置总是固定的。图中的Point的实例应该是不存在的，因为类中含有纯虚函数mult。</p>
-<p>要想调用ptr-&gt;z()就变得非常容易，可以在编译器就可以确定虚函数的调用。虽然ptr所指向的对象在编译器并不能确定，但是编译器可以将其转化成为(*ptr-&gt;vptr[4])(ptr)。因为z()函数总是在虚函数表中的第四个位置，唯一需要在执行期确定的就是ptr所指的对象的实际类型。</p>
-<h2 id="多重继承下的虚函数"><a href="#多重继承下的虚函数" class="headerlink" title="多重继承下的虚函数"></a>多重继承下的虚函数</h2><p>避免重复造轮子，参考上面博文。</p>
-<h2 id="虚拟继承下的虚函数"><a href="#虚拟继承下的虚函数" class="headerlink" title="虚拟继承下的虚函数"></a>虚拟继承下的虚函数</h2><p>避免重复造轮子，参考上面博文。</p>
-<h1 id="函数的效率"><a href="#函数的效率" class="headerlink" title="函数的效率"></a>函数的效率</h1><p>非成员函数、静态成员函数、非静态成员函数都被转换成为了完全相同的形式。<br>inline函数的执行效率最高。<br>虚函数的效率最低。</p>
-<h1 id="指向成员函数的指针"><a href="#指向成员函数的指针" class="headerlink" title="指向成员函数的指针"></a>指向成员函数的指针</h1><p>这里学习到一个新的语法，之前没有接触过。即指向类成员函数的指针及使用方法。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#include &lt;iostream&gt;</span><br><span class="line">using namespace std;</span><br><span class="line">class Point</span><br><span class="line">&#123;</span><br><span class="line">public:</span><br><span class="line">	virtual ~Point() &#123;&#125;</span><br><span class="line">	float x() &#123;return _x;&#125;</span><br><span class="line">public:</span><br><span class="line">	Point(float x=0.0)</span><br><span class="line">	&#123;</span><br><span class="line">		_x = x;</span><br><span class="line">	&#125;</span><br><span class="line">	float _x;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">	Point point(1.0);</span><br><span class="line">	float (Point::*p)();   // 定义指向成员函数的指针</span><br><span class="line">	p = &amp;Point::x;        // 为指向成员函数的指针赋值</span><br><span class="line">	cout &lt;&lt; (point.*p)();  // 调用指向类成员函数的指针</span><br><span class="line">	return 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果成员函数的指针并不用于虚函数、多重继承、虚基类等情况，则成员函数的指针效率跟非成员函数指针的效率一致。</p>
-<h2 id="指向虚成员函数的指针"><a href="#指向虚成员函数的指针" class="headerlink" title="指向虚成员函数的指针"></a>指向虚成员函数的指针</h2><p>书中对于函数取地址的语法在gcc和vs2008下我试验不成功，语法错误。</p>
-<h2 id="多重继承下指向成员函数的指针"><a href="#多重继承下指向成员函数的指针" class="headerlink" title="多重继承下指向成员函数的指针"></a>多重继承下指向成员函数的指针</h2><p>依赖于编译器的实现，用到的情况比较少，没仔细看。</p>
-<h2 id="指向成员函数指针的效率"><a href="#指向成员函数指针的效率" class="headerlink" title="指向成员函数指针的效率"></a>指向成员函数指针的效率</h2><p>在引入了虚函数、多重继承、虚基类等情况后，指向成员函数的指针效率有所下降。</p>
-<h1 id="内联函数"><a href="#内联函数" class="headerlink" title="内联函数"></a>内联函数</h1><p>内联只是一个请求，编译器并不一定会将函数内联的展开。</p>
-<h2 id="形式参数"><a href="#形式参数" class="headerlink" title="形式参数"></a>形式参数</h2><p>内联时每一个形参都会被对应的实参取代。</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">inline</span> <span class="type">int</span> <span class="title">min</span><span class="params">(<span class="type">int</span> i, <span class="type">int</span> j)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> i &lt; j ? i : j;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">inline</span> <span class="type">int</span> <span class="title">bar</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">int</span> minval;</span><br><span class="line">	<span class="type">int</span> val1 = <span class="number">1024</span>;</span><br><span class="line">	<span class="type">int</span> val2 = <span class="number">2048</span>;</span><br><span class="line">	minval = <span class="built_in">min</span>(val1, val2);</span><br><span class="line">	minval = <span class="built_in">min</span>(<span class="number">1024</span>, <span class="number">2048</span>);</span><br><span class="line">	minval = <span class="built_in">min</span>(<span class="built_in">foo</span>(), <span class="built_in">bar</span>() + <span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><code>minval=min(val1, val2)</code>会被内联展开成<code>minval = val1 &lt; val2 ? val1 : val2</code>。<br><code>minval = min(1024, 2048)</code>会被扩展为<code>minval = 1024</code>。<br><code>minval = min(foo(), bar() + 1)</code>需要引入临时对象，被扩展为</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">int t1;</span><br><span class="line">int t2;</span><br><span class="line">minval = (t1 = foo()) , (t2 = bar() + 1), t1 &lt; t2 ? t1 : t2;</span><br></pre></td></tr></table></figure>
-
-<h2 id="局部变量"><a href="#局部变量" class="headerlink" title="局部变量"></a>局部变量</h2><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">inline</span> <span class="type">int</span> <span class="title">min</span><span class="params">(<span class="type">int</span> i, <span class="type">int</span> j)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">int</span> minval = i &lt; j ? i : j;</span><br><span class="line">	<span class="keyword">return</span> minval;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">inline</span> <span class="type">int</span> <span class="title">bar</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">int</span> minval;</span><br><span class="line">	<span class="type">int</span> val1 = <span class="number">1024</span>;</span><br><span class="line">	<span class="type">int</span> val2 = <span class="number">2048</span>;</span><br><span class="line">	minval = <span class="built_in">min</span>(val1, val2);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在内联函数中引入局部变量，内联函数在内联的时候局部变量会拥有一个唯一的名称。代码中的<code>minval = min(val1, val2)</code>会被内联为：</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> _min_lv_minval;</span><br><span class="line">minval = (_min_lv_minval = val1 &lt; val2 ? val1 : val2), _min_lv_minval;</span><br></pre></td></tr></table></figure>
-
-<p>内联函数可以代替C语言中的#define宏定义，但是当内联函数调用次数过多，会产生大量的扩展代码，使程序的大小变大。</p>
 ]]></content>
       <tags>
         <tag>C++</tag>
@@ -7164,24 +6940,6 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
       </tags>
   </entry>
   <entry>
-    <title>linux中获取错误信息的方式</title>
-    <url>/post/linux_get_error_of_function/</url>
-    <content><![CDATA[<p>当linux中的函数内部出错时通常函数会返回-1，并且将错误码保存到全局变量errno中，用来表示错误代码。errno全局变量包含在头文件errno.h文件中。下面给出三种打印错误信息的方法。</p>
-<h1 id="perror函数"><a href="#perror函数" class="headerlink" title="perror函数"></a>perror函数</h1><p>应用举例如下：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        perror(<span class="string">&quot;error : &quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>输出如下：<br>Permission denied</p>
-<h1 id="strerror函数"><a href="#strerror函数" class="headerlink" title="strerror函数"></a>strerror函数</h1><p>strerror函数原型为：char *strerror(int errnum);将参数errnum转换为对应的错误码。<br>应用举例如下：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, strerror(errno));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>输出如下：<br>Permission denied</p>
-<h1 id="printf中的-m打印"><a href="#printf中的-m打印" class="headerlink" title="printf中的%m打印"></a>printf中的%m打印</h1><p>应用举例如下：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%m\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>输出如下：<br>Permission denied</p>
-]]></content>
-      <tags>
-        <tag>Linux</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Linux IO模型</title>
     <url>/post/linux_io/</url>
     <content><![CDATA[<p>由于I&#x2F;O模型现在掌握还不够透彻，本文仅列出了一些I&#x2F;O模型中的一些常用概念，对于select、poll、epoll和信号驱动I&#x2F;O等模型理解还不够透彻，待理解透彻后补上。</p>
@@ -7243,6 +7001,24 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 
 <p>例子比较简单，不作过多解释。</p>
 ]]></content>
+  </entry>
+  <entry>
+    <title>linux中获取错误信息的方式</title>
+    <url>/post/linux_get_error_of_function/</url>
+    <content><![CDATA[<p>当linux中的函数内部出错时通常函数会返回-1，并且将错误码保存到全局变量errno中，用来表示错误代码。errno全局变量包含在头文件errno.h文件中。下面给出三种打印错误信息的方法。</p>
+<h1 id="perror函数"><a href="#perror函数" class="headerlink" title="perror函数"></a>perror函数</h1><p>应用举例如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        perror(<span class="string">&quot;error : &quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出如下：<br>Permission denied</p>
+<h1 id="strerror函数"><a href="#strerror函数" class="headerlink" title="strerror函数"></a>strerror函数</h1><p>strerror函数原型为：char *strerror(int errnum);将参数errnum转换为对应的错误码。<br>应用举例如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, strerror(errno));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出如下：<br>Permission denied</p>
+<h1 id="printf中的-m打印"><a href="#printf中的-m打印" class="headerlink" title="printf中的%m打印"></a>printf中的%m打印</h1><p>应用举例如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%m\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出如下：<br>Permission denied</p>
+]]></content>
+      <tags>
+        <tag>Linux</tag>
+      </tags>
   </entry>
   <entry>
     <title>一个Linux下的监听脚本程序</title>
@@ -7777,6 +7553,188 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
       </tags>
   </entry>
   <entry>
+    <title>市长热线12345</title>
+    <url>/post/mayor_hotline/</url>
+    <content><![CDATA[<p><img src="/ref/life/mayor_hotline.jpg" alt="Image Title"></p>
+<p>前段时间在家看书学习，难得的学习的好时机。</p>
+<p>楼下有一个卖饭的小摊及其猖狂，不仅占用了人行道来炒菜，而且还在马路上摆了一溜桌子供客人吃饭，不仅占用了人行道，连车行道都给占用了。这些也就罢了，对我影响都不算太大，更可气的是每天中午和晚上吃饭的时候会开着大音响放着恼人的音乐，我不想惹麻烦，我忍。</p>
+<p>今天中午我刚开始看书，看到难处需要精心思考，恼人的音乐又开始了，我实在忍不住了，TMD，维权。打市长热线12345投诉，市长热线让我打110投诉。继续打110投诉，然后跟110说了下具体情况后，说给相应的派出所去处理。派出所的小片警立刻就给我回电话了，说外放音乐正常经营范围，只要不在晚上或清晨放音乐就不算违规，他们管不着，建议我去下面跟卖饭的商量，好一个商量。然后我又说，他们非法占道经营，小片警又说这个归城管管，让我给城管打电话，好一个给城管打电话。好一个推卸责任，这些把我给惹毛了。</p>
+<p>挂断电话后，寻思这个理不太对，然后继续给市长热线12345打电话，告诉情况后，市长热线的妹子告诉我说这个事情我给你处理，好一个我给你处理，这才是为人民服务的态度，鼓掌。</p>
+<p>这是第二次机会接触小片警，每次都是让我失望，绝望，恨之入骨。第一次接触小片警我甚至kill him的心都有了。不一心想着为人民服务，却是一心想着推卸责任，处处刁难市民并从中谋取私利，对市民爱理不理，这就是小片警在我心中的形象，很难改变。越是权利小的小兵，架子越大，这也就决定了永远是个小兵的身份。</p>
+<p>如果没有市长热线那这件扰民的事情也就不了了之了，因为投诉110都不管用了，作为市民已经没有可以维权的机构了。还好有市长热线的存在给市民多了一个维权的途径。</p>
+<p>上周五打的电话，这个周一给我回复电话问我饭馆在哪一次，周二又打电话问我饭馆在哪，然后周三终于给处理了，下班途中派出所给我电话回复说：“已经处理好了，让小饭馆的音响声音调小了，以后如果再有这种情况可以继续打电话”。等我回家一看，果然音响不见了，世界一下子清净了，zf终于替我办事了。</p>
+<p>也许是因为我的事情不是很紧急的原因，整个处理流程过于慢了，等了足足五天的时间才处理好。</p>
+<p>当大家的权益受到损害时，请大家多给市长热线打电话维护自己的权益。</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>从0开始学习微服务阅读笔记</title>
+    <url>/post/micro-service/</url>
+    <content><![CDATA[<p>本文为极客时间专栏从0开始学习微服务的阅读笔记。</p>
+<p>在了解微服务之前，先来了解一下单体应用。</p>
+<p>在上学那会，做过一些企业站，技术往往是基于LAMP（Linux + Apache + MySQL + PHP），这种业务较为简单的企业站，就是单体应用。所有的业务代码都是放在一个PHP程序中，代码只需要我自己来维护就可以了，测试、上线、运维全部搞定。</p>
+<p>但这种单体应用要是放到稍微有点规模的互联网公司中必然是行不通的。一个公司里有很多的人，不可能公司这么多技术人员共同维护一套代码，这样子团队的写作必然是个问题。系统的健壮性也会比较差，一旦单体应用中的一个模块出问题后往往会影响到其他的模块，导致整个系统不可用，比如PHP的服务业界通常使用php-fpm来管理，而php-fpm处理连接的方式一个请求一个线程，当一部分请求因为延时高时会消耗过多的线程资源，导致其他请求没有可用的线程可以处理。</p>
+<p>单体应用的其他缺点不再罗列，比如代码膨胀过度、发布较慢、系统高可用性差、团队协作成本高等。</p>
+<p>为了解决单体应用的这些缺点，方法只有一个就是将单体应用拆分为多个服务即服务化，服务之间通过RPC的方式相互调用。</p>
+<p>即服务化后，业界又提出了微服务的概念。</p>
+<p>维基百科中有如下定义：</p>
+<blockquote>
+<p>2014年，Martin Fowler 与 James Lewis 共同提出了微服务的概念，定义了微服务是由以单一应用程序构成的小服务，自己拥有自己的行程与轻量化处理，服务依业务功能设计，以全自动的方式部署，与其他服务使用 HTTP API 通讯。同时服务会使用最小的规模的集中管理 (例如 Docker) 能力，服务可以用不同的编程语言与数据库等元件实作。</p>
+</blockquote>
+<p>但看这个定义，看的我一脸懵逼，实在太过抽象。其实微服务也没有一个特别明确的定义。</p>
+<p>那么服务化和微服务之间有什么不同之处呢？</p>
+<ol>
+<li>服务拆分粒度更细。</li>
+<li>每个微服务都独立部署和维护。</li>
+<li>微服务需要服务治理。由于微服务会将服务变多，势必需要一个服务管理平台来对微服务进行管理。</li>
+</ol>
+<p>将单体应用向微服务拆分的方式可以分为纵向拆分和横向拆分。这里以一点资讯app为例来解释纵向拆分和横向拆分。</p>
+<p>一点资讯分为信息流、正文页等模块，而这些功能都依赖于用户信息获取模块，纵向拆分即将信息流、正文页拆分为微服务，横向拆分即将信息流、正文页都依赖的用户信息获取模块拆分为单独的服务。</p>
+<h2 id="微服务架构"><a href="#微服务架构" class="headerlink" title="微服务架构"></a>微服务架构</h2><p>采用微服务后会带来一系列复杂的问题，新技术在解决了一部分问题的同时，总会带来一些新的问题，比如服务怎么定义接口、服务的发布方式和服务发现、服务的监控、服务的治理（包括依赖关系梳理、熔断机制等）、故障快速定位等。</p>
+<p>那么一个标准的微服务架构应该长什么样子呢？</p>
+<p>服务提供方在服务启动时向服务注册中心注册服务，声明自己能够提供的服务及当前服务的地址等信息。</p>
+<p>服务调用者请求注册中心，查询所要调用服务的地址，并通过约定好的协议向服务提供者发起请求，获取到结果后按照数据协议格式将数据进行反序列化。</p>
+<p>在整个服务的调用过程中，服务的请求耗时、调用量、调用成功与否等信息都会作为监控记录下来，服务的调用关系会通过trace系统记录下来，以便用于后续的故障定位和追踪。如果服务调用失败，则需要服务治理的方式来保证调用方的正常运行。</p>
+<h2 id="服务的接口定义"><a href="#服务的接口定义" class="headerlink" title="服务的接口定义"></a>服务的接口定义</h2><p>需要解决的问题是服务的接口有哪些？每个接口的输入什么？每个接口的输出是什么？</p>
+<h3 id="RESTful-API"><a href="#RESTful-API" class="headerlink" title="RESTful API"></a>RESTful API</h3><p>HTTP协议的接口定义通常使用该协议，常见Wiki或者Swagger的方式来管理。</p>
+<h3 id="IDL文件"><a href="#IDL文件" class="headerlink" title="IDL文件"></a>IDL文件</h3><p>IDL（interface description language）用于描述接口，使得不同的编程语言不同的平台服务之间可以相互通讯。常见实现包括Thrift和protobuf，protobuf作为序列化方式的一种，通常会使用gRPC进行通讯。</p>
+<h3 id="XML文件方式"><a href="#XML文件方式" class="headerlink" title="XML文件方式"></a>XML文件方式</h3><p>服务提供者将接口描述信息保存在xml配置文件，服务启动后会加载配置文件，将服务暴露出去。</p>
+<p>服务消费者将要调用的接口信息写在xml配置文件中，进程启动后加载xml配置文件。</p>
+<h3 id="坑"><a href="#坑" class="headerlink" title="坑"></a>坑</h3><p>服务提供者通常需要提供服务的超时时间等参数，而消费者端也需要该信息，为了让消费者端能看到生产者端的配置，可以将信息放在配置中心中，但这却增大了配置中心的内容，当一旦配置变化需要同步时，同步的数据会变多。</p>
+<h2 id="注册中心"><a href="#注册中心" class="headerlink" title="注册中心"></a>注册中心</h2><p>要想实现服务之间的调用，通常会使用反向代理和服务注册中心的方法。</p>
+<p>反向代理的方法业界一般使用较多的包括nginx、haproxy以及业界新秀envoy等。</p>
+<p>在微服务架构中更多提及的方案为采用服务注册中心的方法，而注册中心的稳定性就显得尤其重要。</p>
+<p>业界注册中心采用较多的方案为zookeeper、etcd、consul、eureka。这些注册中心的存储数结构要么是树状接口，要么是key-value形式，其中k-v形式的可以变更key的值以实现类似树状结构。</p>
+<h3 id="注册中心的设计"><a href="#注册中心的设计" class="headerlink" title="注册中心的设计"></a>注册中心的设计</h3><h4 id="注册中心API及功能"><a href="#注册中心API及功能" class="headerlink" title="注册中心API及功能"></a>注册中心API及功能</h4><p>注册中心需要提供以下api以供服务提供方和服务调用方使用。</p>
+<ol>
+<li>服务注册接口，提供服务提供方使用</li>
+<li>服务反注册接口，提供服务提供方以便销毁服务</li>
+<li>心跳汇报接口，服务提供方通过心跳汇报服务是存活状态的。一旦当服务出现异常时，服务注册中心应该立即将服务从注册中心剔除。</li>
+<li>服务订阅接口，服务调用方用于获取服务提供方的实例列表</li>
+<li>服务变更接口，服务调用方用于获取最新可用服务。一旦注册中心探测到有新的服务实例或者实例减少，应该立即通知所有订阅该服务的服务调用者更新本地的节点信息。</li>
+</ol>
+<h4 id="注册中心存储哪些服务信息"><a href="#注册中心存储哪些服务信息" class="headerlink" title="注册中心存储哪些服务信息"></a>注册中心存储哪些服务信息</h4><p>通常可以按照“服务名-分组-节点信息”三层结构来存储，其中节点信息包括：节点ip地址、节点端口号、请求失败时重试次数、请求结果是否压缩。</p>
+<p>分组的划分原则包括：</p>
+<ol>
+<li>按照业务的核心程度</li>
+<li>按照机房维度</li>
+<li>线上环境、测试环境</li>
+</ol>
+<h4 id="注册中心如何工作"><a href="#注册中心如何工作" class="headerlink" title="注册中心如何工作"></a>注册中心如何工作</h4><h5 id="服务提供者注册节点"><a href="#服务提供者注册节点" class="headerlink" title="服务提供者注册节点"></a>服务提供者注册节点</h5><ol>
+<li>查看注册节点是否在白名单内，即是否可以向注册中心注册</li>
+<li>查看注册的服务名、服务分组是否存在</li>
+<li>将节点信息添加到对应的存储位置</li>
+</ol>
+<h5 id="服务提供者反注册"><a href="#服务提供者反注册" class="headerlink" title="服务提供者反注册"></a>服务提供者反注册</h5><ol>
+<li>查看服务名、服务分组对应的服务是否存在</li>
+<li>将节点删除</li>
+</ol>
+<h5 id="服务消费者查询节点信息"><a href="#服务消费者查询节点信息" class="headerlink" title="服务消费者查询节点信息"></a>服务消费者查询节点信息</h5><ol>
+<li>从本机内存中查找服务信息</li>
+<li>如果有本地快照存储可以从中查找</li>
+</ol>
+<h5 id="服务消费者订阅服务变更"><a href="#服务消费者订阅服务变更" class="headerlink" title="服务消费者订阅服务变更"></a>服务消费者订阅服务变更</h5><ol>
+<li>消费者获取到服务信息后，在本地保留cluster的sign值</li>
+<li>每个一段时间从注册中心获取cluster的sign值，如果不一致，就从注册中心拉取服务节点，并更新内存环境和本地快照</li>
+</ol>
+<h2 id="服务框架"><a href="#服务框架" class="headerlink" title="服务框架"></a>服务框架</h2><p>完整的服务框架包括：通讯框架、通讯协议、序列化和反序列化。</p>
+<h3 id="开源RPC框架"><a href="#开源RPC框架" class="headerlink" title="开源RPC框架"></a>开源RPC框架</h3><p>跟语言相关的框架：Dubbo、Motan（微博）、Tars（腾讯）、Spring Cloud</p>
+<p>跨平台的开源RPC框架：gRPC、Thrift</p>
+<h2 id="服务监控"><a href="#服务监控" class="headerlink" title="服务监控"></a>服务监控</h2><p>常用的开源监控软件包括：ELK、Graphite、TICK、Prometheus</p>
+<h2 id="服务追踪"><a href="#服务追踪" class="headerlink" title="服务追踪"></a>服务追踪</h2><p>使用分布式会话跟踪技术，利用traceid</p>
+<p>开源方案包括OpenZipkin、jaeger等</p>
+<h2 id="服务治理"><a href="#服务治理" class="headerlink" title="服务治理"></a>服务治理</h2><p>通过一系列的手段保证在意外情况下，服务仍然能够正常运行。</p>
+<h3 id="节点管理"><a href="#节点管理" class="headerlink" title="节点管理"></a>节点管理</h3><p>服务调用失败可能是服务提供者自身出现了问题，也可能是网络问题导致。</p>
+<p>1.注册中心自动摘除机制</p>
+<p>服务提供者和注册中心之间保持心跳，当超时后注册中心自动摘除服务提供者。</p>
+<p>2.服务消费者摘除</p>
+<p>将服务提供者的探活机制放到消费者端，消费者在探测到服务提供者失败后自动摘除服务提供者。这种情况可以避免服务提供者和注册中心之间网络出现异常，但是服务提供者和服务消费者之间可以通讯的情况。</p>
+<h3 id="负载均衡"><a href="#负载均衡" class="headerlink" title="负载均衡"></a>负载均衡</h3><p>常用的包括随机算法、轮询、加权轮询算法、最少活跃调用、一致性hash算法（可以配合着静态注册中心达到比较好的效果）</p>
+<p><strong>自适应最优选择算法</strong>：在客户端维护一份每一个服务节点的性能统计快照，每隔一段时间去更新快照。在发起请求时，根据二八原则，将服务节点分成两部分，找出20%的那部分响应最慢的节点并降低权重。也可称为动态加权轮询算法。1分钟的更新时间间隔是个不错的选择。</p>
+<p>个人感觉<strong>自适应最优选择算</strong>是个不错的选择，但还可以针对业务场景继续优化，比如权重进行动态调整。</p>
+<h3 id="服务路由"><a href="#服务路由" class="headerlink" title="服务路由"></a>服务路由</h3><p>用于限定服务消费者可选择服务提供者节点的范围。</p>
+<p>应用场景：分组调用（组的划分可以按照机房等维度）、灰度发布、流量切换（比如机房故障后，用于机房之间的流量调度）、读写分离（读接口部署在一起，写接口部署在一起）。</p>
+<h5 id="规则的写法"><a href="#规则的写法" class="headerlink" title="规则的写法"></a>规则的写法</h5><p>A.条件路由</p>
+<ul>
+<li>某个ip的消费者仅访问某个ip的服务提供者</li>
+<li>排除某个服务节点（所有的服务消费者都不能访问某个服务提供者）</li>
+<li>白名单和黑名单</li>
+<li>机房级别的隔离（可以基于ip地址的规则来做）</li>
+<li>读写分离（所有get类方法仅访问某些节点等）</li>
+</ul>
+<p>B.脚本路由</p>
+<p>使用脚本语言的形式来描述</p>
+<h4 id="路由的获取方式"><a href="#路由的获取方式" class="headerlink" title="路由的获取方式"></a>路由的获取方式</h4><ul>
+<li>本地配置：存储在服务消费者本地</li>
+<li>配置中心配置，可以修改规则后动态下发</li>
+</ul>
+<h3 id="服务容错"><a href="#服务容错" class="headerlink" title="服务容错"></a>服务容错</h3><p>手段包括超时、重试、双发、熔断等。</p>
+<p>双发的思路为服务调用者在发起一次服务调用后，在给定的时间内（该时间要比服务超时的时间短）没有得到结果，再发起另外一个请求。</p>
+<p>熔断的思路为在某一个时间内如果服务调用失败次数超过一定值，则触发熔断，不再向服务提供者发起请求。</p>
+<p>断路器中的状态包括：Closed、Open、Half Open（半打开状态，用于探测后端服务是否已经正常）</p>
+<p>Hystrix是最出名的熔断器，计算服务调用的失败率是通过滑动窗口来实现，滑动窗口内包含10个桶，每个桶为1秒内的服务调用情况。</p>
+<p>FailOver，失败自动切换。消费者调用失败后，自动从可以节点中选择下一个节点重新调用，可设置失败的次数。通常适合只读的场景。</p>
+<p>FailBack，失败通知。调用失败后，不能重试，而是根据失败的信息来决定后续的执行策略。通常用于写场景。</p>
+<p>FailCache，失败缓存。调用失败后，隔一段时间后再重试。</p>
+<p>FailFast，快速失败。调用失败后不再重试。</p>
+<h3 id="如何识别服务节点是否存活"><a href="#如何识别服务节点是否存活" class="headerlink" title="如何识别服务节点是否存活"></a>如何识别服务节点是否存活</h3><p>如果注册中心为zk，在服务节点变化的时候，注册中心会向服务调用方推送服务节点变化的通知。但当网络抖动的时候，可能会存在节点的状态频繁变化的问题，导致服务消费者频繁收到节点变更通知，或者导致注册中心获取到的服务节点过少。可通过以下手段来避免该问题。</p>
+<h3 id="服务端故障时的应对策略"><a href="#服务端故障时的应对策略" class="headerlink" title="服务端故障时的应对策略"></a>服务端故障时的应对策略</h3><p>故障包括：集群故障、单个idc故障、单机故障</p>
+<h4 id="集群故障"><a href="#集群故障" class="headerlink" title="集群故障"></a>集群故障</h4><p>比如触发bug、突发流量等</p>
+<p>限流：限制超出接口阈值的部分请求</p>
+<p>降级：一种思路为通过开关来实现。具体可以分为多种等级：一级降级对业务影响比较小，可以设置为自动降级；二级降级对业务有一定影响，设置为手工降级；三级降级需要谨慎操作。</p>
+<h4 id="单idc故障"><a href="#单idc故障" class="headerlink" title="单idc故障"></a>单idc故障</h4><p>基于dns的流量切换：延时稍高，比较适合入口流量。</p>
+<p>基于rpc的分组流量切换：将之前单个机房内访问的流量切换为多个机房访问。</p>
+<h4 id="单机故障"><a href="#单机故障" class="headerlink" title="单机故障"></a>单机故障</h4><p>可以通过自动重启服务的手段来解决。但要避免一次性重启服务过多的问题。</p>
+<h4 id="动态注册中心的保护机制"><a href="#动态注册中心的保护机制" class="headerlink" title="动态注册中心的保护机制"></a>动态注册中心的保护机制</h4><ol>
+<li>心跳开关保护机制，给注册中心设置一个开关，当开发打开时，即使网络频繁抖动，注册中心也不会通知消费者节点变更，后者设置一定的百分比打开该开关。正常情况下该开关可以不打开。</li>
+<li>服务节点摘除保护机制，设定一个阈值比例，在出现网络抖动的情况下，注册中心也不会将超过这个阈值的节点给下掉，防止一下子下掉过多节点。该机制正常情况下，应该开启。</li>
+</ol>
+<h4 id="静态注册中心的保护机制"><a href="#静态注册中心的保护机制" class="headerlink" title="静态注册中心的保护机制"></a>静态注册中心的保护机制</h4><p>在服务消费者端来判断是否服务提供者是否存活。服务消费者调用某一个节点失败超过一定次数就将节点标记为不可用。并隔一段时间后再去探测该节点是否存活。</p>
+<p>注册中心的服务正常情况下不改变的，只有当服务在发布的时候才去修改注册中心中的节点。注册中心中的节点变化后仍然通知服务消费者，只是在网络出现抖动的时候，不再去通知。</p>
+<p><strong>个人感觉这个思路更靠谱。</strong></p>
+<h3 id="服务治理平台"><a href="#服务治理平台" class="headerlink" title="服务治理平台"></a>服务治理平台</h3><p>1.服务管理 包括服务上下线、节点添加和删除、服务查询、服务节点查询等</p>
+<p>2.服务治理 限流、降级、切流量</p>
+<p>3.服务监控 可以包含服务的tracing监控等</p>
+<p>4.问题定位</p>
+<p>5.日志查询</p>
+<p>6.服务运维 发布部署和扩缩容</p>
+<h2 id="配置中心"><a href="#配置中心" class="headerlink" title="配置中心"></a>配置中心</h2><p>业内采用的开源配置中心包括:</p>
+<ul>
+<li>Spring Cloud 功能相对较弱，变更配置需要通过git操作</li>
+<li>Apollo 对Spring Boot的支持比较好</li>
+</ul>
+<h2 id="进阶内容"><a href="#进阶内容" class="headerlink" title="进阶内容"></a>进阶内容</h2><h3 id="做好容量规划"><a href="#做好容量规划" class="headerlink" title="做好容量规划"></a>做好容量规划</h3><p>包括容量评估和调度决策两方面。</p>
+<p>压测服务的单机最大容量可以采用区间加权的方式来计算，比如0 ~ 10ms区间权重为1，10 ~ 50ms区间权重为2,500ms以上权重为32，通过累加的方式计算出单机的权重，从而评估出单机最大容量。(<strong>该评估容量的方式非常实用</strong>)</p>
+<p>调度策略可以根据水位线来做决定，一条是安全线，一条是致命线。当水位线处于致命线需要立即扩容，当水位线回到安全线以上时可以进行缩容。（<strong>水位线的方式很赞</strong>）</p>
+<p>缩容的思路是采用逐步缩容，每隔5分钟判断一次水位线是否在致命线以上，并按照10%、30%的比例进行缩容。</p>
+<p>为了防止水位线的抖动，可以一分钟采集一个点，当5个点中的3个点都满足条件时才进行缩容。</p>
+<h3 id="多机房部署"><a href="#多机房部署" class="headerlink" title="多机房部署"></a>多机房部署</h3><p>1.主从架构</p>
+<p>所有的写请求都发给主机房，主机房更新本机房的缓存和数据库，其他机房的缓存和数据库从主机房同步。主机房出现问题后，就没法更新了。</p>
+<p>2.独立机房架构</p>
+<p>缓存层，每个机房都有写请求，每个机房的写请求通过消息同步组件将写请求同步给另外一个机房。数据库mysql只有一个主库，另外机房的mysql同步数据到该机房。</p>
+<p>以上缓存消息同步组件的实现大概如下：</p>
+<p>包括两个模块reship和collector，reship负责将本机房的写请求发一份给别的机房，collector负责从别的机房读取写请求，并发给本机房的处理服务器。</p>
+<p>可以通过消息队列和rpc调用来实现reship和collector的通讯。</p>
+<p>3.多机房的数据一致性</p>
+<p>可通过消息对账机制来保证一致性，原理为通过一个单独的程序后面来验证是否一个写请求是否已经被所有的机房都处理，如果没有处理，则重新发送写请求。</p>
+<h3 id="混合云部署"><a href="#混合云部署" class="headerlink" title="混合云部署"></a>混合云部署</h3><p>公有云上为了安全往往不部署数据库</p>
+<h3 id="DevOps实践"><a href="#DevOps实践" class="headerlink" title="DevOps实践"></a>DevOps实践</h3><p>持续集成：确保每一次代码的merge request都通过，分为四个阶段：build（开发分支代码的编译与单元测试）、package（开发分支代码打包成docker镜像）、deploy（开发分支代码部署到测试环境）、test（集成测试）。包括了代码检查和单元测试环节。</p>
+<p>持续交付：代码merge request到develop分支后，develop分支的代码能够在生产环境中测试通过，并进行小流量灰度验证，可以随时上线。分为五个阶段：build（develop分支的代码编译与单元测试）、package（develop分支代码打包）、deploy、test、canary（develop分支代码的小流量灰度验证）。</p>
+<p>持续部署：合并develop代码到master分支，并打包成docker镜像，并可随时上线。包括：build、package、clear、production。</p>
+<h3 id="Service-Mesh"><a href="#Service-Mesh" class="headerlink" title="Service Mesh"></a>Service Mesh</h3><p>Service Mesh技术以轻量级网络代理的方式与应用代码部署在一起，主要有两个关键点技术。</p>
+<p>SideCar用于转发服务之间的调用，在服务消费者端SideCar用于将请求转发到服务提供者端的SideCar中，在服务提供者端的SideCar在接收到请求后转发给本机上的服务提供者。</p>
+<p>SideCar实现方式有基于ipstables的网络拦截和直接转发请求两种方式。</p>
+<p>Control plane用于基于SideCar的服务调用的治理，用来取代微服务中需要服务框架干的事情，包括服务发现、负载均衡、请求路由、故障处理、安全认证、监控上报、日志记录、配额限制等。</p>
+<h3 id="Istio"><a href="#Istio" class="headerlink" title="Istio"></a>Istio</h3><p>Pilot主要用于流量控制，包括Rules API（提供API，用于流量控制）、Envoy API（给Envoy提供API，获取服务注册信息、流量控制信息等）、抽象模型（对服务注册信息、流量控制进行抽象）、平台适配层（适配k8s、Mesos等多个平台，将平台特定的注册信息转换成平台无关的抽象模型）。</p>
+<p>Pilot的流量控制功能包括服务发现和负载均衡、请求路由、超时重试、故障注入。</p>
+<p>Mixer实现策略控制和监控日志收集等功能，理论上Envoy发起的每次请求都会发送到Mixer，可以异步发送。</p>
+<p>Mixer的策略控制包括对服务的访问频率限制和访问控制。</p>
+<p>Citadel用于保证服务之间的安全，需要Envoy的配合。Citadel中存储了秘钥和证书，通过Pilot将授权策略和安全命名信息分发给Envoy，Envoy和Envoy之间通过双向TLS证书来进行通讯，由Mixer来管理授权和审计。</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><p><a href="http://www.infoq.com/cn/articles/micro-service-technology-stack">微服务架构技术栈选型手册
+</a></p>
+]]></content>
+  </entry>
+  <entry>
     <title>leetcode题目之Min Stack</title>
     <url>/post/min_stack/</url>
     <content><![CDATA[<h1 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h1><blockquote>
@@ -8251,6 +8209,53 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 <li>对技术较为熟悉之后可以适当的学习后期开发功能需要技术，比如一直没有研究彩信的技术实现，导致后期在开发彩信功能时遇到技术问题。如果能够提前学习相关技术就能够提前预支项目的风险。</li>
 </ol>
 ]]></content>
+  </entry>
+  <entry>
+    <title>理解OverlayFS</title>
+    <url>/post/overlayfs/</url>
+    <content><![CDATA[<h2 id="docker-image结构"><a href="#docker-image结构" class="headerlink" title="docker image结构"></a>docker image结构</h2><p>docker可以通过命令<code>docker image inspect $&#123;image&#125;</code>来查看image的详细信息，其中包含了所使用的底层文件系统及各层的信息。</p>
+<p>docker container的存储结构分为了只读层、init层和可读写层。</p>
+<p>只读层跟docker image的层次结构恰好对应，主要包含操作系统的文件、配置、目录等信息，不包含操作系统镜像。</p>
+<p>init层在只读层和读写层中间，用来专门存放&#x2F;etc&#x2F;hosts &#x2F;etc&#x2F;resolv.conf等信息，这些文件往往需要在启动的时候写入一些指定值，但不期望<code>docker commit</code>命令对其进行提交。</p>
+<p>可读写层为容器在运行中可以进行写入的层。</p>
+<h2 id="overlay"><a href="#overlay" class="headerlink" title="overlay"></a>overlay</h2><p><img src="https://arkingc.github.io/img/in-post/post-docker-filesystem/overlay_constructs.jpg" alt="image"></p>
+<p>采用了两层结构，lowerdir为镜像层，只读。upperdir为容器层。</p>
+<p>每层都会在&#x2F;var&#x2F;run&#x2F;docker&#x2F;overlay创建一个文件夹，文件夹中为实际层的内容，文件采用硬链接的方式链接到真实层中的文件，每一层都包含该层该拥有的所有文件，而该文件的真实存储可能是采用硬链接的方式链接到上层中的真实文件，因此比较耗费inode。</p>
+<p>创建一个容器时，会新增两个目录，一个为读写层，一个为初始层。初始层中保存了容器初始化时的环境信息，如hostname、hosts文件等。读写层用于记录容器的所有改动。</p>
+<h2 id="overlay2"><a href="#overlay2" class="headerlink" title="overlay2"></a>overlay2</h2><p>为了规避overlay消耗inode节点过多的问题，overlay2采用在每层中增加lower文件的方式来记录所有底层的信息，类似于链表的形式。</p>
+<p><code>docker pull ubuntu</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost runc]# docker pull ubuntu</span><br><span class="line">Using default tag: latest</span><br><span class="line">latest: Pulling from library/ubuntu</span><br><span class="line">c64513b74145: Pull complete</span><br><span class="line">01b8b12bad90: Pull complete</span><br><span class="line">c5d85cf7a05f: Pull complete</span><br><span class="line">b6b268720157: Pull complete</span><br><span class="line">e12192999ff1: Pull complete</span><br><span class="line">Digest: sha256:3f119dc0737f57f704ebecac8a6d8477b0f6ca1ca0332c7ee1395ed2c6a82be7</span><br><span class="line">Status: Downloaded newer image for ubuntu:latest</span><br></pre></td></tr></table></figure>
+
+<p>会在&#x2F;var&#x2F;run&#x2F;docker&#x2F;overlay2目录下创建如下文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 2</span><br><span class="line">.</span><br><span class="line">|-- 664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672    // 第0层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   `-- link    // MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- 783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba    // 第2层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // HXATFASQ4E2JBG434DUEN54EZZ</span><br><span class="line">|   |-- lower   // l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- 89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6    // 第3层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // 5PHT7S3MCZTTQOXVPA4CKJRRFD</span><br><span class="line">|   |-- lower   // l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- backingFsBlockDev</span><br><span class="line">|-- bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68    // 第4层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // QMKHIPSDT4JTPE4FLT7QGJ33ND</span><br><span class="line">|   |-- lower   // l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3    // 第1层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // WUZC5WSTQTPJUJ4KFAYCUT5IPD</span><br><span class="line">|   |-- lower   // l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">`-- l</span><br><span class="line">    |-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff</span><br><span class="line">    |-- HXATFASQ4E2JBG434DUEN54EZZ -&gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff</span><br><span class="line">    |-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff</span><br><span class="line">    |-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff</span><br><span class="line">    `-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff</span><br></pre></td></tr></table></figure>
+
+<p>l目录下为超链接，缩短后的目录，为了避免mount时超出页大小限制。</p>
+<p>每一层中的diff文件夹包含实际内容。</p>
+<p>每一层中都有一个link文件，内容为l目录中的超链接，超链接实际指向当前层目录中的diff文件夹。</p>
+<p>除去最底层的目录外，其余每一层中包含一个lower文件，包含了该层的所有更底层名称和顺序，可以根据该文件构建出整个镜像的层次结构。</p>
+<p>work目录用于OverlayFS内部使用。</p>
+<p>最底层只有link文件，无lower文件，因此664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672为最底层。</p>
+<p>以上五层为lower，只读。</p>
+<p>当使用<code>docker run -it ubuntu:latest /bin/bash</code>启动一个容器后，在overlay2目录下会多出两个文件夹。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 1 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08 l</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">|-- diff</span><br><span class="line">|-- link    // ZJVMGTB2IOJ6QF57TYM5O7EWXW</span><br><span class="line">|-- lower   // l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">|-- diff</span><br><span class="line">|-- link</span><br><span class="line">|-- lower   // l/ZJVMGTB2IOJ6QF57TYM5O7EWXW:l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">l</span><br><span class="line">|-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff</span><br><span class="line">|-- AOLYGFOHIAHWU5CBAJFULNAXI7 -&gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/diff</span><br><span class="line">|-- HXATFASQ4E2JBG434DUEN54EZZ -&gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff</span><br><span class="line">|-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff</span><br><span class="line">|-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff</span><br><span class="line">|-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff</span><br><span class="line">`-- ZJVMGTB2IOJ6QF57TYM5O7EWXW -&gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init/diff</span><br></pre></td></tr></table></figure>
+
+<p><code>0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</code>用于存放容器初始化时的信息，通过下面查看更直观。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost overlay2]# tree 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">|-- diff</span><br><span class="line">|   |-- dev</span><br><span class="line">|   |   `-- console</span><br><span class="line">|   `-- etc</span><br><span class="line">|       |-- hostname</span><br><span class="line">|       |-- hosts</span><br><span class="line">|       |-- mtab -&gt; /proc/mounts</span><br><span class="line">|       `-- resolv.conf</span><br><span class="line">|-- link</span><br><span class="line">|-- lower</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">    `-- work</span><br></pre></td></tr></table></figure>
+
+<p><code>0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</code>的直接底层为init层，更详细的目录结构如下。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 2  0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">|-- diff</span><br><span class="line">|-- link</span><br><span class="line">|-- lower</span><br><span class="line">|-- merged</span><br><span class="line">|   |-- bin</span><br><span class="line">|   |-- boot</span><br><span class="line">|   |-- dev</span><br><span class="line">|   |-- etc</span><br><span class="line">|   |-- home</span><br><span class="line">|   |-- lib</span><br><span class="line">|   |-- lib64</span><br><span class="line">|   |-- media</span><br><span class="line">|   |-- mnt</span><br><span class="line">|   |-- opt</span><br><span class="line">|   |-- proc</span><br><span class="line">|   |-- root</span><br><span class="line">|   |-- run</span><br><span class="line">|   |-- sbin</span><br><span class="line">|   |-- srv</span><br><span class="line">|   |-- sys</span><br><span class="line">|   |-- tmp</span><br><span class="line">|   |-- usr</span><br><span class="line">|   `-- var</span><br><span class="line">`-- work</span><br><span class="line">    `-- work</span><br></pre></td></tr></table></figure>
+
+<p>merged文件夹中内容较多，为overlay2的直接挂载点，对容器的修改会反应到该目录中。例如在容器中增加&#x2F;root&#x2F;hello.txt文件，在merged目录下会增加root&#x2F;hello.txt文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">[root@localhost overlay2]# mount  | grep overlay2</span><br><span class="line">/dev/mapper/centos-root on /var/lib/docker/overlay2 type xfs (rw,relatime,attr2,inode64,noquota)</span><br><span class="line">overlay on /var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/merged type overlay (rw,relatime,lowerdir=/var/lib/docker/overlay2/l/ZJVMGTB2IOJ6QF57TYM5O7EWXW:/var/lib/docker/overlay2/l/QMKHIPSDT4JTPE4FLT7QGJ33ND:/var/lib/docker/overlay2/l/5PHT7S3MCZTTQOXVPA4CKJRRFD:/var/lib/docker/overlay2/l/HXATFASQ4E2JBG434DUEN54EZZ:/var/lib/docker/overlay2/l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:/var/lib/docker/overlay2/l/MZUEUOFHBNVTRCJYJEG7QY4VWT,upperdir=/var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/diff,workdir=/var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/work)</span><br></pre></td></tr></table></figure>
+
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a href="https://docs.docker.com/storage/storagedriver/overlayfs-driver/">Use the OverlayFS storage driver</a></li>
+<li><a href="https://arkingc.github.io/2017/05/05/docker-filesystem-overlay/">Docker存储驱动—Overlay&#x2F;Overlay2「译」</a></li>
+</ul>
+]]></content>
+      <tags>
+        <tag>overlay overlay2</tag>
+      </tags>
   </entry>
   <entry>
     <title>ovs入门</title>
@@ -9744,6 +9749,149 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
 <p>需要将其中的变量信息修改一下</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"></span><br><span class="line">obj_file=$1</span><br><span class="line">kind=certificates</span><br><span class="line">APISERVER=https://10.0.0.100:6443</span><br><span class="line">namespace=default</span><br><span class="line">TOKEN=eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi10b2tlbi1yMmJ2dCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJhZG1pbiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImRiY2IyNzUzLWE5OGMtMTFlYS04NGVjLTAwMTYzZTAwOGU3MCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlLXN5c3RlbTphZG1pbiJ9.tX3jyNh-GEuZQg-hmy7igqh9vpTAz8Jh9uEv-diZ5XWjX9JYhxwD9nxTQvCcvzY7iPIbvxQfW2GHDZISPoopX0vQy9mQ7npVitrOvFovk06plefI5Gxjdft6vdpt-ArsGTpm7-s9G-3aBg5x41h3Cdgyv-W-ypFlCr9dKu9K7BcRIXSq_GQlq5TBmd-LKFXoer4QGwkn7geq5-ziMk_lY21jIGVdIkq9IRiH8NWuCl7l8i6nQESQDUUpMyKDCqkJqUFV8UkrQL7TfqurFP36_TUAQTh2ZAE8nFnrKRoa09BnjT-FoPO6Jnq6COQjk3PGDHV8LKNDAjCCrs0A53IYGw</span><br><span class="line">obj=nginx-test</span><br><span class="line"></span><br><span class="line">echo &quot;begin to patch $obj the file &quot;$&#123;obj_file&#125;</span><br><span class="line">curl -XPATCH -H &quot;Accept: application/json&quot; -H  &quot;Content-Type: application/merge-patch+json&quot; --header &quot;Authorization: Bearer $TOKEN&quot; --insecure -d  @$&#123;obj_file&#125; $APISERVER/apis/kuring.me/v1alpha1/namespaces/$&#123;namespace&#125;/$&#123;kind&#125;/$obj/status</span><br></pre></td></tr></table></figure>
 
+]]></content>
+  </entry>
+  <entry>
+    <title>k8s virtual cluster 方案 - vCluster</title>
+    <url>/post/vcluster/</url>
+    <content><![CDATA[<h1 id="术语"><a href="#术语" class="headerlink" title="术语"></a>术语</h1><ul>
+<li>host cluster：virtual cluster 中的宿主 k8s 集群，承载了所有的计算资源。也会被叫做 super cluster。</li>
+<li>virtual cluster：virtual cluster 中的租户 k8s 集群，通常简写 vc。也会被叫做 tenant cluster。</li>
+<li>vCluster：k8s virtual cluster 的实现之一，即本文中要介绍的方案。</li>
+</ul>
+<h1 id="项目简介"><a href="#项目简介" class="headerlink" title="项目简介"></a>项目简介</h1><h2 id="k8s-的多租功能"><a href="#k8s-的多租功能" class="headerlink" title="k8s 的多租功能"></a>k8s 的多租功能</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/vcluster-compare.png" alt="image.png"><br>k8s 自身在多租的能力上支持较差，提供了 namespace 级别的隔离，不同的租户使用不同的 namespace，但该隔离功能较弱。很多组件部署在同一个 workload 会存在诸多问题：</p>
+<ol>
+<li>使用全局对象存在冲突，比如 CRD。</li>
+<li>存在诸多安全性问题，比如多个租户之间的 pod 完全可以互访，没有任何隔离机制。</li>
+<li>不同组件对于 k8s 的版本不统一。</li>
+</ol>
+<p>为了解决多租的问题，最简单的思路就是使用多 k8s 集群，业界的 KubeFed v2、karmada、clusternet、OCM 等均为多 k8s 集群的实现。但多 k8s 集群因为存在独立的控制面和计算资源，存在资源消耗过多的问题。</p>
+<p>还有一个中间思路为仅做 k8s 的控制面隔离，计算资源仍然共享，即 pod 也可以解决很多的多租隔离问题。k8s 的控制面隔离又存在两个主要方案：</p>
+<ol>
+<li>独立的 kube-apiserver 和 etcd、kube-controller-manager， kube-scheduler 共享 host cluster。该方案中有独立的 kube-apiserver 组件，这里的 etcd 可以被 sqllite、mysql 等存储取代。该方案统称为 virtual cluster，简称为 vc。</li>
+<li>独立的 proxy apiserver，kube-apiserver、kube-controller-manager、kube-scheduler 共享 host cluster。访问 k8s 的请求先到 proxy apiserver，proxy apiserver 转发到 host cluster 的 kube-apiserver。可以在 proxy apiserver 中提供独立的 RBAC 机制，实现一定程度的隔离。该方案在开源中未看到具体的实现。</li>
+</ol>
+<h2 id="vCluster-介绍"><a href="#vCluster-介绍" class="headerlink" title="vCluster 介绍"></a>vCluster 介绍</h2><p><a href="https://github.com/loft-sh/vcluster">vCluster</a> 为 virtual cluster 的开源实现之一，由 Loft Labs 提供，Github Star 3.7K，代码行数 4 万行。除了开源版本外，还提供了商业版本 vCluster PRO。</p>
+<p>vCluster 设计原则：</p>
+<ol>
+<li>最小化资源占用。在实现上使用了单 pod 的 k3s 作为 k8s 的控制面。</li>
+<li>复用 host cluster 的计算、存储和网络资源。</li>
+<li>降低对 host cluster 的请求。</li>
+<li>简单灵活。</li>
+<li>不需要 host cluster 的管理员权限。</li>
+<li>vCluster 多个 namespace 下的对象映射到 host cluster 的同一个 namespace 下。同时也可以支持 vCluster 的一个 namespace 对应 host cluster 的一个 namespace。</li>
+<li>易清理。</li>
+</ol>
+<h1 id="Getting-Started"><a href="#Getting-Started" class="headerlink" title="Getting Started"></a>Getting Started</h1><h2 id="k8s-集群准备"><a href="#k8s-集群准备" class="headerlink" title="k8s 集群准备"></a>k8s 集群准备</h2><p>k8s 集群这里使用了 kind 方案，kind 配置 kind.conf 如下：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">kind:</span> <span class="string">Cluster</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">kind.x-k8s.io/v1alpha4</span></span><br><span class="line"><span class="attr">name:</span> <span class="string">vcluster</span></span><br><span class="line"><span class="attr">nodes:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">role:</span> <span class="string">control-plane</span></span><br><span class="line">  <span class="comment"># 如果需要 ingress，则需要指定该参数</span></span><br><span class="line">  <span class="attr">kubeadmConfigPatches:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">|</span></span><br><span class="line"><span class="string">    kind: InitConfiguration</span></span><br><span class="line"><span class="string">    nodeRegistration:</span></span><br><span class="line"><span class="string">      kubeletExtraArgs:</span></span><br><span class="line"><span class="string">        node-labels: &quot;ingress-ready=true&quot;</span></span><br><span class="line"><span class="string"></span>  <span class="attr">extraPortMappings:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br><span class="line">    <span class="attr">hostPort:</span> <span class="number">80</span></span><br><span class="line">    <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">443</span></span><br><span class="line">    <span class="attr">hostPort:</span> <span class="number">443</span></span><br><span class="line">    <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">  <span class="comment"># 指定 k8s 版本，默认不指定</span></span><br><span class="line">  <span class="comment"># image: kindest/node:v1.23.17</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">role:</span> <span class="string">worker</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">role:</span> <span class="string">worker</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">role:</span> <span class="string">worker</span></span><br><span class="line"><span class="attr">networking:</span></span><br><span class="line">  <span class="attr">apiServerPort:</span> <span class="number">6443</span></span><br></pre></td></tr></table></figure>
+<p>执行 <code>kind create cluster --config kind.conf</code> 即可创建 k8s 集群，包含了一个 control-plane 节点，三个 worker 节点。</p>
+<h2 id="安装-vcluster"><a href="#安装-vcluster" class="headerlink" title="安装 vcluster"></a>安装 vcluster</h2><p>vCluster 提供了使用 vcluster cli、helm 和 kubectl 三种安装方式，使用 vcluster cli 最为简单，其底层同样采用 helm chart 的方式部署，下面采用 vcluster cli 的方式进行安装。<br>安装 vcluster cli 工具：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">curl</span> <span class="string">-L</span> <span class="string">-o</span> <span class="string">vcluster</span> <span class="string">&quot;https://github.com/loft-sh/vcluster/releases/latest/download/vcluster-darwin-arm64&quot;</span> <span class="string">&amp;&amp;</span> <span class="string">sudo</span> <span class="string">install</span> <span class="string">-c</span> <span class="string">-m</span> <span class="number">0755 </span><span class="string">vcluster</span> <span class="string">/usr/local/bin</span> <span class="string">&amp;&amp;</span> <span class="string">rm</span> <span class="string">-f</span> <span class="string">vcluster</span></span><br></pre></td></tr></table></figure>
+<p>或者执行 <code>brew install vcluster</code>安装 vcluster 命令行工具。</p>
+<p>执行命令 <code>vcluster create my-vcluster</code> 创建 virtual cluster。会在 host cluster 上创建 namespace <code>vcluster-my-vcluster</code>，该 namespace 下创建如下对象：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">all</span> <span class="string">-n</span> <span class="string">vcluster-my-vcluster</span></span><br><span class="line"><span class="string">NAME</span>                                                       <span class="string">READY</span>   <span class="string">STATUS</span>    <span class="string">RESTARTS</span>        <span class="string">AGE</span></span><br><span class="line"><span class="string">pod/coredns-68559449b6-l5whx-x-kube-system-x-my-vcluster</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">2</span> <span class="string">(5m45s</span> <span class="string">ago)</span>   <span class="string">3d</span></span><br><span class="line"><span class="string">pod/my-vcluster-0</span>                                          <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">2</span> <span class="string">(5m45s</span> <span class="string">ago)</span>   <span class="string">3d</span></span><br><span class="line"></span><br><span class="line"><span class="string">NAME</span>                                              <span class="string">TYPE</span>        <span class="string">CLUSTER-IP</span>     <span class="string">EXTERNAL-IP</span>   <span class="string">PORT(S)</span>                         <span class="string">AGE</span></span><br><span class="line"><span class="string">service/kube-dns-x-kube-system-x-my-vcluster</span>      <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.67</span><span class="number">.119</span>   <span class="string">&lt;none&gt;</span>        <span class="number">53</span><span class="string">/UDP,53/TCP,9153/TCP</span>          <span class="string">3d</span></span><br><span class="line"><span class="string">service/my-vcluster</span>                               <span class="string">NodePort</span>    <span class="number">10.96</span><span class="number">.214</span><span class="number">.58</span>   <span class="string">&lt;none&gt;</span>        <span class="number">443</span><span class="string">:30540/TCP,10250:31621/TCP</span>   <span class="string">3d</span></span><br><span class="line"><span class="string">service/my-vcluster-headless</span>                      <span class="string">ClusterIP</span>   <span class="string">None</span>           <span class="string">&lt;none&gt;</span>        <span class="number">443</span><span class="string">/TCP</span>                         <span class="string">3d</span></span><br><span class="line"><span class="string">service/my-vcluster-node-vcluster-control-plane</span>   <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.69</span><span class="number">.115</span>   <span class="string">&lt;none&gt;</span>        <span class="number">10250</span><span class="string">/TCP</span>                       <span class="string">3d</span></span><br><span class="line"></span><br><span class="line"><span class="string">NAME</span>                           <span class="string">READY</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">statefulset.apps/my-vcluster</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">3d</span></span><br></pre></td></tr></table></figure>
+<p>可以看到在该 namespace 下创建了 coredns 和 StatefulSet my-vcluster。每个租户有独立的 coredns 组件，用来做域名解析。my-vcluster 为 vCluster 的管控面组件，包括了 k8s controller plane 和 syncer 组件。</p>
+<p>执行  <code>vcluster connect my-vcluster</code> 后会在本地启动代理，并自动切换本地的 kubeconfig context，将 context 切换到 virtual cluster。执行 kubectl 命令即可连接到对应的 k8s 集群。virtual cluster 集群中的信息如下：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">all</span> <span class="string">-A</span></span><br><span class="line"><span class="string">NAMESPACE</span>     <span class="string">NAME</span>                           <span class="string">READY</span>   <span class="string">STATUS</span>    <span class="string">RESTARTS</span>      <span class="string">AGE</span></span><br><span class="line"><span class="string">kube-system</span>   <span class="string">pod/coredns-68559449b6-jg2bs</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">1</span> <span class="string">(20m</span> <span class="string">ago)</span>   <span class="string">51m</span></span><br><span class="line"></span><br><span class="line"><span class="string">NAMESPACE</span>     <span class="string">NAME</span>                 <span class="string">TYPE</span>        <span class="string">CLUSTER-IP</span>     <span class="string">EXTERNAL-IP</span>   <span class="string">PORT(S)</span>                  <span class="string">AGE</span></span><br><span class="line"><span class="string">kube-system</span>   <span class="string">service/kube-dns</span>     <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.120</span><span class="number">.59</span>   <span class="string">&lt;none&gt;</span>        <span class="number">53</span><span class="string">/UDP,53/TCP,9153/TCP</span>   <span class="string">51m</span></span><br><span class="line"><span class="string">default</span>       <span class="string">service/kubernetes</span>   <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.35</span><span class="number">.53</span>    <span class="string">&lt;none&gt;</span>        <span class="number">443</span><span class="string">/TCP</span>                  <span class="string">51m</span></span><br><span class="line"></span><br><span class="line"><span class="string">NAMESPACE</span>     <span class="string">NAME</span>                      <span class="string">READY</span>   <span class="string">UP-TO-DATE</span>   <span class="string">AVAILABLE</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">kube-system</span>   <span class="string">deployment.apps/coredns</span>   <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">51m</span></span><br><span class="line"></span><br><span class="line"><span class="string">NAMESPACE</span>     <span class="string">NAME</span>                                 <span class="string">DESIRED</span>   <span class="string">CURRENT</span>   <span class="string">READY</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">kube-system</span>   <span class="string">replicaset.apps/coredns-68559449b6</span>   <span class="number">1</span>         <span class="number">1</span>         <span class="number">1</span>       <span class="string">51m</span></span><br></pre></td></tr></table></figure>
+<p>在 virtual cluster 可以看到仅包含了 coredns 组件。</p>
+<p>在 virtual cluster 和在 host cluster 中的 node 信息：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">node</span> <span class="string">-o</span> <span class="string">wide</span></span><br><span class="line"><span class="string">NAME</span>               <span class="string">STATUS</span>   <span class="string">ROLES</span>    <span class="string">AGE</span>   <span class="string">VERSION</span>   <span class="string">INTERNAL-IP</span>     <span class="string">EXTERNAL-IP</span>   <span class="string">OS-IMAGE</span>                         <span class="string">KERNEL-VERSION</span>     <span class="string">CONTAINER-RUNTIME</span></span><br><span class="line"><span class="string">vcluster-worker3</span>   <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>   <span class="string">51m</span>   <span class="string">v1.27.3</span>   <span class="number">10.96</span><span class="number">.118</span><span class="number">.228</span>   <span class="string">&lt;none&gt;</span>        <span class="string">Debian</span> <span class="string">GNU/Linux</span> <span class="number">11</span> <span class="string">(bullseye)</span>   <span class="number">5.10</span><span class="number">.76</span><span class="string">-linuxkit</span>   <span class="string">containerd://1.7.1</span></span><br><span class="line"></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">node</span> <span class="string">-o</span> <span class="string">wide</span> <span class="string">--context</span> <span class="string">kind-vcluster</span></span><br><span class="line"><span class="string">NAME</span>                     <span class="string">STATUS</span>   <span class="string">ROLES</span>           <span class="string">AGE</span>   <span class="string">VERSION</span>   <span class="string">INTERNAL-IP</span>   <span class="string">EXTERNAL-IP</span>   <span class="string">OS-IMAGE</span>                         <span class="string">KERNEL-VERSION</span>     <span class="string">CONTAINER-RUNTIME</span></span><br><span class="line"><span class="string">vcluster-control-plane</span>   <span class="string">Ready</span>    <span class="string">control-plane</span>   <span class="string">86m</span>   <span class="string">v1.27.3</span>   <span class="number">172.19</span><span class="number">.0</span><span class="number">.3</span>    <span class="string">&lt;none&gt;</span>        <span class="string">Debian</span> <span class="string">GNU/Linux</span> <span class="number">11</span> <span class="string">(bullseye)</span>   <span class="number">5.10</span><span class="number">.76</span><span class="string">-linuxkit</span>   <span class="string">containerd://1.7.1</span></span><br><span class="line"><span class="string">vcluster-worker</span>          <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>          <span class="string">85m</span>   <span class="string">v1.27.3</span>   <span class="number">172.19</span><span class="number">.0</span><span class="number">.2</span>    <span class="string">&lt;none&gt;</span>        <span class="string">Debian</span> <span class="string">GNU/Linux</span> <span class="number">11</span> <span class="string">(bullseye)</span>   <span class="number">5.10</span><span class="number">.76</span><span class="string">-linuxkit</span>   <span class="string">containerd://1.7.1</span></span><br><span class="line"><span class="string">vcluster-worker2</span>         <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>          <span class="string">85m</span>   <span class="string">v1.27.3</span>   <span class="number">172.19</span><span class="number">.0</span><span class="number">.5</span>    <span class="string">&lt;none&gt;</span>        <span class="string">Debian</span> <span class="string">GNU/Linux</span> <span class="number">11</span> <span class="string">(bullseye)</span>   <span class="number">5.10</span><span class="number">.76</span><span class="string">-linuxkit</span>   <span class="string">containerd://1.7.1</span></span><br><span class="line"><span class="string">vcluster-worker3</span>         <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>          <span class="string">85m</span>   <span class="string">v1.27.3</span>   <span class="number">172.19</span><span class="number">.0</span><span class="number">.4</span>    <span class="string">&lt;none&gt;</span>        <span class="string">Debian</span> <span class="string">GNU/Linux</span> <span class="number">11</span> <span class="string">(bullseye)</span>   <span class="number">5.10</span><span class="number">.76</span><span class="string">-linuxkit</span>   <span class="string">containerd://1.7.1</span></span><br></pre></td></tr></table></figure>
+<p>可以看到在 virtual cluster 和 host cluster 中的 node 名字相同，这是因为 node 在 vCluster 中并没有做隔离，而是从 host cluster 中做了同步。但 virtual cluster 中的 node 节点仅包含 pod 在 host cluster 中已经使用的 node 节点，未使用的节点并不会在 virtual cluster 上。<br>同时可以看到 vc 和 host cluster 中的 node ip 地址并不相同，vc 中的 node ip 地址跟 host cluster 中的对应 service clusterip 相同，在 host cluster 中的对应 service 名字为 <code>$vClusterName-node-$hostClusterNodeName</code>。</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">svc</span> <span class="string">--context</span> <span class="string">kind-vcluster</span> <span class="string">-n</span> <span class="string">vcluster-my-vcluster</span> <span class="string">my-vcluster-node-vcluster-worker3</span></span><br><span class="line"><span class="string">NAME</span>                                <span class="string">TYPE</span>        <span class="string">CLUSTER-IP</span>      <span class="string">EXTERNAL-IP</span>   <span class="string">PORT(S)</span>     <span class="string">AGE</span></span><br><span class="line"><span class="string">my-vcluster-node-vcluster-worker3</span>   <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.118</span><span class="number">.228</span>   <span class="string">&lt;none&gt;</span>        <span class="number">10250</span><span class="string">/TCP</span>   <span class="string">3h54m</span></span><br></pre></td></tr></table></figure>
+
+<p>在 virtual cluster 中创建 k8s 对象：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 在 virtual cluster 创建 namespace</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">create</span> <span class="string">ns</span> <span class="string">demo-nginx</span></span><br><span class="line"><span class="string">namespace/demo-nginx</span> <span class="string">created</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建 Deployment</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">create</span> <span class="string">deployment</span> <span class="string">nginx-deployment</span> <span class="string">-n</span> <span class="string">demo-nginx</span> <span class="string">--image=nginx</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 在 virtual cluster 上创建出了 pod</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">pod</span> <span class="string">-n</span> <span class="string">demo-nginx</span> <span class="string">-o</span> <span class="string">wide</span></span><br><span class="line"><span class="string">NAME</span>                                <span class="string">READY</span>   <span class="string">STATUS</span>    <span class="string">RESTARTS</span>   <span class="string">AGE</span>   <span class="string">IP</span>           <span class="string">NODE</span>                     <span class="string">NOMINATED</span> <span class="string">NODE</span>   <span class="string">READINESS</span> <span class="string">GATES</span></span><br><span class="line"><span class="string">nginx-deployment-66fb7f764c-dn59g</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">11m</span>   <span class="number">10.244</span><span class="number">.0</span><span class="number">.7</span>   <span class="string">vcluster-control-plane</span>   <span class="string">&lt;none&gt;</span>           <span class="string">&lt;none&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 由于 pod 调度了 host cluster 新节点，在 virtual cluster 中可以看到新的 k8s node，k8s node 为刚刚创建</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">node</span></span><br><span class="line"><span class="string">NAME</span>               <span class="string">STATUS</span>   <span class="string">ROLES</span>    <span class="string">AGE</span>     <span class="string">VERSION</span></span><br><span class="line"><span class="string">vcluster-worker2</span>   <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>   <span class="string">2m45s</span>   <span class="string">v1.27.3</span></span><br><span class="line"><span class="string">vcluster-worker3</span>   <span class="string">Ready</span>    <span class="string">&lt;none&gt;</span>   <span class="string">57m</span>     <span class="string">v1.27.3</span></span><br></pre></td></tr></table></figure>
+<p>在 host cluster 中看到如下对象：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 在 host cluster 上并没有对应的 namespace demo-nginx</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">ns</span> <span class="string">--context</span> <span class="string">kind-vcluster</span> <span class="string">demo-nginx</span></span><br><span class="line"><span class="string">Error</span> <span class="string">from</span> <span class="string">server</span> <span class="string">(NotFound):</span> <span class="string">namespaces</span> <span class="string">&quot;demo-nginx&quot;</span> <span class="string">not</span> <span class="string">found</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 在 host cluster 上并没有对应的 deployment nginx-deployment</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">deploy</span> <span class="string">-A</span> <span class="string">--context</span> <span class="string">kind-vcluster</span></span><br><span class="line"><span class="string">NAMESPACE</span>            <span class="string">NAME</span>                       <span class="string">READY</span>   <span class="string">UP-TO-DATE</span>   <span class="string">AVAILABLE</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">ingress-nginx</span>        <span class="string">ingress-nginx-controller</span>   <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">90m</span></span><br><span class="line"><span class="string">kube-system</span>          <span class="string">coredns</span>                    <span class="number">2</span><span class="string">/2</span>     <span class="number">2</span>            <span class="number">2</span>           <span class="string">91m</span></span><br><span class="line"><span class="string">local-path-storage</span>   <span class="string">local-path-provisioner</span>     <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">91m</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 但在 host cluster 上却看到了对应的 pod，位于 vcluster 统一的 namespace vcluster-my-vcluster 之下</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">pod</span> <span class="string">-n</span> <span class="string">vcluster-my-vcluster</span> <span class="string">--context</span> <span class="string">kind-vcluster</span></span><br><span class="line"><span class="string">NAME</span>                                                           <span class="string">READY</span>   <span class="string">STATUS</span>    <span class="string">RESTARTS</span>      <span class="string">AGE</span></span><br><span class="line"><span class="string">coredns-68559449b6-jg2bs-x-kube-system-x-my-vcluster</span>           <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">1</span> <span class="string">(26m</span> <span class="string">ago)</span>   <span class="string">57m</span></span><br><span class="line"><span class="string">my-vcluster-0</span>                                                  <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">1</span> <span class="string">(26m</span> <span class="string">ago)</span>   <span class="string">86m</span></span><br><span class="line"><span class="string">nginx-deployment-66fb7f764c-sffqt-x-demo-nginx-x-my-vcluster</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>             <span class="string">2m22s</span></span><br></pre></td></tr></table></figure>
+<p>可以看到仅 pod 在 host cluster 中同步存在，而 namespace、deployment 这些对象仅存在于 virtual cluster 中。在 virtual cluster 中创建的多个不同 namespace pod 仅会存在于 host cluster 的同一个 namespace 下。</p>
+<h2 id="验证-service"><a href="#验证-service" class="headerlink" title="验证 service"></a>验证 service</h2><p>在 virtual cluster 中创建 service 对象：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">kubernetes.io/cluster-service:</span> <span class="string">&quot;true&quot;</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">ipFamilies:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">IPv4</span></span><br><span class="line">  <span class="attr">ipFamilyPolicy:</span> <span class="string">SingleStack</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">80</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx-deployment</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">ClusterIP</span></span><br></pre></td></tr></table></figure>
+<p>在 virtual cluster 中包含如下的 Service 对象：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">svc</span> <span class="string">-n</span> <span class="string">demo-nginx</span></span><br><span class="line"><span class="string">NAME</span>    <span class="string">TYPE</span>        <span class="string">CLUSTER-IP</span>     <span class="string">EXTERNAL-IP</span>   <span class="string">PORT(S)</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">nginx</span>   <span class="string">ClusterIP</span>   <span class="number">10.96</span><span class="number">.239</span><span class="number">.53</span>   <span class="string">&lt;none&gt;</span>        <span class="number">80</span><span class="string">/TCP</span>    <span class="string">2m11s</span></span><br></pre></td></tr></table></figure>
+<p>在 host cluster 中会同步创建如下的 Service 对象，内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">annotations:</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-name:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-uid:</span> <span class="string">5ab7aa9c-90b6-46f9-a162-9ea9ca9826f3</span></span><br><span class="line">  <span class="attr">creationTimestamp:</span> <span class="string">&quot;2023-11-28T09:32:22Z&quot;</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/label-my-vcluster-x-a172cedcae:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/label-my-vcluster-x-d9125f8911:</span> <span class="string">&quot;true&quot;</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/managed-by:</span> <span class="string">my-vcluster</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-x-demo-nginx-x-my-vcluster</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">vcluster-my-vcluster</span></span><br><span class="line">  <span class="attr">ownerReferences:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line">    <span class="attr">controller:</span> <span class="literal">false</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">my-vcluster</span></span><br><span class="line">    <span class="attr">uid:</span> <span class="string">463a503e-d889-49a7-94e0-0cba5299dd47</span></span><br><span class="line">  <span class="attr">resourceVersion:</span> <span class="string">&quot;12344&quot;</span></span><br><span class="line">  <span class="attr">uid:</span> <span class="string">fc9ea383-996e-471c-9c27-ee1c22fec7a3</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">clusterIP:</span> <span class="number">10.96</span><span class="number">.239</span><span class="number">.53</span></span><br><span class="line">  <span class="attr">clusterIPs:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="number">10.96</span><span class="number">.239</span><span class="number">.53</span></span><br><span class="line">  <span class="attr">internalTrafficPolicy:</span> <span class="string">Cluster</span></span><br><span class="line">  <span class="attr">ipFamilies:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">IPv4</span></span><br><span class="line">  <span class="attr">ipFamilyPolicy:</span> <span class="string">SingleStack</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http</span></span><br><span class="line">    <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line">    <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">    <span class="attr">targetPort:</span> <span class="number">80</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/label-my-vcluster-x-a172cedcae:</span> <span class="string">nginx-deployment</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/managed-by:</span> <span class="string">my-vcluster</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line">  <span class="attr">sessionAffinity:</span> <span class="string">None</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">ClusterIP</span></span><br><span class="line"><span class="attr">status:</span></span><br><span class="line">  <span class="attr">loadBalancer:</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到 host cluster 中的 service 的 ClusterIP 跟 virutal cluster 一致，但 spec.selector 字段已经被 syncer 修改，以便可以匹配到正确的 pod。</p>
+<h2 id="验证-Ingress"><a href="#验证-Ingress" class="headerlink" title="验证 Ingress"></a>验证 Ingress</h2><p>默认情况下 Ingress 不会同步到 host cluster，需要通过开关的方式启动。创建文件 values.yaml，内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">sync:</span></span><br><span class="line">  <span class="attr">ingresses:</span></span><br><span class="line">    <span class="attr">enabled:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<p>执行 <code>vcluster create my-vcluster --upgrade -f values.yaml</code> 即可修改现在 vcluster 集群配置。</p>
+<p>在 virtual cluster 中创建如下的 Ingress 对象：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">networking.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Ingress</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">rules:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">host:</span> <span class="string">nginx.aa.com</span></span><br><span class="line">      <span class="attr">http:</span></span><br><span class="line">        <span class="attr">paths:</span></span><br><span class="line">          <span class="bullet">-</span> <span class="attr">backend:</span></span><br><span class="line">              <span class="attr">service:</span></span><br><span class="line">                <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">                <span class="attr">port:</span></span><br><span class="line">                  <span class="attr">number:</span> <span class="number">80</span></span><br><span class="line">            <span class="attr">path:</span> <span class="string">/</span></span><br><span class="line">            <span class="attr">pathType:</span> <span class="string">ImplementationSpecific</span></span><br></pre></td></tr></table></figure>
+<p>查看 host cluster 中的 Ingress 信息如下：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">ingress</span> <span class="string">--context</span> <span class="string">kind-vcluster</span> <span class="string">-n</span> <span class="string">vcluster-my-vcluster</span> <span class="string">-o</span> <span class="string">yaml</span> <span class="string">nginx-x-demo-nginx-x-my-vcluster</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">networking.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Ingress</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">annotations:</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-name:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/object-uid:</span> <span class="string">4b8034a6-1513-4ccd-b80a-66807d862b4e</span></span><br><span class="line">  <span class="attr">creationTimestamp:</span> <span class="string">&quot;2023-11-28T10:07:52Z&quot;</span></span><br><span class="line">  <span class="attr">generation:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/label-my-vcluster-x-a172cedcae:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/managed-by:</span> <span class="string">my-vcluster</span></span><br><span class="line">    <span class="attr">vcluster.loft.sh/namespace:</span> <span class="string">demo-nginx</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-x-demo-nginx-x-my-vcluster</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">vcluster-my-vcluster</span></span><br><span class="line">  <span class="attr">ownerReferences:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line">    <span class="attr">controller:</span> <span class="literal">false</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">my-vcluster</span></span><br><span class="line">    <span class="attr">uid:</span> <span class="string">463a503e-d889-49a7-94e0-0cba5299dd47</span></span><br><span class="line">  <span class="attr">resourceVersion:</span> <span class="string">&quot;16292&quot;</span></span><br><span class="line">  <span class="attr">uid:</span> <span class="string">1d0de02b-5aad-4858-a8cf-2caa345ca85b</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">rules:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">host:</span> <span class="string">nginx.aa.com</span></span><br><span class="line">    <span class="attr">http:</span></span><br><span class="line">      <span class="attr">paths:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">backend:</span></span><br><span class="line">          <span class="attr">service:</span></span><br><span class="line">            <span class="attr">name:</span> <span class="string">nginx-x-demo-nginx-x-my-vcluster</span></span><br><span class="line">            <span class="attr">port:</span></span><br><span class="line">              <span class="attr">number:</span> <span class="number">80</span></span><br><span class="line">        <span class="attr">path:</span> <span class="string">/</span></span><br><span class="line">        <span class="attr">pathType:</span> <span class="string">ImplementationSpecific</span></span><br><span class="line"><span class="attr">status:</span></span><br><span class="line">  <span class="attr">loadBalancer:</span></span><br><span class="line">    <span class="attr">ingress:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">hostname:</span> <span class="string">localhost</span></span><br></pre></td></tr></table></figure>
+<p>可以看到 Ingress 中对应的 Service 名字已经修改了 host cluster 中对应的 Service 名字。</p>
+<h2 id="销毁"><a href="#销毁" class="headerlink" title="销毁"></a>销毁</h2><p>在使用完成后执行如下命令即可销毁 virtual cluster：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">切换本地的 context</span></span><br><span class="line">vcluster disconnect</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">删除 vcluster</span></span><br><span class="line">vcluster delete my-vcluster</span><br></pre></td></tr></table></figure>
+
+<h1 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h1><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/vcluster-arch.png" alt="image.png"></p>
+<h2 id="组件"><a href="#组件" class="headerlink" title="组件"></a>组件</h2><p>整个架构中，有两大核心组件：k8s Control Plane 和 syncer。其中 StatefulSet my-vcluster 中容器 syncer，默认情况下在该容器中同时启动了 k3s 容器作为 vCluster 控制平面和 vCluster 的 syncer 进程。</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">kubectl <span class="built_in">exec</span> -it --context kind-vcluster -n vcluster-my-vcluster my-vcluster-0 -- ps -ef</span></span><br><span class="line">Defaulted container &quot;syncer&quot; out of: syncer, vcluster (init)</span><br><span class="line">PID   USER     TIME  COMMAND</span><br><span class="line">    1 root      2:57 /vcluster start --name=my-vcluster --kube-config=/data/k3s</span><br><span class="line">   17 root     18:35 /k3s-binary/k3s server</span><br><span class="line">   46 root      0:00 ps -ef</span><br></pre></td></tr></table></figure>
+
+<h3 id="controller-plane"><a href="#controller-plane" class="headerlink" title="controller plane"></a>controller plane</h3><p>控制平面默认使用 k3s，存储使用 sqllite，也可以使用 etcd、mysql、postgresql。k8s 发行版也可以使用 k0s、Vanilla（标准 k8s）、第三方镜像等。控制平面由如下几个组件组成：</p>
+<ol>
+<li>k8s apiserver。</li>
+<li>数据存储，比如 sqllite、etcd 等。</li>
+<li>kube-controller-manager</li>
+<li>kube-scheduler：可选组件，默认使用 host cluster 调度器。</li>
+</ol>
+<blockquote>
+<p>在 Pro 版本中，允许控制面跟 pod 部署在不同的 host cluster。</p>
+</blockquote>
+<h3 id="syncer"><a href="#syncer" class="headerlink" title="syncer"></a>syncer</h3><p>virtual cluster 中并不包含实际的计算、存储和网络资源，syncer 的职责为将对象从 virtual cluster 同步到 host cluster，也有少部分对象需要从 host cluster 同步到 virtual cluster。<br>vCluster 将 k8s 对象划分为 low level 和 high level，其中 high level 的对象仅存在于 virtual cluster 中，比如 Deployment、CRD 等对象。low level 的对象会通过 syncer 模块同步到 host cluster 上，包括 Pod、ConfigMap、Secret 等。low level 的对象在 virutal cluster 为多个 namespace，但均会映射到 host cluster 的一个 namespace 下。另外，vCluster 也支持将 virtual cluster 的多个 namespace 映射到 host cluster 的多个 namespace，该特性目前处于 alpha 状态。<br>vCluster 可以通过<a href="https://www.vcluster.com/docs/syncer/other_resources/config_syntax">配置的方式</a>来定制资源的同步，更复杂的同步规则提供了<a href="https://www.vcluster.com/docs/advanced-topics/plugins-overview">插件机制</a>实现。<br>vCluster 默认支持的同步资源列表：<a href="https://www.vcluster.com/docs/syncer/core_resources">https://www.vcluster.com/docs/syncer/core_resources</a>。</p>
+<p>已经创建完成的 syncer 配置，可以通过 <code>vcluster create my-vcluster --upgrade -f values.yaml</code> 的方式修改，该命令会调用 helm update，helm update 命令最终会修改 StatefulSet syncer 的配置，并触发 pod 的重启。</p>
+<h4 id="k8s-node-同步"><a href="#k8s-node-同步" class="headerlink" title="k8s node 同步"></a>k8s node 同步</h4><p>支持多种 node 的同步行为，通过修改 syncer 的启动参数：</p>
+<ol>
+<li>Fake Node：默认行为。根据 pod 中的 spec.nodeName 创建 Fake Node。Fake Node 为 syncer 服务自动创建。如果没有 pod 调度到 Fake Node 上，则 Fake Node 会自动删除。</li>
+<li>Real Node：根据 pod 中的 spec.nodeName 创建 Real Node，Real Node 的信息从 host cluster 同步。如果没有 pod 调度到 Real Node 上，则 Real Node 会自动删除。</li>
+<li>Real Node All：同步 host cluster 的所有 node 到 virtual cluster。如果要使用 DaemonSet，需要使用该模式。</li>
+<li>Real Nodes Label Selector：仅同步 label selector 匹配的 host node 到 virtual cluster 中。</li>
+<li>Real Nodes + Label Selector：仅同步包含在 pod spec.nodeName 且 Label selector 可以选中的 host cluster node 到 virtual cluster 中。</li>
+</ol>
+<h2 id="pod-调度"><a href="#pod-调度" class="headerlink" title="pod 调度"></a>pod 调度</h2><p>默认情况下，virtual cluster 中的 pod 调度会使用 host cluster 的调度，但存在如下的问题：</p>
+<ol>
+<li>在 virtual cluster node 上的 label 对于 pod 调度不会生效。</li>
+<li>drait、trait 命令对于 virtual cluster 上的 pod 没有影响。</li>
+<li>virtual cluster 中使用自定义调度器不生效。</li>
+</ol>
+<p>基于上述限制，vCluster 支持如下两种方案：</p>
+<ol>
+<li>支持在 virtual cluster 中使用独立的调度器。可以给 virtual cluster 上的 node 增加标签、污点等信息，pod 的调度在 virtual cluster 中的调度器实现，syncer 组件仅将已经调度完成的 pod 同步到 host cluster。</li>
+<li>仍然复用 host cluster 调度器，但做了部分功能的增强：在 syncer 服务中指定仅同步部分 host node 到 virtual cluster 中，这样 pod 就仅会调度到 host cluster 的特定 node 上。</li>
+</ol>
+<h2 id="网络"><a href="#网络" class="headerlink" title="网络"></a>网络</h2><p>virutal cluster 中无独立的 pod 网络和 service 网络，完全复用 host cluster 的网络。</p>
+<h3 id="Service-网络"><a href="#Service-网络" class="headerlink" title="Service 网络"></a>Service 网络</h3><ol>
+<li>会从 virtual cluster 同步到 host cluster，两者的 clusterip 一致。</li>
+<li>允许将一些 host cluster 中的 service 同步到 virtual cluster 中，同时指定service 的名字。</li>
+<li>允许将 virtual cluster 中的 service 同步到 host cluster 中，同时指定service 的名字。</li>
+</ol>
+<h3 id="Ingress-网络"><a href="#Ingress-网络" class="headerlink" title="Ingress 网络"></a>Ingress 网络</h3><p>允许将 virtual cluster 中的 Ingress 同步到 host cluster，以便复用 host cluster 中的 Ingress Controller。</p>
+<h3 id="DNS-解析"><a href="#DNS-解析" class="headerlink" title="DNS 解析"></a>DNS 解析</h3><p>在 virtual cluster 中部署了单独的 coredns 组件，默认情况下，在 vritual cluster 中的域名仅能解析内部的域名，不能解析 host cluster 上的域名。可以通过开关的方式，将 virtual cluster 中的域名解析转发到 host cluster 的 coredns。</p>
+<blockquote>
+<p>在 PRO 版本中，coredns 组件可以集成到 syncer 组件内部，以便节省资源。</p>
+</blockquote>
+<h3 id="NetworkPolicy"><a href="#NetworkPolicy" class="headerlink" title="NetworkPolicy"></a>NetworkPolicy</h3><p>默认情况下，vcluster 中会忽略 virtual cluster 中的 NetworkPolicy 资源。可以通过开关的方式打开该配置，即可将 NetworkPolicy 规则同步到 host cluster。</p>
+<h2 id="存储"><a href="#存储" class="headerlink" title="存储"></a>存储</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/vcluster-pv.png" alt="image.png"><br>默认情况下，host StorageClass 不会同步到 vc，可以通过开关的方式打开同步。<br>默认情况下，pv 不会从 vc 同步到 host cluster，可以通过开关的方式打开。</p>
+<h2 id="可观测性"><a href="#可观测性" class="headerlink" title="可观测性"></a>可观测性</h2><h3 id="monitoring"><a href="#monitoring" class="headerlink" title="monitoring"></a>monitoring</h3><p>metrics-server 用来监控 k8s 的 Deployment、StatefulSet 等对象，metrics-server 可以复用 host cluster 中的，但需要启用 metrics server proxy 功能。也可以在 vc 中单独部署一套 metrics server。<br>在 vc 集群中，由于每个 k8s node 的 ip 地址为 host cluster 中的 service clusterip，在 vc 中网络是可达的，可以获取到对应的监控信息。</p>
+<h3 id="logging"><a href="#logging" class="headerlink" title="logging"></a>logging</h3><p>需要用到Hostpath Mapper组件，该组件为 DaemonSet 的形式。后续即可以部署 loki 等组件。</p>
+<h2 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h2><h3 id="隔离模式"><a href="#隔离模式" class="headerlink" title="隔离模式"></a>隔离模式</h3><p>在启动的时候指定<code>--isolate</code>，在该模式下对 workload 做了多种限制。</p>
+<ol>
+<li>对 vcluster pod 的 Pod Security 做限制，不符合规范的 pod 不会同步到 host cluster。</li>
+<li>可以对 vc 中 pod 的总资源量做限制。</li>
+<li>在 host cluster 上通过 NetworkPolicy 做隔离。</li>
+</ol>
+<h2 id="virtual-cluster-集群的创建"><a href="#virtual-cluster-集群的创建" class="headerlink" title="virtual cluster 集群的创建"></a>virtual cluster 集群的创建</h2><p>目前仅能通过 vcluster cli、helm 的方式来创建，底层均为 helm chart 的方式来管理，缺少服务化功能。</p>
+<h2 id="virtual-cluster-集群对外暴露方法"><a href="#virtual-cluster-集群对外暴露方法" class="headerlink" title="virtual cluster 集群对外暴露方法"></a>virtual cluster 集群对外暴露方法</h2><h3 id="获取-kubeconfig"><a href="#获取-kubeconfig" class="headerlink" title="获取 kubeconfig"></a>获取 kubeconfig</h3><h4 id="vcluster-connect-命令"><a href="#vcluster-connect-命令" class="headerlink" title="vcluster connect 命令"></a>vcluster connect 命令</h4><p>该命令可以修改本地的 kubeconfig 文件，并将 context 切换为 virtual cluster context。默认为 virutual cluster 的管理员权限，可以指定使用特定的 ServiceAccount。</p>
+<h4 id="host-cluster-secret-中获取到-kubeconfig"><a href="#host-cluster-secret-中获取到-kubeconfig" class="headerlink" title="host cluster secret 中获取到 kubeconfig"></a>host cluster secret 中获取到 kubeconfig</h4><p>在 host cluster 中，在 vc 的 namespace 下，存在一个以 <code>vc-</code> 开头的 Secret，该 Secret 中保存了 kubeconfig 完整信息。</p>
+<h3 id="vc-集群中的-apiserver-的暴露地址"><a href="#vc-集群中的-apiserver-的暴露地址" class="headerlink" title="vc 集群中的 apiserver 的暴露地址"></a>vc 集群中的 apiserver 的暴露地址</h3><p>可以在 syncer 启动的时候指定获取的 kubeconfig 中的 endpoint 地址。endpoint 地址即为 vc 集群中的 kube-apiserver 的地址，该 kube-apiserver 的地址可以通过 host cluster 中的 Ingress、LoadBalancer Service、NodePort Service 等方式对外暴露。</p>
+<h2 id="高可用设计"><a href="#高可用设计" class="headerlink" title="高可用设计"></a>高可用设计</h2><h3 id="control-plane-高可用"><a href="#control-plane-高可用" class="headerlink" title="control plane 高可用"></a>control plane 高可用</h3><p>k3s 可以支持高可用架构，在创建 vc 的时候通过指定的副本的方式来设置高可用。其他的 k8s 发行版同样类似的实现。</p>
+<h3 id="备份与恢复"><a href="#备份与恢复" class="headerlink" title="备份与恢复"></a>备份与恢复</h3><p>vCluster 本身并没有提供对于 vc 集群的数据备份与恢复功能，可以通过通用的 velero 方式实现备份与恢复功能。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>未做网络隔离，容器网络和 service 网络仍然在同一个平面，要想相互隔离，必须使用 NetworkPolicy。</p>
+<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><ol>
+<li>获取 helm chart 到本地</li>
+</ol>
+<pre><code class="shell">helm repo add lofts https://charts.loft.sh/
+helm fetch lofts/vcluster
+``
+</code></pre>
 ]]></content>
   </entry>
   <entry>
