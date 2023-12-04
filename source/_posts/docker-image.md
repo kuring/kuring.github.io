@@ -134,6 +134,10 @@ $ docker info
  Live Restore Enabled: false
 ```
 
+## 常用基础镜像
+
+- nicolaka/netshoot：包含了丰富的网络命令，排查网络问题非常方便
+
 ## 参考资料
 
 - [Image Manifest V 2, Schema 2](https://docs.docker.com/registry/spec/manifest-v2-2/)
