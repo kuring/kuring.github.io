@@ -1392,6 +1392,23 @@
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/mnt/hgfs/iso/CentOS-6.5-x86_64-bin-DVD1.iso /media/cdrom/ iso9660 loop 0 0</span><br><span class="line">/mnt/hgfs/iso/CentOS-6.5-x86_64-bin-DVD2.iso /media/CentOS/ iso9660 loop 0 0</span><br></pre></td></tr></table></figure>]]></content>
   </entry>
   <entry>
+    <title>cgdb的使用</title>
+    <url>/post/cgdb/</url>
+    <content><![CDATA[<p>长期以来在使用gdb调试代码的时候都会因为调试代码的时候查看代码不方便而烦恼，gdb的list命令不够好用。而且网上的教程中也确实不容易发现可以替代gdb的好的终端下的调试工具，对于图形界面的集成开发环境（比如Eclipse CDT）和图形界面的调试工具（比如DDD）不在本文讨论的范围内，毕竟很多时候连接linux的时候还是终端方式的居多。</p>
+<h1 id="tui模式"><a href="#tui模式" class="headerlink" title="tui模式"></a>tui模式</h1><p>直到后来偶然间发现了gdb的<code>-tui</code>参数，该参数通过文本用户界面模式进行调试代码，使用起来确实方便了许多，再也不用边调试边list代码了，该模式已经满足了我的边调试边查看代码的需求。另外，gdbtui命令也可完成相同的功能。一个tui调试模式的界面如下：</p>
+<p><img src="http://beej.us/guide/bggdb/gdbwinss.png" alt="gdb -tui"></p>
+<p>虽然，tui模式大大的提供了调试的友好性，但是仍然有一些缺点。比如显示的代码无法语法高亮，虽然会很影响用户体验，但是我毕竟是一名后台开发的程序员，这点可以忽略不计。源码布局和gdb命令布局之间切换不够方便，这点也不要紧，毕竟可以切换，只是需要输入两个单词就可以切换了。最最有问题的就是，该命令使用的时curses库，当用ssh通过windows下的SecureCRT或者putty连接进行调试时，源码布局部分往往不能够自动刷新，需要手工输入<code>CTRL+L</code>来刷新，具体的原理我没有去深究。</p>
+<h1 id="cgdb"><a href="#cgdb" class="headerlink" title="cgdb"></a>cgdb</h1><p>主要是本着解决gdb tui中的源码布局不能自动刷新的问题，本文的重点<code>cgdb</code>命令终于闪亮登场了。该命令不仅解决了源码布局自动刷新问题，同时也支持了语法高亮，同时源码查看支持vi的部分命令。功能基本跟vimgdb相近，但是安装更容易，在ubuntu下只需执行<code>sudo apt-get install cgdb</code>即可。</p>
+<p><img src="https://cgdb.github.io/images/screenshot_debugging.png" alt="cgdb"></p>
+<p>下面是一些常用命令：</p>
+<p>ESC：切换焦点到源码模式，在该界面中可以使用vi的常用命令</p>
+<p>i：切换焦点到gdb模式</p>
+<p>o：打开文件对话框，选择要显示的代码文件，按ESC取消</p>
+<p>空格：在当前行设置一个断点</p>
+<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a href="http://beej.us/guide/bggdb/">Beej’s Quick Guide to GDB</a><br><a href="https://cgdb.github.io/">cgdb</a></p>
+]]></content>
+  </entry>
+  <entry>
     <title>证书技术</title>
     <url>/post/certificate/</url>
     <content><![CDATA[<h1 id="使用openssl创建自签名证书"><a href="#使用openssl创建自签名证书" class="headerlink" title="使用openssl创建自签名证书"></a>使用openssl创建自签名证书</h1><p>创建CA</p>
@@ -1443,23 +1460,6 @@
 <li><a href="https://coolshell.cn/articles/21708.html">https://coolshell.cn/articles/21708.html</a></li>
 <li><a href="https://help.aliyun.com/document_detail/160093.html">https://help.aliyun.com/document_detail&#x2F;160093.html</a></li>
 </ul>
-]]></content>
-  </entry>
-  <entry>
-    <title>cgdb的使用</title>
-    <url>/post/cgdb/</url>
-    <content><![CDATA[<p>长期以来在使用gdb调试代码的时候都会因为调试代码的时候查看代码不方便而烦恼，gdb的list命令不够好用。而且网上的教程中也确实不容易发现可以替代gdb的好的终端下的调试工具，对于图形界面的集成开发环境（比如Eclipse CDT）和图形界面的调试工具（比如DDD）不在本文讨论的范围内，毕竟很多时候连接linux的时候还是终端方式的居多。</p>
-<h1 id="tui模式"><a href="#tui模式" class="headerlink" title="tui模式"></a>tui模式</h1><p>直到后来偶然间发现了gdb的<code>-tui</code>参数，该参数通过文本用户界面模式进行调试代码，使用起来确实方便了许多，再也不用边调试边list代码了，该模式已经满足了我的边调试边查看代码的需求。另外，gdbtui命令也可完成相同的功能。一个tui调试模式的界面如下：</p>
-<p><img src="http://beej.us/guide/bggdb/gdbwinss.png" alt="gdb -tui"></p>
-<p>虽然，tui模式大大的提供了调试的友好性，但是仍然有一些缺点。比如显示的代码无法语法高亮，虽然会很影响用户体验，但是我毕竟是一名后台开发的程序员，这点可以忽略不计。源码布局和gdb命令布局之间切换不够方便，这点也不要紧，毕竟可以切换，只是需要输入两个单词就可以切换了。最最有问题的就是，该命令使用的时curses库，当用ssh通过windows下的SecureCRT或者putty连接进行调试时，源码布局部分往往不能够自动刷新，需要手工输入<code>CTRL+L</code>来刷新，具体的原理我没有去深究。</p>
-<h1 id="cgdb"><a href="#cgdb" class="headerlink" title="cgdb"></a>cgdb</h1><p>主要是本着解决gdb tui中的源码布局不能自动刷新的问题，本文的重点<code>cgdb</code>命令终于闪亮登场了。该命令不仅解决了源码布局自动刷新问题，同时也支持了语法高亮，同时源码查看支持vi的部分命令。功能基本跟vimgdb相近，但是安装更容易，在ubuntu下只需执行<code>sudo apt-get install cgdb</code>即可。</p>
-<p><img src="https://cgdb.github.io/images/screenshot_debugging.png" alt="cgdb"></p>
-<p>下面是一些常用命令：</p>
-<p>ESC：切换焦点到源码模式，在该界面中可以使用vi的常用命令</p>
-<p>i：切换焦点到gdb模式</p>
-<p>o：打开文件对话框，选择要显示的代码文件，按ESC取消</p>
-<p>空格：在当前行设置一个断点</p>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a href="http://beej.us/guide/bggdb/">Beej’s Quick Guide to GDB</a><br><a href="https://cgdb.github.io/">cgdb</a></p>
 ]]></content>
   </entry>
   <entry>
@@ -1524,6 +1524,93 @@
 ]]></content>
       <tags>
         <tag>多集群</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>公司问题及经验总结</title>
+    <url>/post/company_question/</url>
+    <content><![CDATA[<p>我在软件行业工作已经有五个年头了，在现在这家公司已经有两个年头了。虽然身为公司的研发部经理可以参与公司的一些决定，但是没有绝对的话语权，对于公司的很多决定我深知是错误的，虽然后来也证明是错误的，但是我仍然无能为力。这里总结一下在公司中遇到的问题。</p>
+<p>宁可招聘一个技术水平高的也不愿招聘三个技术水平低的。在工作中能够非常有力的证明这一点，三个刚工作的技术人员，尤其对于C++这样门槛稍微高一些，需要工作经验来弥补C++中坑的语言，三个C++技术人员远没有一个高水平的工作效率高，因为三个菜鸟需要将大牛踩过的坑全部踩一遍，踩过多少坑就代表走了多少弯路。</p>
+<p>兴趣是最大的老师。我带过不少人，很多都是新人，我给他们制定了学习计划，期望他们能够在业余时间多学习，但实际上哪有几个人能够充分利用业余时间的。我就非常怀疑他们对技术的兴趣问题，如果他们对技术不感兴趣那为什么要加入该行业，为没有兴趣的工作而工作就是自己对自己耍流氓。如果他们对技术感兴趣，那只能说明他们业余时间中有更大的诱惑。</p>
+<p>在招聘中不要过于在意金钱，便宜无好货在招聘行业中仍然非常适用。在招聘中千万不要吝惜给员工的那点钱，因为一千块钱而错失一个好的员工是非常不值得的。</p>
+<p>盈利模式决定了公司对产品的态度。我所在的软件行业属于传统的软件行业，传统软件行业的盈利模式为销售，由于软件具有可复制性的特点，因此只要一套产品卖的越多就赚的越多。对于传统软件行业的产品使用者很多情况下就是几个人，至少跟互联网产品的用户数量不在一个量级。使用的人数决定了传统软件行业的用户体验可以做的很烂，技术水平可以不用那么高，只要能用就行，慢点无所谓，只要能卖出去就行了。身为一个技术人员，一个对技术有追求的技术人员，这令我非常反感，我做技术我不能对技术无所谓，我讨厌听到无所谓这样的字眼。</p>
+<p>一定要明确公司的定位，明白什么时候应该干什么，什么应该干，野心太大也是问题。公司处于成长阶段提出了今年营业额比去年增长10倍的目标，我听到之后就是嗤之以鼻，这压根就是不可能的任务，而事实证明这也根本不可能完成，实际上当年营业额仅比去年增长了一倍。</p>
+<p>一家公司一定要有自己的明确产品线，要抵住外界的诱惑。公司的产品线本来是非常明确的，后来由于客户需求和各种方面的原因，开始考虑疯狂扩展产品，这就造成了本来人手就紧蹙的情况下，没有时间去改善现有的系统，不得不去研发新的产品。自己没有的产品甚至跟客户合作或者完全购买别人的产品，导致公司很多人都在考虑跟其他公司合作的事宜。结果可想而知，新产品的销售并不理想，旧有的产品升级维护的也开始变慢。ps：我是非常讨厌在技术上跟其他公司之间考虑合作的问题，因为这从本质上讲并没有产生任何的社会价值，技术上必然涉及到接口的问题，只要是接口必然会有很多细节问题，这些往往会出现技术人员扯皮的问题，一个问题你可以解决他也可以解决，但是谁都不愿意解决，你说烦不烦。</p>
+<p>技术人员后来要么转行要么做管理了。在济南技术人员就这两种出路吧，没见过多少大龄的程序员，很多情况下写着写着程序突然发现自己转为公司的中层了，比如我，并逐渐参与公司的事务。很多对程序不感兴趣的，可能就直接换个行业或者转行做销售了。</p>
+<p>有些人再怎么培养也成不了高手。在工作我发现，有些人即使有了几年的工作经验，对公司的产品也非常了解，但是在解决问题的时候总是找不到点子上，占了一大堆资源，最后解决起问题来即慢又绕弯路，还留下一堆bug。对于这部分人，我想说也许这个行业不适合你。</p>
+<p>领导千万不可三天两头一个想法，这在员工看来就是一个不靠谱的领导。谁都不愿意追随一个拿着自己当猴耍的领导，一会一个想法只能说明领导不够成熟，不适合做领导。跟随杰出的人，为杰出的人工作。</p>
+<p>搞公司最好不要搞施工太久的。公司很多做工程的都在为现场的情况忙碌，一个点架设完毕后往往还需要耗费大量的时间来维护，维护对于公司而言牵涉到精力太大，尽量避免需要整天跟客户打交道和整天维护的业务。</p>
+<p>专科生是很难撑起一家科技企业。虽然我不完全认同学历就能决定能力，但学历跟能力之间是成正比关系的。我的朋友中有专科生在工作几年后可以做专业的视频教程，并且业余时间写过几部玄幻小说。由于学习经历的不同这就造就了科班出身的程度不同，自然能力之间是有差异的。虽然中国的大学教育跟工作很脱节，但是在工作中还是能够跟大学教育挂起钩来的。学历跟素质之间也是成正比关系的，这里的素质体现在工作中就包括了工作中的责任心，工作态度等方面，这里就不展开了，要展开的话我可以举出非常多活生生的例子。因此，我非常不提倡在公司招聘中招聘专科生。我发现在很多情况下，很多专科人员是连普通话都不会的，操着各种方言或各种被普通话的方言。基本上能不能说普通话也是一个断定人素质的标准，扩展到其他行业同样适用。</p>
+<p>也许本文的观点有些偏激，没错我就是一个偏激的IT工程师，就酱。</p>
+]]></content>
+      <tags>
+        <tag>杂谈</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>通过命令编译java程序</title>
+    <url>/post/compile_java_code/</url>
+    <content><![CDATA[<p>通过Eclipse编写java程序久了，发现已经不会用命令来编译java程序了。今天在windows下搭建了一个solr环境，想放到linux下去跑一下，在windows上打成jar包后放在linux下不能运行，是时候回顾一下java的编译命令了。而且网上的资料比较零散，没有特别系统的资料。</p>
+<p>本文在linux测试，同windows下的命令行工具差别不大。</p>
+<h1 id="编译并执行单个文件"><a href="#编译并执行单个文件" class="headerlink" title="编译并执行单个文件"></a>编译并执行单个文件</h1><p>1. 在目录下<code>~/test_java/com/kuring</code>下新建HelloWorld.java的文件，文件内容为</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HellowWorld</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;hello world&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>2. 在目录<code>~/test_java</code>下执行<code>javac com/kuring/HelloWorld.java</code>命令来编译文件。此时会在HelloWorld.java文件所在的目录下生成HelloWorld.class的二进制文件。</p>
+<p>3. 在目录<code>~/test_java</code>下执行<code>java com.kuring.HelloWorld</code>来执行HelloWorld.class。屏幕会输出<code>hello world</code>，说明文件执行成功。<br>也可以在任意路径下指定classpath路径来执行，命令为<code>java -classpath  ~/test_java com.kuring.HelloWorld</code>，其中classpath指定了类的搜索路径。</p>
+<h1 id="编译并执行多个文件"><a href="#编译并执行多个文件" class="headerlink" title="编译并执行多个文件"></a>编译并执行多个文件</h1><p>1. 在目录下<code>~/test_java/com/kuring</code>下新建HelloWorld2.java和Main.java的文件，HelloWorld2.java文件内容为</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HellowWorld2</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">print</span><span class="params">()</span> &#123;</span><br><span class="line">		System.out.println(<span class="string">&quot;hello world too&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Main.java的文件内容为</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">		<span class="type">HelloWorld2</span> <span class="variable">hello</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HelloWorld2</span>();</span><br><span class="line">		hello.print();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>2. 在目录<code>~/test_java</code>下执行<code>javac com/kuring/Main.java</code>命令来编译文件。此时会在Main.java文件所在的目录下生成Main.class和HelloWorld2.class两个文件，可以看出javac有自动推导编译的功能。</p>
+<p>3. 在目录<code>~/test_java</code>下执行<code>java com.kuring.Main</code>。屏幕会输出<code>hello world too</code>，说明文件执行成功。</p>
+<h1 id="打包"><a href="#打包" class="headerlink" title="打包"></a>打包</h1><p>将上述例子中的程序打成jar包，可以在<code>~/test_java</code>目录下通过执行命令<code>jar cvf my.jar com</code>来生成jar文件。其中my.jar为要生成的jar文件的名字。<br>通过<code>java -classpath my.jar com.kuring.Main</code>来执行jar文件。<br>上述命令需要指定要执行的类名Main，如果想通过<code>java -jar my.jar</code>命令即可执行程序需要在jar包的META-INF&#x2F;MANIFEST.MF文件中增加一行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Main-Class: SolrTest</span><br></pre></td></tr></table></figure>
+<p>来执行含有main函数的类。然后通过<code>jar -cfm my.jar MANIFEST.MF路径 要打包的目录或文件</code>来重新生成jar包。这样就可以通过<code>java -jar my.jar</code>来执行jar包了。</p>
+<p>关于如何创建并执行引用了其他jar包的jar包，可以参考我的另外一篇博客《<a href="/post/solr_setup">在Linux上搭建solr环境</a>》，这里不再赘述。</p>
+<h1 id="常用jar命令"><a href="#常用jar命令" class="headerlink" title="常用jar命令"></a>常用jar命令</h1><table border="1" cellpadding="3" cellspacing="0" summary="" width="100%">
+    <tr>
+        <td><strong>功能</strong></td>
+        <td><strong>命令</strong></td>
+    </tr>
+    <tr>
+        <td>用一个单独的文件创建一个 JAR 文件</td>
+        <td>jar cf jar-file input-file...</td>
+    </tr>
+    <tr>
+        <td>用一个目录创建一个 JAR 文件</td>
+        <td>jar cf jar-file dir-name</td>
+    </tr>
+    <tr>
+        <td>创建一个未压缩的 JAR 文件</td>
+        <td>jar cf0 jar-file dir-name</td>
+    </tr>
+    <tr>
+        <td>更新一个 JAR 文件</td>
+        <td>jar uf jar-file input-file...</td>
+    </tr>
+    <tr>
+        <td>查看一个 JAR 文件的内容</td>
+        <td>jar tf jar-file</td>
+    </tr>
+    <tr>
+        <td>提取一个 JAR 文件的内容</td>
+        <td>jar xf jar-file</td>
+    </tr>
+    <tr>
+        <td>从一个 JAR 文件中提取特定的文件</td>
+        <td>jar xf jar-file archived-file...</td>
+    </tr>
+    <tr>
+        <td>运行一个打包为可执行 JAR 文件的应用程序</td>
+        <td>java -jar app.jar</td>
+    </tr>
+</table>
+
+<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p><a href="http://www.ibm.com/developerworks/cn/java/j-jar/">JAR 文件揭密</a><br><a href="http://blog.sina.com.cn/s/blog_774c75080100q73w.html">Java程序的编译、执行和打包</a></p>
+]]></content>
+      <tags>
+        <tag>Java</tag>
       </tags>
   </entry>
   <entry>
@@ -2361,93 +2448,6 @@
 ]]></content>
   </entry>
   <entry>
-    <title>公司问题及经验总结</title>
-    <url>/post/company_question/</url>
-    <content><![CDATA[<p>我在软件行业工作已经有五个年头了，在现在这家公司已经有两个年头了。虽然身为公司的研发部经理可以参与公司的一些决定，但是没有绝对的话语权，对于公司的很多决定我深知是错误的，虽然后来也证明是错误的，但是我仍然无能为力。这里总结一下在公司中遇到的问题。</p>
-<p>宁可招聘一个技术水平高的也不愿招聘三个技术水平低的。在工作中能够非常有力的证明这一点，三个刚工作的技术人员，尤其对于C++这样门槛稍微高一些，需要工作经验来弥补C++中坑的语言，三个C++技术人员远没有一个高水平的工作效率高，因为三个菜鸟需要将大牛踩过的坑全部踩一遍，踩过多少坑就代表走了多少弯路。</p>
-<p>兴趣是最大的老师。我带过不少人，很多都是新人，我给他们制定了学习计划，期望他们能够在业余时间多学习，但实际上哪有几个人能够充分利用业余时间的。我就非常怀疑他们对技术的兴趣问题，如果他们对技术不感兴趣那为什么要加入该行业，为没有兴趣的工作而工作就是自己对自己耍流氓。如果他们对技术感兴趣，那只能说明他们业余时间中有更大的诱惑。</p>
-<p>在招聘中不要过于在意金钱，便宜无好货在招聘行业中仍然非常适用。在招聘中千万不要吝惜给员工的那点钱，因为一千块钱而错失一个好的员工是非常不值得的。</p>
-<p>盈利模式决定了公司对产品的态度。我所在的软件行业属于传统的软件行业，传统软件行业的盈利模式为销售，由于软件具有可复制性的特点，因此只要一套产品卖的越多就赚的越多。对于传统软件行业的产品使用者很多情况下就是几个人，至少跟互联网产品的用户数量不在一个量级。使用的人数决定了传统软件行业的用户体验可以做的很烂，技术水平可以不用那么高，只要能用就行，慢点无所谓，只要能卖出去就行了。身为一个技术人员，一个对技术有追求的技术人员，这令我非常反感，我做技术我不能对技术无所谓，我讨厌听到无所谓这样的字眼。</p>
-<p>一定要明确公司的定位，明白什么时候应该干什么，什么应该干，野心太大也是问题。公司处于成长阶段提出了今年营业额比去年增长10倍的目标，我听到之后就是嗤之以鼻，这压根就是不可能的任务，而事实证明这也根本不可能完成，实际上当年营业额仅比去年增长了一倍。</p>
-<p>一家公司一定要有自己的明确产品线，要抵住外界的诱惑。公司的产品线本来是非常明确的，后来由于客户需求和各种方面的原因，开始考虑疯狂扩展产品，这就造成了本来人手就紧蹙的情况下，没有时间去改善现有的系统，不得不去研发新的产品。自己没有的产品甚至跟客户合作或者完全购买别人的产品，导致公司很多人都在考虑跟其他公司合作的事宜。结果可想而知，新产品的销售并不理想，旧有的产品升级维护的也开始变慢。ps：我是非常讨厌在技术上跟其他公司之间考虑合作的问题，因为这从本质上讲并没有产生任何的社会价值，技术上必然涉及到接口的问题，只要是接口必然会有很多细节问题，这些往往会出现技术人员扯皮的问题，一个问题你可以解决他也可以解决，但是谁都不愿意解决，你说烦不烦。</p>
-<p>技术人员后来要么转行要么做管理了。在济南技术人员就这两种出路吧，没见过多少大龄的程序员，很多情况下写着写着程序突然发现自己转为公司的中层了，比如我，并逐渐参与公司的事务。很多对程序不感兴趣的，可能就直接换个行业或者转行做销售了。</p>
-<p>有些人再怎么培养也成不了高手。在工作我发现，有些人即使有了几年的工作经验，对公司的产品也非常了解，但是在解决问题的时候总是找不到点子上，占了一大堆资源，最后解决起问题来即慢又绕弯路，还留下一堆bug。对于这部分人，我想说也许这个行业不适合你。</p>
-<p>领导千万不可三天两头一个想法，这在员工看来就是一个不靠谱的领导。谁都不愿意追随一个拿着自己当猴耍的领导，一会一个想法只能说明领导不够成熟，不适合做领导。跟随杰出的人，为杰出的人工作。</p>
-<p>搞公司最好不要搞施工太久的。公司很多做工程的都在为现场的情况忙碌，一个点架设完毕后往往还需要耗费大量的时间来维护，维护对于公司而言牵涉到精力太大，尽量避免需要整天跟客户打交道和整天维护的业务。</p>
-<p>专科生是很难撑起一家科技企业。虽然我不完全认同学历就能决定能力，但学历跟能力之间是成正比关系的。我的朋友中有专科生在工作几年后可以做专业的视频教程，并且业余时间写过几部玄幻小说。由于学习经历的不同这就造就了科班出身的程度不同，自然能力之间是有差异的。虽然中国的大学教育跟工作很脱节，但是在工作中还是能够跟大学教育挂起钩来的。学历跟素质之间也是成正比关系的，这里的素质体现在工作中就包括了工作中的责任心，工作态度等方面，这里就不展开了，要展开的话我可以举出非常多活生生的例子。因此，我非常不提倡在公司招聘中招聘专科生。我发现在很多情况下，很多专科人员是连普通话都不会的，操着各种方言或各种被普通话的方言。基本上能不能说普通话也是一个断定人素质的标准，扩展到其他行业同样适用。</p>
-<p>也许本文的观点有些偏激，没错我就是一个偏激的IT工程师，就酱。</p>
-]]></content>
-      <tags>
-        <tag>杂谈</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>通过命令编译java程序</title>
-    <url>/post/compile_java_code/</url>
-    <content><![CDATA[<p>通过Eclipse编写java程序久了，发现已经不会用命令来编译java程序了。今天在windows下搭建了一个solr环境，想放到linux下去跑一下，在windows上打成jar包后放在linux下不能运行，是时候回顾一下java的编译命令了。而且网上的资料比较零散，没有特别系统的资料。</p>
-<p>本文在linux测试，同windows下的命令行工具差别不大。</p>
-<h1 id="编译并执行单个文件"><a href="#编译并执行单个文件" class="headerlink" title="编译并执行单个文件"></a>编译并执行单个文件</h1><p>1. 在目录下<code>~/test_java/com/kuring</code>下新建HelloWorld.java的文件，文件内容为</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HellowWorld</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;hello world&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>2. 在目录<code>~/test_java</code>下执行<code>javac com/kuring/HelloWorld.java</code>命令来编译文件。此时会在HelloWorld.java文件所在的目录下生成HelloWorld.class的二进制文件。</p>
-<p>3. 在目录<code>~/test_java</code>下执行<code>java com.kuring.HelloWorld</code>来执行HelloWorld.class。屏幕会输出<code>hello world</code>，说明文件执行成功。<br>也可以在任意路径下指定classpath路径来执行，命令为<code>java -classpath  ~/test_java com.kuring.HelloWorld</code>，其中classpath指定了类的搜索路径。</p>
-<h1 id="编译并执行多个文件"><a href="#编译并执行多个文件" class="headerlink" title="编译并执行多个文件"></a>编译并执行多个文件</h1><p>1. 在目录下<code>~/test_java/com/kuring</code>下新建HelloWorld2.java和Main.java的文件，HelloWorld2.java文件内容为</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HellowWorld2</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">print</span><span class="params">()</span> &#123;</span><br><span class="line">		System.out.println(<span class="string">&quot;hello world too&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>Main.java的文件内容为</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">		<span class="type">HelloWorld2</span> <span class="variable">hello</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HelloWorld2</span>();</span><br><span class="line">		hello.print();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>2. 在目录<code>~/test_java</code>下执行<code>javac com/kuring/Main.java</code>命令来编译文件。此时会在Main.java文件所在的目录下生成Main.class和HelloWorld2.class两个文件，可以看出javac有自动推导编译的功能。</p>
-<p>3. 在目录<code>~/test_java</code>下执行<code>java com.kuring.Main</code>。屏幕会输出<code>hello world too</code>，说明文件执行成功。</p>
-<h1 id="打包"><a href="#打包" class="headerlink" title="打包"></a>打包</h1><p>将上述例子中的程序打成jar包，可以在<code>~/test_java</code>目录下通过执行命令<code>jar cvf my.jar com</code>来生成jar文件。其中my.jar为要生成的jar文件的名字。<br>通过<code>java -classpath my.jar com.kuring.Main</code>来执行jar文件。<br>上述命令需要指定要执行的类名Main，如果想通过<code>java -jar my.jar</code>命令即可执行程序需要在jar包的META-INF&#x2F;MANIFEST.MF文件中增加一行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Main-Class: SolrTest</span><br></pre></td></tr></table></figure>
-<p>来执行含有main函数的类。然后通过<code>jar -cfm my.jar MANIFEST.MF路径 要打包的目录或文件</code>来重新生成jar包。这样就可以通过<code>java -jar my.jar</code>来执行jar包了。</p>
-<p>关于如何创建并执行引用了其他jar包的jar包，可以参考我的另外一篇博客《<a href="/post/solr_setup">在Linux上搭建solr环境</a>》，这里不再赘述。</p>
-<h1 id="常用jar命令"><a href="#常用jar命令" class="headerlink" title="常用jar命令"></a>常用jar命令</h1><table border="1" cellpadding="3" cellspacing="0" summary="" width="100%">
-    <tr>
-        <td><strong>功能</strong></td>
-        <td><strong>命令</strong></td>
-    </tr>
-    <tr>
-        <td>用一个单独的文件创建一个 JAR 文件</td>
-        <td>jar cf jar-file input-file...</td>
-    </tr>
-    <tr>
-        <td>用一个目录创建一个 JAR 文件</td>
-        <td>jar cf jar-file dir-name</td>
-    </tr>
-    <tr>
-        <td>创建一个未压缩的 JAR 文件</td>
-        <td>jar cf0 jar-file dir-name</td>
-    </tr>
-    <tr>
-        <td>更新一个 JAR 文件</td>
-        <td>jar uf jar-file input-file...</td>
-    </tr>
-    <tr>
-        <td>查看一个 JAR 文件的内容</td>
-        <td>jar tf jar-file</td>
-    </tr>
-    <tr>
-        <td>提取一个 JAR 文件的内容</td>
-        <td>jar xf jar-file</td>
-    </tr>
-    <tr>
-        <td>从一个 JAR 文件中提取特定的文件</td>
-        <td>jar xf jar-file archived-file...</td>
-    </tr>
-    <tr>
-        <td>运行一个打包为可执行 JAR 文件的应用程序</td>
-        <td>java -jar app.jar</td>
-    </tr>
-</table>
-
-<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p><a href="http://www.ibm.com/developerworks/cn/java/j-jar/">JAR 文件揭密</a><br><a href="http://blog.sina.com.cn/s/blog_774c75080100q73w.html">Java程序的编译、执行和打包</a></p>
-]]></content>
-      <tags>
-        <tag>Java</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>sync.Cond的例子</title>
     <url>/post/cond-example/</url>
     <content><![CDATA[<p>sync.Cond类似于pthread中的条件变量，但等待的为goroutine，而不是线程。比较难理解的为Wait函数，在调用该函数时必须L为Lock状态，调用Wait函数后，goroutine会自动解锁，并等待条件的到来，等条件到来后会重新加锁。</p>
@@ -2537,24 +2537,6 @@
 <li><a href="https://blogs.oracle.com/java-platform-group/java-se-support-for-docker-cpu-and-memory-limits">Java SE support for Docker CPU and memory limits</a></li>
 <li><a href="https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&mid=2651749434&idx=1&sn=92dcd59d05984eaa036e7fa804fccf20&chksm=bd12a5778a652c61f4a181c1967dbcf120dd16a47f63a5779fbf931b476e6e712e02d7c7e3a3&mpshare=1&scene=1&srcid=1115JtuwzXeezCv5UkmOcrFw%23rd">美团容器平台架构及容器技术实践</a></li>
 </ul>
-]]></content>
-  </entry>
-  <entry>
-    <title>coolshell博客解谜题游戏</title>
-    <url>/post/coolshell_puzzle/</url>
-    <content><![CDATA[<p>有些闲暇时间了解了下酷壳的谜题活动，共10道题，每道题都不是非常简单，我这里参考着攻略做了下。</p>
-<h1 id="字符替换题"><a href="#字符替换题" class="headerlink" title="字符替换题"></a>字符替换题</h1><p>我编写的C++语言程序</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">char</span> <span class="title">change</span><span class="params">(<span class="type">char</span> input)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span> *after = <span class="string">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span>;</span><br><span class="line">    <span class="type">char</span> *before = <span class="string">&quot;pvwdgazxubqfsnrhocitlkeymj&quot;</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="built_in">strlen</span>(before); i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (before[i] == input)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">return</span> after[i];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> input;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span> *input = <span class="string">&quot;Wxgcg txgcg ui p ixgff, txgcg ui p epm. I gyhgwt mrl lig txg ixgff wrsspnd tr irfkg txui hcrvfgs, nre, hfgpig tcm liunz txg crt13 ra \&quot;ixgff\&quot; tr gntgc ngyt fgkgf.&quot;</span>;</span><br><span class="line">    <span class="type">char</span> *output = <span class="keyword">new</span> <span class="type">char</span>[<span class="built_in">strlen</span>(input) + <span class="number">1</span>];</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="built_in">strlen</span>(input); i++)</span><br><span class="line">    &#123;</span><br><span class="line">        output[i] = <span class="built_in">change</span>(input[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    output[<span class="built_in">strlen</span>(input)] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, output);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>好久没有用shell了，又写了个shell版本的解题方法，该问题可能有更简单的shell解决办法，我这里肯定写复杂了。</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line">result=<span class="string">&#x27;&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="function"><span class="title">change</span></span>()</span><br><span class="line">&#123;</span><br><span class="line">    result=<span class="variable">$1</span></span><br><span class="line">    before=<span class="string">&#x27;pvwdgazxubqfsnrhocitlkeymj&#x27;</span></span><br><span class="line">    after=<span class="string">&#x27;abcdefghijklmnopqrstuvwxyz&#x27;</span></span><br><span class="line">    <span class="keyword">for</span> ((i=<span class="number">0</span>; i &lt;= <span class="variable">$&#123;#before&#125;</span>; i++))</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">        <span class="keyword">if</span> [[ <span class="variable">$&#123;before:<span class="variable">$&#123;i&#125;</span>:1&#125;</span> = <span class="variable">$&#123;1&#125;</span> ]]</span><br><span class="line">        <span class="keyword">then</span></span><br><span class="line">            result=<span class="variable">$&#123;after:<span class="variable">$&#123;i&#125;</span>:1&#125;</span></span><br><span class="line">            <span class="built_in">break</span></span><br><span class="line">        <span class="keyword">fi</span></span><br><span class="line">    <span class="keyword">done</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">input=<span class="string">&#x27;Wxgcg txgcg ui p ixgff, txgcg ui p epm. I gyhgwt mrl lig txg ixgff wrsspnd tr irfkg txui hcrvfgs, nre, hfgpig tcm liunz txg crt13 ra &quot;ixgff&quot; tr gntgc ngyt fgkgf.&#x27;</span></span><br><span class="line"></span><br><span class="line">output=<span class="string">&#x27;&#x27;</span></span><br><span class="line">j=0</span><br><span class="line"><span class="keyword">while</span> [ <span class="string">&quot;<span class="variable">$j</span>&quot;</span> -le <span class="variable">$&#123;#input&#125;</span> ]</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">    change <span class="string">&quot;<span class="variable">$&#123;input:<span class="variable">$&#123;j&#125;</span>:1&#125;</span>&quot;</span></span><br><span class="line">    output=<span class="string">&quot;<span class="variable">$&#123;output&#125;</span><span class="variable">$&#123;result&#125;</span>&quot;</span></span><br><span class="line">    j=$((j+<span class="number">1</span>))</span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$&#123;output&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p>关于rol13的转码可以采用<a href="http://rot13.de/index.php">rot13</a>这个网址来在线转码。</p>
-<h1 id="穷举变量题"><a href="#穷举变量题" class="headerlink" title="穷举变量题"></a>穷举变量题</h1><p>该题需要不断的请求url来获取最终的网址，我这里写一个shell脚本来穷举。</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line">res=2014</span><br><span class="line"><span class="keyword">while</span> [ <span class="variable">$&#123;#res&#125;</span> &gt; 0 ]</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">res=`curl -s <span class="string">&quot;http://fun.coolshell.cn/n/<span class="variable">$&#123;res&#125;</span>&quot;</span>`</span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$res</span></span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></table></figure>
-
-<p>得到答案tree</p>
-<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><a href="http://fun.coolshell.cn/">游戏页面</a><br><a href="http://blog.e10t.net/coolshell-puzzle-game-walkthrough/">CoolShell puzzle game 攻略</a><br><a href="http://joseph.yy.blog.163.com/blog/static/5097395920147782756165/">我也不产生代码 – Coolshell 谜题一游 </a></p>
 ]]></content>
   </entry>
   <entry>
@@ -2709,6 +2691,24 @@
       </tags>
   </entry>
   <entry>
+    <title>coolshell博客解谜题游戏</title>
+    <url>/post/coolshell_puzzle/</url>
+    <content><![CDATA[<p>有些闲暇时间了解了下酷壳的谜题活动，共10道题，每道题都不是非常简单，我这里参考着攻略做了下。</p>
+<h1 id="字符替换题"><a href="#字符替换题" class="headerlink" title="字符替换题"></a>字符替换题</h1><p>我编写的C++语言程序</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">char</span> <span class="title">change</span><span class="params">(<span class="type">char</span> input)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span> *after = <span class="string">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span>;</span><br><span class="line">    <span class="type">char</span> *before = <span class="string">&quot;pvwdgazxubqfsnrhocitlkeymj&quot;</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="built_in">strlen</span>(before); i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (before[i] == input)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">return</span> after[i];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> input;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span> *input = <span class="string">&quot;Wxgcg txgcg ui p ixgff, txgcg ui p epm. I gyhgwt mrl lig txg ixgff wrsspnd tr irfkg txui hcrvfgs, nre, hfgpig tcm liunz txg crt13 ra \&quot;ixgff\&quot; tr gntgc ngyt fgkgf.&quot;</span>;</span><br><span class="line">    <span class="type">char</span> *output = <span class="keyword">new</span> <span class="type">char</span>[<span class="built_in">strlen</span>(input) + <span class="number">1</span>];</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="built_in">strlen</span>(input); i++)</span><br><span class="line">    &#123;</span><br><span class="line">        output[i] = <span class="built_in">change</span>(input[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    output[<span class="built_in">strlen</span>(input)] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, output);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>好久没有用shell了，又写了个shell版本的解题方法，该问题可能有更简单的shell解决办法，我这里肯定写复杂了。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line">result=<span class="string">&#x27;&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="function"><span class="title">change</span></span>()</span><br><span class="line">&#123;</span><br><span class="line">    result=<span class="variable">$1</span></span><br><span class="line">    before=<span class="string">&#x27;pvwdgazxubqfsnrhocitlkeymj&#x27;</span></span><br><span class="line">    after=<span class="string">&#x27;abcdefghijklmnopqrstuvwxyz&#x27;</span></span><br><span class="line">    <span class="keyword">for</span> ((i=<span class="number">0</span>; i &lt;= <span class="variable">$&#123;#before&#125;</span>; i++))</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">        <span class="keyword">if</span> [[ <span class="variable">$&#123;before:<span class="variable">$&#123;i&#125;</span>:1&#125;</span> = <span class="variable">$&#123;1&#125;</span> ]]</span><br><span class="line">        <span class="keyword">then</span></span><br><span class="line">            result=<span class="variable">$&#123;after:<span class="variable">$&#123;i&#125;</span>:1&#125;</span></span><br><span class="line">            <span class="built_in">break</span></span><br><span class="line">        <span class="keyword">fi</span></span><br><span class="line">    <span class="keyword">done</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">input=<span class="string">&#x27;Wxgcg txgcg ui p ixgff, txgcg ui p epm. I gyhgwt mrl lig txg ixgff wrsspnd tr irfkg txui hcrvfgs, nre, hfgpig tcm liunz txg crt13 ra &quot;ixgff&quot; tr gntgc ngyt fgkgf.&#x27;</span></span><br><span class="line"></span><br><span class="line">output=<span class="string">&#x27;&#x27;</span></span><br><span class="line">j=0</span><br><span class="line"><span class="keyword">while</span> [ <span class="string">&quot;<span class="variable">$j</span>&quot;</span> -le <span class="variable">$&#123;#input&#125;</span> ]</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">    change <span class="string">&quot;<span class="variable">$&#123;input:<span class="variable">$&#123;j&#125;</span>:1&#125;</span>&quot;</span></span><br><span class="line">    output=<span class="string">&quot;<span class="variable">$&#123;output&#125;</span><span class="variable">$&#123;result&#125;</span>&quot;</span></span><br><span class="line">    j=$((j+<span class="number">1</span>))</span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$&#123;output&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>关于rol13的转码可以采用<a href="http://rot13.de/index.php">rot13</a>这个网址来在线转码。</p>
+<h1 id="穷举变量题"><a href="#穷举变量题" class="headerlink" title="穷举变量题"></a>穷举变量题</h1><p>该题需要不断的请求url来获取最终的网址，我这里写一个shell脚本来穷举。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line">res=2014</span><br><span class="line"><span class="keyword">while</span> [ <span class="variable">$&#123;#res&#125;</span> &gt; 0 ]</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">res=`curl -s <span class="string">&quot;http://fun.coolshell.cn/n/<span class="variable">$&#123;res&#125;</span>&quot;</span>`</span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$res</span></span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></table></figure>
+
+<p>得到答案tree</p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><a href="http://fun.coolshell.cn/">游戏页面</a><br><a href="http://blog.e10t.net/coolshell-puzzle-game-walkthrough/">CoolShell puzzle game 攻略</a><br><a href="http://joseph.yy.blog.163.com/blog/static/5097395920147782756165/">我也不产生代码 – Coolshell 谜题一游 </a></p>
+]]></content>
+  </entry>
+  <entry>
     <title>ecs的Linux主机上快速创建测试k8s集群</title>
     <url>/post/create_test_k8s/</url>
     <content><![CDATA[<p>经常有快速创建一个测试k8s集群的场景，为了能够快速完成，整理了如下的命令，即可在主机上快速启动一个k8s集群。部分命令需要外网访问，推荐直接使用海外的主机。</p>
@@ -2775,6 +2775,32 @@
 ]]></content>
   </entry>
   <entry>
+    <title>打场的记忆</title>
+    <url>/post/dachang/</url>
+    <content><![CDATA[<p><img src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1535126602397&di=58075292f772c85ec1a51f59c9c38c95&imgtype=0&src=http://s3.sinaimg.cn/mw690/001pMv9Lzy74tldB2sq32&690"></p>
+<p>晚上在工位上安静地看着技术文档，不知为何脑中突然闪现了小时候打场的场景，那段记忆并无特殊之处，但大概是那片金黄色的背景和村民脸上丰收的喜悦以及村民之间的和谐相处的画面突然浮现在了我的眼前，让我不由得想写点什么以便回忆那段近乎忘却的回忆。</p>
+<p>说起“打场”这个词，可能很多人都不太熟悉，其实这个词也已经很多年我都没有接触过了，我甚至都不知道现在农村老家的村民们还是否会时长提起这个词语。我甚至不知道这个词是不是我们那地域性的方言，这些都不重要了。以下内容摘自百度百科：</p>
+<blockquote>
+<p>打场[dǎ cháng]，指把收割下来带壳的粮食平摊在场院里，用马拉磙子，或者用小型拖拉机，碾压这些粮食，使之脱去外壳，这一系列活动就叫打场。</p>
+</blockquote>
+<p>我的家在山东，小的时候还没有那么多的农业经济作物，地里更多的农作物以小麦和玉米为主，一年两季。农作物的种植周期跟二十四节气是息息相关的，每年的二十四节气的芒种左右是小麦丰收的季节，时间大概在高考前后。比我大一点的应该还有麦假，就是在收麦子的时候不上学了回家帮着收麦子，我没怎么有印象我有过麦假。</p>
+<p>小时候的机械化程度低，甚至谈不上机械化，收麦子这种活自然完全是人工完成的。在机械化程度还可以的今天，收麦子这种活在当时还是有着稍微繁琐的工序，也比较耗费人力，一到收麦子的时候，几乎家里所有的劳力都要出来干活了。</p>
+<p>村里场地基本上都是挨着的，这应该是生产队时代的产物，那时候土地是公有的，场地自己要连成一片比较容易。后来土地开始分割给个人，这块场地仍然是保留的，只不过是场地被划分成了很多份，每家分上一点。</p>
+<p>在打场那个年代，我是几乎很少参与过收麦子的活动，那时我还小，就是在场地里捣乱和瞎跑，还时不时让在场地里干活的村民调侃一番，毕竟小孩子活泼好动，村民们调侃一下解解乏也算是为他们做的一点点微不足道的贡献了。</p>
+<p>收麦子的活第一步是割麦子，割麦子这个活我还正儿八经得干过几次，虽然每次干的时间都非常短。关于割麦子的画面，我脑海中浮现的是烈日当头，家人们带着帽子弓着背拿着镰刀一人一沟麦子往前赶，一会儿麦秸在怀里就抱不下了，然后将麦秸放下继续往前赶。那时候的帽子几乎全部是用草编织成的，两根绳子沿着帽檐搭下来系在下巴上，很是牢固，即使低着头帽子也不会掉下来。我干活的时候每次负责的那一沟麦子总是割的最慢的，几乎要慢一倍的样子，而且是干的最差的，背后总会留下一些麦子没有割下来，到现在我也仍然好奇，他们是怎么干的这么快的，我感觉当时已经尽最大的努力了，而这仅是他们的正常速度。</p>
+<p>在麦子割完后，就需要将麦子放到集中的晒干了。之所以要晒干，是因为要是麦秸不晒干，麦粒是很难从麦秸上拖不下来的。而要晒干，那么多麦秸就需要一片地方来晾晒麦秸和麦粒。那时候还没怎么有柏油路，家里也很少有水泥的房顶，为了能够有晾晒的地方，村里有一片地就是场地，在收麦子的时候专门用来收麦子的，收完麦子后再种其他作物。之所以场地是集中式的，这还要从生产队时代说起，那时候土地都是公有的，自然场地就会划到一块比较容易，后来土地慢慢私有后，这些土地仍然是作为场地，只是被划的一小块一小块的。</p>
+<p>割麦子的时候偶尔会碰到鹌鹑蛋，这也是一些额外的小收获，但遗憾的是从没看到过鹌鹑。</p>
+<p>场地要想能晾晒麦秸和麦粒，自然就需要特别的平整，而要想土地特别的平整，在石器时代，仅有一个办法，那就是用轱辘一遍一遍的撵，一般至少需要两个人用绳子拉着轱辘满地里转，要想将土地撵的特别平整且不能有缝隙，哪怕一个麦粒掉在地上能够看的见捡的起来，想想都不是一件特别容易的事情，尤其是刚开始土地特别不平的时候。</p>
+<p>并非所有的麦秸都是需要在场地里暴晒的，这个要看麦秸的干燥程度，有些麦秸割完后已经非常干燥了，就不需要再暴晒了。</p>
+<p>干燥的麦秸在干燥后就需要将麦粒从麦秸上分离出来，毕竟农民们想要的是麦粒，那才是实打实的粮食。要想麦粒从麦秸上分离，这时候仍然是重量级的轱辘上场，这时候场地相对平整了，自然拉起来会省力气很多，我也曾经拉过一次，但每次都是拉一会就不知道去哪里玩了，小孩子干这么枯燥的事情自然没有耐心。</p>
+<p>拖完粒的麦秸一般是就地放到的场地的地头上，为了省空间，会将麦秸垛起来，一个剁的高度差不多在两三米高的样子，差不多是农民拿着叉子往上扔麦秸扔不上去的高度，叉子的长度差不多在两米高的样子。</p>
+<p>白天的时间是晒麦粒的最佳时机，到了傍晚时分就需要将晒的麦粒堆起来盖住，这个时候也是场上人最多的时候，几乎每家的地里都有人在忙着。我脑中闪现的场景就是在这个时候，村民们在场地上忙来忙去，边干活边聊着天，扯东扯西的。我在场地上跑来跑去，从这个地里跑到另外一家，时不时村民们还会那我来开个玩笑。累了靠着垛儿打个滚，不一会体力就恢复了，想来那时体力真是好。那时虽然很多事情还不懂，但我确实能从中体会村民们丰收的喜悦。</p>
+<p>麦子收完后，用轱辘碾压了无数遍的场地也就失去了存在的价值，村民们在场地上该种点其他作物就种上其他作物了，总之场地不会空闲特别久。场地上总会落下一些麦粒，雨后空闲的场地上的缝隙处时长会生出新的绿油油的麦苗。</p>
+<p>现在随着机械化的进步，收麦子这种事自然不需要手工割麦子了，晒麦子的地方也开始变多了，柏油路上，自家的房顶上，自家的院子里都是及其不错的晒麦子的地方，打场这种原始的方式也自然就退出了历史的舞台，而且再也不会回来。</p>
+<p>但就是那幅金黄色的画面却在我的记忆中留下了一道抹不去的色彩，让我时长回忆起来那温馨的画面。纵科技的发展，村民们的亲情却在变淡，该进城的都进城了，该出去打工的都出去打工了，一年村民们都见不上几回。也许将来村落的概念会消失，也许人与人之间的关系会更淡，但我曾经经历过村落时代的美好，也许这就足够了。</p>
+]]></content>
+  </entry>
+  <entry>
     <title>cue语言（个人笔记）</title>
     <url>/post/cuelang/</url>
     <content><![CDATA[<p>cue为使用golang编写的一款配置语言。</p>
@@ -2801,32 +2827,6 @@
 <li><a href="https://kubevela.io/zh/docs/platform-engineers/cue/basic">CUE语言基础入门</a></li>
 <li><a href="https://cuetorials.com/zh/introduction/">Cuetorials</a></li>
 </ul>
-]]></content>
-  </entry>
-  <entry>
-    <title>打场的记忆</title>
-    <url>/post/dachang/</url>
-    <content><![CDATA[<p><img src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1535126602397&di=58075292f772c85ec1a51f59c9c38c95&imgtype=0&src=http://s3.sinaimg.cn/mw690/001pMv9Lzy74tldB2sq32&690"></p>
-<p>晚上在工位上安静地看着技术文档，不知为何脑中突然闪现了小时候打场的场景，那段记忆并无特殊之处，但大概是那片金黄色的背景和村民脸上丰收的喜悦以及村民之间的和谐相处的画面突然浮现在了我的眼前，让我不由得想写点什么以便回忆那段近乎忘却的回忆。</p>
-<p>说起“打场”这个词，可能很多人都不太熟悉，其实这个词也已经很多年我都没有接触过了，我甚至都不知道现在农村老家的村民们还是否会时长提起这个词语。我甚至不知道这个词是不是我们那地域性的方言，这些都不重要了。以下内容摘自百度百科：</p>
-<blockquote>
-<p>打场[dǎ cháng]，指把收割下来带壳的粮食平摊在场院里，用马拉磙子，或者用小型拖拉机，碾压这些粮食，使之脱去外壳，这一系列活动就叫打场。</p>
-</blockquote>
-<p>我的家在山东，小的时候还没有那么多的农业经济作物，地里更多的农作物以小麦和玉米为主，一年两季。农作物的种植周期跟二十四节气是息息相关的，每年的二十四节气的芒种左右是小麦丰收的季节，时间大概在高考前后。比我大一点的应该还有麦假，就是在收麦子的时候不上学了回家帮着收麦子，我没怎么有印象我有过麦假。</p>
-<p>小时候的机械化程度低，甚至谈不上机械化，收麦子这种活自然完全是人工完成的。在机械化程度还可以的今天，收麦子这种活在当时还是有着稍微繁琐的工序，也比较耗费人力，一到收麦子的时候，几乎家里所有的劳力都要出来干活了。</p>
-<p>村里场地基本上都是挨着的，这应该是生产队时代的产物，那时候土地是公有的，场地自己要连成一片比较容易。后来土地开始分割给个人，这块场地仍然是保留的，只不过是场地被划分成了很多份，每家分上一点。</p>
-<p>在打场那个年代，我是几乎很少参与过收麦子的活动，那时我还小，就是在场地里捣乱和瞎跑，还时不时让在场地里干活的村民调侃一番，毕竟小孩子活泼好动，村民们调侃一下解解乏也算是为他们做的一点点微不足道的贡献了。</p>
-<p>收麦子的活第一步是割麦子，割麦子这个活我还正儿八经得干过几次，虽然每次干的时间都非常短。关于割麦子的画面，我脑海中浮现的是烈日当头，家人们带着帽子弓着背拿着镰刀一人一沟麦子往前赶，一会儿麦秸在怀里就抱不下了，然后将麦秸放下继续往前赶。那时候的帽子几乎全部是用草编织成的，两根绳子沿着帽檐搭下来系在下巴上，很是牢固，即使低着头帽子也不会掉下来。我干活的时候每次负责的那一沟麦子总是割的最慢的，几乎要慢一倍的样子，而且是干的最差的，背后总会留下一些麦子没有割下来，到现在我也仍然好奇，他们是怎么干的这么快的，我感觉当时已经尽最大的努力了，而这仅是他们的正常速度。</p>
-<p>在麦子割完后，就需要将麦子放到集中的晒干了。之所以要晒干，是因为要是麦秸不晒干，麦粒是很难从麦秸上拖不下来的。而要晒干，那么多麦秸就需要一片地方来晾晒麦秸和麦粒。那时候还没怎么有柏油路，家里也很少有水泥的房顶，为了能够有晾晒的地方，村里有一片地就是场地，在收麦子的时候专门用来收麦子的，收完麦子后再种其他作物。之所以场地是集中式的，这还要从生产队时代说起，那时候土地都是公有的，自然场地就会划到一块比较容易，后来土地慢慢私有后，这些土地仍然是作为场地，只是被划的一小块一小块的。</p>
-<p>割麦子的时候偶尔会碰到鹌鹑蛋，这也是一些额外的小收获，但遗憾的是从没看到过鹌鹑。</p>
-<p>场地要想能晾晒麦秸和麦粒，自然就需要特别的平整，而要想土地特别的平整，在石器时代，仅有一个办法，那就是用轱辘一遍一遍的撵，一般至少需要两个人用绳子拉着轱辘满地里转，要想将土地撵的特别平整且不能有缝隙，哪怕一个麦粒掉在地上能够看的见捡的起来，想想都不是一件特别容易的事情，尤其是刚开始土地特别不平的时候。</p>
-<p>并非所有的麦秸都是需要在场地里暴晒的，这个要看麦秸的干燥程度，有些麦秸割完后已经非常干燥了，就不需要再暴晒了。</p>
-<p>干燥的麦秸在干燥后就需要将麦粒从麦秸上分离出来，毕竟农民们想要的是麦粒，那才是实打实的粮食。要想麦粒从麦秸上分离，这时候仍然是重量级的轱辘上场，这时候场地相对平整了，自然拉起来会省力气很多，我也曾经拉过一次，但每次都是拉一会就不知道去哪里玩了，小孩子干这么枯燥的事情自然没有耐心。</p>
-<p>拖完粒的麦秸一般是就地放到的场地的地头上，为了省空间，会将麦秸垛起来，一个剁的高度差不多在两三米高的样子，差不多是农民拿着叉子往上扔麦秸扔不上去的高度，叉子的长度差不多在两米高的样子。</p>
-<p>白天的时间是晒麦粒的最佳时机，到了傍晚时分就需要将晒的麦粒堆起来盖住，这个时候也是场上人最多的时候，几乎每家的地里都有人在忙着。我脑中闪现的场景就是在这个时候，村民们在场地上忙来忙去，边干活边聊着天，扯东扯西的。我在场地上跑来跑去，从这个地里跑到另外一家，时不时村民们还会那我来开个玩笑。累了靠着垛儿打个滚，不一会体力就恢复了，想来那时体力真是好。那时虽然很多事情还不懂，但我确实能从中体会村民们丰收的喜悦。</p>
-<p>麦子收完后，用轱辘碾压了无数遍的场地也就失去了存在的价值，村民们在场地上该种点其他作物就种上其他作物了，总之场地不会空闲特别久。场地上总会落下一些麦粒，雨后空闲的场地上的缝隙处时长会生出新的绿油油的麦苗。</p>
-<p>现在随着机械化的进步，收麦子这种事自然不需要手工割麦子了，晒麦子的地方也开始变多了，柏油路上，自家的房顶上，自家的院子里都是及其不错的晒麦子的地方，打场这种原始的方式也自然就退出了历史的舞台，而且再也不会回来。</p>
-<p>但就是那幅金黄色的画面却在我的记忆中留下了一道抹不去的色彩，让我时长回忆起来那温馨的画面。纵科技的发展，村民们的亲情却在变淡，该进城的都进城了，该出去打工的都出去打工了，一年村民们都见不上几回。也许将来村落的概念会消失，也许人与人之间的关系会更淡，但我曾经经历过村落时代的美好，也许这就足够了。</p>
 ]]></content>
   </entry>
   <entry>
@@ -2872,24 +2872,6 @@
 ]]></content>
   </entry>
   <entry>
-    <title>做自己</title>
-    <url>/post/do_your_self/</url>
-    <content><![CDATA[<p>最近有同事想离职了，上午在跟领导一番谈话之后又有些犹豫了。大概领导会说些公司状况及个人发展之类的话语来说服同事不要离职，用大腿想想都知道的事。同事肯定会说自己的几个抱怨，领导肯定会一一还击，到最后领导领导一摊手“看没什么顾虑的吧，年轻人就是冲动，你再想想吧，先回去好好干活吧”。</p>
-<p>我在这里想说的事不要管别人怎么想，做自己，坚持自己的想法。</p>
-<p>一千个人眼里有一千个郭美美。有人说郭美美的自拍照真漂亮，有人说郭美美卸妆之后直接毁三观，有人说是郭美美毁掉了红十字会，有人说没有郭美美红十字会一样玩完，有人说郭美美炫富就是为了出名，有人说郭美美是偶像，有人说郭美美是呕像，有人说郭美美为咱们的游戏代言应该很棒，有人说…</p>
-<p>同一件事情在不同人眼里就会有不同的看法。当然我的观点，在别人看来也许是那么的反感或不屑一顾。</p>
-<p>做技术的天天跟机器打交道，往往语言表达能力较弱，不善辩，更别提忽悠别人了。经过领导只言片语的轰炸，自己已经是茫然不知所措，自己最初的坚持在渐渐退去，别人的想法正在填充你的大脑，恭喜你被洗脑了。但是这种洗脑往往是暂时性的，往往当是生效，事后理性分析一下觉得“不对啊，我当时怎么了”。所以搞传销的一培训就是在一个鸟拉屎的地方培训上几个月来彻底洗脑。</p>
-<p>我还好，至少我会坚持自己的观点。记得我上次离职时，领导找我谈话，领导叽里呱啦说了很多，我明知道不对头，但却愣是无力反驳，那时候心里的就想说“求求你，别说了”。</p>
-<p>离职对同事自身而言是好事。同事工作两年，在公司工作一年多了，由于公司业绩差，工资非但没有涨过，最近甚至都拖欠了一个月的工资了，而且如果待在公司未来一年内都不涨工资的可能性极大。换个工作薪水可以提高，更可以接触到新鲜的技术，对自己无论在物质还是在技术上都是有利无害。我可以想到的唯一坏处就是舍不得公司，舍不得同事，舍不得那个靠窗的小办公桌。可是这些算个屁，公司的发展跟普通员工毛关系都没有，公司好坏员工拿到的都是稀薄的工资，何况公司已经发不下工资来了，是公司待你不厚道。感情在涉及到金钱后往往变得一文不值。</p>
-<p>就公司而言是坏事。公司恨不得不发你工资光给公司干活。领导之所以留你是因为你对公司的业务熟悉，公司如果再重新招人没个一个月的时间很难上手。假如换成了在公司里天天闲的蛋疼的人提离职，公司可能就巴不得立马卷铺盖走人。领导留人只能说明领导对你的肯定，其他的说明不了什么。公司的前途未卜，领导凭什么忽悠员工留下来？</p>
-<p>这是一个相互炒鱿鱼的时代。员工跟公司之间是对等的关系，公司对员工不满意可以解除合同，员工对公司不满意照样可以将公司炒掉换个新鲜的工作。</p>
-<p>做自己，坚持自己的观点，适当聆听别人的建议，才会赢！</p>
-]]></content>
-      <tags>
-        <tag>杂谈 工作</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>docker bridge network</title>
     <url>/post/docker-bridge-network/</url>
     <content><![CDATA[<p>docker bridge是默认的网络模式</p>
@@ -2915,6 +2897,24 @@
 <h2 id="丢包问题"><a href="#丢包问题" class="headerlink" title="丢包问题"></a>丢包问题</h2><p>SNAT在并发比较高的情况下，会存在少量的丢包现象，具体原因跟conntrack模式的实现有关。conntrack在SNAT端口的分配和插入conntrack表之间有个延时，如果在这中间存在冲突的话会导致插入失败，从而出现丢包的问题。</p>
 <p>该问题没有根治的解决办法，能大大缓解的解决办法为使用iptabels的–random-fully选项，SNAT选择端口为随机，大大降低出现冲突的概率。</p>
 ]]></content>
+  </entry>
+  <entry>
+    <title>做自己</title>
+    <url>/post/do_your_self/</url>
+    <content><![CDATA[<p>最近有同事想离职了，上午在跟领导一番谈话之后又有些犹豫了。大概领导会说些公司状况及个人发展之类的话语来说服同事不要离职，用大腿想想都知道的事。同事肯定会说自己的几个抱怨，领导肯定会一一还击，到最后领导领导一摊手“看没什么顾虑的吧，年轻人就是冲动，你再想想吧，先回去好好干活吧”。</p>
+<p>我在这里想说的事不要管别人怎么想，做自己，坚持自己的想法。</p>
+<p>一千个人眼里有一千个郭美美。有人说郭美美的自拍照真漂亮，有人说郭美美卸妆之后直接毁三观，有人说是郭美美毁掉了红十字会，有人说没有郭美美红十字会一样玩完，有人说郭美美炫富就是为了出名，有人说郭美美是偶像，有人说郭美美是呕像，有人说郭美美为咱们的游戏代言应该很棒，有人说…</p>
+<p>同一件事情在不同人眼里就会有不同的看法。当然我的观点，在别人看来也许是那么的反感或不屑一顾。</p>
+<p>做技术的天天跟机器打交道，往往语言表达能力较弱，不善辩，更别提忽悠别人了。经过领导只言片语的轰炸，自己已经是茫然不知所措，自己最初的坚持在渐渐退去，别人的想法正在填充你的大脑，恭喜你被洗脑了。但是这种洗脑往往是暂时性的，往往当是生效，事后理性分析一下觉得“不对啊，我当时怎么了”。所以搞传销的一培训就是在一个鸟拉屎的地方培训上几个月来彻底洗脑。</p>
+<p>我还好，至少我会坚持自己的观点。记得我上次离职时，领导找我谈话，领导叽里呱啦说了很多，我明知道不对头，但却愣是无力反驳，那时候心里的就想说“求求你，别说了”。</p>
+<p>离职对同事自身而言是好事。同事工作两年，在公司工作一年多了，由于公司业绩差，工资非但没有涨过，最近甚至都拖欠了一个月的工资了，而且如果待在公司未来一年内都不涨工资的可能性极大。换个工作薪水可以提高，更可以接触到新鲜的技术，对自己无论在物质还是在技术上都是有利无害。我可以想到的唯一坏处就是舍不得公司，舍不得同事，舍不得那个靠窗的小办公桌。可是这些算个屁，公司的发展跟普通员工毛关系都没有，公司好坏员工拿到的都是稀薄的工资，何况公司已经发不下工资来了，是公司待你不厚道。感情在涉及到金钱后往往变得一文不值。</p>
+<p>就公司而言是坏事。公司恨不得不发你工资光给公司干活。领导之所以留你是因为你对公司的业务熟悉，公司如果再重新招人没个一个月的时间很难上手。假如换成了在公司里天天闲的蛋疼的人提离职，公司可能就巴不得立马卷铺盖走人。领导留人只能说明领导对你的肯定，其他的说明不了什么。公司的前途未卜，领导凭什么忽悠员工留下来？</p>
+<p>这是一个相互炒鱿鱼的时代。员工跟公司之间是对等的关系，公司对员工不满意可以解除合同，员工对公司不满意照样可以将公司炒掉换个新鲜的工作。</p>
+<p>做自己，坚持自己的观点，适当聆听别人的建议，才会赢！</p>
+]]></content>
+      <tags>
+        <tag>杂谈 工作</tag>
+      </tags>
   </entry>
   <entry>
     <title>Dockerfile中的ENTRYPOINT与CMD</title>
@@ -2996,41 +2996,6 @@
 ]]></content>
   </entry>
   <entry>
-    <title>docker私有仓库搭建</title>
-    <url>/post/docker-registry/</url>
-    <content><![CDATA[<p>为了其他主机可访问docker registry，必须采用https协议。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir -p ~/docker_registry/certs</span><br><span class="line">signdomain=103-17-184-lg-201-k08</span><br><span class="line">openssl req -nodes -subj &quot;/C=CN/ST=BeiJing/L=BeiJing/CN=$signdomain&quot; -newkey rsa:4096 -keyout ~/docker_registry/certs/$signdomain.key -out ~/docker_registry/certs/$signdomain.csr</span><br><span class="line">openssl x509 -req -days 3650 -in ~/docker_registry/certs/$signdomain.csr -signkey ~/docker_registry/certs/$signdomain.key -out ~/docker_registry/certs/$signdomain.crt</span><br></pre></td></tr></table></figure>
-
-<p>从docker hub拉取registry镜像，并启动镜像</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run -d -p 5000:5000 --restart=always --name registry \</span><br><span class="line">  -v /data/docker_registry:/var/lib/registry \</span><br><span class="line">  -v /home/worker/docker_registry/certs:/certs \</span><br><span class="line">  -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/103-17-184-lg-201-k08.yidian.com.crt \</span><br><span class="line">  -e REGISTRY_HTTP_TLS_KEY=/certs/103-17-184-lg-201-k08.yidian.com.key \</span><br><span class="line">  registry:2</span><br></pre></td></tr></table></figure>
-
-<p>停止registry镜像并删除的命令为</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker stop registry &amp;&amp; docker rm -v registry</span><br></pre></td></tr></table></figure>
-
-<p>下载最新的centos7镜像</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker pull centos:7.3.1611</span><br></pre></td></tr></table></figure>
-
-<p>将centos7镜像增加tag</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker tag centos:7.3.1611 103-17-184-lg-201-k08.yidian.com:5000/centos:7.3</span><br><span class="line"></span><br><span class="line"># 可以看到列表中会多出一个镜像</span><br><span class="line">[root@103-17-184-lg-201-k08 data]# docker images</span><br><span class="line">REPOSITORY                                     TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">docker.io/registry                             2                   047218491f8c        4 weeks ago         33.17 MB</span><br><span class="line">103-17-184-lg-201-k08.yidian.com:5000/centos   7.3                 67591570dd29        3 months ago        191.8 MB</span><br><span class="line">docker.io/centos                               7.3.1611            67591570dd29        3 months ago        191.8 MB</span><br></pre></td></tr></table></figure>
-
-<p>docker push命令仅支持https协议，签名已经启动了自签名的https协议的registry，为了能够让docker能够信任registry，需要在&#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;目录下增加相应的crt文件，增加后的目录结构为&#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;103-17-184-lg-201-k08.yidian.com:5000&#x2F;103-17-184-lg-201-k08.yidian.com.crt，添加完成后需要重启docker服务。</p>
-<p>将image push到registry</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker push 103-17-184-lg-201-k08.yidian.com:5000/centos:7.3 </span><br></pre></td></tr></table></figure>
-
-<h1 id="api"><a href="#api" class="headerlink" title="api"></a>api</h1><ul>
-<li>列出images：<a href="https://10.103.17.184:5000/v2/_catalog">https://10.103.17.184:5000/v2/_catalog</a></li>
-<li>列出image的tags：<a href="https://10.103.17.184:5000/v2/centos/tags/list">https://10.103.17.184:5000/v2/centos/tags/list</a></li>
-</ul>
-<p>可以直接通过curl命令来访问api：<code>curl --cacert 103-17-184-lg-201-k08.yidian.com.crt -v https://103-17-184-lg-201-k08.yidian.com:5000/v2</code></p>
-<h1 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h1><ul>
-<li><a href="https://hub.docker.com/_/registry/">registry</a></li>
-<li><a href="http://www.cnblogs.com/fengzheng/p/5168951.html">docker创建私有仓库</a></li>
-<li><a href="https://docs.docker.com/registry/">Docker Registry</a>（官方教程）</li>
-<li><a href="https://docs.docker.com/registry/spec/api/">Registry API</a></li>
-</ul>
-]]></content>
-  </entry>
-  <entry>
     <title>kubernetes中pod无法删除的问题排查</title>
     <url>/post/docker-rm-failed/</url>
     <content><![CDATA[<h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ cat /etc/redhat-release</span><br><span class="line">CentOS Linux release 7.2.1511 (Core)</span><br><span class="line"></span><br><span class="line">$ uname -a</span><br><span class="line">Linux c3-a05-136-45-10.com 3.10.0-327.el7.x86_64 #1 SMP Thu Nov 19 22:10:57 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux</span><br><span class="line"></span><br><span class="line">$ docker info | grep &quot;Storage Driver&quot;</span><br><span class="line">Storage Driver: devicemapper</span><br></pre></td></tr></table></figure>
@@ -3069,6 +3034,41 @@
 ]]></content>
   </entry>
   <entry>
+    <title>docker私有仓库搭建</title>
+    <url>/post/docker-registry/</url>
+    <content><![CDATA[<p>为了其他主机可访问docker registry，必须采用https协议。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir -p ~/docker_registry/certs</span><br><span class="line">signdomain=103-17-184-lg-201-k08</span><br><span class="line">openssl req -nodes -subj &quot;/C=CN/ST=BeiJing/L=BeiJing/CN=$signdomain&quot; -newkey rsa:4096 -keyout ~/docker_registry/certs/$signdomain.key -out ~/docker_registry/certs/$signdomain.csr</span><br><span class="line">openssl x509 -req -days 3650 -in ~/docker_registry/certs/$signdomain.csr -signkey ~/docker_registry/certs/$signdomain.key -out ~/docker_registry/certs/$signdomain.crt</span><br></pre></td></tr></table></figure>
+
+<p>从docker hub拉取registry镜像，并启动镜像</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker run -d -p 5000:5000 --restart=always --name registry \</span><br><span class="line">  -v /data/docker_registry:/var/lib/registry \</span><br><span class="line">  -v /home/worker/docker_registry/certs:/certs \</span><br><span class="line">  -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/103-17-184-lg-201-k08.yidian.com.crt \</span><br><span class="line">  -e REGISTRY_HTTP_TLS_KEY=/certs/103-17-184-lg-201-k08.yidian.com.key \</span><br><span class="line">  registry:2</span><br></pre></td></tr></table></figure>
+
+<p>停止registry镜像并删除的命令为</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker stop registry &amp;&amp; docker rm -v registry</span><br></pre></td></tr></table></figure>
+
+<p>下载最新的centos7镜像</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker pull centos:7.3.1611</span><br></pre></td></tr></table></figure>
+
+<p>将centos7镜像增加tag</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker tag centos:7.3.1611 103-17-184-lg-201-k08.yidian.com:5000/centos:7.3</span><br><span class="line"></span><br><span class="line"># 可以看到列表中会多出一个镜像</span><br><span class="line">[root@103-17-184-lg-201-k08 data]# docker images</span><br><span class="line">REPOSITORY                                     TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">docker.io/registry                             2                   047218491f8c        4 weeks ago         33.17 MB</span><br><span class="line">103-17-184-lg-201-k08.yidian.com:5000/centos   7.3                 67591570dd29        3 months ago        191.8 MB</span><br><span class="line">docker.io/centos                               7.3.1611            67591570dd29        3 months ago        191.8 MB</span><br></pre></td></tr></table></figure>
+
+<p>docker push命令仅支持https协议，签名已经启动了自签名的https协议的registry，为了能够让docker能够信任registry，需要在&#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;目录下增加相应的crt文件，增加后的目录结构为&#x2F;etc&#x2F;docker&#x2F;certs.d&#x2F;103-17-184-lg-201-k08.yidian.com:5000&#x2F;103-17-184-lg-201-k08.yidian.com.crt，添加完成后需要重启docker服务。</p>
+<p>将image push到registry</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">docker push 103-17-184-lg-201-k08.yidian.com:5000/centos:7.3 </span><br></pre></td></tr></table></figure>
+
+<h1 id="api"><a href="#api" class="headerlink" title="api"></a>api</h1><ul>
+<li>列出images：<a href="https://10.103.17.184:5000/v2/_catalog">https://10.103.17.184:5000/v2/_catalog</a></li>
+<li>列出image的tags：<a href="https://10.103.17.184:5000/v2/centos/tags/list">https://10.103.17.184:5000/v2/centos/tags/list</a></li>
+</ul>
+<p>可以直接通过curl命令来访问api：<code>curl --cacert 103-17-184-lg-201-k08.yidian.com.crt -v https://103-17-184-lg-201-k08.yidian.com:5000/v2</code></p>
+<h1 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h1><ul>
+<li><a href="https://hub.docker.com/_/registry/">registry</a></li>
+<li><a href="http://www.cnblogs.com/fengzheng/p/5168951.html">docker创建私有仓库</a></li>
+<li><a href="https://docs.docker.com/registry/">Docker Registry</a>（官方教程）</li>
+<li><a href="https://docs.docker.com/registry/spec/api/">Registry API</a></li>
+</ul>
+]]></content>
+  </entry>
+  <entry>
     <title>修改eclipse主题</title>
     <url>/post/eclipse_theme/</url>
     <content><![CDATA[<p>Eclipse默认提供的主题过于刺眼，自己比较习惯黑色背景色。本文分享下修改Eclipse主题的步骤。我所使用的Eclipse版本为Kepler。相关的说明在插件的网站都有相关说明，本文不再赘述。安装完插件后的效果图如下：</p>
@@ -3076,18 +3076,6 @@
 <h1 id="安装Eclipse-Color-Theme插件"><a href="#安装Eclipse-Color-Theme插件" class="headerlink" title="安装Eclipse Color Theme插件"></a>安装Eclipse Color Theme插件</h1><p>该插件仅会更新编辑栏中的背景颜色和字体颜色等信息，不会修改Eclipse的整体主题颜色。该插件网址为：<a href="https://github.com/eclipse-color-theme/eclipse-color-theme%E3%80%82">https://github.com/eclipse-color-theme/eclipse-color-theme。</a></p>
 <h1 id="安装Eclipse-UI-Themes主题"><a href="#安装Eclipse-UI-Themes主题" class="headerlink" title="安装Eclipse UI Themes主题"></a>安装Eclipse UI Themes主题</h1><p>该插件会更新除编辑栏之外的其他Eclipse背景色等信息，其Github地址为：<a href="http://eclipsecolorthemes.org/%E3%80%82">http://eclipsecolorthemes.org/。</a></p>
 <h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p>为了方便使用，我这里备份了插件放在百度网盘共享，相关插件下载地址：<a href="http://pan.baidu.com/s/1eQnDI86">http://pan.baidu.com/s/1eQnDI86</a></p>
-]]></content>
-  </entry>
-  <entry>
-    <title>在Eclipse中安装viplugin插件</title>
-    <url>/post/eclipse_viplugin/</url>
-    <content><![CDATA[<p>从官方网站下载最新的viplugin插件：viPlugin_2.12.0。</p>
-<p>将viPlugin_2.12.0.zip文件解压到eclipse安装目录下的dropins目录下。</p>
-<p>该插件为收费插件，在eclipse安装的根目录下新建viPlugin2.lic文件，文件内容为:_q1MHdGlxh7nCyn_FpHaVazxTdn1tajjeIABlcgJBc20<br>_。</p>
-<p>重启eclipse后即可生效。</p>
-<p>官方参考文档地址：<a href="http://www.viplugin.com/files/User_Manual_viPlugin.pdf">http://www.viplugin.com/files/User_Manual_viPlugin.pdf</a></p>
-<hr>
-<p>相关下载：<a href="http://pan.baidu.com/s/1kT4uStT">viPlugin_2.12.0.zip</a></p>
 ]]></content>
   </entry>
   <entry>
@@ -3113,6 +3101,18 @@
       <tags>
         <tag>ELK</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>在Eclipse中安装viplugin插件</title>
+    <url>/post/eclipse_viplugin/</url>
+    <content><![CDATA[<p>从官方网站下载最新的viplugin插件：viPlugin_2.12.0。</p>
+<p>将viPlugin_2.12.0.zip文件解压到eclipse安装目录下的dropins目录下。</p>
+<p>该插件为收费插件，在eclipse安装的根目录下新建viPlugin2.lic文件，文件内容为:_q1MHdGlxh7nCyn_FpHaVazxTdn1tajjeIABlcgJBc20<br>_。</p>
+<p>重启eclipse后即可生效。</p>
+<p>官方参考文档地址：<a href="http://www.viplugin.com/files/User_Manual_viPlugin.pdf">http://www.viplugin.com/files/User_Manual_viPlugin.pdf</a></p>
+<hr>
+<p>相关下载：<a href="http://pan.baidu.com/s/1kT4uStT">viPlugin_2.12.0.zip</a></p>
+]]></content>
   </entry>
   <entry>
     <title>farbox与jekyll对比</title>
@@ -3243,25 +3243,6 @@
 ]]></content>
   </entry>
   <entry>
-    <title>一个傻×对股市的吐槽</title>
-    <url>/post/foolish_talk_stock/</url>
-    <content><![CDATA[<p><img src="/ref/life/foolish_talk_stock.jpg" alt="Image Title"></p>
-<p>这是来自一个保守主义者的geeker的傻X的吐槽。</p>
-<p>最近股市暴跌，我却在思考为何有股票这个东西。我从未入市且对股市一点兴趣都没有甚至是反感。我所认识的股市游戏规则就是价位低的时候大股东入市，价位高的时候大股东抛售，大股东一吐一吞钱到手了，股民被掏空了。很多股民却用侥幸心理来入市，有赔有赚，出市的时候裤子都赔进去了。</p>
-<p>搞不懂那么多经济学专家、博士、硕士、学士，却搞不定一个经济学。若是真搞不懂，索性就不要去研究，反正学了也白学，浪费这个资源误人歧途干啥。一个砖家说熊，另一个砖家说牛，相互对掐有意思吗？</p>
-<p>为什么搞股市这个东西，这是嫌经济学不够复杂吗？股市难道能推动人类社会的进步？股市是企业融资的一种手段，而能上市的公司往往是相对不太缺钱的，而最缺钱的是小型创业公司。这也就早就了很多公司把上市套现作为了一个目标，这不明摆着投机取巧，一夜暴富。传销是集合了底层的力量资金而构成了金字塔，企业通过上市手段获取到了股民的资本来运作而发展自身，只不过金字塔只有两层罢了。</p>
-<p>假如没有股市，很多上班族就会坐在办公桌上安心工作，而不用时时刻刻关心着像过山车一样的死难看的折线，也不用设个老板键提心吊胆的担心自己的boss悄悄走到自己的面前。难道安安心心全身心投入工作不是更好？</p>
-<p>假如没有股市，或许就少了一个行业，一部分人就可以全身心投入到其他行业，带动其他行业的发展，推动历史进步，岂不快哉！</p>
-<p>假如没有股市，就不会有人赚发了之后，别人也总想着不劳而获，间接助长了人们投机取巧的气焰。</p>
-<p>假如没有股市，就不会因此而发家，当然这是少数。郭美美的母亲也不会用4万块钱赚到100万，也不会有郭美美的今天，也不会有红十字会的今天，当然这只是个笑话。没有股市郭照样可以炫富，因为人家本来就不是靠的股市。没有股市红十字会照样会没落，因为他们的本质就是那样。</p>
-<p>假如没有股市，就不会有人因为股市而跳楼的新闻，就不会有人将养老钱都搭进去了，就不会…</p>
-<p>请不要职责我，因为我是一个傻X，永远不要和傻子讲道理，否则你也会变成一个傻X！</p>
-]]></content>
-      <tags>
-        <tag>生活</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>根据pid获取到pod名称</title>
     <url>/post/get_pod_by_pid/</url>
     <content><![CDATA[<p>在k8s的运维过程中，经常会有根据pid获取到pod名称的需求。比如某个pid占用cpu特别高，想知道是哪个pod里面的进程。</p>
@@ -3279,6 +3260,25 @@
 <li><a href="https://icloudnative.io/posts/find-kubernetes-pod-info-from-process-id/">Kubernetes 教程：根据 PID 获取 Pod 名称</a></li>
 </ul>
 ]]></content>
+  </entry>
+  <entry>
+    <title>一个傻×对股市的吐槽</title>
+    <url>/post/foolish_talk_stock/</url>
+    <content><![CDATA[<p><img src="/ref/life/foolish_talk_stock.jpg" alt="Image Title"></p>
+<p>这是来自一个保守主义者的geeker的傻X的吐槽。</p>
+<p>最近股市暴跌，我却在思考为何有股票这个东西。我从未入市且对股市一点兴趣都没有甚至是反感。我所认识的股市游戏规则就是价位低的时候大股东入市，价位高的时候大股东抛售，大股东一吐一吞钱到手了，股民被掏空了。很多股民却用侥幸心理来入市，有赔有赚，出市的时候裤子都赔进去了。</p>
+<p>搞不懂那么多经济学专家、博士、硕士、学士，却搞不定一个经济学。若是真搞不懂，索性就不要去研究，反正学了也白学，浪费这个资源误人歧途干啥。一个砖家说熊，另一个砖家说牛，相互对掐有意思吗？</p>
+<p>为什么搞股市这个东西，这是嫌经济学不够复杂吗？股市难道能推动人类社会的进步？股市是企业融资的一种手段，而能上市的公司往往是相对不太缺钱的，而最缺钱的是小型创业公司。这也就早就了很多公司把上市套现作为了一个目标，这不明摆着投机取巧，一夜暴富。传销是集合了底层的力量资金而构成了金字塔，企业通过上市手段获取到了股民的资本来运作而发展自身，只不过金字塔只有两层罢了。</p>
+<p>假如没有股市，很多上班族就会坐在办公桌上安心工作，而不用时时刻刻关心着像过山车一样的死难看的折线，也不用设个老板键提心吊胆的担心自己的boss悄悄走到自己的面前。难道安安心心全身心投入工作不是更好？</p>
+<p>假如没有股市，或许就少了一个行业，一部分人就可以全身心投入到其他行业，带动其他行业的发展，推动历史进步，岂不快哉！</p>
+<p>假如没有股市，就不会有人赚发了之后，别人也总想着不劳而获，间接助长了人们投机取巧的气焰。</p>
+<p>假如没有股市，就不会因此而发家，当然这是少数。郭美美的母亲也不会用4万块钱赚到100万，也不会有郭美美的今天，也不会有红十字会的今天，当然这只是个笑话。没有股市郭照样可以炫富，因为人家本来就不是靠的股市。没有股市红十字会照样会没落，因为他们的本质就是那样。</p>
+<p>假如没有股市，就不会有人因为股市而跳楼的新闻，就不会有人将养老钱都搭进去了，就不会…</p>
+<p>请不要职责我，因为我是一个傻X，永远不要和傻子讲道理，否则你也会变成一个傻X！</p>
+]]></content>
+      <tags>
+        <tag>生活</tag>
+      </tags>
   </entry>
   <entry>
     <title>Github Kubernetes SIGs组织下的项目（持续更新）</title>
@@ -3398,6 +3398,61 @@
 
 <h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><ul>
 <li><a href="https://zhuanlan.zhihu.com/p/65916369">Go 每日漫谈——Go Module 的一些坑</a></li>
+</ul>
+]]></content>
+  </entry>
+  <entry>
+    <title>Golang GC</title>
+    <url>/post/golang-gc/</url>
+    <content><![CDATA[<h2 id="常用垃圾回收方法"><a href="#常用垃圾回收方法" class="headerlink" title="常用垃圾回收方法"></a>常用垃圾回收方法</h2><h3 id="1-引用计数"><a href="#1-引用计数" class="headerlink" title="1.引用计数"></a>1.引用计数</h3><p>类似于C++中的智能指针，每个对象维护一个引用计数，当对象被销毁时引用计数减一，当引用计数为0时立即回收对象。</p>
+<p>在PHP、Python中使用，适用于内存比较紧张和实时性比较高的系统。</p>
+<p>缺点：</p>
+<ol>
+<li>由于频繁更新引用计数，降低了性能。</li>
+<li>循环引用问题。解决办法为避免循环引用。</li>
+</ol>
+<h3 id="2-标记-mark-清除-sweep"><a href="#2-标记-mark-清除-sweep" class="headerlink" title="2.标记(mark)-清除(sweep)"></a>2.标记(mark)-清除(sweep)</h3><p>分为标记和清除两个阶段，算法在70年代就提出了，非常古老的算法。</p>
+<p>该算法有一个标记初始的root区域，和一个受控堆区。root区域主要是程序当前的栈和全局数据区域。</p>
+<p>从root区域开始遍历所有被引用的对象，所有被访问到的对象被标记为“被引用”，标记完成后对未被引用的对象进行内存回收。</p>
+<p>缺点：</p>
+<p>标记阶段，都会Stop The World，会大大降低性能。</p>
+<h3 id="3-分代回收"><a href="#3-分代回收" class="headerlink" title="3.分代回收"></a>3.分代回收</h3><p>将堆划分为两个或者多个代空间，新创建的对象存放于新生代，随着垃圾回收的重复执行，生命周期较长的对象会被放到老年代中。新生代和老年代采用不同的垃圾回收策略。</p>
+<h2 id="Go垃圾回收机制"><a href="#Go垃圾回收机制" class="headerlink" title="Go垃圾回收机制"></a>Go垃圾回收机制</h2><p>Go中采用三色标记算法，本质上还是标记清除算法，但是对标记阶段有改进。</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/golang-gc.gif" alt="https://upload.wikimedia.org/wikipedia/commons/1/1d/Animation_of_tri-color_garbage_collection.gif"></p>
+<p>步骤如下：</p>
+<ol>
+<li>开始时，所有的对象均为白色</li>
+<li>从root开始扫描所有可达对象，标记为灰色，放入待处理队列。root包括了全局指针和goroutine栈上的指针。</li>
+<li>从队列取出所有灰色对象，将其引用对象标记为灰色放入队列，自身标记为黑色。</li>
+<li>重复3，直到灰色队列为空。</li>
+<li>将白色对象进行回收</li>
+</ol>
+<p>优点：用户程序和标记操作可以并行执行。</p>
+<p>详细过程如下图：</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/golang-gc-2.png"></p>
+<p>通过上图可以看出，STW有两个过程：</p>
+<ol>
+<li>gc开始的时候，需要一些准备工作，如开启write barrier</li>
+<li>re-scan的过程</li>
+</ol>
+<p>每个对象需要一个标记位，go中并未将标记位存放于对象的内存区域中，而是采用非侵入式的标记位。go单独使用了标记位图区域来对应内存中的堆区域。</p>
+<p>write barrier: 在运行垃圾回收算法的同时，应用程序在一直执行，上文中提到了写屏障write barrier用于将这些内存的操作记录下来。</p>
+<h2 id="GC日志"><a href="#GC日志" class="headerlink" title="GC日志"></a>GC日志</h2><p>GC日志对于定位问题还是比较方便的</p>
+<h3 id="1-开启GC日志"><a href="#1-开启GC日志" class="headerlink" title="1.开启GC日志"></a>1.开启GC日志</h3><p>可以增加环境变量<code>GODEBUG=gctrace=1</code>来开启gc日志，gc日志会打印到标准错误中。例如有如下的程序:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import &quot;time&quot;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">	for &#123;</span><br><span class="line">		s := make([]int, 10)</span><br><span class="line">		for i := 0; i &lt; 10000; i++ &#123;</span><br><span class="line">			s = append(s, i)</span><br><span class="line">		&#125;</span><br><span class="line">		time.Sleep(time.Nanosecond)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>执行<code>GODEBUG=gctrace=1 go run gc.go</code>即可打印gc日志到标准错误中。</p>
+<h2 id="2-GC日志的含义"><a href="#2-GC日志的含义" class="headerlink" title="2.GC日志的含义"></a>2.GC日志的含义</h2><p>可以参照<a href="https://godoc.org/runtime">runtime</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">gc # @#s #%: #+#+# ms clock, #+#/#/#+# ms cpu, #-&gt;#-&gt;# MB, # MB goal, # P</span><br><span class="line">where the fields are as follows:</span><br><span class="line">	gc #        the GC number, incremented at each GC</span><br><span class="line">	@#s         time in seconds since program start</span><br><span class="line">	#%          percentage of time spent in GC since program start</span><br><span class="line">	#+...+#     wall-clock/CPU times for the phases of the GC</span><br><span class="line">	#-&gt;#-&gt;# MB  heap size at GC start, at GC end, and live heap</span><br><span class="line">	# MB goal   goal heap size</span><br><span class="line">	# P         number of processors used</span><br></pre></td></tr></table></figure>
+
+<p>例子:</p>
+<p>gc 11557 @179.565s 2%: 0.018+1.2+0.049 ms clock, 0.14+1.1&#x2F;2.3&#x2F;0.90+0.39 ms cpu, 13-&gt;14-&gt;7 MB, 14 MB goal, 8 P</p>
+<h3 id="3-GC的监控"><a href="#3-GC的监控" class="headerlink" title="3.GC的监控"></a>3.GC的监控</h3><p>对于线上GC的监控，基本上读取runtime.MemStats结构中的内容，然后存储到时序数据库中。具体有如下两种获取方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">// 方式1</span><br><span class="line">memStats := &amp;runtime.MemStats&#123;&#125;</span><br><span class="line">runtime.ReadMemStats(memStats)</span><br><span class="line"></span><br><span class="line">// 方式2 json格式</span><br><span class="line">expvar.Get(&quot;memstats&quot;).String()</span><br></pre></td></tr></table></figure>
+
+<h2 id="references"><a href="#references" class="headerlink" title="references"></a>references</h2><ul>
+<li><a href="https://blog.golang.org/ismmkeynote">Getting to Go: The Journey of Go’s Garbage Collector</a></li>
+<li><a href="https://godoc.org/runtime">Go: runtime</a></li>
 </ul>
 ]]></content>
   </entry>
@@ -3523,61 +3578,6 @@
 <li>在编写代码时增加防御式编程意识，不能靠契约式编程。一个比较简单的判断错误处理情况的方法，看下代码中if语句占用的比例。<a href="https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/kubelet_volumes.go">https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/kubelet_volumes.go</a></li>
 <li>需求的评估周期中，不仅要考虑到软件开发完成的时间，同时要考虑到单元测试（单元测试用例的编写需要较长的时间）和集成测试的时间</li>
 <li>单元测试覆盖率提升，测试场景要考虑到各种异常场景</li>
-</ul>
-]]></content>
-  </entry>
-  <entry>
-    <title>Golang GC</title>
-    <url>/post/golang-gc/</url>
-    <content><![CDATA[<h2 id="常用垃圾回收方法"><a href="#常用垃圾回收方法" class="headerlink" title="常用垃圾回收方法"></a>常用垃圾回收方法</h2><h3 id="1-引用计数"><a href="#1-引用计数" class="headerlink" title="1.引用计数"></a>1.引用计数</h3><p>类似于C++中的智能指针，每个对象维护一个引用计数，当对象被销毁时引用计数减一，当引用计数为0时立即回收对象。</p>
-<p>在PHP、Python中使用，适用于内存比较紧张和实时性比较高的系统。</p>
-<p>缺点：</p>
-<ol>
-<li>由于频繁更新引用计数，降低了性能。</li>
-<li>循环引用问题。解决办法为避免循环引用。</li>
-</ol>
-<h3 id="2-标记-mark-清除-sweep"><a href="#2-标记-mark-清除-sweep" class="headerlink" title="2.标记(mark)-清除(sweep)"></a>2.标记(mark)-清除(sweep)</h3><p>分为标记和清除两个阶段，算法在70年代就提出了，非常古老的算法。</p>
-<p>该算法有一个标记初始的root区域，和一个受控堆区。root区域主要是程序当前的栈和全局数据区域。</p>
-<p>从root区域开始遍历所有被引用的对象，所有被访问到的对象被标记为“被引用”，标记完成后对未被引用的对象进行内存回收。</p>
-<p>缺点：</p>
-<p>标记阶段，都会Stop The World，会大大降低性能。</p>
-<h3 id="3-分代回收"><a href="#3-分代回收" class="headerlink" title="3.分代回收"></a>3.分代回收</h3><p>将堆划分为两个或者多个代空间，新创建的对象存放于新生代，随着垃圾回收的重复执行，生命周期较长的对象会被放到老年代中。新生代和老年代采用不同的垃圾回收策略。</p>
-<h2 id="Go垃圾回收机制"><a href="#Go垃圾回收机制" class="headerlink" title="Go垃圾回收机制"></a>Go垃圾回收机制</h2><p>Go中采用三色标记算法，本质上还是标记清除算法，但是对标记阶段有改进。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/golang-gc.gif" alt="https://upload.wikimedia.org/wikipedia/commons/1/1d/Animation_of_tri-color_garbage_collection.gif"></p>
-<p>步骤如下：</p>
-<ol>
-<li>开始时，所有的对象均为白色</li>
-<li>从root开始扫描所有可达对象，标记为灰色，放入待处理队列。root包括了全局指针和goroutine栈上的指针。</li>
-<li>从队列取出所有灰色对象，将其引用对象标记为灰色放入队列，自身标记为黑色。</li>
-<li>重复3，直到灰色队列为空。</li>
-<li>将白色对象进行回收</li>
-</ol>
-<p>优点：用户程序和标记操作可以并行执行。</p>
-<p>详细过程如下图：</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/golang-gc-2.png"></p>
-<p>通过上图可以看出，STW有两个过程：</p>
-<ol>
-<li>gc开始的时候，需要一些准备工作，如开启write barrier</li>
-<li>re-scan的过程</li>
-</ol>
-<p>每个对象需要一个标记位，go中并未将标记位存放于对象的内存区域中，而是采用非侵入式的标记位。go单独使用了标记位图区域来对应内存中的堆区域。</p>
-<p>write barrier: 在运行垃圾回收算法的同时，应用程序在一直执行，上文中提到了写屏障write barrier用于将这些内存的操作记录下来。</p>
-<h2 id="GC日志"><a href="#GC日志" class="headerlink" title="GC日志"></a>GC日志</h2><p>GC日志对于定位问题还是比较方便的</p>
-<h3 id="1-开启GC日志"><a href="#1-开启GC日志" class="headerlink" title="1.开启GC日志"></a>1.开启GC日志</h3><p>可以增加环境变量<code>GODEBUG=gctrace=1</code>来开启gc日志，gc日志会打印到标准错误中。例如有如下的程序:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import &quot;time&quot;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">	for &#123;</span><br><span class="line">		s := make([]int, 10)</span><br><span class="line">		for i := 0; i &lt; 10000; i++ &#123;</span><br><span class="line">			s = append(s, i)</span><br><span class="line">		&#125;</span><br><span class="line">		time.Sleep(time.Nanosecond)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>执行<code>GODEBUG=gctrace=1 go run gc.go</code>即可打印gc日志到标准错误中。</p>
-<h2 id="2-GC日志的含义"><a href="#2-GC日志的含义" class="headerlink" title="2.GC日志的含义"></a>2.GC日志的含义</h2><p>可以参照<a href="https://godoc.org/runtime">runtime</a></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">gc # @#s #%: #+#+# ms clock, #+#/#/#+# ms cpu, #-&gt;#-&gt;# MB, # MB goal, # P</span><br><span class="line">where the fields are as follows:</span><br><span class="line">	gc #        the GC number, incremented at each GC</span><br><span class="line">	@#s         time in seconds since program start</span><br><span class="line">	#%          percentage of time spent in GC since program start</span><br><span class="line">	#+...+#     wall-clock/CPU times for the phases of the GC</span><br><span class="line">	#-&gt;#-&gt;# MB  heap size at GC start, at GC end, and live heap</span><br><span class="line">	# MB goal   goal heap size</span><br><span class="line">	# P         number of processors used</span><br></pre></td></tr></table></figure>
-
-<p>例子:</p>
-<p>gc 11557 @179.565s 2%: 0.018+1.2+0.049 ms clock, 0.14+1.1&#x2F;2.3&#x2F;0.90+0.39 ms cpu, 13-&gt;14-&gt;7 MB, 14 MB goal, 8 P</p>
-<h3 id="3-GC的监控"><a href="#3-GC的监控" class="headerlink" title="3.GC的监控"></a>3.GC的监控</h3><p>对于线上GC的监控，基本上读取runtime.MemStats结构中的内容，然后存储到时序数据库中。具体有如下两种获取方式：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">// 方式1</span><br><span class="line">memStats := &amp;runtime.MemStats&#123;&#125;</span><br><span class="line">runtime.ReadMemStats(memStats)</span><br><span class="line"></span><br><span class="line">// 方式2 json格式</span><br><span class="line">expvar.Get(&quot;memstats&quot;).String()</span><br></pre></td></tr></table></figure>
-
-<h2 id="references"><a href="#references" class="headerlink" title="references"></a>references</h2><ul>
-<li><a href="https://blog.golang.org/ismmkeynote">Getting to Go: The Journey of Go’s Garbage Collector</a></li>
-<li><a href="https://godoc.org/runtime">Go: runtime</a></li>
 </ul>
 ]]></content>
   </entry>
@@ -4323,22 +4323,6 @@
       </tags>
   </entry>
   <entry>
-    <title>linux iowait</title>
-    <url>/post/iowait/</url>
-    <content><![CDATA[<p>iowait和load一样，都是非常容易让人产生误解的系统指标。</p>
-<p>iowait表示cpu空闲且有未完成的io请求的时间，iowait高并不能反映出磁盘是系统的性能瓶颈。iowait高的时候cpu正处于空闲状态，没有任务可以执行。此时存在已经发出的磁盘io，此时的cpu空闲状态称之为iowait。本质上，iowait是一种特殊的cpu空闲状态。</p>
-<p>iowait状态的cpu是运行在pid为0的idle线程上。</p>
-<p>cpu此时之所以进入睡眠状态，是因为进程处于睡眠状态，在等待某个特定的事件（比如网络数据，io操作完成等）。</p>
-<p>iowait仅能反应磁盘io的指标，并不能反应其他io设备的指标，比如网络丢包。</p>
-<p>在io wait的进程处于不可中断状态，通过top命令可以看到进程状态为</p>
-<p>由此可见，iowait包含的信息量非常少，仅凭iowait升高不能判断出系统io有问题。要想判断系统io有问题，还需要使用iostat等命令来查看系统的svctm、util、avgqu-sz等指标。</p>
-<h2 id="case-1"><a href="#case-1" class="headerlink" title="case 1"></a>case 1</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/iowait1.png" alt="http://linuxperf.com/wp-content/uploads/2015/02/iowait1.png"></p>
-<p>仅cpu的繁忙程度变化的情况下，会影响到iowait的值。</p>
-<h2 id="case-2"><a href="#case-2" class="headerlink" title="case 2"></a>case 2</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/iowait2.png" alt="http://linuxperf.com/wp-content/uploads/2015/02/iowait.png"></p>
-<p>在cpu繁忙程序不变的情况下，发起io请求的时间不同也会影响到iowait的值。</p>
-]]></content>
-  </entry>
-  <entry>
     <title>Linux IPIP隧道协议</title>
     <url>/post/ipip/</url>
     <content><![CDATA[<p>ipip协议为在ip协议报文的基础上继续封装ip报文，基于tun设备实现，是一种点对点的通讯技术。</p>
@@ -4367,6 +4351,22 @@
 <h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
 <li><a href="https://www.bbsmax.com/A/ke5jRmjV5r/">什么是 IP 隧道，Linux 怎么实现隧道通信？</a></li>
 </ul>
+]]></content>
+  </entry>
+  <entry>
+    <title>linux iowait</title>
+    <url>/post/iowait/</url>
+    <content><![CDATA[<p>iowait和load一样，都是非常容易让人产生误解的系统指标。</p>
+<p>iowait表示cpu空闲且有未完成的io请求的时间，iowait高并不能反映出磁盘是系统的性能瓶颈。iowait高的时候cpu正处于空闲状态，没有任务可以执行。此时存在已经发出的磁盘io，此时的cpu空闲状态称之为iowait。本质上，iowait是一种特殊的cpu空闲状态。</p>
+<p>iowait状态的cpu是运行在pid为0的idle线程上。</p>
+<p>cpu此时之所以进入睡眠状态，是因为进程处于睡眠状态，在等待某个特定的事件（比如网络数据，io操作完成等）。</p>
+<p>iowait仅能反应磁盘io的指标，并不能反应其他io设备的指标，比如网络丢包。</p>
+<p>在io wait的进程处于不可中断状态，通过top命令可以看到进程状态为</p>
+<p>由此可见，iowait包含的信息量非常少，仅凭iowait升高不能判断出系统io有问题。要想判断系统io有问题，还需要使用iostat等命令来查看系统的svctm、util、avgqu-sz等指标。</p>
+<h2 id="case-1"><a href="#case-1" class="headerlink" title="case 1"></a>case 1</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/iowait1.png" alt="http://linuxperf.com/wp-content/uploads/2015/02/iowait1.png"></p>
+<p>仅cpu的繁忙程度变化的情况下，会影响到iowait的值。</p>
+<h2 id="case-2"><a href="#case-2" class="headerlink" title="case 2"></a>case 2</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/iowait2.png" alt="http://linuxperf.com/wp-content/uploads/2015/02/iowait.png"></p>
+<p>在cpu繁忙程序不变的情况下，发起io请求的时间不同也会影响到iowait的值。</p>
 ]]></content>
   </entry>
   <entry>
@@ -4966,10 +4966,18 @@
 <h3 id="coredns-的配置文件"><a href="#coredns-的配置文件" class="headerlink" title="coredns 的配置文件"></a>coredns 的配置文件</h3><p>coredns controller 需要 watch k8s 集群中的 pod 和 service，将其进行注册，因此 coredns 需要知道集群的 zone 配置。该配置信息位于 coredns 的配置文件 ConfigMap kube-system&#x2F;coredns 中，默认的配置如下：</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Corefile: |</span><br><span class="line">  .:53 &#123;</span><br><span class="line">      errors</span><br><span class="line">      health &#123;</span><br><span class="line">         lameduck 5s</span><br><span class="line">      &#125;</span><br><span class="line">      ready</span><br><span class="line">      kubernetes cluster.local in-addr.arpa ip6.arpa &#123;</span><br><span class="line">         pods insecure</span><br><span class="line">         fallthrough in-addr.arpa ip6.arpa</span><br><span class="line">         ttl 30</span><br><span class="line">      &#125;</span><br><span class="line">      prometheus :9153</span><br><span class="line">      forward . /etc/resolv.conf &#123;</span><br><span class="line">         max_concurrent 1000</span><br><span class="line">      &#125;</span><br><span class="line">      cache 30</span><br><span class="line">      loop</span><br><span class="line">      reload</span><br><span class="line">      loadbalance</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 
-<p>其中 cluster.local 为对应的配置。</p>
-<h2 id="Pod-域名注册"><a href="#Pod-域名注册" class="headerlink" title="Pod 域名注册"></a>Pod 域名注册</h2><p>每个 k8s pod 都会创建 DNS 记录： <code>&lt;pod_ip&gt;.&lt;namespace&gt;.pod.&lt;cluster-domain&gt;</code>。其中 <pod_ip> 为 pod ip 地址，但需要将 ip 地址中的 <code>.</code> 转换为 <code>-</code>。</p>
-<p>使用 Deployment&#x2F;DaemonSet 拉起的 pod，k8s 会创建额外的 DNS 记录：<code>&lt;pod_ip&gt;.&lt;deployment-name/daemonset-name&gt;.&lt;namespace&gt;.svc.&lt;cluster-domain&gt;</code>。</p>
-<p>如果 pod 设置了 <code>spec.hostname</code></p>
+<p>其中 cluster.local 为对应的 k8s zone。</p>
+<h2 id="Pod-域名注册"><a href="#Pod-域名注册" class="headerlink" title="Pod 域名注册"></a>Pod 域名注册</h2><p>规则一：</p>
+<p>每个 k8s pod 都会创建 DNS 记录： <code>&lt;pod_ip&gt;.&lt;namespace&gt;.pod.&lt;cluster-domain&gt;</code>。其中 <pod_ip> 为 pod ip 地址，但需要将 ip 地址中的 <code>.</code> 转换为 <code>-</code>。</p>
+<p>比如 pod nginx-deployment-57d84f57dc-cpgkc 会创建 A 记录 <code>10-244-3-8.default.pod.cluster.local</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ kubectl get pod -o wide nginx-deployment-57d84f57dc-cpgkc -o wide</span><br><span class="line">NAME                                READY   STATUS    RESTARTS   AGE     IP           NODE         NOMINATED NODE   READINESS GATES</span><br><span class="line">nginx-deployment-57d84f57dc-cpgkc   1/1     Running   0          2m59s   10.244.3.8   vc-worker2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
+
+<p>规则二：</p>
+<p>pod 如何同时指定了 <code>spec.hostname</code> 和 <code>spec.subdomain</code>，则会创建 A 记录：<code>&lt;hostname&gt;.&lt;subdomain&gt;.&lt;namespace&gt;.svc.cluster.local</code>，而不是 <code>&lt;pod_ip&gt;.&lt;namespace&gt;.pod.&lt;cluster-domain&gt;</code>。对于 Statefulset 类型的 pod 会自动设置 <code>spec.hostname</code> 为 pod 的名字，<code>spec.subdomain</code> 为 StatefulSet 的 <code>spec.serviceName</code>。</p>
+<p>比如 pod nginx-statefulset-0 会创建 A 记录 <code>nginx-statefulset-0.nginx.default.svc.cluster.local</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ kubectl get pod nginx-statefulset-0 -o wide</span><br><span class="line">NAME                  READY   STATUS    RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES</span><br><span class="line">nginx-statefulset-0   1/1     Running   0          62m   10.244.3.7   vc-worker2   &lt;none&gt;           &lt;none&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Deployment-x2F-DaemonSet-管理的-pod"><a href="#Deployment-x2F-DaemonSet-管理的-pod" class="headerlink" title="Deployment&#x2F;DaemonSet 管理的 pod"></a>Deployment&#x2F;DaemonSet 管理的 pod</h3><p>使用 Deployment&#x2F;DaemonSet 拉起的 pod，k8s 会创建额外的 DNS 记录：<code>&lt;pod_ip&gt;.&lt;deployment-name/daemonset-name&gt;.&lt;namespace&gt;.svc.&lt;cluster-domain&gt;</code>。</p>
 <h2 id="Service-域名注册"><a href="#Service-域名注册" class="headerlink" title="Service 域名注册"></a>Service 域名注册</h2><h3 id="普通-Service"><a href="#普通-Service" class="headerlink" title="普通 Service"></a>普通 Service</h3><p>除了 headless service 之外的其他 service 会在 DNS 中生成 <code>my-svc.my-namespace.svc.cluster-domain.example</code> 的 A 或者 AAAA 记录，A 记录指向 ClusterIP。</p>
 <p>headless service 会在 DNS 中生成 <code>my-svc.my-namespace.svc.cluster-domain.example</code> 的 A 或者 AAAA 记录，但指向的为 pod ip 地址集合。</p>
 <p>k8s 在 pod 的 &#x2F;etc&#x2F;resolv.conf 配置如下：</p>
@@ -4993,45 +5001,11 @@
 <li>对于非 ExternalName Service，配置 A&#x2F;AAAA 记录，指向 EndPoint 的所有 ip 地址。如果未配置 Endpoint，但配置了 externalIPs 字段，则指向 externalIPs。</li>
 </ul>
 <p>配置 <code>spec.selector</code> 的 Service，会创建 EndpointSlice 对象，并修改 DNS 配置返回 A 或者 AAAA 记录，指向 pod 的集合。</p>
-<h1 id="域名查询"><a href="#域名查询" class="headerlink" title="域名查询"></a>域名查询</h1><h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
+<h1 id="域名查询"><a href="#域名查询" class="headerlink" title="域名查询"></a>域名查询</h1><p>待补充</p>
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
 <li><a href="https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/">k8s 官方 Service 文档</a></li>
 <li><a href="https://kubernetes.io/zh-cn/docs/concepts/services-networking/dns-pod-service/">k8s 官方 Service 与 Pod 的 DNS</a></li>
 <li><a href="https://github.com/kubernetes/dns/blob/master/docs/specification.md">Kubernetes DNS-Based Service Discovery</a></li>
-</ul>
-]]></content>
-  </entry>
-  <entry>
-    <title>k8s在region和zone方面的支持情况</title>
-    <url>/post/k8s-support-zone-region/</url>
-    <content><![CDATA[<p>k8s虽然已经发展了多个版本，但在多region和多zone的场景下支持还是相对比较弱的，且很多的特性在alpha版本就已经废弃，说明k8s官方对于region和zone方面的支持情况有很大的不确定性。业界支持多reigon和容灾的特性更多是从上层的应用层来解决。本文主要是介绍k8s自身以及社区在region和zone方面的支持情况。</p>
-<h1 id="k8s标签"><a href="#k8s标签" class="headerlink" title="k8s标签"></a>k8s标签</h1><p><a href="https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone">https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone</a><br>官方推荐的跟region和zone有关的标签：</p>
-<ul>
-<li>failure-domain.beta.kubernetes.io&#x2F;region：1.17版本已经废弃，被topology.kubernetes.io&#x2F;region取代</li>
-<li>failure-domain.beta.kubernetes.io&#x2F;zone：1.17版本已经废弃，被topology.kubernetes.io&#x2F;zone取代</li>
-<li>topology.kubernetes.io&#x2F;region：1.17版本开始支持</li>
-<li>topology.kubernetes.io&#x2F;zone：1.17版本开始支持</li>
-</ul>
-<h1 id="服务拓扑ServiceTopology"><a href="#服务拓扑ServiceTopology" class="headerlink" title="服务拓扑ServiceTopology"></a>服务拓扑ServiceTopology</h1><p>支持版本：在1.17版本引入，在1.21版本废弃</p>
-<p>该特性在Service对象上增加了spec.topologyKeys字段，表示访问该Service的流量优先选用的拓扑域列表。访问Service流量的具体过程如下：</p>
-<ol>
-<li>当访问该Service时，一定是从某个k8s的node节点上发起，会查看当前node的label topology.kubernetes.io&#x2F;zone对应的value，如果发现有endpoint所在的node的lable topology.kubernetes.io&#x2F;zone对应的value相同，那么会将流量转发到该拓扑域的endpoint上。</li>
-<li>如果没有找到topology.kubernetes.io&#x2F;zone相同拓扑域的endpoint，则尝试找topology.kubernetes.io&#x2F;region相同拓扑域的endpoint。</li>
-<li>如果没有找到任何拓扑域的endpoint，那么该service会转发失败。<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">Name:</span> <span class="string">my-app-web</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">my-app</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">8080</span></span><br><span class="line">  <span class="attr">topologyKeys:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;topology.kubernetes.io/zone&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;topology.kubernetes.io/region&quot;</span></span><br></pre></td></tr></table></figure>
-在底层实现上，使用了1.16版本新引入的alpha版本特性 EndpointSlice，该特性主要是用来解决Endpoints对象过多时带来的性能问题，从而将Endpoints拆分为多个组，Service Topology特性恰好可以借助该特性来实现，本质上也是为了将Endpoints进行拆分。k8s会根据Service的topologyKeys来将Service拆分为多个EndpointSlice对象，kube-proxy根据EndpointSlice会将Service流量进行拆分。</li>
-</ol>
-<h1 id="拓扑感知提示Topology-Aware-Hints"><a href="#拓扑感知提示Topology-Aware-Hints" class="headerlink" title="拓扑感知提示Topology Aware Hints"></a>拓扑感知提示Topology Aware Hints</h1><p>该特性在1.21版本引入，在1.23版本变为beta版本，用来取代Topology Key功能。<br>该特性会启用两个组件：EndpointSlice控制器和kube-proxy。</p>
-<p>在Service Topology功能中，需要给Service来指定topologyKeys字段。该特性会更自动化一些，只需要在Service上增加annotation service.kubernetes.io&#x2F;topology-aware-hints:auto，EndpointSlice控制器会watch到Service，发现开启了拓扑感知功能，会自动向endpoints的hints中增加forZones字段，该字段的value会根据endpoint所在node的topology.kubernetes.io&#x2F;zone来决定。</p>
-<p>值得一提的是，当前的hints中并没有包含forRegions的字段。</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">discovery.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">EndpointSlice</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">example-hints</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">kubernetes.io/service-name:</span> <span class="string">example-svc</span></span><br><span class="line"><span class="attr">addressType:</span> <span class="string">IPv4</span></span><br><span class="line"><span class="attr">ports:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http</span></span><br><span class="line">    <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">    <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line"><span class="attr">endpoints:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">addresses:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;10.1.2.3&quot;</span></span><br><span class="line">    <span class="attr">conditions:</span></span><br><span class="line">      <span class="attr">ready:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">hostname:</span> <span class="string">pod-1</span></span><br><span class="line">    <span class="attr">zone:</span> <span class="string">zone-a</span></span><br><span class="line">    <span class="attr">hints:</span></span><br><span class="line">      <span class="attr">forZones:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&quot;zone-a&quot;</span></span><br></pre></td></tr></table></figure>
-
-<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
-<li><a href="">Well-Known Labels, Annotations and Taints</a></li>
-<li>Google Ingress for Anthos：<a href="https://cloud.google.com/kubernetes-engine/docs/concepts/ingress-for-anthos#architecture">https://cloud.google.com/kubernetes-engine/docs/concepts/ingress-for-anthos#architecture</a></li>
-<li>阿里云ccm支持多个k8s集群的场景（手工指定lb id和server group方案）：<a href="https://help.aliyun.com/document_detail/335878.html#title-4wt-hc5-p2p">https://help.aliyun.com/document_detail&#x2F;335878.html#title-4wt-hc5-p2p</a></li>
-<li><a href="https://tencentcloudcontainerteam.github.io/2019/11/26/service-topology/">https://tencentcloudcontainerteam.github.io/2019/11/26/service-topology/</a></li>
-<li><a href="https://kubernetes.io/zh/docs/concepts/services-networking/endpoint-slices/">https://kubernetes.io/zh/docs/concepts/services-networking/endpoint-slices/</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/245165617">使用 EndpointSlice 扩展 Kubernetes 网络</a></li>
-<li><a href="https://kubernetes.io/docs/setup/best-practices/multiple-zones/">Running in multiple zones</a></li>
 </ul>
 ]]></content>
   </entry>
@@ -5147,6 +5121,41 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
       <tags>
         <tag>多集群</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>k8s在region和zone方面的支持情况</title>
+    <url>/post/k8s-support-zone-region/</url>
+    <content><![CDATA[<p>k8s虽然已经发展了多个版本，但在多region和多zone的场景下支持还是相对比较弱的，且很多的特性在alpha版本就已经废弃，说明k8s官方对于region和zone方面的支持情况有很大的不确定性。业界支持多reigon和容灾的特性更多是从上层的应用层来解决。本文主要是介绍k8s自身以及社区在region和zone方面的支持情况。</p>
+<h1 id="k8s标签"><a href="#k8s标签" class="headerlink" title="k8s标签"></a>k8s标签</h1><p><a href="https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone">https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone</a><br>官方推荐的跟region和zone有关的标签：</p>
+<ul>
+<li>failure-domain.beta.kubernetes.io&#x2F;region：1.17版本已经废弃，被topology.kubernetes.io&#x2F;region取代</li>
+<li>failure-domain.beta.kubernetes.io&#x2F;zone：1.17版本已经废弃，被topology.kubernetes.io&#x2F;zone取代</li>
+<li>topology.kubernetes.io&#x2F;region：1.17版本开始支持</li>
+<li>topology.kubernetes.io&#x2F;zone：1.17版本开始支持</li>
+</ul>
+<h1 id="服务拓扑ServiceTopology"><a href="#服务拓扑ServiceTopology" class="headerlink" title="服务拓扑ServiceTopology"></a>服务拓扑ServiceTopology</h1><p>支持版本：在1.17版本引入，在1.21版本废弃</p>
+<p>该特性在Service对象上增加了spec.topologyKeys字段，表示访问该Service的流量优先选用的拓扑域列表。访问Service流量的具体过程如下：</p>
+<ol>
+<li>当访问该Service时，一定是从某个k8s的node节点上发起，会查看当前node的label topology.kubernetes.io&#x2F;zone对应的value，如果发现有endpoint所在的node的lable topology.kubernetes.io&#x2F;zone对应的value相同，那么会将流量转发到该拓扑域的endpoint上。</li>
+<li>如果没有找到topology.kubernetes.io&#x2F;zone相同拓扑域的endpoint，则尝试找topology.kubernetes.io&#x2F;region相同拓扑域的endpoint。</li>
+<li>如果没有找到任何拓扑域的endpoint，那么该service会转发失败。<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">Name:</span> <span class="string">my-app-web</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">my-app</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">8080</span></span><br><span class="line">  <span class="attr">topologyKeys:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;topology.kubernetes.io/zone&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;topology.kubernetes.io/region&quot;</span></span><br></pre></td></tr></table></figure>
+在底层实现上，使用了1.16版本新引入的alpha版本特性 EndpointSlice，该特性主要是用来解决Endpoints对象过多时带来的性能问题，从而将Endpoints拆分为多个组，Service Topology特性恰好可以借助该特性来实现，本质上也是为了将Endpoints进行拆分。k8s会根据Service的topologyKeys来将Service拆分为多个EndpointSlice对象，kube-proxy根据EndpointSlice会将Service流量进行拆分。</li>
+</ol>
+<h1 id="拓扑感知提示Topology-Aware-Hints"><a href="#拓扑感知提示Topology-Aware-Hints" class="headerlink" title="拓扑感知提示Topology Aware Hints"></a>拓扑感知提示Topology Aware Hints</h1><p>该特性在1.21版本引入，在1.23版本变为beta版本，用来取代Topology Key功能。<br>该特性会启用两个组件：EndpointSlice控制器和kube-proxy。</p>
+<p>在Service Topology功能中，需要给Service来指定topologyKeys字段。该特性会更自动化一些，只需要在Service上增加annotation service.kubernetes.io&#x2F;topology-aware-hints:auto，EndpointSlice控制器会watch到Service，发现开启了拓扑感知功能，会自动向endpoints的hints中增加forZones字段，该字段的value会根据endpoint所在node的topology.kubernetes.io&#x2F;zone来决定。</p>
+<p>值得一提的是，当前的hints中并没有包含forRegions的字段。</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">discovery.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">EndpointSlice</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">example-hints</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">kubernetes.io/service-name:</span> <span class="string">example-svc</span></span><br><span class="line"><span class="attr">addressType:</span> <span class="string">IPv4</span></span><br><span class="line"><span class="attr">ports:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http</span></span><br><span class="line">    <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">    <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line"><span class="attr">endpoints:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">addresses:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;10.1.2.3&quot;</span></span><br><span class="line">    <span class="attr">conditions:</span></span><br><span class="line">      <span class="attr">ready:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">hostname:</span> <span class="string">pod-1</span></span><br><span class="line">    <span class="attr">zone:</span> <span class="string">zone-a</span></span><br><span class="line">    <span class="attr">hints:</span></span><br><span class="line">      <span class="attr">forZones:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&quot;zone-a&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><a href="">Well-Known Labels, Annotations and Taints</a></li>
+<li>Google Ingress for Anthos：<a href="https://cloud.google.com/kubernetes-engine/docs/concepts/ingress-for-anthos#architecture">https://cloud.google.com/kubernetes-engine/docs/concepts/ingress-for-anthos#architecture</a></li>
+<li>阿里云ccm支持多个k8s集群的场景（手工指定lb id和server group方案）：<a href="https://help.aliyun.com/document_detail/335878.html#title-4wt-hc5-p2p">https://help.aliyun.com/document_detail&#x2F;335878.html#title-4wt-hc5-p2p</a></li>
+<li><a href="https://tencentcloudcontainerteam.github.io/2019/11/26/service-topology/">https://tencentcloudcontainerteam.github.io/2019/11/26/service-topology/</a></li>
+<li><a href="https://kubernetes.io/zh/docs/concepts/services-networking/endpoint-slices/">https://kubernetes.io/zh/docs/concepts/services-networking/endpoint-slices/</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/245165617">使用 EndpointSlice 扩展 Kubernetes 网络</a></li>
+<li><a href="https://kubernetes.io/docs/setup/best-practices/multiple-zones/">Running in multiple zones</a></li>
+</ul>
+]]></content>
   </entry>
   <entry>
     <title>keepalived简易教程</title>
@@ -6139,9 +6148,10 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 <p>修改完成后，将文件重新 apply cm</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl create --save-config cm  networkpolicy-config -n kube-system --from-file /tmp/config.yaml -o yaml --dry-run | kubectl apply -f -</span><br></pre></td></tr></table></figure>
 
-
-
 <h2 id="9-删除所有-pod（或特定状态-pod）"><a href="#9-删除所有-pod（或特定状态-pod）" class="headerlink" title="9. 删除所有 pod（或特定状态 pod）"></a>9. 删除所有 pod（或特定状态 pod）</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl get pods --all-namespaces -o wide --no-headers | grep -v Running | awk &#x27;&#123;print $1 &quot; &quot; $2&#125;&#x27; | while read AA BB; do kubectl get pod -n $AA $BB --no-headers; done</span><br></pre></td></tr></table></figure>
+
+<h2 id="10-kubectl-debug"><a href="#10-kubectl-debug" class="headerlink" title="10. kubectl debug"></a>10. kubectl debug</h2><p>常用于网络问题排查，其中镜像 netshoot 中包含了丰富的网络命令。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">kubectl exec -it nginx-statefulset-0 bash</span><br></pre></td></tr></table></figure>
 ]]></content>
   </entry>
   <entry>
@@ -6774,6 +6784,23 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 ]]></content>
   </entry>
   <entry>
+    <title>Linux下搭建网桥及脚本编写</title>
+    <url>/post/linux_bridge/</url>
+    <content><![CDATA[<p>网桥工作在数据链路层，将两个LAN连起来，根据MAC地址来转发帧。Linux下要配置网桥的方法有两种，一种是通过修改配置文件，另外一种是通过brctl工具。修改配置文件的方式是通过修改&#x2F;etc&#x2F;sysconfig&#x2F;network-scripts&#x2F;ifcgg-eth*文件来完成的，这种方式没有仔细研究。本文将编写两个脚本来完成网桥的创建和删除，脚本的功能为将机器上的网卡eth1和eth2桥接，而网桥本身未设置ip。</p>
+<h1 id="网桥创建脚本"><a href="#网桥创建脚本" class="headerlink" title="网桥创建脚本"></a>网桥创建脚本</h1><p>本脚本利用brctl命令将网卡eth1和eth2桥接，可以通过<code>brctl show</code>命令查看结果。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"># 脚本作用为将两个网卡桥接</span><br><span class="line"></span><br><span class="line"># 检测brctl命令是否存在</span><br><span class="line">brctl &gt; /dev/null</span><br><span class="line">if [ $? != 1 ]; then</span><br><span class="line">	echo Command brctl not exist, please setup it. The setup execute command is \&quot;yum install bridge-utils\&quot;</span><br><span class="line">	exit 0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line"># 检测网桥br0是否存在，如果存在首先删除</span><br><span class="line">declare -i result=$(brctl show | grep eth0 | wc -l)</span><br><span class="line">if [ $result &gt; 0 ]; then</span><br><span class="line">	echo detect the bridge br0 have already exist, first delete it	</span><br><span class="line">	ifconfig br0 down</span><br><span class="line">	brctl delbr br0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line">ifconfig eth1 0.0.0.0</span><br><span class="line">ifconfig eth2 0.0.0.0</span><br><span class="line">brctl addbr br0</span><br><span class="line">brctl addif br0 eth1</span><br><span class="line">brctl addif br0 eth2</span><br><span class="line">ifconfig br0 up</span><br><span class="line">echo create bridge br0 success, you can use command : \&quot;brctl show\&quot; to check</span><br></pre></td></tr></table></figure>
+
+<h1 id="网桥删除脚本"><a href="#网桥删除脚本" class="headerlink" title="网桥删除脚本"></a>网桥删除脚本</h1><p>本脚本将桥接网卡br0删除</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"></span><br><span class="line"># 检测是否存在网桥br0</span><br><span class="line">declare -i result=$(brctl show | grep br0 | wc -l)</span><br><span class="line">if [ $result == 0 ]; then</span><br><span class="line">	echo &quot;bridge br0 not exists, exit immediately&quot;</span><br><span class="line">	exit 0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line"># 删除网桥br0</span><br><span class="line">ifconfig br0 down</span><br><span class="line">brctl delbr br0</span><br><span class="line">echo &quot;delete bridge br0 success&quot;</span><br></pre></td></tr></table></figure>
+
+<h1 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h1><p>brctl命令创建的桥接网卡在机器重启后会删除，最好将创建桥接网卡的命令放入到linux的开机启动脚本中，这样每次开机的时候都可以自动创建桥接网卡了。</p>
+<h1 id="参考网址"><a href="#参考网址" class="headerlink" title="参考网址"></a>参考网址</h1><p><a href="http://www.linuxfoundation.org/collaborate/workgroups/networking/bridge">bridge命令介绍</a></p>
+]]></content>
+      <tags>
+        <tag>网络</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Linux Seccomp</title>
     <url>/post/linux-seccomp/</url>
     <content><![CDATA[<p>seccomp是secure computing mode的缩写，是Linux内核中的一个安全计算工具，机制用于限制应用程序可以使用的系统调用，增加系统的安全性。可以理解为系统调用的防火墙，利用BPF来规律系统调用。</p>
@@ -6803,23 +6830,6 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 <li><a href="https://mp.weixin.qq.com/s?__biz=MzI0NjI4MDg5MQ==&mid=2715292188&idx=1&sn=2b7f26203aa594027550e324460bc901&chksm=cd6d15c8fa1a9cde757868fd34c8336433c4877d3e7689ed0a2bd90eb1ef6271bda97aa3bb03&mpshare=1&scene=1&srcid=12045vIwpmKLu97HvFOssitt%23rd">如何在Docker内部使用gdb调试器</a></li>
 </ul>
 ]]></content>
-  </entry>
-  <entry>
-    <title>Linux下搭建网桥及脚本编写</title>
-    <url>/post/linux_bridge/</url>
-    <content><![CDATA[<p>网桥工作在数据链路层，将两个LAN连起来，根据MAC地址来转发帧。Linux下要配置网桥的方法有两种，一种是通过修改配置文件，另外一种是通过brctl工具。修改配置文件的方式是通过修改&#x2F;etc&#x2F;sysconfig&#x2F;network-scripts&#x2F;ifcgg-eth*文件来完成的，这种方式没有仔细研究。本文将编写两个脚本来完成网桥的创建和删除，脚本的功能为将机器上的网卡eth1和eth2桥接，而网桥本身未设置ip。</p>
-<h1 id="网桥创建脚本"><a href="#网桥创建脚本" class="headerlink" title="网桥创建脚本"></a>网桥创建脚本</h1><p>本脚本利用brctl命令将网卡eth1和eth2桥接，可以通过<code>brctl show</code>命令查看结果。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"># 脚本作用为将两个网卡桥接</span><br><span class="line"></span><br><span class="line"># 检测brctl命令是否存在</span><br><span class="line">brctl &gt; /dev/null</span><br><span class="line">if [ $? != 1 ]; then</span><br><span class="line">	echo Command brctl not exist, please setup it. The setup execute command is \&quot;yum install bridge-utils\&quot;</span><br><span class="line">	exit 0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line"># 检测网桥br0是否存在，如果存在首先删除</span><br><span class="line">declare -i result=$(brctl show | grep eth0 | wc -l)</span><br><span class="line">if [ $result &gt; 0 ]; then</span><br><span class="line">	echo detect the bridge br0 have already exist, first delete it	</span><br><span class="line">	ifconfig br0 down</span><br><span class="line">	brctl delbr br0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line">ifconfig eth1 0.0.0.0</span><br><span class="line">ifconfig eth2 0.0.0.0</span><br><span class="line">brctl addbr br0</span><br><span class="line">brctl addif br0 eth1</span><br><span class="line">brctl addif br0 eth2</span><br><span class="line">ifconfig br0 up</span><br><span class="line">echo create bridge br0 success, you can use command : \&quot;brctl show\&quot; to check</span><br></pre></td></tr></table></figure>
-
-<h1 id="网桥删除脚本"><a href="#网桥删除脚本" class="headerlink" title="网桥删除脚本"></a>网桥删除脚本</h1><p>本脚本将桥接网卡br0删除</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"></span><br><span class="line"># 检测是否存在网桥br0</span><br><span class="line">declare -i result=$(brctl show | grep br0 | wc -l)</span><br><span class="line">if [ $result == 0 ]; then</span><br><span class="line">	echo &quot;bridge br0 not exists, exit immediately&quot;</span><br><span class="line">	exit 0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line"># 删除网桥br0</span><br><span class="line">ifconfig br0 down</span><br><span class="line">brctl delbr br0</span><br><span class="line">echo &quot;delete bridge br0 success&quot;</span><br></pre></td></tr></table></figure>
-
-<h1 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h1><p>brctl命令创建的桥接网卡在机器重启后会删除，最好将创建桥接网卡的命令放入到linux的开机启动脚本中，这样每次开机的时候都可以自动创建桥接网卡了。</p>
-<h1 id="参考网址"><a href="#参考网址" class="headerlink" title="参考网址"></a>参考网址</h1><p><a href="http://www.linuxfoundation.org/collaborate/workgroups/networking/bridge">bridge命令介绍</a></p>
-]]></content>
-      <tags>
-        <tag>网络</tag>
-      </tags>
   </entry>
   <entry>
     <title>Linux更改网卡名称</title>
@@ -7864,16 +7874,6 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 ]]></content>
   </entry>
   <entry>
-    <title>我的个人数据备份方案</title>
-    <url>/post/my_data_bak/</url>
-    <content><![CDATA[<p>没有一成不坏的硬件，尤其是数据放到物理硬盘中，说不定哪天硬盘闹脾气就崩掉了，硬盘不值钱，可是里面的数据值钱。下面分享下我的数据备份方案，我的原则是数据无论何时都至少留有一个备份。</p>
-<h1 id="博客"><a href="#博客" class="headerlink" title="博客"></a>博客</h1><p>我的博客是放到Dropbox中的，在云端和本地均有备份，确保了博客数据的绝对安全，即使云端坏掉还有本地，本地丢了还有云端。</p>
-<h1 id="个人照片"><a href="#个人照片" class="headerlink" title="个人照片"></a>个人照片</h1><p>由于照片都较大，放到本地硬盘很容易占满空间，而且还不经常用。除了在自己电脑上留有照片之外，选择将照片压缩并加密后按照年份放到百度云上。</p>
-<h1 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h1><p>工作几年了，已经积攒了一些代码，有些代码时不时的会查看到。对于可以公开的自己写的代码我以后打算放到我的Github上，一方面是由于Github上可以在线浏览代码，另一方面可以向别人分享我的代码。<br>对于私有的代码，暂时放到了金山快盘上，没有找到可以方便浏览代码的云端。</p>
-<h1 id="文档"><a href="#文档" class="headerlink" title="文档"></a>文档</h1><p>由于文档之类的资料也是经常用到，我选择了金山快盘。</p>
-]]></content>
-  </entry>
-  <entry>
     <title>我的Makefile文件</title>
     <url>/post/my_makefile/</url>
     <content><![CDATA[<p>最近学习了《GNU Make项目管理》，改进了我之前一直在用的Makefile文件，解决我之前的Makefile中一直存在的修改依赖头文件后不能自动编译cpp文件的问题。本文列举了我常用的两个Makefile文件，其中第一个为我常用的Makefile，第二个为从网上找到的其他Makefile文件。</p>
@@ -7907,6 +7907,16 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 <p>我现在还不具备单独创业的实力，但我一直梦想能够加入一家有梦想有激情的创业公司。加入创业公司就意味着不会清闲，我只期望每天能够过的充实并快乐着。《黑客与画家》中提到快速致富的手段就是加入一家创业公司，在美国如此，在中国亦如此。</p>
 <hr>
 <p>总结一下，我想加入一家技术为王的互联网行业的创业公司。如果你知道在济南有哪家公司可以满足我的要求，请告诉我，谢谢！</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>我的个人数据备份方案</title>
+    <url>/post/my_data_bak/</url>
+    <content><![CDATA[<p>没有一成不坏的硬件，尤其是数据放到物理硬盘中，说不定哪天硬盘闹脾气就崩掉了，硬盘不值钱，可是里面的数据值钱。下面分享下我的数据备份方案，我的原则是数据无论何时都至少留有一个备份。</p>
+<h1 id="博客"><a href="#博客" class="headerlink" title="博客"></a>博客</h1><p>我的博客是放到Dropbox中的，在云端和本地均有备份，确保了博客数据的绝对安全，即使云端坏掉还有本地，本地丢了还有云端。</p>
+<h1 id="个人照片"><a href="#个人照片" class="headerlink" title="个人照片"></a>个人照片</h1><p>由于照片都较大，放到本地硬盘很容易占满空间，而且还不经常用。除了在自己电脑上留有照片之外，选择将照片压缩并加密后按照年份放到百度云上。</p>
+<h1 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h1><p>工作几年了，已经积攒了一些代码，有些代码时不时的会查看到。对于可以公开的自己写的代码我以后打算放到我的Github上，一方面是由于Github上可以在线浏览代码，另一方面可以向别人分享我的代码。<br>对于私有的代码，暂时放到了金山快盘上，没有找到可以方便浏览代码的云端。</p>
+<h1 id="文档"><a href="#文档" class="headerlink" title="文档"></a>文档</h1><p>由于文档之类的资料也是经常用到，我选择了金山快盘。</p>
 ]]></content>
   </entry>
   <entry>
@@ -8125,23 +8135,6 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
       </tags>
   </entry>
   <entry>
-    <title>nsenter的用法</title>
-    <url>/post/nsenter/</url>
-    <content><![CDATA[<p>nsenter是一个命令行工具，用来进入到进程的linux namespace中。</p>
-<p>docker提供了exec命令可以进入到容器中，nsenter具有跟<code>docker exec</code>差不多的执行效果，但是更底层，特别是docker daemon进程异常的时候，nsenter的作用就显示出来了，因此可以用于排查线上的docker问题。</p>
-<p>CentOS用户可以直接使用<code>yum install util-linux</code>来进行安装。</p>
-<p>启动要进入的容器：<code>docker run -d ubuntu /bin/bash -c &quot;sleep 1000&quot;</code></p>
-<p>获取容器的pid可以使用&#96;</p>
-<p>要进入容器执行如下命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 获取容器的pid</span><br><span class="line">docker inspect 9f7f7a7f0f26 -f &#x27;&#123;&#123;.State.Pid&#125;&#125;&#x27;</span><br><span class="line"># 进入pid对应的namespace</span><br><span class="line">sudo nsenter --target $PID --mount --uts --ipc --net --pid</span><br></pre></td></tr></table></figure>
-
-<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
-<li><a href="http://man7.org/linux/man-pages/man1/nsenter.1.html">nsenter man page</a></li>
-<li><a href="https://github.com/jpetazzo/nsenter">nsenter GitHub</a></li>
-</ul>
-]]></content>
-  </entry>
-  <entry>
     <title>日常工作中经常用到的命令</title>
     <url>/post/often-command/</url>
     <content><![CDATA[<p>shell的命令千千万，工作中总有些命令是经常使用到的，本文记录一些常用到的命令，用于提高效率。</p>
@@ -8206,28 +8199,20 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
       </tags>
   </entry>
   <entry>
-    <title>从项目管理的角度分析一个失败的软件项目</title>
-    <url>/post/one_failed_project_in_pm/</url>
-    <content><![CDATA[<p>前段时间公司领导安排我完成一个android的小项目，功能为完成手机短信的分类功能。由于考虑到可能会和某运营商合作，项目需求多变，项目名到项目死掉的那一刻也没有想好，暂定叫短信管家。前段时间参加了今年软考中的高级项目管理师考试，对项目管理有一定的了解，由于在实际的工作中没有参与项目经理的角色，对项目管理的知识理论和实际结合还有一定差距。我一向是喜欢挑人毛病的，本文也不例外，将结合项目管理的知识领域来分析项目中存在的问题，并给出纠正的措施。本文并不想按照项目管理的44个过程组来写，不想受项目管理理论知识条条框框的约束。</p>
-<h1 id="项目简介"><a href="#项目简介" class="headerlink" title="项目简介"></a>项目简介</h1><p>在2013年元旦后上班第一天，经过领导简单介绍项目后，项目正式开始启动。项目参与人员包括我和一名美工。由于公司没有做android项目的经验，我是公司唯一懂点android项目的技术人员，我之前也仅仅是自学过一点。经过两个星期的学习之后开始了android项目的开发，春节前领导希望看到一个版本出来。离春节放假还有三天，美工搞出一个首界面来，我仿照首界面基本搞定。后来领导一看不符合需求，其实领导之前就看过首界面效果图，只是没有仔细看。当然领导也不知道要做出个什么样的东西，估计心想着技术人员弄出个什么样的东西来再修改。<br>年后，对需求开会进行了重新整理，通过思维导图的方式跟领导确定需求，就需求中存在的疑问进行确认。不过后来事实证明经过领导确认的需求也是在不断变更。这次的需求要远比上次复杂，将原来的短信分类从一级短信分类更改为了二级短信分类。公司没有互联网行业产品的经验，美工给出的效果图也仅是从桌面端来考虑移动产品的设计。我最终决定自己开始重新设计软件的界面，参考了众多同类软件，花费的时间比较多。大约到2013年4月底产品已经基本可用，经过我自己的测试和领导的使用效果还算可以。后来发现不支持彩信，经过我的一番研究后发现现有的产品功能要对彩信支持需要耗费非常大的工作量，因为软件本身的功能打破了android系统短信的设计，也难怪了android的应用中没有功能相似的产品出现。这也成为了该项目失败的直接原因。</p>
-<h1 id="可行性研究"><a href="#可行性研究" class="headerlink" title="可行性研究"></a>可行性研究</h1><h3 id="技术可行性"><a href="#技术可行性" class="headerlink" title="技术可行性"></a>技术可行性</h3><p>项目的起源来自领导的短信泛滥，领导想着能够搞一个拦截垃圾短信并对短信进行管理的软件将是酷的一件事情。领导接触过一些android，片面的认为这种方案在技术上可行。我也做了一个调研，发现现有的android软件项目中没有此功能的产品。</p>
-<h3 id="经济可行性"><a href="#经济可行性" class="headerlink" title="经济可行性"></a>经济可行性</h3><p>支出分析：由于项目主要参与人员仅有我一人，支出的成本较小。收益分析：现在的互联网产品都是先圈用户再考虑盈利，我们这个软件产品也不例外。</p>
-<h3 id="运行环境可行性"><a href="#运行环境可行性" class="headerlink" title="运行环境可行性"></a>运行环境可行性</h3><p>对于产品的运营存在两种方式：1、跟某地方运营商合作；2、自己单独发布。</p>
-<p>总体而言，由于项目较小，对可行性研究基本忽略，没有科学、可观、公证的对项目进行可行性分析。</p>
-<h1 id="范围管理"><a href="#范围管理" class="headerlink" title="范围管理"></a>范围管理</h1><p>在项目立项的时候仅有一个产品的大致方向，做一款android系统中的短信分类管理类应用。从始至终领导对于产品的理解在不断变化，每次变化都需要修改很多代码，跟领导对于导致产品研发过程做了很多无用功。<br>在项目进行到一个月后，我认识到了项目这样下去反复修改不可能有好的结果，因此跟领导召开了需求定义的会议，就产品的需求用思维导图的方式就项目的范围进行了定义，会后就需求中没有考虑到的问题跟领导进行了沟通确认。此次会议之后项目的需求基本敲定，虽然之后领导有需求变更的情况，但是相对较少。</p>
-<h1 id="进度管理"><a href="#进度管理" class="headerlink" title="进度管理"></a>进度管理</h1><p>由于公司初次开展android类项目，对项目的进度很难掌控。项目开始时负责市场部的领导给出了一个月之内完成的计划，我心想我自己加把劲应该能搞定吧，因为最初的项目需求还比较简单。我用了两个星期的时间来学习android知识，用两个星期的时间来开发，结果到最后我才刚根据美工提供的效果图完成了首页，我总是不能很好的估算自己的工作进度。这篇《为什么程序员总是不能准确预估工作量》的文章或许能替我解释些什么。<br>在项目范围确定之后我对自己工作的进度管理也不够好，第一次尝试做android项目，未知因素太多，编码中总能遇到这样那样的问题。</p>
-<h1 id="成本管理"><a href="#成本管理" class="headerlink" title="成本管理"></a>成本管理</h1><p>项目的整个成本应该我的人力成本占了绝大部分，本来软件项目中的人力成本就是占的比重较多的，何况主要是我一个人参与的项目，自然我那微薄的人力占了项目成本的大部分。至于后期项目的盈利并没有过多考虑，现在的互联网行业本来就是先圈用户后盈利。</p>
-<h1 id="质量管理"><a href="#质量管理" class="headerlink" title="质量管理"></a>质量管理</h1><p>我在项目的编码过程中，一般一个小功能完成之后都会进行详尽的功能测试。由于功能不负责，产品的质量只要多测试一般问题就不大了。</p>
-<h1 id="人力资源管理"><a href="#人力资源管理" class="headerlink" title="人力资源管理"></a>人力资源管理</h1><p>项目的初期我就感觉项目不可能成功，但是领导坚持要做，而且我一个做C++的程序员来写android的代码，我当时居然仅有听从领导的意识，没有适当的表达自己的想法。当时怀着一己之心认为可能一个月项目就完成了，完成之后工作依旧，还可以熟练熟练android的开发，谁知一练手就是做了五个月，而到最后项目仍然没有成型。<br>由于一直对项目持悲观态度，始终认为我自己开发出来的产品我都不想去用，用户怎么可能去用。长期自己独自做，兼任了产品经理、美工、码农的工作，做的过程中还要担心着需求的变更，在项目进行到中后期的时候， 缺少激励因素，对工作激情不够，这也影响了项目的进度。</p>
-<h1 id="沟通管理"><a href="#沟通管理" class="headerlink" title="沟通管理"></a>沟通管理</h1><p>在项目的开发过程中基本能保持没完成一个关键功能跟领导汇报一次项目进展。在项目中沟通方面存在不少的问题，尤其以前期严重。前期由于跟领导的需求不一致，导致做了很多的重复性劳动。领导对项目的需求本来就不够明确，一旦有好的想法就加到项目中，这也导致了跟领导的沟通困难，因为这样的沟通效率太低。</p>
-<h1 id="风险管理"><a href="#风险管理" class="headerlink" title="风险管理"></a>风险管理</h1><p>项目可研阶段对技术可行性分析研究不够，导致了后期在对彩信进行分类处理的时候遇到了技术上的难题。当然前期的可研阶段做充分的技术可行性研究也是不太现实了，因为本来技术对公司而言就是未知的。最好的办法就是对自己不熟悉而且短期内不能实现盈利的项目不参与。</p>
-<h1 id="文档管理"><a href="#文档管理" class="headerlink" title="文档管理"></a>文档管理</h1><p>由于项目管理中要求每个阶段都有输出的文档，这么繁琐的文档我相信中国找不出几家软件公司能够办到，能办到的估计都已经死掉了。此项目中仅有范围定义的思维导图、我在编写某个具体的功能代码前绘制的流程图，应该说文档及其少。但我目前不认为这有什么不对，我还是坚信某些情况下看代码比看文档要来的更快，特别是看我这种android菜鸟写的代码。更何况此项目的需求在不断随着领导的想法而变化，文档都没法写，写文档的成本太高。</p>
-<h1 id="我的一些反思："><a href="#我的一些反思：" class="headerlink" title="我的一些反思："></a>我的一些反思：</h1><p>在项目中我也存在不少问题。</p>
-<ol>
-<li>项目开始阶段应该向领导表达清楚自己的想法，阐明自己对项目的看法。</li>
-<li>对项目的进度没有很好的把握。</li>
-<li>对技术较为熟悉之后可以适当的学习后期开发功能需要技术，比如一直没有研究彩信的技术实现，导致后期在开发彩信功能时遇到技术问题。如果能够提前学习相关技术就能够提前预支项目的风险。</li>
-</ol>
+    <title>nsenter的用法</title>
+    <url>/post/nsenter/</url>
+    <content><![CDATA[<p>nsenter是一个命令行工具，用来进入到进程的linux namespace中。</p>
+<p>docker提供了exec命令可以进入到容器中，nsenter具有跟<code>docker exec</code>差不多的执行效果，但是更底层，特别是docker daemon进程异常的时候，nsenter的作用就显示出来了，因此可以用于排查线上的docker问题。</p>
+<p>CentOS用户可以直接使用<code>yum install util-linux</code>来进行安装。</p>
+<p>启动要进入的容器：<code>docker run -d ubuntu /bin/bash -c &quot;sleep 1000&quot;</code></p>
+<p>获取容器的pid可以使用&#96;</p>
+<p>要进入容器执行如下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 获取容器的pid</span><br><span class="line">docker inspect 9f7f7a7f0f26 -f &#x27;&#123;&#123;.State.Pid&#125;&#125;&#x27;</span><br><span class="line"># 进入pid对应的namespace</span><br><span class="line">sudo nsenter --target $PID --mount --uts --ipc --net --pid</span><br></pre></td></tr></table></figure>
+
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a href="http://man7.org/linux/man-pages/man1/nsenter.1.html">nsenter man page</a></li>
+<li><a href="https://github.com/jpetazzo/nsenter">nsenter GitHub</a></li>
+</ul>
 ]]></content>
   </entry>
   <entry>
@@ -8276,6 +8261,31 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
       <tags>
         <tag>overlay overlay2</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>从项目管理的角度分析一个失败的软件项目</title>
+    <url>/post/one_failed_project_in_pm/</url>
+    <content><![CDATA[<p>前段时间公司领导安排我完成一个android的小项目，功能为完成手机短信的分类功能。由于考虑到可能会和某运营商合作，项目需求多变，项目名到项目死掉的那一刻也没有想好，暂定叫短信管家。前段时间参加了今年软考中的高级项目管理师考试，对项目管理有一定的了解，由于在实际的工作中没有参与项目经理的角色，对项目管理的知识理论和实际结合还有一定差距。我一向是喜欢挑人毛病的，本文也不例外，将结合项目管理的知识领域来分析项目中存在的问题，并给出纠正的措施。本文并不想按照项目管理的44个过程组来写，不想受项目管理理论知识条条框框的约束。</p>
+<h1 id="项目简介"><a href="#项目简介" class="headerlink" title="项目简介"></a>项目简介</h1><p>在2013年元旦后上班第一天，经过领导简单介绍项目后，项目正式开始启动。项目参与人员包括我和一名美工。由于公司没有做android项目的经验，我是公司唯一懂点android项目的技术人员，我之前也仅仅是自学过一点。经过两个星期的学习之后开始了android项目的开发，春节前领导希望看到一个版本出来。离春节放假还有三天，美工搞出一个首界面来，我仿照首界面基本搞定。后来领导一看不符合需求，其实领导之前就看过首界面效果图，只是没有仔细看。当然领导也不知道要做出个什么样的东西，估计心想着技术人员弄出个什么样的东西来再修改。<br>年后，对需求开会进行了重新整理，通过思维导图的方式跟领导确定需求，就需求中存在的疑问进行确认。不过后来事实证明经过领导确认的需求也是在不断变更。这次的需求要远比上次复杂，将原来的短信分类从一级短信分类更改为了二级短信分类。公司没有互联网行业产品的经验，美工给出的效果图也仅是从桌面端来考虑移动产品的设计。我最终决定自己开始重新设计软件的界面，参考了众多同类软件，花费的时间比较多。大约到2013年4月底产品已经基本可用，经过我自己的测试和领导的使用效果还算可以。后来发现不支持彩信，经过我的一番研究后发现现有的产品功能要对彩信支持需要耗费非常大的工作量，因为软件本身的功能打破了android系统短信的设计，也难怪了android的应用中没有功能相似的产品出现。这也成为了该项目失败的直接原因。</p>
+<h1 id="可行性研究"><a href="#可行性研究" class="headerlink" title="可行性研究"></a>可行性研究</h1><h3 id="技术可行性"><a href="#技术可行性" class="headerlink" title="技术可行性"></a>技术可行性</h3><p>项目的起源来自领导的短信泛滥，领导想着能够搞一个拦截垃圾短信并对短信进行管理的软件将是酷的一件事情。领导接触过一些android，片面的认为这种方案在技术上可行。我也做了一个调研，发现现有的android软件项目中没有此功能的产品。</p>
+<h3 id="经济可行性"><a href="#经济可行性" class="headerlink" title="经济可行性"></a>经济可行性</h3><p>支出分析：由于项目主要参与人员仅有我一人，支出的成本较小。收益分析：现在的互联网产品都是先圈用户再考虑盈利，我们这个软件产品也不例外。</p>
+<h3 id="运行环境可行性"><a href="#运行环境可行性" class="headerlink" title="运行环境可行性"></a>运行环境可行性</h3><p>对于产品的运营存在两种方式：1、跟某地方运营商合作；2、自己单独发布。</p>
+<p>总体而言，由于项目较小，对可行性研究基本忽略，没有科学、可观、公证的对项目进行可行性分析。</p>
+<h1 id="范围管理"><a href="#范围管理" class="headerlink" title="范围管理"></a>范围管理</h1><p>在项目立项的时候仅有一个产品的大致方向，做一款android系统中的短信分类管理类应用。从始至终领导对于产品的理解在不断变化，每次变化都需要修改很多代码，跟领导对于导致产品研发过程做了很多无用功。<br>在项目进行到一个月后，我认识到了项目这样下去反复修改不可能有好的结果，因此跟领导召开了需求定义的会议，就产品的需求用思维导图的方式就项目的范围进行了定义，会后就需求中没有考虑到的问题跟领导进行了沟通确认。此次会议之后项目的需求基本敲定，虽然之后领导有需求变更的情况，但是相对较少。</p>
+<h1 id="进度管理"><a href="#进度管理" class="headerlink" title="进度管理"></a>进度管理</h1><p>由于公司初次开展android类项目，对项目的进度很难掌控。项目开始时负责市场部的领导给出了一个月之内完成的计划，我心想我自己加把劲应该能搞定吧，因为最初的项目需求还比较简单。我用了两个星期的时间来学习android知识，用两个星期的时间来开发，结果到最后我才刚根据美工提供的效果图完成了首页，我总是不能很好的估算自己的工作进度。这篇《为什么程序员总是不能准确预估工作量》的文章或许能替我解释些什么。<br>在项目范围确定之后我对自己工作的进度管理也不够好，第一次尝试做android项目，未知因素太多，编码中总能遇到这样那样的问题。</p>
+<h1 id="成本管理"><a href="#成本管理" class="headerlink" title="成本管理"></a>成本管理</h1><p>项目的整个成本应该我的人力成本占了绝大部分，本来软件项目中的人力成本就是占的比重较多的，何况主要是我一个人参与的项目，自然我那微薄的人力占了项目成本的大部分。至于后期项目的盈利并没有过多考虑，现在的互联网行业本来就是先圈用户后盈利。</p>
+<h1 id="质量管理"><a href="#质量管理" class="headerlink" title="质量管理"></a>质量管理</h1><p>我在项目的编码过程中，一般一个小功能完成之后都会进行详尽的功能测试。由于功能不负责，产品的质量只要多测试一般问题就不大了。</p>
+<h1 id="人力资源管理"><a href="#人力资源管理" class="headerlink" title="人力资源管理"></a>人力资源管理</h1><p>项目的初期我就感觉项目不可能成功，但是领导坚持要做，而且我一个做C++的程序员来写android的代码，我当时居然仅有听从领导的意识，没有适当的表达自己的想法。当时怀着一己之心认为可能一个月项目就完成了，完成之后工作依旧，还可以熟练熟练android的开发，谁知一练手就是做了五个月，而到最后项目仍然没有成型。<br>由于一直对项目持悲观态度，始终认为我自己开发出来的产品我都不想去用，用户怎么可能去用。长期自己独自做，兼任了产品经理、美工、码农的工作，做的过程中还要担心着需求的变更，在项目进行到中后期的时候， 缺少激励因素，对工作激情不够，这也影响了项目的进度。</p>
+<h1 id="沟通管理"><a href="#沟通管理" class="headerlink" title="沟通管理"></a>沟通管理</h1><p>在项目的开发过程中基本能保持没完成一个关键功能跟领导汇报一次项目进展。在项目中沟通方面存在不少的问题，尤其以前期严重。前期由于跟领导的需求不一致，导致做了很多的重复性劳动。领导对项目的需求本来就不够明确，一旦有好的想法就加到项目中，这也导致了跟领导的沟通困难，因为这样的沟通效率太低。</p>
+<h1 id="风险管理"><a href="#风险管理" class="headerlink" title="风险管理"></a>风险管理</h1><p>项目可研阶段对技术可行性分析研究不够，导致了后期在对彩信进行分类处理的时候遇到了技术上的难题。当然前期的可研阶段做充分的技术可行性研究也是不太现实了，因为本来技术对公司而言就是未知的。最好的办法就是对自己不熟悉而且短期内不能实现盈利的项目不参与。</p>
+<h1 id="文档管理"><a href="#文档管理" class="headerlink" title="文档管理"></a>文档管理</h1><p>由于项目管理中要求每个阶段都有输出的文档，这么繁琐的文档我相信中国找不出几家软件公司能够办到，能办到的估计都已经死掉了。此项目中仅有范围定义的思维导图、我在编写某个具体的功能代码前绘制的流程图，应该说文档及其少。但我目前不认为这有什么不对，我还是坚信某些情况下看代码比看文档要来的更快，特别是看我这种android菜鸟写的代码。更何况此项目的需求在不断随着领导的想法而变化，文档都没法写，写文档的成本太高。</p>
+<h1 id="我的一些反思："><a href="#我的一些反思：" class="headerlink" title="我的一些反思："></a>我的一些反思：</h1><p>在项目中我也存在不少问题。</p>
+<ol>
+<li>项目开始阶段应该向领导表达清楚自己的想法，阐明自己对项目的看法。</li>
+<li>对项目的进度没有很好的把握。</li>
+<li>对技术较为熟悉之后可以适当的学习后期开发功能需要技术，比如一直没有研究彩信的技术实现，导致后期在开发彩信功能时遇到技术问题。如果能够提前学习相关技术就能够提前预支项目的风险。</li>
+</ol>
+]]></content>
   </entry>
   <entry>
     <title>ovs入门</title>
@@ -9563,28 +9573,6 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
 ]]></content>
   </entry>
   <entry>
-    <title>TCP Fast Open</title>
-    <url>/post/tcp-fast-open/</url>
-    <content><![CDATA[<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_fast_open.webp"></p>
-<p>TCP Fast Open（TFO）是一种TCP协议的扩展，旨在加快建立TCP连接的速度和降低延迟。传统的TCP连接需要进行三次握手（SYN-SYN&#x2F;ACK-ACK）才能建立连接，而TFO允许在第一个数据包中携带连接建立的请求。</p>
-<p>TFO的工作原理如下：</p>
-<ol>
-<li>客户端在首次建立TCP连接时，在发送的SYN包中插入一个加密的Cookie。这个Cookie由服务器生成并发送给客户端。</li>
-<li>当客户端发送带有TFO Cookie的SYN包到服务器时，服务器会验证Cookie的有效性。</li>
-<li>如果Cookie有效，服务器会立即发送带有SYN+ACK标志的数据包，这样客户端就可以立即发送数据而无需等待ACK响应。</li>
-<li>客户端收到带有SYN+ACK标志的数据包后，发送带有ACK标志的数据包，建立完整的TCP连接。</li>
-</ol>
-<h1 id="相关内核参数"><a href="#相关内核参数" class="headerlink" title="相关内核参数"></a>相关内核参数</h1><h2 id="net-ipv4-tcp-fastopen"><a href="#net-ipv4-tcp-fastopen" class="headerlink" title="net.ipv4.tcp_fastopen"></a><code>net.ipv4.tcp_fastopen</code></h2><p>支持如下值：</p>
-<ul>
-<li>0：关闭</li>
-<li>1: 作为客户端可以使用 TFO 功能</li>
-<li>2: 作为服务端可以使用 TFO 功能</li>
-<li>3: 作为客户端和服务端均可使用 TFO</li>
-</ul>
-<h2 id="net-ipv4-tcp-fastopen-key"><a href="#net-ipv4-tcp-fastopen-key" class="headerlink" title="net.ipv4.tcp_fastopen_key"></a><code>net.ipv4.tcp_fastopen_key</code></h2><p>用来产生 TFO 的 Cookie。</p>
-]]></content>
-  </entry>
-  <entry>
     <title>tekton（个人笔记）</title>
     <url>/post/tekton/</url>
     <content><![CDATA[<h1 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h1><h2 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h2><p>从<a href="https://github.com/tektoncd/cli/releases">https://github.com/tektoncd/cli/releases</a>下载tkn工具，该工具为tekton的命令行工具。</p>
@@ -9622,6 +9610,28 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
 <p>拿中国的三峡大坝举例，从能源的角度考虑的确是有利的。但是从地球生态的角度考虑肯定是有害的。人类的存在时间相对地球是短暂的，地球每一处地形存在就有它存在的理由，已经经过了无数年的实践验证说明地形存在的正确性。可恶的中国ZF，可恨的脑残砖家居然能够利用理论来论证修建三峡的必要及正确性，TMD没学过实践是检验真理的唯一标准。在没有对地球有充足的了解之前不要利用有限的理论来推断并指导实践，因为往往实践之后就再也回不了头，就比如三峡大坝。谁敢说近几年的西南大旱、特大地震跟三峡拖得了干系，可以灾难发生了又有哪个砖家可以站出来声称我可以对这个灾难负责呢？</p>
 <p>我从小就一直在担忧一个问题如果再过几十年后几百年后地球上的煤炭、石油等不可再生资源被人类用过了人类该何去何从，我时长为此而忧虑不已。也许这有点杞人忧天，肯定有人会站出来说到那时候随着人类科技的发展早就发现了新能源了，这是谁给的自信？谁这么大胆敢预言人类几十年后一定可以发现新能源？何况不可再生资源中蕴藏着的价值肯定不仅是燃烧带来的能量这点价值，假如几十年后人类已经将石油资源消耗殆尽了，却发现石油中蕴藏着巨大的能量，估计那时候我们只有哭的份了，楚人一炬，可怜焦土。</p>
 <p>人类不过是地球上几百万种生物中的一种，如果硬要从广义公平的角度来考虑，人类在生物界占有的太多了，人类已经把该占有的不该占有的全部占为己有，贪婪的本性暴露无遗。很难想象几十年过后我们人类的家园已经成为了什么样子，四处可见的是拔地而起的高楼，柏油路横一条竖一条，无论在地球的哪个角落都能找到人类留下的痕迹。地球该随着人类的发展何去何从，我不敢想象，我能做到的仅仅是节约点力所能及的资源，仅此而已。</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>TCP Fast Open</title>
+    <url>/post/tcp-fast-open/</url>
+    <content><![CDATA[<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_fast_open.webp"></p>
+<p>TCP Fast Open（TFO）是一种TCP协议的扩展，旨在加快建立TCP连接的速度和降低延迟。传统的TCP连接需要进行三次握手（SYN-SYN&#x2F;ACK-ACK）才能建立连接，而TFO允许在第一个数据包中携带连接建立的请求。</p>
+<p>TFO的工作原理如下：</p>
+<ol>
+<li>客户端在首次建立TCP连接时，在发送的SYN包中插入一个加密的Cookie。这个Cookie由服务器生成并发送给客户端。</li>
+<li>当客户端发送带有TFO Cookie的SYN包到服务器时，服务器会验证Cookie的有效性。</li>
+<li>如果Cookie有效，服务器会立即发送带有SYN+ACK标志的数据包，这样客户端就可以立即发送数据而无需等待ACK响应。</li>
+<li>客户端收到带有SYN+ACK标志的数据包后，发送带有ACK标志的数据包，建立完整的TCP连接。</li>
+</ol>
+<h1 id="相关内核参数"><a href="#相关内核参数" class="headerlink" title="相关内核参数"></a>相关内核参数</h1><h2 id="net-ipv4-tcp-fastopen"><a href="#net-ipv4-tcp-fastopen" class="headerlink" title="net.ipv4.tcp_fastopen"></a><code>net.ipv4.tcp_fastopen</code></h2><p>支持如下值：</p>
+<ul>
+<li>0：关闭</li>
+<li>1: 作为客户端可以使用 TFO 功能</li>
+<li>2: 作为服务端可以使用 TFO 功能</li>
+<li>3: 作为客户端和服务端均可使用 TFO</li>
+</ul>
+<h2 id="net-ipv4-tcp-fastopen-key"><a href="#net-ipv4-tcp-fastopen-key" class="headerlink" title="net.ipv4.tcp_fastopen_key"></a><code>net.ipv4.tcp_fastopen_key</code></h2><p>用来产生 TFO 的 Cookie。</p>
 ]]></content>
   </entry>
   <entry>
@@ -9678,32 +9688,6 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
 ]]></content>
   </entry>
   <entry>
-    <title>图的存储和遍历</title>
-    <url>/post/traverse_graph/</url>
-    <content><![CDATA[<h1 id="图的存储"><a href="#图的存储" class="headerlink" title="图的存储"></a>图的存储</h1><p>在leetcode中图的存储形式如下，这种形式的图只能适合用来存储是连通图的情况，且根据leetcode提供的_{0,1,2#1,2#2,2}_格式的字符串通过程序来自动构造图比较麻烦，预知字符串的含义请移步到<a href="https://oj.leetcode.com/problems/clone-graph/">leetcode的解释</a>。</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Definition for undirected graph.</span></span><br><span class="line"><span class="comment"> * struct UndirectedGraphNode &#123;</span></span><br><span class="line"><span class="comment"> *     int label;</span></span><br><span class="line"><span class="comment"> *     vector&lt;UndirectedGraphNode *&gt; neighbors;</span></span><br><span class="line"><span class="comment"> *     UndirectedGraphNode(int x) : label(x) &#123;&#125;;</span></span><br><span class="line"><span class="comment"> * &#125;;</span></span><br></pre></td></tr></table></figure>
-
-<p>本文为了能够用字符串表示所有图，并且便于程序的构造，使用了邻接表的形式来对图进行存储，即可以用来存储有向图，有可以存储无向图。图一个节点的结构如下：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 图节点的邻接表表示形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">GraphNode</span> &#123;</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">string</span> label;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;GraphNode *&gt; neighbors;</span><br><span class="line">    <span class="type">bool</span> visited;			<span class="comment">// 深度优先搜索和广度优先搜索的遍历都需要visited数组，为了简化程序，直接在节点的存储结构中设置visited变量</span></span><br><span class="line">    GraphNode(<span class="built_in">std</span>::<span class="built_in">string</span> x) : label(x), visited(<span class="literal">false</span>) &#123;&#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>图的创建方面为了简化算法实现，对程序的效率没做太多关注，算法复杂度稍高。本算法的难点在于对字符串的拆解，并根据字符串找到对应的节点指针。</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 图节点的邻接表表示形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">GraphNode</span> &#123;</span><br><span class="line">    std::string label;</span><br><span class="line">    std::vector&lt;GraphNode *&gt; neighbors;</span><br><span class="line">    <span class="type">bool</span> visited;</span><br><span class="line">    <span class="built_in">GraphNode</span>(std::string x) : <span class="built_in">label</span>(x), <span class="built_in">visited</span>(<span class="literal">false</span>) &#123;&#125;;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 通过字符串的值，找到该字符串对应的图节点</span></span><br><span class="line"><span class="comment"> */</span> </span><br><span class="line"><span class="function">GraphNode *<span class="title">get_one_node</span><span class="params">(<span class="type">const</span> std::vector&lt;GraphNode *&gt; &amp;node_vector, std::string str)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::const_iterator iter = node_vector.<span class="built_in">begin</span>(); iter != node_vector.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> ((*iter)-&gt;label == str)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">return</span> *iter;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 时间复杂度高,对图的构建一般效率要求较低</span></span><br><span class="line"><span class="comment"> * 对于查找某个节点的邻接点的指针操作可以使用map来提高查询效率</span></span><br><span class="line"><span class="comment"> * 或者可以通过不需要初始化所有节点的方式来构造图，而是采用需要哪个节点构造哪个节点的方式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">std::vector&lt;GraphNode *&gt; <span class="title">create_graph</span><span class="params">(std::string str)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    std::vector&lt;GraphNode *&gt; node_vector;</span><br><span class="line">   </span><br><span class="line">    <span class="comment">// init all nodes</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> pos = <span class="number">0</span>; pos &lt; str.<span class="built_in">length</span>() - <span class="number">1</span>;)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">size_t</span> end = str.<span class="built_in">find</span>(<span class="string">&#x27;,&#x27;</span>, pos);</span><br><span class="line">        <span class="keyword">if</span> (end != std::string::npos)</span><br><span class="line">        &#123;</span><br><span class="line">            GraphNode *node = <span class="keyword">new</span> <span class="built_in">GraphNode</span>(str.<span class="built_in">substr</span>(pos, end - pos));</span><br><span class="line">            node_vector.<span class="built_in">push_back</span>(node);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        pos = str.<span class="built_in">find</span>(<span class="string">&#x27;#&#x27;</span>, pos);</span><br><span class="line">        <span class="keyword">if</span> (pos == std::string::npos)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            pos++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// add neighbors in every node</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> pos = <span class="number">0</span>; pos &lt; str.<span class="built_in">length</span>() - <span class="number">1</span>; )</span><br><span class="line">    &#123;</span><br><span class="line">        GraphNode *current_node = <span class="literal">NULL</span>;</span><br><span class="line">        <span class="type">size_t</span> current_end = str.<span class="built_in">find</span>(<span class="string">&#x27;,&#x27;</span>, pos);</span><br><span class="line">        <span class="keyword">if</span> (current_end != std::string::npos)</span><br><span class="line">        &#123;</span><br><span class="line">            current_node = <span class="built_in">get_one_node</span>(node_vector, str.<span class="built_in">substr</span>(pos, current_end - pos));</span><br><span class="line">            pos = current_end + <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">size_t</span> node_end = str.<span class="built_in">find</span>(<span class="string">&#x27;#&#x27;</span>, pos);   <span class="comment">// 当前节点的字符串的结束位置</span></span><br><span class="line">        <span class="keyword">if</span> (node_end == std::string::npos)</span><br><span class="line">        &#123;</span><br><span class="line">            node_end = str.<span class="built_in">length</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            node_end--;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> ( ; ; )</span><br><span class="line">        &#123;</span><br><span class="line">            current_end = str.<span class="built_in">find</span>(<span class="string">&#x27;,&#x27;</span>, pos);</span><br><span class="line">            <span class="keyword">if</span> (current_end &gt; node_end || current_end == std::string::npos)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="comment">// 一个节点的最后一个邻接点</span></span><br><span class="line">                current_end = node_end;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> </span><br><span class="line">            &#123;</span><br><span class="line">                current_end--;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            GraphNode *node = <span class="built_in">get_one_node</span>(node_vector, str.<span class="built_in">substr</span>(pos, current_end - pos + <span class="number">1</span>)); </span><br><span class="line">            <span class="keyword">if</span> (node != <span class="literal">NULL</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                current_node-&gt;neighbors.<span class="built_in">push_back</span>(node);</span><br><span class="line">                std::cout &lt;&lt; current_node-&gt;label &lt;&lt; <span class="string">&quot; add &quot;</span> &lt;&lt; node-&gt;label &lt;&lt; std::endl;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (current_end == node_end)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="comment">// 一个节点的最后一个邻接点</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">            &#123;</span><br><span class="line">                pos = current_end + <span class="number">2</span>;  <span class="comment">// 该节点之后还有其他邻接点</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        pos = node_end + <span class="number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> node_vector;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="深度优先搜索"><a href="#深度优先搜索" class="headerlink" title="深度优先搜索"></a>深度优先搜索</h1><p>深度优先搜索遵循贪心算法的原理，如果孩子节点不为空，则一直遍历下去。</p>
-<h2 id="递归算法"><a href="#递归算法" class="headerlink" title="递归算法"></a>递归算法</h2><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">DFS_traverse_recursion</span><span class="params">(GraphNode *node)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!node-&gt;visited)</span><br><span class="line">    &#123;</span><br><span class="line">        std::cout &lt;&lt; node-&gt;label &lt;&lt; <span class="string">&#x27;\t&#x27;</span>;</span><br><span class="line">        node-&gt;visited = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = node-&gt;neighbors.<span class="built_in">begin</span>(); iter != node-&gt;neighbors.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (!(*iter)-&gt;visited)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">DFS_traverse_recursion</span>(*iter);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 图的深度优先搜索的递归形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">DFS_traverse_recursion</span><span class="params">(std::vector&lt;GraphNode *&gt; &amp;graph)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        (*iter)-&gt;visited = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (!(*iter)-&gt;visited)</span><br><span class="line">            <span class="built_in">DFS_traverse_recursion</span>(*iter);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="非递归算法"><a href="#非递归算法" class="headerlink" title="非递归算法"></a>非递归算法</h2><p>使用栈来实现非递归。</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 图的深度优先搜索的非递归形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">DFS_traverse_not_recursion</span><span class="params">(std::vector&lt;GraphNode *&gt; &amp;graph)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        (*iter)-&gt;visited = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        std::stack&lt;GraphNode *&gt; node_stack;</span><br><span class="line">        <span class="keyword">if</span> ((*iter)-&gt;visited)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        node_stack.<span class="built_in">push</span>(*iter);</span><br><span class="line">        <span class="keyword">while</span> (!node_stack.<span class="built_in">empty</span>())</span><br><span class="line">        &#123;</span><br><span class="line">            GraphNode *node = node_stack.<span class="built_in">top</span>();</span><br><span class="line">            node_stack.<span class="built_in">pop</span>();</span><br><span class="line">            <span class="keyword">if</span> (node-&gt;visited)</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            std::cout &lt;&lt; node-&gt;label &lt;&lt; <span class="string">&#x27;\t&#x27;</span>;</span><br><span class="line">            node-&gt;visited = <span class="literal">true</span>;</span><br><span class="line">            <span class="comment">/* 使用反向迭代器遍历后将节点加入到栈中 */</span></span><br><span class="line">            <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::reverse_iterator iter2 = node-&gt;neighbors.<span class="built_in">rbegin</span>(); iter2 != node-&gt;neighbors.<span class="built_in">rend</span>(); iter2++)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">if</span> (!(*iter2)-&gt;visited)</span><br><span class="line">                &#123;</span><br><span class="line">                    node_stack.<span class="built_in">push</span>(*iter2);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="广度优先搜索"><a href="#广度优先搜索" class="headerlink" title="广度优先搜索"></a>广度优先搜索</h1><p>该算法不存在递归算法，仅有非递归版本。需要利用队列来保存需要遍历的节点，占用的存储空间稍多。</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 图的广度优先搜索的非递归形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">BFS_traverse_not_recursion</span><span class="params">(std::vector&lt;GraphNode *&gt; &amp;graph)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        (*iter)-&gt;visited = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        std::queue&lt;GraphNode *&gt; node_queue;</span><br><span class="line">        <span class="keyword">if</span> ((*iter)-&gt;visited)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        node_queue.<span class="built_in">push</span>(*iter);</span><br><span class="line">        <span class="keyword">while</span> (!node_queue.<span class="built_in">empty</span>())</span><br><span class="line">        &#123;</span><br><span class="line">            GraphNode *node = node_queue.<span class="built_in">front</span>();</span><br><span class="line">            node_queue.<span class="built_in">pop</span>();</span><br><span class="line">            <span class="keyword">if</span> (node-&gt;visited)</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            std::cout &lt;&lt; node-&gt;label &lt;&lt; <span class="string">&#x27;\t&#x27;</span>;</span><br><span class="line">            node-&gt;visited = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter2 = node-&gt;neighbors.<span class="built_in">begin</span>(); iter2 != node-&gt;neighbors.<span class="built_in">end</span>(); iter2++)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">if</span> (!(*iter2)-&gt;visited)</span><br><span class="line">                &#123;</span><br><span class="line">                    node_queue.<span class="built_in">push</span>(*iter2);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a href="http://pan.baidu.com/s/1i3GIj9V">本文相关源码</a></p>
-]]></content>
-      <tags>
-        <tag>算法</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>二叉树的遍历</title>
     <url>/post/traverse_tree/</url>
     <content><![CDATA[<p>[TOC]</p>
@@ -9740,6 +9724,32 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
     <content><![CDATA[<p>本文提供简易shell脚本来更改mac地址，在其他linux发行版中去掉sudo即可。脚本内容如下：</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/bin/sh</span><br><span class="line">sudo ifconfig eth0 down</span><br><span class="line">sudo ifconfig eth0 hw ether 08:00:27:DF:B3:7B</span><br><span class="line">sudo ifconfig eth0 up</span><br></pre></td></tr></table></figure>
 ]]></content>
+  </entry>
+  <entry>
+    <title>图的存储和遍历</title>
+    <url>/post/traverse_graph/</url>
+    <content><![CDATA[<h1 id="图的存储"><a href="#图的存储" class="headerlink" title="图的存储"></a>图的存储</h1><p>在leetcode中图的存储形式如下，这种形式的图只能适合用来存储是连通图的情况，且根据leetcode提供的_{0,1,2#1,2#2,2}_格式的字符串通过程序来自动构造图比较麻烦，预知字符串的含义请移步到<a href="https://oj.leetcode.com/problems/clone-graph/">leetcode的解释</a>。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Definition for undirected graph.</span></span><br><span class="line"><span class="comment"> * struct UndirectedGraphNode &#123;</span></span><br><span class="line"><span class="comment"> *     int label;</span></span><br><span class="line"><span class="comment"> *     vector&lt;UndirectedGraphNode *&gt; neighbors;</span></span><br><span class="line"><span class="comment"> *     UndirectedGraphNode(int x) : label(x) &#123;&#125;;</span></span><br><span class="line"><span class="comment"> * &#125;;</span></span><br></pre></td></tr></table></figure>
+
+<p>本文为了能够用字符串表示所有图，并且便于程序的构造，使用了邻接表的形式来对图进行存储，即可以用来存储有向图，有可以存储无向图。图一个节点的结构如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 图节点的邻接表表示形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">GraphNode</span> &#123;</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">string</span> label;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;GraphNode *&gt; neighbors;</span><br><span class="line">    <span class="type">bool</span> visited;			<span class="comment">// 深度优先搜索和广度优先搜索的遍历都需要visited数组，为了简化程序，直接在节点的存储结构中设置visited变量</span></span><br><span class="line">    GraphNode(<span class="built_in">std</span>::<span class="built_in">string</span> x) : label(x), visited(<span class="literal">false</span>) &#123;&#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>图的创建方面为了简化算法实现，对程序的效率没做太多关注，算法复杂度稍高。本算法的难点在于对字符串的拆解，并根据字符串找到对应的节点指针。</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 图节点的邻接表表示形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">GraphNode</span> &#123;</span><br><span class="line">    std::string label;</span><br><span class="line">    std::vector&lt;GraphNode *&gt; neighbors;</span><br><span class="line">    <span class="type">bool</span> visited;</span><br><span class="line">    <span class="built_in">GraphNode</span>(std::string x) : <span class="built_in">label</span>(x), <span class="built_in">visited</span>(<span class="literal">false</span>) &#123;&#125;;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 通过字符串的值，找到该字符串对应的图节点</span></span><br><span class="line"><span class="comment"> */</span> </span><br><span class="line"><span class="function">GraphNode *<span class="title">get_one_node</span><span class="params">(<span class="type">const</span> std::vector&lt;GraphNode *&gt; &amp;node_vector, std::string str)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::const_iterator iter = node_vector.<span class="built_in">begin</span>(); iter != node_vector.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> ((*iter)-&gt;label == str)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">return</span> *iter;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 时间复杂度高,对图的构建一般效率要求较低</span></span><br><span class="line"><span class="comment"> * 对于查找某个节点的邻接点的指针操作可以使用map来提高查询效率</span></span><br><span class="line"><span class="comment"> * 或者可以通过不需要初始化所有节点的方式来构造图，而是采用需要哪个节点构造哪个节点的方式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">std::vector&lt;GraphNode *&gt; <span class="title">create_graph</span><span class="params">(std::string str)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    std::vector&lt;GraphNode *&gt; node_vector;</span><br><span class="line">   </span><br><span class="line">    <span class="comment">// init all nodes</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> pos = <span class="number">0</span>; pos &lt; str.<span class="built_in">length</span>() - <span class="number">1</span>;)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">size_t</span> end = str.<span class="built_in">find</span>(<span class="string">&#x27;,&#x27;</span>, pos);</span><br><span class="line">        <span class="keyword">if</span> (end != std::string::npos)</span><br><span class="line">        &#123;</span><br><span class="line">            GraphNode *node = <span class="keyword">new</span> <span class="built_in">GraphNode</span>(str.<span class="built_in">substr</span>(pos, end - pos));</span><br><span class="line">            node_vector.<span class="built_in">push_back</span>(node);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        pos = str.<span class="built_in">find</span>(<span class="string">&#x27;#&#x27;</span>, pos);</span><br><span class="line">        <span class="keyword">if</span> (pos == std::string::npos)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            pos++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// add neighbors in every node</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> pos = <span class="number">0</span>; pos &lt; str.<span class="built_in">length</span>() - <span class="number">1</span>; )</span><br><span class="line">    &#123;</span><br><span class="line">        GraphNode *current_node = <span class="literal">NULL</span>;</span><br><span class="line">        <span class="type">size_t</span> current_end = str.<span class="built_in">find</span>(<span class="string">&#x27;,&#x27;</span>, pos);</span><br><span class="line">        <span class="keyword">if</span> (current_end != std::string::npos)</span><br><span class="line">        &#123;</span><br><span class="line">            current_node = <span class="built_in">get_one_node</span>(node_vector, str.<span class="built_in">substr</span>(pos, current_end - pos));</span><br><span class="line">            pos = current_end + <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">size_t</span> node_end = str.<span class="built_in">find</span>(<span class="string">&#x27;#&#x27;</span>, pos);   <span class="comment">// 当前节点的字符串的结束位置</span></span><br><span class="line">        <span class="keyword">if</span> (node_end == std::string::npos)</span><br><span class="line">        &#123;</span><br><span class="line">            node_end = str.<span class="built_in">length</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            node_end--;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> ( ; ; )</span><br><span class="line">        &#123;</span><br><span class="line">            current_end = str.<span class="built_in">find</span>(<span class="string">&#x27;,&#x27;</span>, pos);</span><br><span class="line">            <span class="keyword">if</span> (current_end &gt; node_end || current_end == std::string::npos)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="comment">// 一个节点的最后一个邻接点</span></span><br><span class="line">                current_end = node_end;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> </span><br><span class="line">            &#123;</span><br><span class="line">                current_end--;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            GraphNode *node = <span class="built_in">get_one_node</span>(node_vector, str.<span class="built_in">substr</span>(pos, current_end - pos + <span class="number">1</span>)); </span><br><span class="line">            <span class="keyword">if</span> (node != <span class="literal">NULL</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                current_node-&gt;neighbors.<span class="built_in">push_back</span>(node);</span><br><span class="line">                std::cout &lt;&lt; current_node-&gt;label &lt;&lt; <span class="string">&quot; add &quot;</span> &lt;&lt; node-&gt;label &lt;&lt; std::endl;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (current_end == node_end)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="comment">// 一个节点的最后一个邻接点</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">            &#123;</span><br><span class="line">                pos = current_end + <span class="number">2</span>;  <span class="comment">// 该节点之后还有其他邻接点</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        pos = node_end + <span class="number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> node_vector;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="深度优先搜索"><a href="#深度优先搜索" class="headerlink" title="深度优先搜索"></a>深度优先搜索</h1><p>深度优先搜索遵循贪心算法的原理，如果孩子节点不为空，则一直遍历下去。</p>
+<h2 id="递归算法"><a href="#递归算法" class="headerlink" title="递归算法"></a>递归算法</h2><figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">DFS_traverse_recursion</span><span class="params">(GraphNode *node)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!node-&gt;visited)</span><br><span class="line">    &#123;</span><br><span class="line">        std::cout &lt;&lt; node-&gt;label &lt;&lt; <span class="string">&#x27;\t&#x27;</span>;</span><br><span class="line">        node-&gt;visited = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = node-&gt;neighbors.<span class="built_in">begin</span>(); iter != node-&gt;neighbors.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (!(*iter)-&gt;visited)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">DFS_traverse_recursion</span>(*iter);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 图的深度优先搜索的递归形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">DFS_traverse_recursion</span><span class="params">(std::vector&lt;GraphNode *&gt; &amp;graph)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        (*iter)-&gt;visited = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (!(*iter)-&gt;visited)</span><br><span class="line">            <span class="built_in">DFS_traverse_recursion</span>(*iter);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="非递归算法"><a href="#非递归算法" class="headerlink" title="非递归算法"></a>非递归算法</h2><p>使用栈来实现非递归。</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 图的深度优先搜索的非递归形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">DFS_traverse_not_recursion</span><span class="params">(std::vector&lt;GraphNode *&gt; &amp;graph)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        (*iter)-&gt;visited = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        std::stack&lt;GraphNode *&gt; node_stack;</span><br><span class="line">        <span class="keyword">if</span> ((*iter)-&gt;visited)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        node_stack.<span class="built_in">push</span>(*iter);</span><br><span class="line">        <span class="keyword">while</span> (!node_stack.<span class="built_in">empty</span>())</span><br><span class="line">        &#123;</span><br><span class="line">            GraphNode *node = node_stack.<span class="built_in">top</span>();</span><br><span class="line">            node_stack.<span class="built_in">pop</span>();</span><br><span class="line">            <span class="keyword">if</span> (node-&gt;visited)</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            std::cout &lt;&lt; node-&gt;label &lt;&lt; <span class="string">&#x27;\t&#x27;</span>;</span><br><span class="line">            node-&gt;visited = <span class="literal">true</span>;</span><br><span class="line">            <span class="comment">/* 使用反向迭代器遍历后将节点加入到栈中 */</span></span><br><span class="line">            <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::reverse_iterator iter2 = node-&gt;neighbors.<span class="built_in">rbegin</span>(); iter2 != node-&gt;neighbors.<span class="built_in">rend</span>(); iter2++)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">if</span> (!(*iter2)-&gt;visited)</span><br><span class="line">                &#123;</span><br><span class="line">                    node_stack.<span class="built_in">push</span>(*iter2);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="广度优先搜索"><a href="#广度优先搜索" class="headerlink" title="广度优先搜索"></a>广度优先搜索</h1><p>该算法不存在递归算法，仅有非递归版本。需要利用队列来保存需要遍历的节点，占用的存储空间稍多。</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 图的广度优先搜索的非递归形式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">BFS_traverse_not_recursion</span><span class="params">(std::vector&lt;GraphNode *&gt; &amp;graph)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        (*iter)-&gt;visited = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter = graph.<span class="built_in">begin</span>(); iter != graph.<span class="built_in">end</span>(); iter++)</span><br><span class="line">    &#123;</span><br><span class="line">        std::queue&lt;GraphNode *&gt; node_queue;</span><br><span class="line">        <span class="keyword">if</span> ((*iter)-&gt;visited)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        node_queue.<span class="built_in">push</span>(*iter);</span><br><span class="line">        <span class="keyword">while</span> (!node_queue.<span class="built_in">empty</span>())</span><br><span class="line">        &#123;</span><br><span class="line">            GraphNode *node = node_queue.<span class="built_in">front</span>();</span><br><span class="line">            node_queue.<span class="built_in">pop</span>();</span><br><span class="line">            <span class="keyword">if</span> (node-&gt;visited)</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            std::cout &lt;&lt; node-&gt;label &lt;&lt; <span class="string">&#x27;\t&#x27;</span>;</span><br><span class="line">            node-&gt;visited = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">for</span> (std::vector&lt;GraphNode *&gt;::iterator iter2 = node-&gt;neighbors.<span class="built_in">begin</span>(); iter2 != node-&gt;neighbors.<span class="built_in">end</span>(); iter2++)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">if</span> (!(*iter2)-&gt;visited)</span><br><span class="line">                &#123;</span><br><span class="line">                    node_queue.<span class="built_in">push</span>(*iter2);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a href="http://pan.baidu.com/s/1i3GIj9V">本文相关源码</a></p>
+]]></content>
+      <tags>
+        <tag>算法</tag>
+      </tags>
   </entry>
   <entry>
     <title>手动更新Custom Resource中的status部分</title>
@@ -9944,6 +9954,40 @@ helm fetch lofts/vcluster
 ]]></content>
   </entry>
   <entry>
+    <title>VirtualBox磁盘扩容</title>
+    <url>/post/virtualbox-scaleup/</url>
+    <content><![CDATA[<p>今天发现vagrant的其中一个虚拟机磁盘空间不够了，需要对其进行磁盘扩容，但不期望是通过增加新硬盘的方式，而是直接增加原磁盘容量的方式来无缝扩容。</p>
+<h2 id="修改磁盘文件"><a href="#修改磁盘文件" class="headerlink" title="修改磁盘文件"></a>修改磁盘文件</h2><p>进入到vm磁盘文件所在的目录<code>~/VirtualBox VMs/dev_default_1531796361866_92956</code>下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">% vboxmanage showhdinfo  centos-vm-disk1.vmdk</span><br><span class="line">UUID:           acbb4ffc-0580-40d6-8627-3ed24cd0beff</span><br><span class="line">Parent UUID:    base</span><br><span class="line">State:          created</span><br><span class="line">Type:           normal (base)</span><br><span class="line">Location:       /Users/lvkai/VirtualBox VMs/dev_default_1531796361866_92956/centos-vm-disk1.vmdk</span><br><span class="line">Storage format: VMDK</span><br><span class="line">Format variant: dynamic default</span><br><span class="line">Capacity:       10000 MBytes</span><br><span class="line">Size on disk:   9634 MBytes</span><br><span class="line">Encryption:     disabled</span><br><span class="line">In use by VMs:  dev_default_1531796361866_92956 (UUID: a153957c-e43f-4dd2-8512-f51d42dee3d3)</span><br><span class="line"></span><br><span class="line"># 将之前存储的vmdk格式的文件复制一份vdi格式的文件，由于需要复制文件，该命令需要执行一段时间</span><br><span class="line">% vboxmanage clonehd centos-vm-disk1.vmdk new-centos-vm-disk1.vdi --format vdi</span><br><span class="line"></span><br><span class="line"># 将vdi格式的文件修改磁盘空间上限大小为80g，但实际占用磁盘空间仍然为之前的大小</span><br><span class="line">% vboxmanage modifyhd  new-centos-vm-disk1.vdi --resize 81920</span><br><span class="line"></span><br><span class="line"># 将vdi格式的文件重新转换为vmdk格式，会产生一个新的uuid</span><br><span class="line">% vboxmanage clonehd new-centos-vm-disk1.vdi resized.vmdk --format vmdk</span><br><span class="line">0%...10%...20%...30%...40%...50%...60%...70%...80%...90%...100%</span><br><span class="line">Clone medium created in format &#x27;vmdk&#x27;. UUID: 7e454b50-0681-494b-b9ca-81700d217c0a</span><br></pre></td></tr></table></figure>
+
+<p>新的硬盘创建完成后，在virtualbox的界面上将对应虚拟机的硬盘更换为resized.vmdk，并将之前旧的centos-vm-disk1.vmdk给删除掉。</p>
+<h2 id="使用fdisk创建新的磁盘分区"><a href="#使用fdisk创建新的磁盘分区" class="headerlink" title="使用fdisk创建新的磁盘分区"></a>使用fdisk创建新的磁盘分区</h2><p>以上命令执行完成后，开启虚拟机，进入系统，可以看到磁盘空间大小变更为85.9GB，但挂载的磁盘空间大小仍然为8.3G，新增加的磁盘空间仍然处于未分配状态。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># fdisk -l</span><br><span class="line"></span><br><span class="line">Disk /dev/sda: 85.9 GB, 85899345920 bytes, 167772160 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line">Disk label type: dos</span><br><span class="line">Disk identifier: 0x0000ca5e</span><br><span class="line"></span><br><span class="line">   Device Boot      Start         End      Blocks   Id  System</span><br><span class="line">/dev/sda1   *        2048     1026047      512000   83  Linux</span><br><span class="line">/dev/sda2         1026048    20479999     9726976   8e  Linux LVM</span><br><span class="line"></span><br><span class="line">Disk /dev/mapper/centos-root: 8866 MB, 8866758656 bytes, 17317888 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Disk /dev/mapper/centos-swap: 1048 MB, 1048576000 bytes, 2048000 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line"></span><br><span class="line"># df -h</span><br><span class="line">Filesystem               Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/mapper/centos-root  8.3G  7.9G  386M  96% /</span><br><span class="line">devtmpfs                 296M     0  296M   0% /dev</span><br><span class="line">tmpfs                    307M     0  307M   0% /dev/shm</span><br><span class="line">tmpfs                    307M  4.5M  303M   2% /run</span><br><span class="line">tmpfs                    307M     0  307M   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda1                497M  195M  303M  40% /boot</span><br><span class="line">vagrant                  466G  390G   77G  84% /vagrant</span><br><span class="line">vagrant_data             466G  390G   77G  84% /vagrant_data</span><br><span class="line">tmpfs                     62M     0   62M   0% /run/user/1000</span><br></pre></td></tr></table></figure>
+
+<p>接下来需要将未分配的磁盘空间</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># fdisk /dev/sda</span><br><span class="line"># 依次输入可创建新的分区</span><br><span class="line">n</span><br><span class="line">p</span><br><span class="line">回车</span><br><span class="line">回车</span><br><span class="line"></span><br><span class="line"># 继续输入p，可以看到磁盘的情况，多出了/dev/sda3</span><br><span class="line"># /dev/sda3的System为Linux，而/dev/sda2的System为Linux LVM</span><br><span class="line">Command (m for help): p</span><br><span class="line"></span><br><span class="line">Disk /dev/sda: 85.9 GB, 85899345920 bytes, 167772160 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line">Disk label type: dos</span><br><span class="line">Disk identifier: 0x0000ca5e</span><br><span class="line"></span><br><span class="line">   Device Boot      Start         End      Blocks   Id  System</span><br><span class="line">/dev/sda1   *        2048     1026047      512000   83  Linux</span><br><span class="line">/dev/sda2         1026048    20479999     9726976   8e  Linux LVM</span><br><span class="line">/dev/sda3        20480000   167772159    73646080   83  Linux</span><br><span class="line"></span><br><span class="line"># 依次输入将/dev/sda3更改为LVM格式</span><br><span class="line">t</span><br><span class="line">3</span><br><span class="line">8e</span><br><span class="line">p</span><br><span class="line"></span><br><span class="line">Disk /dev/sda: 85.9 GB, 85899345920 bytes, 167772160 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line">Disk label type: dos</span><br><span class="line">Disk identifier: 0x0000ca5e</span><br><span class="line"></span><br><span class="line">   Device Boot      Start         End      Blocks   Id  System</span><br><span class="line">/dev/sda1   *        2048     1026047      512000   83  Linux</span><br><span class="line">/dev/sda2         1026048    20479999     9726976   8e  Linux LVM</span><br><span class="line">/dev/sda3        20480000   167772159    73646080   8e  Linux LVM</span><br><span class="line"></span><br><span class="line"># 输入w后进行保存操作</span><br><span class="line">Command (m for help): w</span><br><span class="line">The partition table has been altered!</span><br><span class="line"></span><br><span class="line">Calling ioctl() to re-read partition table.</span><br><span class="line"></span><br><span class="line">WARNING: Re-reading the partition table failed with error 16: Device or resource busy.</span><br><span class="line">The kernel still uses the old table. The new table will be used at</span><br><span class="line">the next reboot or after you run partprobe(8) or kpartx(8)</span><br><span class="line">Syncing disks.</span><br></pre></td></tr></table></figure>
+
+<h2 id="将新创建的磁盘分区添加到LVM分区中"><a href="#将新创建的磁盘分区添加到LVM分区中" class="headerlink" title="将新创建的磁盘分区添加到LVM分区中"></a>将新创建的磁盘分区添加到LVM分区中</h2><p>将机器重启后，继续执行如下命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># vgdisplay</span><br><span class="line">  --- Volume group ---</span><br><span class="line">  VG Name               centos</span><br><span class="line">  System ID</span><br><span class="line">  Format                lvm2</span><br><span class="line">  Metadata Areas        1</span><br><span class="line">  Metadata Sequence No  3</span><br><span class="line">  VG Access             read/write</span><br><span class="line">  VG Status             resizable</span><br><span class="line">  MAX LV                0</span><br><span class="line">  Cur LV                2</span><br><span class="line">  Open LV               2</span><br><span class="line">  Max PV                0</span><br><span class="line">  Cur PV                1</span><br><span class="line">  Act PV                1</span><br><span class="line">  VG Size               9.27 GiB</span><br><span class="line">  PE Size               4.00 MiB</span><br><span class="line">  Total PE              2374</span><br><span class="line">  Alloc PE / Size       2364 / 9.23 GiB</span><br><span class="line">  Free  PE / Size       10 / 40.00 MiB</span><br><span class="line">  VG UUID               cpEmYK-XFew-6ZWT-GEeY-yEou-0vLq-OJiD08</span><br><span class="line"></span><br><span class="line"># lvscan</span><br><span class="line">  ACTIVE            &#x27;/dev/centos/swap&#x27; [1000.00 MiB] inherit</span><br><span class="line">  ACTIVE            &#x27;/dev/centos/root&#x27; [&lt;8.26 GiB] inherit</span><br><span class="line"></span><br><span class="line"># pvcreate /dev/sda3</span><br><span class="line">  Physical volume &quot;/dev/sda3&quot; successfully created.</span><br><span class="line"></span><br><span class="line"># vgextend centos /dev/sda3</span><br><span class="line">  Volume group &quot;centos&quot; successfully extended</span><br><span class="line"></span><br><span class="line"># lvextend /dev/centos/root /dev/sda3</span><br><span class="line">  Size of logical volume centos/root changed from &lt;8.26 GiB (2114 extents) to &lt;78.49 GiB (20093 extents).</span><br><span class="line">  Logical volume centos/root successfully resized.</span><br><span class="line"></span><br><span class="line"># xfs_growfs /dev/centos/root</span><br><span class="line">meta-data=/dev/mapper/centos-root isize=256    agcount=4, agsize=541184 blks</span><br><span class="line">         =                       sectsz=512   attr=2, projid32bit=1</span><br><span class="line">         =                       crc=0        finobt=0 spinodes=0</span><br><span class="line">data     =                       bsize=4096   blocks=2164736, imaxpct=25</span><br><span class="line">         =                       sunit=0      swidth=0 blks</span><br><span class="line">naming   =version 2              bsize=4096   ascii-ci=0 ftype=0</span><br><span class="line">log      =internal               bsize=4096   blocks=2560, version=2</span><br><span class="line">         =                       sectsz=512   sunit=0 blks, lazy-count=1</span><br><span class="line">realtime =none                   extsz=4096   blocks=0, rtextents=0</span><br><span class="line">data blocks changed from 2164736 to 20575232</span><br><span class="line"></span><br><span class="line"># 最后执行命令可以看到磁盘空间已经增加</span><br><span class="line"># df -h</span><br><span class="line">Filesystem               Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/mapper/centos-root   79G  7.9G   71G  11% /</span><br><span class="line">devtmpfs                 296M     0  296M   0% /dev</span><br><span class="line">tmpfs                    307M     0  307M   0% /dev/shm</span><br><span class="line">tmpfs                    307M  4.5M  303M   2% /run</span><br><span class="line">tmpfs                    307M     0  307M   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda1                497M  195M  303M  40% /boot</span><br><span class="line">vagrant                  466G  390G   77G  84% /vagrant</span><br><span class="line">vagrant_data             466G  390G   77G  84% /vagrant_data</span><br><span class="line">tmpfs                     62M     0   62M   0% /run/user/1000</span><br></pre></td></tr></table></figure>
+
+]]></content>
+  </entry>
+  <entry>
+    <title>脆弱的生命</title>
+    <url>/post/weak_life/</url>
+    <content><![CDATA[<p><img src="/ref/life/weak_life.JPG" alt="Image Title"></p>
+<p>得知老家三老爷家的三叔去世了，原本还在看代码的我收到消息之后立刻无法平静了，只好出去走走散散心，回家之后依然感觉莫名的胸闷，玩游戏分散分散精力，游戏过后依然胸闷。意料之中的失眠，中途醒了好几次。总感觉消息不是真实的，总感觉昨晚在梦中，真希望一觉醒来之后什么都没有发生。</p>
+<p>三叔42岁，正值壮年，在家附近的号称有一万员工的炼钢厂打工，在整个市也算是很大的企业了。工作中意外丧命。总觉得这样的事情不会发生在我身边，客观事实是发生了。</p>
+<p>听家人说，三叔小时候调皮爬到树上掏鸟窝从树上掉下来把一个肩膀都磕到身体里了，大家都觉得肯定好不了，在镇上医院住院打吊瓶打够了自己偷偷跑回学校，后来居然奇迹般的好了，而且还没留下任何痕迹。大家都说三叔命大，谁知三叔小时候躲过了一劫却没有躲过这一劫，这难道就是天命？三叔一生勤俭节约，人忠厚老实，到头来却落得如此下场，谁说上帝是公平的，谁说好人有好报，这都是胡扯。</p>
+<p>临近三叔出事的前天，我做了一个很不好的梦，梦的内容我已经记不起来了。回家后听家里人说很多人都做了不好的梦，甚至连平常不怎么做梦的都会被梦惊醒。这绝对不是巧合，很明显已经超出了当前科学的范畴。</p>
+<p>记得最后一次跟三叔接触还是在过年的时候，三叔到我家来转转，聊了几句，现在还记忆犹新。再上一次见面就是在去年夏天的一个下午，约着三婶去火车站接三叔家的弟弟和我爸，正巧在三叔家的门口碰到三叔，估计是要去上夜班。</p>
+<p>每年过年我们一大家20多人就会团聚在一起，男人一桌，女人一桌，还有我们小孩一桌，其乐融融。最近两年过年三叔是唯一缺席的，由于工作的原因，三叔正巧在过年的时候上夜班。总觉得少了三叔过年的时候是个遗憾，现在看来以后过年要永远遗憾下去了。</p>
+<p>企业在追求经济效益的同时，往往会忽略员工的安全。员工伤亡事件屡见不鲜，却很难得到企业的重视。相比人类的伤亡，企业的经济效益显得那么苍白无力。听说钢厂每年总会出些事故，但是事故的赔偿是从所有员工的工资中扣除的，而不是工厂承担，这也是工厂对安全问题不够重视的原因，反正出了事掉血的是员工。</p>
+<p>现在村中的人大部分出去在外面打工，农忙时回家忙几天。在此提醒相亲们一定要注意人身安全，没有了安全保障赚再多的钱都白搭。</p>
+<p>谨以此文献给为工作而献身的三叔。</p>
+]]></content>
+  </entry>
+  <entry>
     <title>vim插件安装</title>
     <url>/post/vim_plugin/</url>
     <content><![CDATA[<p>本文的安装环境为ubuntu13.04。为了以后便于查阅，本文将相关插件的使用放到了文章的开始部分。这里不作插件的相关介绍，相关介绍看文章底部的参考文章。</p>
@@ -10001,40 +10045,6 @@ helm fetch lofts/vcluster
       </tags>
   </entry>
   <entry>
-    <title>VirtualBox磁盘扩容</title>
-    <url>/post/virtualbox-scaleup/</url>
-    <content><![CDATA[<p>今天发现vagrant的其中一个虚拟机磁盘空间不够了，需要对其进行磁盘扩容，但不期望是通过增加新硬盘的方式，而是直接增加原磁盘容量的方式来无缝扩容。</p>
-<h2 id="修改磁盘文件"><a href="#修改磁盘文件" class="headerlink" title="修改磁盘文件"></a>修改磁盘文件</h2><p>进入到vm磁盘文件所在的目录<code>~/VirtualBox VMs/dev_default_1531796361866_92956</code>下</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">% vboxmanage showhdinfo  centos-vm-disk1.vmdk</span><br><span class="line">UUID:           acbb4ffc-0580-40d6-8627-3ed24cd0beff</span><br><span class="line">Parent UUID:    base</span><br><span class="line">State:          created</span><br><span class="line">Type:           normal (base)</span><br><span class="line">Location:       /Users/lvkai/VirtualBox VMs/dev_default_1531796361866_92956/centos-vm-disk1.vmdk</span><br><span class="line">Storage format: VMDK</span><br><span class="line">Format variant: dynamic default</span><br><span class="line">Capacity:       10000 MBytes</span><br><span class="line">Size on disk:   9634 MBytes</span><br><span class="line">Encryption:     disabled</span><br><span class="line">In use by VMs:  dev_default_1531796361866_92956 (UUID: a153957c-e43f-4dd2-8512-f51d42dee3d3)</span><br><span class="line"></span><br><span class="line"># 将之前存储的vmdk格式的文件复制一份vdi格式的文件，由于需要复制文件，该命令需要执行一段时间</span><br><span class="line">% vboxmanage clonehd centos-vm-disk1.vmdk new-centos-vm-disk1.vdi --format vdi</span><br><span class="line"></span><br><span class="line"># 将vdi格式的文件修改磁盘空间上限大小为80g，但实际占用磁盘空间仍然为之前的大小</span><br><span class="line">% vboxmanage modifyhd  new-centos-vm-disk1.vdi --resize 81920</span><br><span class="line"></span><br><span class="line"># 将vdi格式的文件重新转换为vmdk格式，会产生一个新的uuid</span><br><span class="line">% vboxmanage clonehd new-centos-vm-disk1.vdi resized.vmdk --format vmdk</span><br><span class="line">0%...10%...20%...30%...40%...50%...60%...70%...80%...90%...100%</span><br><span class="line">Clone medium created in format &#x27;vmdk&#x27;. UUID: 7e454b50-0681-494b-b9ca-81700d217c0a</span><br></pre></td></tr></table></figure>
-
-<p>新的硬盘创建完成后，在virtualbox的界面上将对应虚拟机的硬盘更换为resized.vmdk，并将之前旧的centos-vm-disk1.vmdk给删除掉。</p>
-<h2 id="使用fdisk创建新的磁盘分区"><a href="#使用fdisk创建新的磁盘分区" class="headerlink" title="使用fdisk创建新的磁盘分区"></a>使用fdisk创建新的磁盘分区</h2><p>以上命令执行完成后，开启虚拟机，进入系统，可以看到磁盘空间大小变更为85.9GB，但挂载的磁盘空间大小仍然为8.3G，新增加的磁盘空间仍然处于未分配状态。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># fdisk -l</span><br><span class="line"></span><br><span class="line">Disk /dev/sda: 85.9 GB, 85899345920 bytes, 167772160 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line">Disk label type: dos</span><br><span class="line">Disk identifier: 0x0000ca5e</span><br><span class="line"></span><br><span class="line">   Device Boot      Start         End      Blocks   Id  System</span><br><span class="line">/dev/sda1   *        2048     1026047      512000   83  Linux</span><br><span class="line">/dev/sda2         1026048    20479999     9726976   8e  Linux LVM</span><br><span class="line"></span><br><span class="line">Disk /dev/mapper/centos-root: 8866 MB, 8866758656 bytes, 17317888 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Disk /dev/mapper/centos-swap: 1048 MB, 1048576000 bytes, 2048000 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line"></span><br><span class="line"># df -h</span><br><span class="line">Filesystem               Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/mapper/centos-root  8.3G  7.9G  386M  96% /</span><br><span class="line">devtmpfs                 296M     0  296M   0% /dev</span><br><span class="line">tmpfs                    307M     0  307M   0% /dev/shm</span><br><span class="line">tmpfs                    307M  4.5M  303M   2% /run</span><br><span class="line">tmpfs                    307M     0  307M   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda1                497M  195M  303M  40% /boot</span><br><span class="line">vagrant                  466G  390G   77G  84% /vagrant</span><br><span class="line">vagrant_data             466G  390G   77G  84% /vagrant_data</span><br><span class="line">tmpfs                     62M     0   62M   0% /run/user/1000</span><br></pre></td></tr></table></figure>
-
-<p>接下来需要将未分配的磁盘空间</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># fdisk /dev/sda</span><br><span class="line"># 依次输入可创建新的分区</span><br><span class="line">n</span><br><span class="line">p</span><br><span class="line">回车</span><br><span class="line">回车</span><br><span class="line"></span><br><span class="line"># 继续输入p，可以看到磁盘的情况，多出了/dev/sda3</span><br><span class="line"># /dev/sda3的System为Linux，而/dev/sda2的System为Linux LVM</span><br><span class="line">Command (m for help): p</span><br><span class="line"></span><br><span class="line">Disk /dev/sda: 85.9 GB, 85899345920 bytes, 167772160 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line">Disk label type: dos</span><br><span class="line">Disk identifier: 0x0000ca5e</span><br><span class="line"></span><br><span class="line">   Device Boot      Start         End      Blocks   Id  System</span><br><span class="line">/dev/sda1   *        2048     1026047      512000   83  Linux</span><br><span class="line">/dev/sda2         1026048    20479999     9726976   8e  Linux LVM</span><br><span class="line">/dev/sda3        20480000   167772159    73646080   83  Linux</span><br><span class="line"></span><br><span class="line"># 依次输入将/dev/sda3更改为LVM格式</span><br><span class="line">t</span><br><span class="line">3</span><br><span class="line">8e</span><br><span class="line">p</span><br><span class="line"></span><br><span class="line">Disk /dev/sda: 85.9 GB, 85899345920 bytes, 167772160 sectors</span><br><span class="line">Units = sectors of 1 * 512 = 512 bytes</span><br><span class="line">Sector size (logical/physical): 512 bytes / 512 bytes</span><br><span class="line">I/O size (minimum/optimal): 512 bytes / 512 bytes</span><br><span class="line">Disk label type: dos</span><br><span class="line">Disk identifier: 0x0000ca5e</span><br><span class="line"></span><br><span class="line">   Device Boot      Start         End      Blocks   Id  System</span><br><span class="line">/dev/sda1   *        2048     1026047      512000   83  Linux</span><br><span class="line">/dev/sda2         1026048    20479999     9726976   8e  Linux LVM</span><br><span class="line">/dev/sda3        20480000   167772159    73646080   8e  Linux LVM</span><br><span class="line"></span><br><span class="line"># 输入w后进行保存操作</span><br><span class="line">Command (m for help): w</span><br><span class="line">The partition table has been altered!</span><br><span class="line"></span><br><span class="line">Calling ioctl() to re-read partition table.</span><br><span class="line"></span><br><span class="line">WARNING: Re-reading the partition table failed with error 16: Device or resource busy.</span><br><span class="line">The kernel still uses the old table. The new table will be used at</span><br><span class="line">the next reboot or after you run partprobe(8) or kpartx(8)</span><br><span class="line">Syncing disks.</span><br></pre></td></tr></table></figure>
-
-<h2 id="将新创建的磁盘分区添加到LVM分区中"><a href="#将新创建的磁盘分区添加到LVM分区中" class="headerlink" title="将新创建的磁盘分区添加到LVM分区中"></a>将新创建的磁盘分区添加到LVM分区中</h2><p>将机器重启后，继续执行如下命令</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># vgdisplay</span><br><span class="line">  --- Volume group ---</span><br><span class="line">  VG Name               centos</span><br><span class="line">  System ID</span><br><span class="line">  Format                lvm2</span><br><span class="line">  Metadata Areas        1</span><br><span class="line">  Metadata Sequence No  3</span><br><span class="line">  VG Access             read/write</span><br><span class="line">  VG Status             resizable</span><br><span class="line">  MAX LV                0</span><br><span class="line">  Cur LV                2</span><br><span class="line">  Open LV               2</span><br><span class="line">  Max PV                0</span><br><span class="line">  Cur PV                1</span><br><span class="line">  Act PV                1</span><br><span class="line">  VG Size               9.27 GiB</span><br><span class="line">  PE Size               4.00 MiB</span><br><span class="line">  Total PE              2374</span><br><span class="line">  Alloc PE / Size       2364 / 9.23 GiB</span><br><span class="line">  Free  PE / Size       10 / 40.00 MiB</span><br><span class="line">  VG UUID               cpEmYK-XFew-6ZWT-GEeY-yEou-0vLq-OJiD08</span><br><span class="line"></span><br><span class="line"># lvscan</span><br><span class="line">  ACTIVE            &#x27;/dev/centos/swap&#x27; [1000.00 MiB] inherit</span><br><span class="line">  ACTIVE            &#x27;/dev/centos/root&#x27; [&lt;8.26 GiB] inherit</span><br><span class="line"></span><br><span class="line"># pvcreate /dev/sda3</span><br><span class="line">  Physical volume &quot;/dev/sda3&quot; successfully created.</span><br><span class="line"></span><br><span class="line"># vgextend centos /dev/sda3</span><br><span class="line">  Volume group &quot;centos&quot; successfully extended</span><br><span class="line"></span><br><span class="line"># lvextend /dev/centos/root /dev/sda3</span><br><span class="line">  Size of logical volume centos/root changed from &lt;8.26 GiB (2114 extents) to &lt;78.49 GiB (20093 extents).</span><br><span class="line">  Logical volume centos/root successfully resized.</span><br><span class="line"></span><br><span class="line"># xfs_growfs /dev/centos/root</span><br><span class="line">meta-data=/dev/mapper/centos-root isize=256    agcount=4, agsize=541184 blks</span><br><span class="line">         =                       sectsz=512   attr=2, projid32bit=1</span><br><span class="line">         =                       crc=0        finobt=0 spinodes=0</span><br><span class="line">data     =                       bsize=4096   blocks=2164736, imaxpct=25</span><br><span class="line">         =                       sunit=0      swidth=0 blks</span><br><span class="line">naming   =version 2              bsize=4096   ascii-ci=0 ftype=0</span><br><span class="line">log      =internal               bsize=4096   blocks=2560, version=2</span><br><span class="line">         =                       sectsz=512   sunit=0 blks, lazy-count=1</span><br><span class="line">realtime =none                   extsz=4096   blocks=0, rtextents=0</span><br><span class="line">data blocks changed from 2164736 to 20575232</span><br><span class="line"></span><br><span class="line"># 最后执行命令可以看到磁盘空间已经增加</span><br><span class="line"># df -h</span><br><span class="line">Filesystem               Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/mapper/centos-root   79G  7.9G   71G  11% /</span><br><span class="line">devtmpfs                 296M     0  296M   0% /dev</span><br><span class="line">tmpfs                    307M     0  307M   0% /dev/shm</span><br><span class="line">tmpfs                    307M  4.5M  303M   2% /run</span><br><span class="line">tmpfs                    307M     0  307M   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda1                497M  195M  303M  40% /boot</span><br><span class="line">vagrant                  466G  390G   77G  84% /vagrant</span><br><span class="line">vagrant_data             466G  390G   77G  84% /vagrant_data</span><br><span class="line">tmpfs                     62M     0   62M   0% /run/user/1000</span><br></pre></td></tr></table></figure>
-
-]]></content>
-  </entry>
-  <entry>
-    <title>脆弱的生命</title>
-    <url>/post/weak_life/</url>
-    <content><![CDATA[<p><img src="/ref/life/weak_life.JPG" alt="Image Title"></p>
-<p>得知老家三老爷家的三叔去世了，原本还在看代码的我收到消息之后立刻无法平静了，只好出去走走散散心，回家之后依然感觉莫名的胸闷，玩游戏分散分散精力，游戏过后依然胸闷。意料之中的失眠，中途醒了好几次。总感觉消息不是真实的，总感觉昨晚在梦中，真希望一觉醒来之后什么都没有发生。</p>
-<p>三叔42岁，正值壮年，在家附近的号称有一万员工的炼钢厂打工，在整个市也算是很大的企业了。工作中意外丧命。总觉得这样的事情不会发生在我身边，客观事实是发生了。</p>
-<p>听家人说，三叔小时候调皮爬到树上掏鸟窝从树上掉下来把一个肩膀都磕到身体里了，大家都觉得肯定好不了，在镇上医院住院打吊瓶打够了自己偷偷跑回学校，后来居然奇迹般的好了，而且还没留下任何痕迹。大家都说三叔命大，谁知三叔小时候躲过了一劫却没有躲过这一劫，这难道就是天命？三叔一生勤俭节约，人忠厚老实，到头来却落得如此下场，谁说上帝是公平的，谁说好人有好报，这都是胡扯。</p>
-<p>临近三叔出事的前天，我做了一个很不好的梦，梦的内容我已经记不起来了。回家后听家里人说很多人都做了不好的梦，甚至连平常不怎么做梦的都会被梦惊醒。这绝对不是巧合，很明显已经超出了当前科学的范畴。</p>
-<p>记得最后一次跟三叔接触还是在过年的时候，三叔到我家来转转，聊了几句，现在还记忆犹新。再上一次见面就是在去年夏天的一个下午，约着三婶去火车站接三叔家的弟弟和我爸，正巧在三叔家的门口碰到三叔，估计是要去上夜班。</p>
-<p>每年过年我们一大家20多人就会团聚在一起，男人一桌，女人一桌，还有我们小孩一桌，其乐融融。最近两年过年三叔是唯一缺席的，由于工作的原因，三叔正巧在过年的时候上夜班。总觉得少了三叔过年的时候是个遗憾，现在看来以后过年要永远遗憾下去了。</p>
-<p>企业在追求经济效益的同时，往往会忽略员工的安全。员工伤亡事件屡见不鲜，却很难得到企业的重视。相比人类的伤亡，企业的经济效益显得那么苍白无力。听说钢厂每年总会出些事故，但是事故的赔偿是从所有员工的工资中扣除的，而不是工厂承担，这也是工厂对安全问题不够重视的原因，反正出了事掉血的是员工。</p>
-<p>现在村中的人大部分出去在外面打工，农忙时回家忙几天。在此提醒相亲们一定要注意人身安全，没有了安全保障赚再多的钱都白搭。</p>
-<p>谨以此文献给为工作而献身的三叔。</p>
-]]></content>
-  </entry>
-  <entry>
     <title>Windows和Linux之间的中文编码问题</title>
     <url>/post/windows_linux_code/</url>
     <content><![CDATA[<p>在开发Linux程序的时候通常会在Windows下编码，然后拿到Linux下编译调试。而两个操作系统之间的默认编码往往有差别。</p>
@@ -10048,19 +10058,6 @@ helm fetch lofts/vcluster
 <p>具体执行操作为：在Linux系统下的要转换编码的目录下执行命令：<code>convmv -f GBk -t UTF-8 --notest -r *</code>，这样就会将该文件夹下的所有文件递归的转换编码为UTF-8。</p>
 <p>convmv的帮助文档点<a href="http://www.j3e.de/linux/convmv/man/">这里</a>。</p>
 <h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a href="http://pan.baidu.com/s/19UbCG">脚本和iconv程序下载链接</a></p>
-]]></content>
-  </entry>
-  <entry>
-    <title>再谈Windows和Linux之间的中文编码问题</title>
-    <url>/post/windows_linux_code_2/</url>
-    <content><![CDATA[<p>上次文章《<a href="http://kuring.me/post/windows_linux_code">Windows和Linux之间的中文编码问题</a>》中提到的在Windows下的源代码程序放到Linux下出现中文编码问题，解决方法为通过iconv工具转换源代码文件的编码为UTF8格式。最近多学习了些字符编码的知识，发现了解决此问题的另外一种办法。</p>
-<h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><p>我们在编译程序的时候会涉及到几个编码问题，包括C++源文件的编码、C++程序的内码和运行环境编码，其中C++程序的内码较难理解。</p>
-<p>C++程序的内码是指在可执行文件中字符串常量是以什么编码形式存放的，其中字符串常量为窄字符形式。在Windows系统中C++的内码通常为GB18030，在Linux下的gcc&#x2F;g++使用的内码默认为utf8，可以通过fexec-charset参数来修改。</p>
-<p>运行环境编码即为操作系统的编码，通常情况下，简体中文Windows操作系统编码为GB18030，而Linux下默认为UTF8。</p>
-<h1 id="gcc命令的参数"><a href="#gcc命令的参数" class="headerlink" title="gcc命令的参数"></a>gcc命令的参数</h1><p>gcc有两个参数可以用来解决编码问题。<br>-finput-charset：用来指定源文件的编码。<br>-fexec-charset：用来指定生成的可执行文件的编码。</p>
-<p>如果这两个参数均未指定，则GCC不会对编码进行转换。<br>以上这两个参数就可以用来在不修改源文件编码的基础上来达到正确的效果，达到和上篇文章中解决问题同样的效果。</p>
-<h1 id="关于Unicode编码"><a href="#关于Unicode编码" class="headerlink" title="关于Unicode编码"></a>关于Unicode编码</h1><p>一直对Unicode编码比较糊涂，Unicode只是编码方法规范，而不是具体的存储方法。<br>常用的Unicode又分为UCS-2和UCS-两种编码，其中UCS-2采用固定的2个字节存储，UCS-4采用固定的4个字节存储。<br>通常情况下提到的Unicode编码即为UCS-2编码，比如Windows记事本中的保存为Unicode编码，其实就是保存为了UCS-2编码，由于每个字符均为2个字节，所以下次读取的时候仍然可以通过存储格式还原出来。</p>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a href="http://www.ruanyifeng.com/blog/2007/10/ascii_unicode_and_utf-8.html">字符编码笔记：ASCII，Unicode和UTF-8</a><br><a href="http://www.crifan.com/files/doc/docbook/char_encoding/release/html/char_encoding.html">字符编码详解</a><br><a href="http://www.vip-tarena.com/C__peixun/876.html">关于c++的一些编码问题</a></p>
 ]]></content>
   </entry>
   <entry>
@@ -10154,6 +10151,19 @@ helm fetch lofts/vcluster
 <p>三. 执行<code>xrandr --newmode &quot;1600x900_60.00&quot;  118.25  1600 1696 1856 2112  900 903 908 934 -hsync +vsync</code>命令，该命令中的参数是参考步骤2中的输出信息。</p>
 <p>四. 执行<code>xrandr --addmode VBOX0 1600x900_60.00</code>来向系统分辨率组中添加分辨率1600*900。其中VBOX0为步骤1获取的显示器名字，1600x900_60.00为步骤3添加的分辨率模式。</p>
 <p>五. 执行<code>xrandr --output VBOX0 1600x900_60.00</code>来应用刚才添加的分辨率。这样屏幕就可以更改为正确的分辨率了。</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>再谈Windows和Linux之间的中文编码问题</title>
+    <url>/post/windows_linux_code_2/</url>
+    <content><![CDATA[<p>上次文章《<a href="http://kuring.me/post/windows_linux_code">Windows和Linux之间的中文编码问题</a>》中提到的在Windows下的源代码程序放到Linux下出现中文编码问题，解决方法为通过iconv工具转换源代码文件的编码为UTF8格式。最近多学习了些字符编码的知识，发现了解决此问题的另外一种办法。</p>
+<h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><p>我们在编译程序的时候会涉及到几个编码问题，包括C++源文件的编码、C++程序的内码和运行环境编码，其中C++程序的内码较难理解。</p>
+<p>C++程序的内码是指在可执行文件中字符串常量是以什么编码形式存放的，其中字符串常量为窄字符形式。在Windows系统中C++的内码通常为GB18030，在Linux下的gcc&#x2F;g++使用的内码默认为utf8，可以通过fexec-charset参数来修改。</p>
+<p>运行环境编码即为操作系统的编码，通常情况下，简体中文Windows操作系统编码为GB18030，而Linux下默认为UTF8。</p>
+<h1 id="gcc命令的参数"><a href="#gcc命令的参数" class="headerlink" title="gcc命令的参数"></a>gcc命令的参数</h1><p>gcc有两个参数可以用来解决编码问题。<br>-finput-charset：用来指定源文件的编码。<br>-fexec-charset：用来指定生成的可执行文件的编码。</p>
+<p>如果这两个参数均未指定，则GCC不会对编码进行转换。<br>以上这两个参数就可以用来在不修改源文件编码的基础上来达到正确的效果，达到和上篇文章中解决问题同样的效果。</p>
+<h1 id="关于Unicode编码"><a href="#关于Unicode编码" class="headerlink" title="关于Unicode编码"></a>关于Unicode编码</h1><p>一直对Unicode编码比较糊涂，Unicode只是编码方法规范，而不是具体的存储方法。<br>常用的Unicode又分为UCS-2和UCS-两种编码，其中UCS-2采用固定的2个字节存储，UCS-4采用固定的4个字节存储。<br>通常情况下提到的Unicode编码即为UCS-2编码，比如Windows记事本中的保存为Unicode编码，其实就是保存为了UCS-2编码，由于每个字符均为2个字节，所以下次读取的时候仍然可以通过存储格式还原出来。</p>
+<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a href="http://www.ruanyifeng.com/blog/2007/10/ascii_unicode_and_utf-8.html">字符编码笔记：ASCII，Unicode和UTF-8</a><br><a href="http://www.crifan.com/files/doc/docbook/char_encoding/release/html/char_encoding.html">字符编码详解</a><br><a href="http://www.vip-tarena.com/C__peixun/876.html">关于c++的一些编码问题</a></p>
 ]]></content>
   </entry>
   <entry>
