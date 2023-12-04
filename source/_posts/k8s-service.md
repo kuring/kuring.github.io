@@ -55,16 +55,39 @@ coredns controller 需要 watch k8s 集群中的 pod 和 service，将其进行�
     }
 ```
 
-其中 cluster.local 为对应的配置。
+其中 cluster.local 为对应的 k8s zone。
 
 
 ## Pod 域名注册
 
+规则一：
+
 每个 k8s pod 都会创建 DNS 记录： `<pod_ip>.<namespace>.pod.<cluster-domain>`。其中 <pod_ip> 为 pod ip 地址，但需要将 ip 地址中的 `.` 转换为 `-`。
+
+比如 pod nginx-deployment-57d84f57dc-cpgkc 会创建 A 记录 `10-244-3-8.default.pod.cluster.local`
+
+```
+$ kubectl get pod -o wide nginx-deployment-57d84f57dc-cpgkc -o wide
+NAME                                READY   STATUS    RESTARTS   AGE     IP           NODE         NOMINATED NODE   READINESS GATES
+nginx-deployment-57d84f57dc-cpgkc   1/1     Running   0          2m59s   10.244.3.8   vc-worker2   <none>           <none>
+```
+
+规则二：
+
+pod 如何同时指定了 `spec.hostname` 和 `spec.subdomain`，则会创建 A 记录：`<hostname>.<subdomain>.<namespace>.svc.cluster.local`，而不是 `<pod_ip>.<namespace>.pod.<cluster-domain>`。对于 Statefulset 类型的 pod 会自动设置 `spec.hostname` 为 pod 的名字，`spec.subdomain` 为 StatefulSet 的 `spec.serviceName`。
+
+比如 pod nginx-statefulset-0 会创建 A 记录 `nginx-statefulset-0.nginx.default.svc.cluster.local`。
+
+```
+$ kubectl get pod nginx-statefulset-0 -o wide
+NAME                  READY   STATUS    RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES
+nginx-statefulset-0   1/1     Running   0          62m   10.244.3.7   vc-worker2   <none>           <none>
+```
+
+### Deployment/DaemonSet 管理的 pod
 
 使用 Deployment/DaemonSet 拉起的 pod，k8s 会创建额外的 DNS 记录：`<pod_ip>.<deployment-name/daemonset-name>.<namespace>.svc.<cluster-domain>`。
 
-如果 pod 设置了 `spec.hostname`
 
 ## Service 域名注册
 
@@ -143,7 +166,7 @@ Headless Service 按照是否配置了 `spec.selector` 在实现上又有不同�
 
 # 域名查询
 
-
+待补充
 
 # 资料
 

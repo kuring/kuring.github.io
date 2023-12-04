@@ -100,10 +100,16 @@ kubectl get cm -n kube-system  networkpolicy-config -o jsonpath='{.data.config\.
 kubectl create --save-config cm  networkpolicy-config -n kube-system --from-file /tmp/config.yaml -o yaml --dry-run | kubectl apply -f -
 ```
 
-
-
 ## 9. 删除所有 pod（或特定状态 pod）
 
 ```
 kubectl get pods --all-namespaces -o wide --no-headers | grep -v Running | awk '{print $1 " " $2}' | while read AA BB; do kubectl get pod -n $AA $BB --no-headers; done
+```
+
+## 10. kubectl debug
+
+常用于网络问题排查，其中镜像 netshoot 中包含了丰富的网络命令。
+
+```
+kubectl exec -it nginx-statefulset-0 bash
 ```
