@@ -1,18 +1,14 @@
-title: k8s 内部 dns 规范
+title: k8s 集群内 dns 规范
 date: 2023-09-12 12:05:42
 tags:
 author:
 ---
 
-# 域名注册
-
-在 k8s 中，Service 和 Pod 对象会创建 DNS 记录，用于 k8s 集群内部的域名解析。
-
-## zone 设置
+# zone 设置
 
 DNS 记录的 zone 信息为全局配置，配置地方包括 kubelet 和 coredns 两部分。
 
-### kubelet 的启动参数
+## kubelet 的启动参数
 
 1. 通过 kubelet 的 yaml 配置文件的 clusterDomain 字段。
 2. 通过 kubelet 的参数 `--cluster-domain`。
@@ -27,7 +23,7 @@ options ndots:5 single-request-reopen
 
 其中 search 域中的 cluster.local 为 kubelet 的配置。
 
-### coredns 的配置文件
+## coredns 的配置文件
 
 coredns controller 需要 watch k8s 集群中的 pod 和 service，将其进行注册，因此 coredns 需要知道集群的 zone 配置。该配置信息位于 coredns 的配置文件 ConfigMap kube-system/coredns 中，默认的配置如下：
 
@@ -57,6 +53,9 @@ coredns controller 需要 watch k8s 集群中的 pod 和 service，将其进行�
 
 其中 cluster.local 为对应的 k8s zone。
 
+# 域名注册
+
+在 k8s 中，Service 和 Pod 对象会创建 DNS 记录，用于 k8s 集群内部的域名解析。
 
 ## Pod 域名注册
 

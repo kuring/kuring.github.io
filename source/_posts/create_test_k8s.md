@@ -76,7 +76,7 @@ tar zvxf /tmp/fzf-0.29.0-llinux_amd64.tar.gz -C /tmp/
 mv /tmp/fzf /usr/local/bin/
 
 # 安装kind
-curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
 chmod +x ./kind
 mv ./kind /usr/local/bin/
 echo -e "\n# kind" >> ~/.bash_profile
