@@ -19,15 +19,15 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.18.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="域名注册在 k8s 中，Service 和 Pod 对象会创建 DNS 记录，用于 k8s 集群内部的域名解析。 zone 设置DNS 记录的 zone 信息为全局配置，配置地方包括 kubelet 和 coredns 两部分。 kubelet 的启动参数 通过 kubelet 的 yaml 配置文件的 clusterDomain 字段。 通过 kubelet 的参数 --cluster-doma">
+    <meta name="description" content="zone 设置DNS 记录的 zone 信息为全局配置，配置地方包括 kubelet 和 coredns 两部分。 kubelet 的启动参数 通过 kubelet 的 yaml 配置文件的 clusterDomain 字段。 通过 kubelet 的参数 --cluster-domain。  设置了 kubelet 的启动参数后，会设置容器的 &#x2F;etc&#x2F;resolv.conf">
 <meta property="og:type" content="article">
-<meta property="og:title" content="k8s 内部 dns 规范">
+<meta property="og:title" content="k8s 集群内 dns 规范">
 <meta property="og:url" content="http://kuring.me/post/k8s-service/index.html">
 <meta property="og:site_name" content="404频道">
-<meta property="og:description" content="域名注册在 k8s 中，Service 和 Pod 对象会创建 DNS 记录，用于 k8s 集群内部的域名解析。 zone 设置DNS 记录的 zone 信息为全局配置，配置地方包括 kubelet 和 coredns 两部分。 kubelet 的启动参数 通过 kubelet 的 yaml 配置文件的 clusterDomain 字段。 通过 kubelet 的参数 --cluster-doma">
+<meta property="og:description" content="zone 设置DNS 记录的 zone 信息为全局配置，配置地方包括 kubelet 和 coredns 两部分。 kubelet 的启动参数 通过 kubelet 的 yaml 配置文件的 clusterDomain 字段。 通过 kubelet 的参数 --cluster-domain。  设置了 kubelet 的启动参数后，会设置容器的 &#x2F;etc&#x2F;resolv.conf">
 <meta property="og:locale">
 <meta property="article:published_time" content="2023-09-12T12:05:42.000Z">
-<meta property="article:modified_time" content="2023-12-04T08:16:01.005Z">
+<meta property="article:modified_time" content="2023-12-06T03:16:26.226Z">
 <meta name="twitter:card" content="summary">
 
 
@@ -35,10 +35,10 @@
 
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/k8s-service/","path":"post/k8s-service/","title":"k8s 内部 dns 规范"}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/k8s-service/","path":"post/k8s-service/","title":"k8s 集群内 dns 规范"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>k8s 内部 dns 规范 | 404频道</title>
+<title>k8s 集群内 dns 规范 | 404频道</title>
   
 
 
@@ -138,7 +138,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%9F%E5%90%8D%E6%B3%A8%E5%86%8C"><span class="nav-number">1.</span> <span class="nav-text">域名注册</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#zone-%E8%AE%BE%E7%BD%AE"><span class="nav-number">1.1.</span> <span class="nav-text">zone 设置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kubelet-%E7%9A%84%E5%90%AF%E5%8A%A8%E5%8F%82%E6%95%B0"><span class="nav-number">1.1.1.</span> <span class="nav-text">kubelet 的启动参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#coredns-%E7%9A%84%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">1.1.2.</span> <span class="nav-text">coredns 的配置文件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pod-%E5%9F%9F%E5%90%8D%E6%B3%A8%E5%86%8C"><span class="nav-number">1.2.</span> <span class="nav-text">Pod 域名注册</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Deployment-x2F-DaemonSet-%E7%AE%A1%E7%90%86%E7%9A%84-pod"><span class="nav-number">1.2.1.</span> <span class="nav-text">Deployment&#x2F;DaemonSet 管理的 pod</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Service-%E5%9F%9F%E5%90%8D%E6%B3%A8%E5%86%8C"><span class="nav-number">1.3.</span> <span class="nav-text">Service 域名注册</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%99%AE%E9%80%9A-Service"><span class="nav-number">1.3.1.</span> <span class="nav-text">普通 Service</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ExternalName-Service"><span class="nav-number">1.3.2.</span> <span class="nav-text">ExternalName Service</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#externalIPs-%E5%AD%97%E6%AE%B5"><span class="nav-number">1.3.3.</span> <span class="nav-text">externalIPs 字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Headless-Service"><span class="nav-number">1.3.4.</span> <span class="nav-text">Headless Service</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%9F%E5%90%8D%E6%9F%A5%E8%AF%A2"><span class="nav-number">2.</span> <span class="nav-text">域名查询</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B5%84%E6%96%99"><span class="nav-number">3.</span> <span class="nav-text">资料</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#zone-%E8%AE%BE%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">zone 设置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#kubelet-%E7%9A%84%E5%90%AF%E5%8A%A8%E5%8F%82%E6%95%B0"><span class="nav-number">1.1.</span> <span class="nav-text">kubelet 的启动参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#coredns-%E7%9A%84%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">1.2.</span> <span class="nav-text">coredns 的配置文件</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%9F%E5%90%8D%E6%B3%A8%E5%86%8C"><span class="nav-number">2.</span> <span class="nav-text">域名注册</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Pod-%E5%9F%9F%E5%90%8D%E6%B3%A8%E5%86%8C"><span class="nav-number">2.1.</span> <span class="nav-text">Pod 域名注册</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Deployment-x2F-DaemonSet-%E7%AE%A1%E7%90%86%E7%9A%84-pod"><span class="nav-number">2.1.1.</span> <span class="nav-text">Deployment&#x2F;DaemonSet 管理的 pod</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Service-%E5%9F%9F%E5%90%8D%E6%B3%A8%E5%86%8C"><span class="nav-number">2.2.</span> <span class="nav-text">Service 域名注册</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%99%AE%E9%80%9A-Service"><span class="nav-number">2.2.1.</span> <span class="nav-text">普通 Service</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ExternalName-Service"><span class="nav-number">2.2.2.</span> <span class="nav-text">ExternalName Service</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#externalIPs-%E5%AD%97%E6%AE%B5"><span class="nav-number">2.2.3.</span> <span class="nav-text">externalIPs 字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Headless-Service"><span class="nav-number">2.2.4.</span> <span class="nav-text">Headless Service</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%9F%E5%90%8D%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.</span> <span class="nav-text">域名查询</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B5%84%E6%96%99"><span class="nav-number">4.</span> <span class="nav-text">资料</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -202,12 +202,12 @@
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="k8s 内部 dns 规范 | 404频道">
+      <meta itemprop="name" content="k8s 集群内 dns 规范 | 404频道">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          k8s 内部 dns 规范
+          k8s 集群内 dns 规范
         </h1>
 
         <div class="post-meta-container">
@@ -225,7 +225,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2023-12-04 08:16:01" itemprop="dateModified" datetime="2023-12-04T08:16:01+00:00">2023-12-04</time>
+      <time title="Modified: 2023-12-06 03:16:26" itemprop="dateModified" datetime="2023-12-06T03:16:26+00:00">2023-12-06</time>
     </span>
 
   
@@ -237,9 +237,8 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="域名注册"><a href="#域名注册" class="headerlink" title="域名注册"></a>域名注册</h1><p>在 k8s 中，Service 和 Pod 对象会创建 DNS 记录，用于 k8s 集群内部的域名解析。</p>
-<h2 id="zone-设置"><a href="#zone-设置" class="headerlink" title="zone 设置"></a>zone 设置</h2><p>DNS 记录的 zone 信息为全局配置，配置地方包括 kubelet 和 coredns 两部分。</p>
-<h3 id="kubelet-的启动参数"><a href="#kubelet-的启动参数" class="headerlink" title="kubelet 的启动参数"></a>kubelet 的启动参数</h3><ol>
+    <div class="post-body" itemprop="articleBody"><h1 id="zone-设置"><a href="#zone-设置" class="headerlink" title="zone 设置"></a>zone 设置</h1><p>DNS 记录的 zone 信息为全局配置，配置地方包括 kubelet 和 coredns 两部分。</p>
+<h2 id="kubelet-的启动参数"><a href="#kubelet-的启动参数" class="headerlink" title="kubelet 的启动参数"></a>kubelet 的启动参数</h2><ol>
 <li>通过 kubelet 的 yaml 配置文件的 clusterDomain 字段。</li>
 <li>通过 kubelet 的参数 <code>--cluster-domain</code>。</li>
 </ol>
@@ -247,10 +246,11 @@
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">search default.svc.cluster.local svc.cluster.local cluster.local tbsite.net</span><br><span class="line">nameserver 10.181.48.10</span><br><span class="line">options ndots:5 single-request-reopen</span><br></pre></td></tr></table></figure>
 
 <p>其中 search 域中的 cluster.local 为 kubelet 的配置。</p>
-<h3 id="coredns-的配置文件"><a href="#coredns-的配置文件" class="headerlink" title="coredns 的配置文件"></a>coredns 的配置文件</h3><p>coredns controller 需要 watch k8s 集群中的 pod 和 service，将其进行注册，因此 coredns 需要知道集群的 zone 配置。该配置信息位于 coredns 的配置文件 ConfigMap kube-system&#x2F;coredns 中，默认的配置如下：</p>
+<h2 id="coredns-的配置文件"><a href="#coredns-的配置文件" class="headerlink" title="coredns 的配置文件"></a>coredns 的配置文件</h2><p>coredns controller 需要 watch k8s 集群中的 pod 和 service，将其进行注册，因此 coredns 需要知道集群的 zone 配置。该配置信息位于 coredns 的配置文件 ConfigMap kube-system&#x2F;coredns 中，默认的配置如下：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">Corefile: |</span><br><span class="line">  .:53 &#123;</span><br><span class="line">      errors</span><br><span class="line">      health &#123;</span><br><span class="line">         lameduck 5s</span><br><span class="line">      &#125;</span><br><span class="line">      ready</span><br><span class="line">      kubernetes cluster.local in-addr.arpa ip6.arpa &#123;</span><br><span class="line">         pods insecure</span><br><span class="line">         fallthrough in-addr.arpa ip6.arpa</span><br><span class="line">         ttl 30</span><br><span class="line">      &#125;</span><br><span class="line">      prometheus :9153</span><br><span class="line">      forward . /etc/resolv.conf &#123;</span><br><span class="line">         max_concurrent 1000</span><br><span class="line">      &#125;</span><br><span class="line">      cache 30</span><br><span class="line">      loop</span><br><span class="line">      reload</span><br><span class="line">      loadbalance</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 
 <p>其中 cluster.local 为对应的 k8s zone。</p>
+<h1 id="域名注册"><a href="#域名注册" class="headerlink" title="域名注册"></a>域名注册</h1><p>在 k8s 中，Service 和 Pod 对象会创建 DNS 记录，用于 k8s 集群内部的域名解析。</p>
 <h2 id="Pod-域名注册"><a href="#Pod-域名注册" class="headerlink" title="Pod 域名注册"></a>Pod 域名注册</h2><p>规则一：</p>
 <p>每个 k8s pod 都会创建 DNS 记录： <code>&lt;pod_ip&gt;.&lt;namespace&gt;.pod.&lt;cluster-domain&gt;</code>。其中 <pod_ip> 为 pod ip 地址，但需要将 ip 地址中的 <code>.</code> 转换为 <code>-</code>。</p>
 <p>比如 pod nginx-deployment-57d84f57dc-cpgkc 会创建 A 记录 <code>10-244-3-8.default.pod.cluster.local</code></p>
