@@ -1,14 +1,26 @@
----
 title: ebpf
+date: 2023-12-08 21:50:33
 tags:
 author:
 ---
-
 ## 相关术语
 
-1. BCC：BPF 编译器集合，包含了构建 BPF 字节码的编译框架和库，提供了大量的工具。提供了 python、C 语言等接口，
+1. BPF：Berkeley Package Filter，诞生于 1992 年，最早用来提升网络包过滤工具的性能。2014 年，进入内核主干，目前已经变为一个更加通用的执行引擎。扩展后的 BPF 通常称为 eBPF。
+2. BCC：BPF 编译器集合，
+
 
 ## 什么是 eBPF
+
+BPF：Berkeley Package Filter，诞生于 1992 年，最早用来提升网络包过滤工具的性能。2014 年，进入内核主干，目前已经变为一个更加通用的执行引擎。扩展后的 BPF 通常称为 eBPF。
+
+BCC 为用来开发 BPF 程序的高级框架。包含了构建 BPF 字节码的编译框架和库，提供了大量的工具。提供了 python、C 语言等接口。
+
+bpftrace 为另外一个 BPF 工具，适合编写一些脚本工具。
+
+支持 BPF 的工具非常丰富，可以通过下图看到 BPF 丰富程度。
+
+![https://www.brendangregg.com/blog/images/2019/bpf_performance_tools_book.png](https://kuring.oss-cn-beijing.aliyuncs.com/common/bpf-tools.png)
+
 
 ## 环境搭建
 
@@ -183,4 +195,3 @@ while 1:
     except KeyboardInterrupt:
         exit()
 ```
-

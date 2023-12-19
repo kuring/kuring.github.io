@@ -113,3 +113,15 @@ kubectl get pods --all-namespaces -o wide --no-headers | grep -v Running | awk '
 ```
 kubectl exec -it nginx-statefulset-0 bash
 ```
+
+进入到 k8s node 网络，其中 `${node}` 为 k8s 的 node 名字。
+
+```
+kubectl debug node/${node} -it --image=nicolaka/netshoot
+```
+
+## 11. kubectl patch
+
+```
+kubectl patch -p '{"spec":{"filed1": "value1"}}' --type=merge xxx -n yyy
+```
