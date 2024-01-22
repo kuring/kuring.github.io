@@ -125,3 +125,12 @@ kubectl debug node/${node} -it --image=nicolaka/netshoot
 ```
 kubectl patch -p '{"spec":{"filed1": "value1"}}' --type=merge xxx -n yyy
 ```
+
+## 12. 查询对象的 labels
+
+```
+# 查看所有 k8s 节点及其 label
+kubectl get nodes -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.labels.topology\.kubernetes\.io/zone}{"\n"}{end}'
+# 查看单个 k8s 节点的 label
+kubectl  get node c25e04016.cloud.e04.amtest130  -o jsonpath="{.metadata.labels['topology\.kubernetes\.io/zone']}"
+```
