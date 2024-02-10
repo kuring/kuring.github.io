@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">231</span>
+          <span class="site-state-item-count">232</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,138 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/hbase_test/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/hbase_test/" class="post-title-link" itemprop="url">HBase性能测试</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-06-26 00:00:00" itemprop="dateCreated datePublished" datetime="2013-06-26T00:00:00+00:00">2013-06-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>本文选择四台机器作为集群环境，hadoop采用0.20.2，HBase采用0.90.2，zookeeper采用独立安装的3.3.2稳定版。本文所采用的数据均为简单的测试数据，如果插入的数据量大可能会对结果产生影响。集群环境部署情况如下：</p>
+<table>
+<tr>
+    <td>机器名</td>
+    <td>IP地址</td>
+    <td>用途</td>
+    <td>Hadoop模块</td>
+    <td>HBase模块</td>
+    <td>ZooKeeper模块</td>
+</tr>
+<tr>
+    <td>server206</td>
+    <td>192.168.20.6</td>
+    <td>Master</td>
+    <td>NameNode、JobTracker、SecondaryNameNode</td>
+    <td>HMaster</td>
+    <td>QuorumPeerMain</td>
+</tr>
+<tr>
+    <td>ap1</td>
+    <td>192.168.20.36</td>
+    <td>Slave</td>
+    <td>DataNode、TaskTracker</td>
+    <td>HRegionServer</td>
+    <td>QuorumPeerMain</td>
+</tr>
+<tr>
+    <td>ap2</td>
+    <td>192.168.20.38</td>
+    <td>Slave</td>
+    <td>DataNode、TaskTracker</td>
+    <td>HRegionServer</td>
+    <td>QuorumPeerMain</td>
+</tr>
+<tr>
+    <td>ap2</td>
+    <td>192.168.20.8</td>
+    <td>Slave</td>
+    <td>DataNode、TaskTracker</td>
+    <td>HRegionServer</td>
+    <td>QuorumPeerMain</td>
+</tr>
+</table>
+
+<h1 id="单线程插入100万行"><a href="#单线程插入100万行" class="headerlink" title="单线程插入100万行"></a>单线程插入100万行</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br></pre></td><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;1; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 1000000, 1000000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>测试5次的结果分布图如下：<br><img src="/ref/hadoop/hbase_test_1.png" alt="Image Title"><br>其中Y轴单位为毫秒。平均速度在1秒插入3万行记录。</p>
+<h1 id="10个线程每个线程插入10万行"><a href="#10个线程每个线程插入10万行" class="headerlink" title="10个线程每个线程插入10万行"></a>10个线程每个线程插入10万行</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br></pre></td><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;10; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 100000, 100000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>耗时分布图为：<br><img src="/ref/hadoop/hbase_test_2.png" alt="Image Title"><br>结果比单线程插入有提升。</p>
+<h1 id="20个线程每个线程插入5万行"><a href="#20个线程每个线程插入5万行" class="headerlink" title="20个线程每个线程插入5万行"></a>20个线程每个线程插入5万行</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br></pre></td><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;20; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 50000, 50000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>结果如下：<br><img src="/ref/hadoop/hbase_test_3.png" alt="Image Title"><br>执行结果跟10个线程效果差不多。</p>
+<h1 id="10个线程每个线程插入100万行"><a href="#10个线程每个线程插入100万行" class="headerlink" title="10个线程每个线程插入100万行"></a>10个线程每个线程插入100万行</h1><p>代码跟前面例子雷同，为节约篇幅未列出。<br>执行结果如下：<br><img src="/ref/hadoop/hbase_test_4.png" alt="Image Title"></p>
+<h1 id="20个线程每个线程插入50万行"><a href="#20个线程每个线程插入50万行" class="headerlink" title="20个线程每个线程插入50万行"></a>20个线程每个线程插入50万行</h1><p>执行结果如下：<br><img src="/ref/hadoop/hbase_test_5.png" alt="Image Title"></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li>多线程比单线程的插入效率有所提高，开10个线程与开20个线程的插入行效率差不多。</li>
+<li>插入效率存在不稳定情况，通过折线图可以看出。</li>
+</ul>
+<h1 id="相关文章"><a href="#相关文章" class="headerlink" title="相关文章"></a>相关文章</h1><p><a href="/post/hadoop_setup">在Linux上搭建Hadoop集群环境</a><br><a href="/post/hbase_setup">在Linux上搭建HBase集群环境</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +351,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -305,7 +437,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -387,7 +519,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -476,7 +608,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -571,7 +703,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -666,7 +798,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -756,7 +888,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -837,7 +969,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -922,7 +1054,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -945,101 +1077,6 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> *p0 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p0 is : %d\n&quot;</span>, p0);</span><br><span class="line">    </span><br><span class="line">    brk(p0 + <span class="number">1000</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">    </span><br><span class="line">    brk(p0 + <span class="number">1001</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">    </span><br><span class="line">    brk(p0);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>函数输出如下：<br>this site of p0 is : 206979072<br>this site is : 206983072<br>this site is : 206983076<br>this site is : 206979072</p>
 <h1 id="适用场景："><a href="#适用场景：" class="headerlink" title="适用场景："></a>适用场景：</h1><p>内存的管理方式比malloc和free更加灵活，适合申请不确定的内存空间的情况，特别适合同类型的大块数据。如果用malloc则可能存在申请内存空间过多浪费的情况，过少时需要重新调用realloc来重新申请内存的情况。速度比malloc快。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/farbox%E4%B8%8Ejekyll%E5%AF%B9%E6%AF%94/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/farbox%E4%B8%8Ejekyll%E5%AF%B9%E6%AF%94/" class="post-title-link" itemprop="url">farbox与jekyll对比</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-05-31 17:18:00" itemprop="dateCreated datePublished" datetime="2013-05-31T17:18:00+00:00">2013-05-31</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>前端时间折腾了一段时间的Github博客，终于搞明白了jekyll，开始写了一篇博客发现问题比较多。比如中文编码问题，Github对makedown的支持问题，Github的文章同步问题，网速问题。总体而言，感觉用Github来写博客还不是非常满意。</p>
-<p>今天下午偶然想起了前段时间看过faxbox的一篇文章，今天下载下来尝试，果然非常酷。优点如下：</p>
-<ul>
-<li>博客放在了Dropbox不会丢失。<del>当然没有Github酷，Github可以通过版本管理来查看历史版本。</del>貌似Dropbox本身有版本管理的功能。</li>
-<li>写博客的方式简捷。Github的jekyll还需要利用rake命令来创建文章，这样才能保证文章的头部含有YAML标签。而faxbox直接编辑文本文件即可。</li>
-<li>文本编辑器给力。可以通过实时预览功能查看makedown的解析情况，当然也可以通过在线的makedown编辑器<a target="_blank" rel="noopener" href="http://benweet.github.io/stackedit/">stackedit</a>来编写makedown。</li>
-<li>网速比Github快。测试一下感觉网速还比较快。</li>
-<li>可以修改模板，fork模板的方式简捷更酷。</li>
-<li>对中文的支持好。因为本来就是本土化的软件当然对中文全力支持。</li>
-<li>代码语法高亮。测试了一下默认的模板支持语法高亮。</li>
-<li>自带的模板更漂亮。自带的模版虽然不多，但是有说明是适合博客还是相册。</li>
-<li>网站自带网站分析工具。可以通过简单的浏览网页就可以知道网站的访问情况，虽然farbox在访问量达到1W之后要收费，按照目前的价格，但是我个人觉得比较值，希望farbox能够一直坚持做下去。做的好我愿意付费。</li>
-</ul>
-<p>缺点：</p>
-<ul>
-<li><del>经过一下午的了解，暂时没有发现博客可以分类的功能，不过这个功能我暂时可以不需要。以后准备先写些博客在Github和Faxbox上同步更新，以便多比较比较这两种Geek的写博客方式。</del>后来发现是有文章分类功能的，具体操作为将文章放入不同的文件夹中，文件夹的名字即为分类的名字，这种方式比jekyll的YAML语法方式要好用。</li>
-<li>感觉评论功能有点鸡肋。博客还没写完有事工作，准备续写时发现有人留言指正错误，想回复谢谢，发现无法直接回复。用多说代替之，方法为直接将多说的js脚本存入新建的comment_js.md文件中即可，非常简洁。</li>
-<li>Linux下的用户不太方便。由于farbox软件仅有windows版和mac版，dropbox在linux有相应版本，在linux下的用户不能享受到farbox编辑工具带来的方便。相反在linux下结合git和vim来编写博客却比较方便。</li>
-</ul>
-<p>PS：<br>Github博客地址：<a href="kuring.github.com">kuring.github.com</a><br>Fixbox博客地址：<a href="kuring.github.com">kuring.faxbox.com</a></p>
 
       
     </div>

@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">231</span>
+          <span class="site-state-item-count">232</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,90 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_bridge/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux_bridge/" class="post-title-link" itemprop="url">Linux下搭建网桥及脚本编写</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-11-14 00:00:00" itemprop="dateCreated datePublished" datetime="2013-11-14T00:00:00+00:00">2013-11-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>网桥工作在数据链路层，将两个LAN连起来，根据MAC地址来转发帧。Linux下要配置网桥的方法有两种，一种是通过修改配置文件，另外一种是通过brctl工具。修改配置文件的方式是通过修改&#x2F;etc&#x2F;sysconfig&#x2F;network-scripts&#x2F;ifcgg-eth*文件来完成的，这种方式没有仔细研究。本文将编写两个脚本来完成网桥的创建和删除，脚本的功能为将机器上的网卡eth1和eth2桥接，而网桥本身未设置ip。</p>
+<h1 id="网桥创建脚本"><a href="#网桥创建脚本" class="headerlink" title="网桥创建脚本"></a>网桥创建脚本</h1><p>本脚本利用brctl命令将网卡eth1和eth2桥接，可以通过<code>brctl show</code>命令查看结果。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"># 脚本作用为将两个网卡桥接</span><br><span class="line"></span><br><span class="line"># 检测brctl命令是否存在</span><br><span class="line">brctl &gt; /dev/null</span><br><span class="line">if [ $? != 1 ]; then</span><br><span class="line">	echo Command brctl not exist, please setup it. The setup execute command is \&quot;yum install bridge-utils\&quot;</span><br><span class="line">	exit 0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line"># 检测网桥br0是否存在，如果存在首先删除</span><br><span class="line">declare -i result=$(brctl show | grep eth0 | wc -l)</span><br><span class="line">if [ $result &gt; 0 ]; then</span><br><span class="line">	echo detect the bridge br0 have already exist, first delete it	</span><br><span class="line">	ifconfig br0 down</span><br><span class="line">	brctl delbr br0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line">ifconfig eth1 0.0.0.0</span><br><span class="line">ifconfig eth2 0.0.0.0</span><br><span class="line">brctl addbr br0</span><br><span class="line">brctl addif br0 eth1</span><br><span class="line">brctl addif br0 eth2</span><br><span class="line">ifconfig br0 up</span><br><span class="line">echo create bridge br0 success, you can use command : \&quot;brctl show\&quot; to check</span><br></pre></td></tr></table></figure>
+
+<h1 id="网桥删除脚本"><a href="#网桥删除脚本" class="headerlink" title="网桥删除脚本"></a>网桥删除脚本</h1><p>本脚本将桥接网卡br0删除</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"></span><br><span class="line"># 检测是否存在网桥br0</span><br><span class="line">declare -i result=$(brctl show | grep br0 | wc -l)</span><br><span class="line">if [ $result == 0 ]; then</span><br><span class="line">	echo &quot;bridge br0 not exists, exit immediately&quot;</span><br><span class="line">	exit 0</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line"># 删除网桥br0</span><br><span class="line">ifconfig br0 down</span><br><span class="line">brctl delbr br0</span><br><span class="line">echo &quot;delete bridge br0 success&quot;</span><br></pre></td></tr></table></figure>
+
+<h1 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h1><p>brctl命令创建的桥接网卡在机器重启后会删除，最好将创建桥接网卡的命令放入到linux的开机启动脚本中，这样每次开机的时候都可以自动创建桥接网卡了。</p>
+<h1 id="参考网址"><a href="#参考网址" class="headerlink" title="参考网址"></a>参考网址</h1><p><a target="_blank" rel="noopener" href="http://www.linuxfoundation.org/collaborate/workgroups/networking/bridge">bridge命令介绍</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +303,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -296,7 +380,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -388,7 +472,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -471,7 +555,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -553,7 +637,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -639,7 +723,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -747,7 +831,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -827,7 +911,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -915,7 +999,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -936,130 +1020,6 @@
 
 <h1 id="程序二"><a href="#程序二" class="headerlink" title="程序二"></a>程序二</h1><p>该程序的Http协议部分采用Linux的tcp协议api实现，解析网页直接采用搜索字符串的方式实现，较上一种方式要底层，仅能运行在Linux系统下运行。</p>
 <h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/share/link?shareid=1578018382&uk=3506813023">程序一和二的下载链接</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/vim_plugin/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/vim_plugin/" class="post-title-link" itemprop="url">vim插件安装</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-09-02 13:19:16" itemprop="dateCreated datePublished" datetime="2013-09-02T13:19:16+00:00">2013-09-02</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>本文的安装环境为ubuntu13.04。为了以后便于查阅，本文将相关插件的使用放到了文章的开始部分。这里不作插件的相关介绍，相关介绍看文章底部的参考文章。</p>
-<h1 id="插件使用"><a href="#插件使用" class="headerlink" title="插件使用"></a>插件使用</h1><p>本插件快捷键会跟随下文安装内容一块同步。</p>
-<h2 id="ctags"><a href="#ctags" class="headerlink" title="ctags"></a>ctags</h2><p>在源码目录执行<code>ctags -R</code>可生成ctags文件。该文件在源码修改后并不会改变，需要重新生成ctags文件。<br>ctrl+]：转到函数定义处。<br>ctrl+T：回到执行<code>ctrl+]</code>的地方。</p>
-<h2 id="taglist"><a href="#taglist" class="headerlink" title="taglist"></a>taglist</h2><p><code>:TlistOpen</code>：打开taglist窗口<br><code>:TlistClose</code>：关闭taglist窗口。<br><code>:TlistToggle</code>：在打开和关闭间切换。</p>
-<h2 id="NERD-tree"><a href="#NERD-tree" class="headerlink" title="NERD tree"></a>NERD tree</h2><p><code>:NERDTree</code>：打开窗口。</p>
-<h2 id="winmanager"><a href="#winmanager" class="headerlink" title="winmanager"></a>winmanager</h2><p><code>wm</code>：打开和关闭taglist和NERD tree窗口。</p>
-<h2 id="a-vim"><a href="#a-vim" class="headerlink" title="a.vim"></a>a.vim</h2><p><code>:A</code>：在新Buffer中切换到c&#x2F;h文件<br><code>:AS</code>：横向分割窗口并打开c&#x2F;h文件<br><code>:AV</code>：纵向分割窗口并打开c&#x2F;h文件<br><code>:AT</code>：新建一个标签页并打开c&#x2F;h文件<br><code>F12</code>：代替<code>:A</code>命令</p>
-<h2 id="MiniBufExplorer"><a href="#MiniBufExplorer" class="headerlink" title="MiniBufExplorer"></a>MiniBufExplorer</h2><p><code>&lt;Tab&gt;</code>：向前循环切换到每个buffer名上<br><code>&lt;S-Tab&gt;</code>：向后循环切换到每个buffer名上<br><code>&lt;Enter&gt;</code>：在打开光标所在的buffer<br><code>d</code>：删除光标所在的buffer</p>
-<h1 id="插件安装"><a href="#插件安装" class="headerlink" title="插件安装"></a>插件安装</h1><h2 id="安装ctags"><a href="#安装ctags" class="headerlink" title="安装ctags"></a>安装ctags</h2><p>执行： <code>sudo apt-get install ctags</code>。</p>
-<h2 id="安装taglist"><a href="#安装taglist" class="headerlink" title="安装taglist"></a>安装taglist</h2><ol>
-<li>下载页面：<a target="_blank" rel="noopener" href="http://www.vim.org/scripts/script.php?script_id=273%E3%80%82%E4%B8%8B%E8%BD%BD%E5%90%8E%E5%BE%97%E5%88%B0taglist_46.zip%E6%96%87%E4%BB%B6%E3%80%82">http://www.vim.org/scripts/script.php?script_id=273。下载后得到taglist_46.zip文件。</a></li>
-<li>执行<code>unzip taglist_46.zip</code>解压文件。</li>
-<li>将解压出的文件复制到~&#x2F;.vim目录下。<code>sudo cp ~/tmp/ ~/.vim/</code>。</li>
-<li>在~&#x2F;.vimrc文件中添加如下：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">let Tlist_Show_One_File = 1            &quot;不同时显示多个文件的tag，只显示当前文件的</span><br><span class="line">let Tlist_Exit_OnlyWindow = 1          &quot;如果taglist窗口是最后一个窗口，则退出vim</span><br><span class="line">let Tlist_Use_Right_Window = 1         &quot;在右侧窗口中显示</span><br></pre></td></tr></table></figure>
-参考网址：<a target="_blank" rel="noopener" href="http://www.cnblogs.com/mo-beifeng/archive/2011/11/22/2259356.html">http://www.cnblogs.com/mo-beifeng/archive/2011/11/22/2259356.html</a></li>
-</ol>
-<h2 id="安装文件浏览器NERD-tree"><a href="#安装文件浏览器NERD-tree" class="headerlink" title="安装文件浏览器NERD tree"></a>安装文件浏览器NERD tree</h2><ol>
-<li>下载页面：<a target="_blank" rel="noopener" href="http://www.vim.org/scripts/script.php?script_id=1658%E3%80%82">http://www.vim.org/scripts/script.php?script_id=1658。</a></li>
-<li>将下载后的nerdtree.zip文件解压到~&#x2F;.vim目录下。</li>
-</ol>
-<h2 id="安装winmanager"><a href="#安装winmanager" class="headerlink" title="安装winmanager"></a>安装winmanager</h2><ol>
-<li>下载页面：<a target="_blank" rel="noopener" href="http://www.vim.org/scripts/script.php?script_id=95">http://www.vim.org/scripts/script.php?script_id=95</a></li>
-<li>将下载后的winmanager.zip文件解压到~&#x2F;.vim目录下</li>
-<li>修改.vimrc文件，添加：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">let g:winManagerWindowLayout=&#x27;FileExplorer|TagList&#x27;</span><br><span class="line">nmap wm :WMToggle&lt;cr&gt;</span><br></pre></td></tr></table></figure>
-这样利用winmanager工具将taglist和NERD tree工具整合到了一个块，输入wm可以打开和关闭窗口。</li>
-</ol>
-<h2 id="安装cscope"><a href="#安装cscope" class="headerlink" title="安装cscope"></a>安装cscope</h2><ol>
-<li>下载页面：<a target="_blank" rel="noopener" href="http://cscope.sourceforge.net,下载后得到文件cscope-15.8a.tar.gz./">http://cscope.sourceforge.net，下载后得到文件cscope-15.8a.tar.gz。</a></li>
-<li>.&#x2F;configure</li>
-<li>make。可能会出现错误，执行如下命令：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">apt-get install libncurses-dev</span><br><span class="line">sudo apt-get install flex</span><br><span class="line">sudo apt-get install byacc</span><br></pre></td></tr></table></figure>
-然后执行<code>make clean</code>后重新make。</li>
-<li>sudo make install</li>
-</ol>
-<h2 id="安装在h-x2F-c文件之间切换插件a-vim"><a href="#安装在h-x2F-c文件之间切换插件a-vim" class="headerlink" title="安装在h&#x2F;c文件之间切换插件a.vim"></a>安装在h&#x2F;c文件之间切换插件a.vim</h2><ol>
-<li>下载页面：<a target="_blank" rel="noopener" href="http://www.vim.org/scripts/script.php?script_id=31%E3%80%82">http://www.vim.org/scripts/script.php?script_id=31。</a></li>
-<li>将下载的a.vim文件复制到~&#x2F;.vim&#x2F;plugin文件夹下。</li>
-<li>在~&#x2F;.vimrc文件中添加<code>nnoremap &lt;silent&gt; &lt;F12&gt; :A&lt;CR&gt;</code></li>
-<li>下面内容为快捷键列表：<br>:A switches to the header file corresponding to the current file being edited (or vise versa)<br>:AS splits and switches<br>:AV vertical splits and switches<br>:AT new tab and switches<br>:AN cycles through matches<br>:IH switches to file under cursor<br>:IHS splits and switches<br>:IHV vertical splits and switches<br>:IHT new tab and switches<br>:IHN cycles through matches<br><Leader>ih switches to file under cursor<br><Leader>is switches to the alternate file of file under cursor (e.g. on  &lt;foo.h&gt; switches to foo.cpp)<br><Leader>ihn cycles through matches</li>
-</ol>
-<h2 id="安装快速浏览和操作Buffer"><a href="#安装快速浏览和操作Buffer" class="headerlink" title="安装快速浏览和操作Buffer"></a>安装快速浏览和操作Buffer</h2><ol>
-<li>下载页面：<a target="_blank" rel="noopener" href="http://www.vim.org/scripts/script.php?script_id=159">http://www.vim.org/scripts/script.php?script_id=159</a></li>
-<li>将下载的 minibufexpl.vim文件丢到 ~&#x2F;.vim&#x2F;plugin 文件夹中即可</li>
-<li>在~&#x2F;.vimrc文件中增加如下行：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">let g:miniBufExplMapCTabSwitchBufs = 1</span><br><span class="line">let g:miniBufExplMapWindowNavVim = 1</span><br><span class="line">let g:miniBufExplMapWindowNavArrows = 1</span><br></pre></td></tr></table></figure></li>
-<li>快捷键：<br><Tab>	向前循环切换到每个buffer名上<br><S-Tab>	向后循环切换到每个buffer名上<br><Enter>	在打开光标所在的buffer<br>d	删除光标所在的buffer</li>
-</ol>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><ul>
-<li><a target="_blank" rel="noopener" href="http://blog.csdn.net/tge7618291/article/details/4216977">经典vim插件功能说明、安装方法和使用方法介绍</a></li>
-<li><a target="_blank" rel="noopener" href="http://blog.csdn.net/wooin/article/details/1858917">手把手教你把Vim改装成一个IDE编程环境</a></li>
-</ul>
 
       
     </div>

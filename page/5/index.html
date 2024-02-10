@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">231</span>
+          <span class="site-state-item-count">232</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,111 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/kubernetes-opensource-project/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/kubernetes-opensource-project/" class="post-title-link" itemprop="url">Github Kubernetes组织下开源项目（持续更新）</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-02-09 20:12:00" itemprop="dateCreated datePublished" datetime="2022-02-09T20:12:00+00:00">2022-02-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>在k8s官方的Github kubernetes group下除了k8s的核心组件外，还有很多开源项目，本文用来简要分析这些开源项目的用途。</p>
+<h1 id="apimachinery"><a href="#apimachinery" class="headerlink" title="apimachinery"></a><a target="_blank" rel="noopener" href="https://github.com/kubernetes/apimachinery">apimachinery</a></h1><p>关于k8s的scheme等的sdk项目，代码跟kubernetes项目的如下路径保持同步：<br><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery">https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery</a></p>
+<h1 id="autoscaler"><a href="#autoscaler" class="headerlink" title="autoscaler"></a><a target="_blank" rel="noopener" href="https://github.com/kubernetes/autoscaler">autoscaler</a></h1><p>跟k8s的弹性扩缩容相关的组件，有如下两个功能：</p>
+<h2 id="vpa（pod垂直扩缩容）"><a href="#vpa（pod垂直扩缩容）" class="headerlink" title="vpa（pod垂直扩缩容）"></a>vpa（pod垂直扩缩容）</h2><p>k8s的kube-controller-manager默认支持了hpa功能，即水平扩缩容。同时k8s还提供了vpa功能，即垂直扩缩容，会根据pod历史的资源占用，修改pod的request值，并不会修改pod的limit值。之所以k8s没有默认提供vpa功能，原因是因为vpa实现要复杂很多，需要通过webhook的技术来在pod创建的时候修改pod的request值。vpa的功能通常用于大型单体应用。</p>
+<p>autoscaler的功能之一即提供了vpa的实现。</p>
+<h2 id="Cluster-Autoscaler（node节点自动扩缩容）"><a href="#Cluster-Autoscaler（node节点自动扩缩容）" class="headerlink" title="Cluster Autoscaler（node节点自动扩缩容）"></a>Cluster Autoscaler（node节点自动扩缩容）</h2><p>该功能是为了重新利用k8s node的节点资源，在节点资源不足的时候可以动态创建资源，在节点资源空闲的时候可以自动回收资源。k8s node的创建和释放需要公有云平台的支持，该功能对接了多个公有云厂商的api。</p>
+<h1 id="cloud-provider"><a href="#cloud-provider" class="headerlink" title="cloud-provider"></a><a target="_blank" rel="noopener" href="https://github.com/kubernetes/cloud-provider">cloud-provider</a></h1><p>k8s的cloud provider功能用来跟云厂商对接以实现对k8s的node、LoadBalancer Service管理，比如LoadBalancer Service申请vip需要跟云厂商的LB API进行对接。</p>
+<p>在k8s 1.6版本之前，cloud provider的代码完全是耦合在k8s的kube-apiserver、kubelet、kube-contorller-manager的代码中的，如果要支持更多的云厂商，只能修改k8s的代码，扩展性比较差。</p>
+<p>从k8s 1.6版本之后，cloud provider作为单独的二进制组件来提供服务，并提供了接口定义。本项目为非二进制项目，仅包含k8s的cloud-provider机制的接口定义，为了让第三方的cloud-provider的实现项目引用接口定义方便，将kubernetes项目中的定义为单独的项目，且代码跟<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/tree/master/staging/src/k8s.io/cloud-provider">kubernetes项目</a>中的保持同步。</p>
+<p>参考资料：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/a_540yJ1EGVroJ9TpvYtPw">从 K8S 的 Cloud Provider 到 CCM 的演进之路</a></li>
+</ul>
+<h1 id="Descheduler"><a href="#Descheduler" class="headerlink" title="Descheduler"></a>Descheduler</h1><p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/kubernetes-sigs/descheduler">https://github.com/kubernetes-sigs/descheduler</a></p>
+<p>k8s的pod调度完全动态的，kube-scheduler组件在调度pod的时候会根据当时k8s集群的运行时环境来决定pod可以调度的节点，可以保证pod的调度在当时是最优的。但是随着的推移，比如环境中增加了新的node、创建了一批亲和节点的pod，都有可能会导致如果相同的pod再重新调度会到其他的节点上。但k8s的设计是，一旦pod调度完成后，就不会再重新调度。</p>
+<p>Descheduler组件用来解决pod的重新调度问题，可以根据配置的一系列的规则来触发驱逐pod，让pod可以重新调度，从而使k8s集群内的pod尽可能达到最优状态，有点类似于计算机在运行了一段时间后的磁盘脆片整理功能。Descheduler组件可以以job、cronjob或者deployment的方式运行在k8s集群中。</p>
+<h1 id="kubernetes-template-project"><a href="#kubernetes-template-project" class="headerlink" title="kubernetes-template-project"></a><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes-template-project">kubernetes-template-project</a></h1><p>用来存放了k8s项目的标准模板，里面包含了一些必要的文件，新建的项目可以fork该项目。</p>
+<h1 id="node-problem-detector-npd"><a href="#node-problem-detector-npd" class="headerlink" title="node-problem-detector(npd)"></a>node-problem-detector(npd)</h1><p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/kubernetes/node-problem-detector">https://github.com/kubernetes/node-problem-detector</a></p>
+<p>k8s的管控组件对于iaas层的node运行状态是完全不感知的，比如节点出现了ntp服务挂掉、硬件告警（cpu、内存、磁盘故障）、内核死锁。node-problem-detector旨在将node节点的问题转换k8s node event，以DaemonSet的方式部署在所有的k8s节点上。</p>
+<p>上报故障的方式支持如下两种方式：</p>
+<ul>
+<li>对于永久性故障，通过修改node status中的condition上报给apiserver</li>
+<li>对于临时性故障，通过Event的方式上报</li>
+</ul>
+<p>node-problem-detector在将节点的故障信息上报给k8s后，通常会配合一些自愈系统搭配使用，比如Draino和Descheduler 。</p>
+<h1 id="sample-apiserver"><a href="#sample-apiserver" class="headerlink" title="sample-apiserver"></a><a target="_blank" rel="noopener" href="https://github.com/kubernetes/sample-apiserver">sample-apiserver</a></h1><p>k8s提供了aggregated apiserver的方式来扩展api，该项目为一个简单的aaggregated apiserver的例子，可以直接编译出二进制文件。要想开发一个AA类型的服务，只需要frok一下该项目，并在项目的基础上进行修改即可完成。</p>
+<p>相关资料：</p>
+<ul>
+<li>[Set up an Extension API Server](Set up an Extension API Server)</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +324,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -321,7 +426,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -425,7 +530,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -530,7 +635,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -642,7 +747,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -768,7 +873,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -934,7 +1039,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -1080,7 +1185,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -1204,7 +1309,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
+      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
     </span>
 
   
@@ -1272,105 +1377,6 @@
 <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apiregistration.k8s.io/v1</span><br><span class="line">kind: APIService</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    meta.helm.sh/release<span class="literal">-name</span>: clusternet<span class="literal">-hub</span></span><br><span class="line">    meta.helm.sh/release<span class="literal">-namespace</span>: clusternet<span class="literal">-system</span></span><br><span class="line">  labels:</span><br><span class="line">    app.kubernetes.io/instance: clusternet<span class="literal">-hub</span></span><br><span class="line">    app.kubernetes.io/managed<span class="literal">-by</span>: Helm</span><br><span class="line">    app.kubernetes.io/name: clusternet<span class="literal">-hub</span></span><br><span class="line">    helm.sh/chart: clusternet<span class="literal">-hub-0</span>.<span class="number">2.1</span></span><br><span class="line">  name: v1alpha1.shadow</span><br><span class="line">spec:</span><br><span class="line">  <span class="built_in">group</span>: shadow</span><br><span class="line">  groupPriorityMinimum: <span class="number">1</span></span><br><span class="line">  insecureSkipTLSVerify: true</span><br><span class="line">  service:</span><br><span class="line">    name: clusternet<span class="literal">-hub</span></span><br><span class="line">    namespace: clusternet<span class="literal">-system</span></span><br><span class="line">    port: <span class="number">443</span></span><br><span class="line">  version: v1alpha1</span><br><span class="line">  versionPriority: <span class="number">1</span></span><br></pre></td></tr></table></figure>
 <h1 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h1><ul>
 <li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/BSgb2uoAuHbxQOUvn8fEsA">https://mp.weixin.qq.com/s/BSgb2uoAuHbxQOUvn8fEsA</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/create_test_k8s/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/create_test_k8s/" class="post-title-link" itemprop="url">ecs的Linux主机上快速创建测试k8s集群</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2021-12-15 21:32:00" itemprop="dateCreated datePublished" datetime="2021-12-15T21:32:00+00:00">2021-12-15</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-01-22 06:42:57" itemprop="dateModified" datetime="2024-01-22T06:42:57+00:00">2024-01-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>经常有快速创建一个测试k8s集群的场景，为了能够快速完成，整理了如下的命令，即可在主机上快速启动一个k8s集群。部分命令需要外网访问，推荐直接使用海外的主机。</p>
-<h1 id="安装docker"><a href="#安装docker" class="headerlink" title="安装docker"></a>安装docker</h1><p>下面命令可以安装最新版本的docker-ce</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">yum remove docker \</span><br><span class="line">                  docker-client \</span><br><span class="line">                  docker-client-latest \</span><br><span class="line">                  docker-common \</span><br><span class="line">                  docker-latest \</span><br><span class="line">                  docker-latest-logrotate \</span><br><span class="line">                  docker-logrotate \</span><br><span class="line">                  docker-engine</span><br><span class="line">yum install -y yum-utils</span><br><span class="line">yum-config-manager \</span><br><span class="line">    --add-repo \</span><br><span class="line">    https://download.docker.com/linux/centos/docker-ce.repo</span><br><span class="line">yum install docker-ce docker-ce-cli containerd.io -y</span><br><span class="line">systemctl enable docker &amp;&amp; systemctl start docker</span><br><span class="line">yum install vim git make -y</span><br></pre></td></tr></table></figure>
-<h2 id="安装特定版本的docker"><a href="#安装特定版本的docker" class="headerlink" title="安装特定版本的docker"></a>安装特定版本的docker</h2><p>如果要安装特定版本的docker-ce，可以使用如下方法。</p>
-<p>使用如下命令查询yum源中的docker-ce版本</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">yum list docker-ce --showduplicates | sort -r</span><br><span class="line">Last metadata expiration check: 0:00:27 ago on Sat 09 Apr 2022 12:39:09 AM CST.</span><br><span class="line">docker-ce.x86_64                3:20.10.9-3.el8                 docker-ce-stable</span><br><span class="line">docker-ce.x86_64                3:20.10.8-3.el8                 docker-ce-stable</span><br><span class="line">docker-ce.x86_64                3:20.10.7-3.el8                 docker-ce-stable</span><br><span class="line">docker-ce.x86_64                3:20.10.6-3.el8                 docker-ce-stable</span><br></pre></td></tr></table></figure>
-
-<p>选择特定版本的docker-ce和docker-ce-cli，执行如下命令</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install docker-ce-&lt;VERSION_STRING&gt; docker-ce-cli-&lt;VERSION_STRING&gt; containerd.io</span><br></pre></td></tr></table></figure>
-
-
-<h1 id="安装kubectl-kind-helm"><a href="#安装kubectl-kind-helm" class="headerlink" title="安装kubectl kind helm"></a>安装kubectl kind helm</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"># 安装kubectl</span><br><span class="line">curl -LO &quot;https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl&quot;</span><br><span class="line">chmod +x kubectl</span><br><span class="line">mv kubectl /usr/bin/</span><br><span class="line"># 如果找不到rpm包，可以通过网络安全 rpm -ivh http://mirror.centos.org/centos/7/os/x86_64/Packages/bash-completion-2.1-8.el7.noarch.rpm</span><br><span class="line">yum install -y bash-completion</span><br><span class="line">echo -e &#x27;\n# kubectl&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;source &lt;(kubectl completion bash)&#x27; &gt;&gt;~/.bash_profile</span><br><span class="line">echo &#x27;alias k=kubectl&#x27; &gt;&gt;~/.bash_profile</span><br><span class="line">echo &#x27;complete -F __start_kubectl k&#x27; &gt;&gt;~/.bash_profile</span><br><span class="line">source ~/.bash_profile</span><br><span class="line"></span><br><span class="line"># 安装helm</span><br><span class="line">wget https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz</span><br><span class="line">tar zvxf helm-v3.7.2-linux-amd64.tar.gz</span><br><span class="line">mv linux-amd64/helm /usr/bin/</span><br><span class="line">rm -rf linux-amd64</span><br><span class="line"></span><br><span class="line"># 安装kubectx kubens</span><br><span class="line">git clone https://github.com/ahmetb/kubectx /tmp/kubectx</span><br><span class="line">cp /tmp/kubectx/kubens /usr/bin/kns</span><br><span class="line">cp /tmp/kubectx/kubectx /usr/bin/kctx</span><br><span class="line">wget https://github.com/junegunn/fzf/releases/download/0.29.0/fzf-0.29.0-linux_amd64.tar.gz -P /tmp</span><br><span class="line">tar zvxf /tmp/fzf-0.29.0-llinux_amd64.tar.gz -C /tmp/</span><br><span class="line">mv /tmp/fzf /usr/local/bin/</span><br><span class="line"></span><br><span class="line"># 安装kind</span><br><span class="line">curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.18.0/kind-linux-amd64</span><br><span class="line">chmod +x ./kind</span><br><span class="line">mv ./kind /usr/local/bin/</span><br><span class="line">echo -e &quot;\n# kind&quot; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;source &lt;(kind completion bash)&#x27; &gt;&gt;~/.bash_profile</span><br></pre></td></tr></table></figure>
-
-<h1 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h1><p>其中将apiServerAddress指定为了本机，即创建出来的k8s集群仅允许本集群内访问。如果要是需要多个k8s集群之间的互访场景，由于kind拉起的k8s运行在docker容器中，而docker容器使用的是容器网络，此时如果设置apiserver地址为127.0.0.1，那么集群之间就没法直接通讯了，此时需要指定一个可以在docker容器中访问的宿主机ip地址。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">if=eth0</span><br><span class="line">ip=`ifconfig $if|grep inet|grep -v 127.0.0.1|grep -v inet6|awk &#x27;&#123;print $2&#125;&#x27;|tr -d &quot;addr:&quot;`</span><br><span class="line">cat &gt; kind.conf &lt;&lt;EOF</span><br><span class="line">kind: Cluster</span><br><span class="line">apiVersion: kind.x-k8s.io/v1alpha4</span><br><span class="line">name: kind</span><br><span class="line">nodes:</span><br><span class="line">- role: control-plane</span><br><span class="line">  # 如果需要 ingress，则需要指定该参数</span><br><span class="line">  kubeadmConfigPatches:</span><br><span class="line">  - |</span><br><span class="line">    kind: InitConfiguration</span><br><span class="line">    nodeRegistration:</span><br><span class="line">      kubeletExtraArgs:</span><br><span class="line">        node-labels: &quot;ingress-ready=true&quot;</span><br><span class="line">  extraPortMappings:</span><br><span class="line">  - containerPort: 80</span><br><span class="line">    hostPort: 80</span><br><span class="line">    protocol: TCP</span><br><span class="line">  - containerPort: 443</span><br><span class="line">    hostPort: 443</span><br><span class="line">    protocol: TCP</span><br><span class="line">  # 指定 k8s 版本，默认不指定</span><br><span class="line">  # image: kindest/node:v1.23.17</span><br><span class="line">- role: worker</span><br><span class="line">- role: worker</span><br><span class="line">- role: worker</span><br><span class="line">networking:</span><br><span class="line">  apiServerAddress: &quot;$ip&quot;</span><br><span class="line">  apiServerPort: 6443</span><br><span class="line">EOF</span><br><span class="line">kind create cluster --config kind.conf</span><br></pre></td></tr></table></figure>
-
-<p>如果使用 nginx ingress，额外执行命令 <code>kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml</code></p>
-<h1 id="其他周边工具"><a href="#其他周边工具" class="headerlink" title="其他周边工具"></a>其他周边工具</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"># 安装kustomize</span><br><span class="line">curl -s &quot;https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh&quot;  | bash</span><br><span class="line">mv kustomize /usr/local/bin/</span><br><span class="line"></span><br><span class="line"># 安装golang</span><br><span class="line">wget https://go.dev/dl/go1.17.5.linux-amd64.tar.gz -P /opt</span><br><span class="line">tar zvxf /opt/go1.17.5.linux-amd64.tar.gz -C /opt/</span><br><span class="line">mkdir /opt/gopath</span><br><span class="line">echo -e &#x27;\n# golang&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;export GOROOT=/opt/go&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;export GOPATH=/opt/gopath&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;export PATH=$PATH:$GOPATH/bin:$GOROOT/bin&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">source ~/.bash_profile</span><br><span class="line"></span><br><span class="line"># 安装controller-gen，会将controller-gen命令安装到GOPATH/bin目录下</span><br><span class="line">go install sigs.k8s.io/controller-tools/cmd/controller-gen@latest</span><br><span class="line"></span><br><span class="line"># 安装dlv工具</span><br><span class="line">go install github.com/go-delve/delve/cmd/dlv@latest</span><br></pre></td></tr></table></figure>
-
-<h2 id="安装krew"><a href="#安装krew" class="headerlink" title="安装krew"></a>安装krew</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">(</span><br><span class="line">  set -x; cd &quot;$(mktemp -d)&quot; &amp;&amp;</span><br><span class="line">  OS=&quot;$(uname | tr &#x27;[:upper:]&#x27; &#x27;[:lower:]&#x27;)&quot; &amp;&amp;</span><br><span class="line">  ARCH=&quot;$(uname -m | sed -e &#x27;s/x86_64/amd64/&#x27; -e &#x27;s/\(arm\)\(64\)\?.*/\1\2/&#x27; -e &#x27;s/aarch64$/arm64/&#x27;)&quot; &amp;&amp;</span><br><span class="line">  KREW=&quot;krew-$&#123;OS&#125;_$&#123;ARCH&#125;&quot; &amp;&amp;</span><br><span class="line">  curl -fsSLO &quot;https://github.com/kubernetes-sigs/krew/releases/latest/download/$&#123;KREW&#125;.tar.gz&quot; &amp;&amp;</span><br><span class="line">  tar zxvf &quot;$&#123;KREW&#125;.tar.gz&quot; &amp;&amp;</span><br><span class="line">  ./&quot;$&#123;KREW&#125;&quot; install krew</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">echo -e &#x27;\n# kubectl krew&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">echo &#x27;export PATH=&quot;$&#123;KREW_ROOT:-$HOME/.krew&#125;/bin:$PATH&quot;&#x27; &gt;&gt; ~/.bash_profile</span><br><span class="line">source ~/.bash_profile</span><br></pre></td></tr></table></figure>
-
-<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
-<li><a target="_blank" rel="noopener" href="https://kind.sigs.k8s.io/">kind</a></li>
 </ul>
 
       
