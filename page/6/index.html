@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">232</span>
+          <span class="site-state-item-count">233</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,137 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/clusternet/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/clusternet/" class="post-title-link" itemprop="url">k8s多集群管理方案 - clusternet</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-12-26 21:44:17" itemprop="dateCreated datePublished" datetime="2021-12-26T21:44:17+00:00">2021-12-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。<br><a target="_blank" rel="noopener" href="https://github.com/clusternet/clusternet">https://github.com/clusternet/clusternet</a><br>GitHub Star：891</p>
+<h1 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h1><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet1.png" alt="image.png"><br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet2.png" alt="image.png"><br>包含clusternet-hub和clusternet-agent两个组件。</p>
+<p>clusternet-hub部署在父集群，用途：</p>
+<ul>
+<li>接收子集群的注册请求，并为每个自己群创建namespace、serviceaccount等资源</li>
+<li>提供父集群跟各个子集群的长连接</li>
+<li>提供restful api来访问各个子集群，同时支持子集群的互访</li>
+</ul>
+<p>clusternet-agent部署在子集群，用途：</p>
+<ul>
+<li>自动注册子集群到父集群</li>
+<li>心跳报告到中心集群，包括k8s版本、运行平台、健康状态等</li>
+<li>通过websocket协议跟父集群通讯</li>
+</ul>
+<h1 id="CRD抽象"><a href="#CRD抽象" class="headerlink" title="CRD抽象"></a>CRD抽象</h1><h2 id="ClusterRegistrationRequest"><a href="#ClusterRegistrationRequest" class="headerlink" title="ClusterRegistrationRequest"></a>ClusterRegistrationRequest</h2><p>clusternet-agent在父集群中创建的CR，一个k8s集群一个</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: clusters.clusternet.io/v1beta1</span><br><span class="line">kind: ClusterRegistrationRequest</span><br><span class="line">metadata:</span><br><span class="line">  labels:</span><br><span class="line">    clusters.clusternet.io/cluster<span class="literal">-id</span>: <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">    clusters.clusternet.io/cluster<span class="literal">-name</span>: clusternet<span class="literal">-cluster-pmlbp</span></span><br><span class="line">    clusters.clusternet.io/registered<span class="literal">-by</span>: clusternet<span class="literal">-agent</span></span><br><span class="line">  name: clusternet<span class="literal">-2bcd48d2-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">spec:</span><br><span class="line">  clusterId: <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">  clusterName: clusternet<span class="literal">-cluster-pmlbp</span> <span class="comment"># 集群名称</span></span><br><span class="line">  clusterType: EdgeCluster <span class="comment"># 集群类型</span></span><br><span class="line">  syncMode: Dual</span><br><span class="line">status:</span><br><span class="line">  caCertificate: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXhNekV3TWpjeE5Wb1hEVE14TVRJeE1URXdNamN4TlZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTHVCCmJwdXNaZXM5RXFXaEw1WUVGb2c4eHRJai9jbFh2S1lTMnZYbGR4cUt1MUR3VHV3aUcxZUN4VGlHa2dLQXVXd1IKVFFheEh5aGY3U29lc0hqMG43NnFBKzhQT05lS1VGdERJOWVzejF2WTF5bXFoUHR0QVo0cGhkWmhmbXJjZTJLRQpuMS84MzNWbWlXd0pSZmNWcEJtTU52MjFYMVVwNWp6RGtncS9tY0JOOGN0ZU5PMEpKNkVVeTE2RXZLbjhyWG90ClErTW5PUHE4anFNMzJjRFFqYWVEdGxvM2kveXlRd1NMa2wzNFo4aElwZDZNWWVSTWpXcmhrazF4L0RYZjNJK3IKOGs5S1FBbEsvNWZRMXk5NHYwT25TK0FKZTliczZMT2srYVFWYm5SbExab2E2aVZWbUJNam03UjBjQ2w0Y1hpRwpyekRnN1ZLc3lsY1o3aGFRRTNFQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZPaGwxMHUwNnJvenZJUm9XVmpNYlVPMzFDbERNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFBQytqMXpPQVZYVXpNUFJ0U29Kd3JhMU1FSkJOUTNMWitmWnZRYjdIbk53b00zaCthMgoyc25yUitSWTYrOFFDbXVKeis1eU5yYStEZDlnNzQ1Q0hDaFpVZzlsY3RjQTRzZVR5OXZqcUVQNVBNSzEvbi9PCnFEcDQyMUpqTjYvUXJmamIvbVM0elUvZXNGZGowQXRYQ0FLMWJsNmF0ai9jZXVBbzh1bTRPaUVlNnJhanBYTHUKWFlmQ1FVZFV5TWpQdEZHTDMwNytna0RpdlVsdXk3RkQ4aUpURTh2QWpxOVBXOW40SmxFMjdQWXR5QnNocy9XSApCZ2czQjZpTG10SjZlNzJiWnA3ZmptdmJWTC9VdkxzYXZqRXltZDhrMnN1bFFwQUpzeVJrMkEzM1g3NWJpS0RGCk1CU29DaHc3U2JMSkJrN0FNckRzTjd1Q2U3WWVIWGdZemdhRAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==</span><br><span class="line">  dedicatedNamespace: clusternet<span class="literal">-sdqrh</span></span><br><span class="line">  managedClusterName: clusternet<span class="literal">-cluster-pmlbp</span></span><br><span class="line">  result: Approved</span><br><span class="line">  token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkluZFpWMUV6UmxCbFdUUldWa1Y0UmxBeWMzaDJOV3RuUzBabVJsaG9jWG94TkhKM2JtUkxiRTlrYUZVaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUpqYkhWemRHVnlibVYwTFhOa2NYSm9JaXdpYTNWaVpYSnVaWFJsY3k1cGJ5OXpaWEoyYVdObFlXTmpiM1Z1ZEM5elpXTnlaWFF1Ym1GdFpTSTZJbU5zZFhOMFpYSnVaWFF0YmpneWFHc3RkRzlyWlc0dGN6SnpjRFVpTENKcmRXSmxjbTVsZEdWekxtbHZMM05sY25acFkyVmhZMk52ZFc1MEwzTmxjblpwWTJVdFlXTmpiM1Z1ZEM1dVlXMWxJam9pWTJ4MWMzUmxjbTVsZEMxdU9ESm9heUlzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVnlkbWxqWlMxaFkyTnZkVzUwTG5WcFpDSTZJamN3TWpRMk1tTTBMV0prTlRFdE5HVXpNeTA1WXpnekxUWmpPV1F6TUdGall6bG1aU0lzSW5OMVlpSTZJbk41YzNSbGJUcHpaWEoyYVdObFlXTmpiM1Z1ZERwamJIVnpkR1Z5Ym1WMExYTmtjWEpvT21Oc2RYTjBaWEp1WlhRdGJqZ3lhR3NpZlEuUjJCdEQ1YzQxRm1seC1hTEFKSWQzbGxvOThSY25TakVUak5pSnVuTXg1US1jYXhwc3VkamUxekVtUF9mTHR6TjU4d21Dd3RXcHpoaXhSMWFTUHE5LXJTRlBIYzk3aDlTT3daZGdicC10alFBSjA4dllfYWdiVFRKLU1WN1dpN0xQVzRIcmt1U3RlemUzVHh2RW11NWwySlpzbG5UTXdkR3NGRVlVZzVfeWFoLUQwQ2pnTkZlR1ljUjJ1TlJBWjdkNW00Q1c5VmRkdkNsanNqRE5WX1k0RkFEbGo2cHgzSlh0SDQ4U1ZUd254TS1sNHl0eXBENjZFbG1PYXpUMmRwSWd4eWNSZ0tJSUlacWNQNnZVc0ZOM1Zka21ZZ29ydy1NSUcwc25YdzFaZ1lwRk9SUDJRa3hjd2NOUVVOTjh6VUZqSUZSSmdSSFdjNlo4aXd2eURnZTVn</span><br></pre></td></tr></table></figure>
+<h2 id="ClusterRole和Role"><a href="#ClusterRole和Role" class="headerlink" title="ClusterRole和Role"></a>ClusterRole和Role</h2><p>ClusterRegistrationRequest被接收后会创建ClusterRole</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">kind: ClusterRole</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    clusternet.io/autoupdate: <span class="string">&quot;true&quot;</span></span><br><span class="line">  labels:</span><br><span class="line">    clusternet.io/created<span class="literal">-by</span>: clusternet<span class="literal">-hub</span></span><br><span class="line">    clusters.clusternet.io/bootstrapping: rbac<span class="literal">-defaults</span></span><br><span class="line">    clusters.clusternet.io/cluster<span class="literal">-id</span>: <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">  name: clusternet<span class="literal">-2bcd48d2-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">rules:</span><br><span class="line">- apiGroups:</span><br><span class="line">  - clusters.clusternet.io</span><br><span class="line">  resources:</span><br><span class="line">  - clusterregistrationrequests</span><br><span class="line">  verbs:</span><br><span class="line">  - create</span><br><span class="line">  - get</span><br><span class="line">- apiGroups:</span><br><span class="line">  - proxies.clusternet.io</span><br><span class="line">  resourceNames:</span><br><span class="line">  - <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">  resources:</span><br><span class="line">  - sockets</span><br><span class="line">  verbs:</span><br><span class="line">  - <span class="string">&#x27;*&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>并会在cluster对应的namespace下创建Role</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">kind: Role</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    clusternet.io/autoupdate: <span class="string">&quot;true&quot;</span></span><br><span class="line">  labels:</span><br><span class="line">    clusternet.io/created<span class="literal">-by</span>: clusternet<span class="literal">-hub</span></span><br><span class="line">    clusters.clusternet.io/bootstrapping: rbac<span class="literal">-defaults</span></span><br><span class="line">  name: clusternet<span class="literal">-managedcluster-role</span></span><br><span class="line">  namespace: clusternet<span class="literal">-sdqrh</span></span><br><span class="line">rules:</span><br><span class="line">- apiGroups:</span><br><span class="line">  - <span class="string">&#x27;*&#x27;</span></span><br><span class="line">  resources:</span><br><span class="line">  - <span class="string">&#x27;*&#x27;</span></span><br><span class="line">  verbs:</span><br><span class="line">  - <span class="string">&#x27;*&#x27;</span></span><br></pre></td></tr></table></figure>
+<h2 id="ManagedCluster"><a href="#ManagedCluster" class="headerlink" title="ManagedCluster"></a>ManagedCluster</h2><p>clusternet-hub在接受ClusterRegistrationRequest后，会创建一个ManagedCluster。一个k8s集群一个namespace</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: clusters.clusternet.io/v1beta1</span><br><span class="line">kind: ManagedCluster</span><br><span class="line">metadata:</span><br><span class="line">  labels:</span><br><span class="line">    clusternet.io/created<span class="literal">-by</span>: clusternet<span class="literal">-agent</span></span><br><span class="line">    clusters.clusternet.io/cluster<span class="literal">-id</span>: <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">    clusters.clusternet.io/cluster<span class="literal">-name</span>: clusternet<span class="literal">-cluster-pmlbp</span></span><br><span class="line">  name: clusternet<span class="literal">-cluster-pmlbp</span></span><br><span class="line">  namespace: clusternet<span class="literal">-sdqrh</span></span><br><span class="line">spec:</span><br><span class="line">  clusterId: <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">  clusterType: EdgeCluster</span><br><span class="line">  syncMode: Dual</span><br><span class="line">status:</span><br><span class="line">  allocatable:</span><br><span class="line">    cpu: <span class="number">7600</span>m</span><br><span class="line">    memory: <span class="string">&quot;30792789992&quot;</span></span><br><span class="line">  apiserverURL: https://<span class="number">10.233</span>.<span class="number">0.1</span>:<span class="number">443</span> <span class="comment"># default/kubernetes的service clusterip</span></span><br><span class="line">  appPusher: true</span><br><span class="line">  capacity:</span><br><span class="line">    cpu: <span class="string">&quot;8&quot;</span></span><br><span class="line">    memory: <span class="number">32192720</span>Ki</span><br><span class="line">  clusterCIDR: <span class="number">10.233</span>.<span class="number">0.0</span>/<span class="number">18</span></span><br><span class="line">  conditions:</span><br><span class="line">  - lastTransitionTime: <span class="string">&quot;2021-12-15T07:47:10Z&quot;</span></span><br><span class="line">    message: managed cluster is ready.</span><br><span class="line">    reason: ManagedClusterReady</span><br><span class="line">    status: <span class="string">&quot;True&quot;</span></span><br><span class="line">    <span class="built_in">type</span>: Ready</span><br><span class="line">  healthz: true</span><br><span class="line">  heartbeatFrequencySeconds: <span class="number">180</span></span><br><span class="line">  k8sVersion: v1.<span class="number">21.5</span></span><br><span class="line">  lastObservedTime: <span class="string">&quot;2021-12-15T07:47:10Z&quot;</span></span><br><span class="line">  livez: true</span><br><span class="line">  nodeStatistics:</span><br><span class="line">    readyNodes: <span class="number">1</span></span><br><span class="line">  parentAPIServerURL: https://<span class="number">172.21</span>.<span class="number">115.160</span>:<span class="number">6443</span>  <span class="comment"># 父集群地址</span></span><br><span class="line">  platform: linux/amd64</span><br><span class="line">  readyz: true</span><br><span class="line">  serviceCIDR: <span class="number">10.233</span>.<span class="number">64.0</span>/<span class="number">18</span></span><br><span class="line">  useSocket: true</span><br></pre></td></tr></table></figure>
+<h2 id="Subscription"><a href="#Subscription" class="headerlink" title="Subscription"></a>Subscription</h2><p>应用发布的抽象，人工提交到环境中。要发布的资源即可以是helm chart，也可以是原生的k8s对象。clusternet在部署的时候会查看部署的优先级，并且支持weight，优先部署cluster级别的资源，这点跟helm部署的逻辑一致。</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">kind: Subscription</span><br><span class="line">metadata:</span><br><span class="line">  name: app<span class="literal">-demo</span></span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">  <span class="comment"># 定义应用要发布到哪个k8s集群</span></span><br><span class="line">  subscribers: <span class="comment"># defines the clusters to be distributed to</span></span><br><span class="line">    - clusterAffinity:</span><br><span class="line">        matchLabels:</span><br><span class="line">          clusters.clusternet.io/cluster<span class="literal">-id</span>: dc91021d<span class="literal">-2361-4f6d-a404-7c33b9e01118</span> <span class="comment"># PLEASE UPDATE THIS CLUSTER-ID TO YOURS!!!</span></span><br><span class="line">	<span class="comment"># 定义了要发布哪些资源</span></span><br><span class="line">  feeds: <span class="comment"># defines all the resources to be deployed with</span></span><br><span class="line">    - apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">      kind: HelmChart</span><br><span class="line">      name: mysql</span><br><span class="line">      namespace: default</span><br><span class="line">    - apiVersion: v1</span><br><span class="line">      kind: Namespace</span><br><span class="line">      name: foo</span><br><span class="line">    - apiVersion: v1</span><br><span class="line">      kind: Service</span><br><span class="line">      name: my<span class="literal">-nginx-svc</span></span><br><span class="line">      namespace: foo</span><br><span class="line">    - apiVersion: apps/v1</span><br><span class="line">      kind: Deployment</span><br><span class="line">      name: my<span class="literal">-nginx</span></span><br><span class="line">      namespace: foo</span><br></pre></td></tr></table></figure>
+<h2 id="HelmChart"><a href="#HelmChart" class="headerlink" title="HelmChart"></a>HelmChart</h2><p>Subscriber发布的一个子资源之一，对应一个helm chart的完整描述</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">kind: HelmChart</span><br><span class="line">metadata:</span><br><span class="line">  name: mysql</span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">  repo: https://charts.bitnami.com/bitnami</span><br><span class="line">  chart: mysql</span><br><span class="line">  version: <span class="number">8.6</span>.<span class="number">2</span></span><br><span class="line">  targetNamespace: abc</span><br></pre></td></tr></table></figure>
+<h2 id="Localization"><a href="#Localization" class="headerlink" title="Localization"></a>Localization</h2><p>差异化不同于其他集群的配置，用来描述namespace级别的差异化配置。</p>
+<h2 id="Globalization"><a href="#Globalization" class="headerlink" title="Globalization"></a>Globalization</h2><p>用来描述不同集群的cluster级别的差异化配置。</p>
+<h2 id="Base"><a href="#Base" class="headerlink" title="Base"></a>Base</h2><h2 id="Description"><a href="#Description" class="headerlink" title="Description"></a>Description</h2><p>跟Base对象根据Localization和Globalization渲染得到的最终要发布到集群中的最终对象。</p>
+<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>本文使用kind进行测试，使用kind创建两个k8s集群host和member1，两个集群的apiserver均监听在宿主机的端口，确保从一个集群可以访问到另外一个集群的apiserver。</p>
+<p>在父集群执行如下命令安装clusternet管控组件：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">helm repo add clusternet https://clusternet.github.io/charts</span><br><span class="line">helm install clusternet<span class="literal">-hub</span> <span class="literal">-n</span> clusternet<span class="literal">-system</span> <span class="literal">--create-namespace</span> clusternet/clusternet<span class="literal">-hub</span></span><br><span class="line">kubectl apply <span class="operator">-f</span> https://raw.githubusercontent.com/clusternet/clusternet/main/manifests/samples/cluster_bootstrap_token.yaml</span><br></pre></td></tr></table></figure>
+<p>会在clusternet-system namespace下创建deployment clusternet-hub。</p>
+<p>最后一条命令，会创建一个secret，其中的token信息为07401b.f395accd246ae52d，在子集群注册的时候需要用到。</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Secret</span><br><span class="line">metadata:</span><br><span class="line">  <span class="comment"># Name MUST be of form &quot;bootstrap-token-&lt;token id&gt;&quot;</span></span><br><span class="line">  name: bootstrap<span class="literal">-token-07401b</span></span><br><span class="line">  namespace: kube<span class="literal">-system</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Type MUST be &#x27;bootstrap.kubernetes.io/token&#x27;</span></span><br><span class="line"><span class="built_in">type</span>: bootstrap.kubernetes.io/token</span><br><span class="line">stringData:</span><br><span class="line">  <span class="comment"># Human readable description. Optional.</span></span><br><span class="line">  description: <span class="string">&quot;The bootstrap token used by clusternet cluster registration.&quot;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># Token ID and secret. Required.</span></span><br><span class="line">  token<span class="literal">-id</span>: <span class="number">07401</span>b</span><br><span class="line">  token<span class="literal">-secret</span>: f395accd246ae52d</span><br><span class="line"></span><br><span class="line">  <span class="comment"># Expiration. Optional.</span></span><br><span class="line">  expiration: <span class="number">2025</span><span class="literal">-05-10T03</span>:<span class="number">22</span>:<span class="number">11</span>Z</span><br><span class="line"></span><br><span class="line">  <span class="comment"># Allowed usages.</span></span><br><span class="line">  usage<span class="literal">-bootstrap-authentication</span>: <span class="string">&quot;true&quot;</span></span><br><span class="line">  usage<span class="literal">-bootstrap-signing</span>: <span class="string">&quot;true&quot;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># Extra groups to authenticate the token as. Must start with &quot;system:bootstrappers:&quot;</span></span><br><span class="line">  auth<span class="literal">-extra-groups</span>: system:bootstrappers:clusternet:<span class="built_in">register-cluster</span><span class="literal">-token</span></span><br></pre></td></tr></table></figure>
+
+<p>在子集群执行如下命令，其中parentURL要修改为父集群的apiserver地址</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">helm repo add clusternet https://clusternet.github.io/charts</span><br><span class="line">helm install clusternet<span class="literal">-agent</span> <span class="literal">-n</span> clusternet<span class="literal">-system</span> <span class="literal">--create-namespace</span> \</span><br><span class="line">  <span class="literal">--set</span> parentURL=https://<span class="number">10.0</span>.<span class="number">248.96</span>:<span class="number">8443</span> \</span><br><span class="line">  <span class="literal">--set</span> registrationToken=<span class="number">07401</span>b.f395accd246ae52d \</span><br><span class="line">  clusternet/clusternet<span class="literal">-agent</span></span><br></pre></td></tr></table></figure>
+<p>其中parentURL为父集群的apiserver地址，registrationToken为父集群注册的token信息。</p>
+<h1 id="访问子集群"><a href="#访问子集群" class="headerlink" title="访问子集群"></a>访问子集群</h1><h2 id="kubectl-clusternet命令行方式访问"><a href="#kubectl-clusternet命令行方式访问" class="headerlink" title="kubectl-clusternet命令行方式访问"></a>kubectl-clusternet命令行方式访问</h2><p>安装kubectl krew插件，参考 <a target="_blank" rel="noopener" href="https://krew.sigs.k8s.io/docs/user-guide/setup/install/">https://krew.sigs.k8s.io/docs/user-guide/setup/install/</a>，执行如下命令：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">yum install git <span class="literal">-y</span></span><br><span class="line">(</span><br><span class="line">  <span class="built_in">set</span> <span class="literal">-x</span>; <span class="built_in">cd</span> <span class="string">&quot;<span class="variable">$</span>(mktemp -d)&quot;</span> &amp;&amp;</span><br><span class="line">  OS=<span class="string">&quot;<span class="variable">$</span>(uname | tr &#x27;[:upper:]&#x27; &#x27;[:lower:]&#x27;)&quot;</span> &amp;&amp;</span><br><span class="line">  ARCH=<span class="string">&quot;<span class="variable">$</span>(uname -m | sed -e &#x27;s/x86_64/amd64/&#x27; -e &#x27;s/\(arm\)\(64\)\?.*/\1\2/&#x27; -e &#x27;s/aarch64<span class="variable">$</span>/arm64/&#x27;)&quot;</span> &amp;&amp;</span><br><span class="line">  KREW=<span class="string">&quot;krew-<span class="variable">$</span>&#123;OS&#125;_<span class="variable">$</span>&#123;ARCH&#125;&quot;</span> &amp;&amp;</span><br><span class="line">  <span class="built_in">curl</span> <span class="literal">-fsSLO</span> <span class="string">&quot;https://github.com/kubernetes-sigs/krew/releases/latest/download/<span class="variable">$</span>&#123;KREW&#125;.tar.gz&quot;</span> &amp;&amp;</span><br><span class="line">  tar zxvf <span class="string">&quot;<span class="variable">$</span>&#123;KREW&#125;.tar.gz&quot;</span> &amp;&amp;</span><br><span class="line">  ./<span class="string">&quot;<span class="variable">$</span>&#123;KREW&#125;&quot;</span> install krew</span><br><span class="line">)</span><br><span class="line"><span class="built_in">echo</span> <span class="string">&#x27;export PATH=&quot;$&#123;PATH&#125;:$&#123;HOME&#125;/.krew/bin&quot;&#x27;</span> &gt;&gt;  ~/.bashrc</span><br><span class="line">source ~/.bashrc</span><br></pre></td></tr></table></figure>
+<p>安装kubectl插件clusternet：kubectl krew install clusternet</p>
+<p>使用kubectl clusternet get可以看到发布的应用，非发布的应用看不到。</p>
+<h2 id="代码层面访问子集群"><a href="#代码层面访问子集群" class="headerlink" title="代码层面访问子集群"></a>代码层面访问子集群</h2><p>可以参照例子：<a target="_blank" rel="noopener" href="https://github.com/clusternet/clusternet/blob/main/examples/clientgo/demo.go#L42-L45">https://github.com/clusternet/clusternet/blob/main/examples/clientgo/demo.go#L42-L45</a></p>
+<p>改动代码非常小，仅需要获取到对应集群的config信息即可。</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">config, err := rest.InClusterConfig()</span><br><span class="line">	<span class="keyword">if</span> err != nil &#123;</span><br><span class="line">		klog.Error(err)</span><br><span class="line">		os.Exit(<span class="number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	// This is the ONLY place you need to wrap <span class="keyword">for</span> Clusternet</span><br><span class="line">	config.Wrap(func(rt http.RoundTripper) http.RoundTripper &#123;</span><br><span class="line">		<span class="keyword">return</span> clientgo.NewClusternetTransport(config.Host, rt)</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	// now we could create and visit all the resources</span><br><span class="line">	client := kubernetes.NewForConfigOrDie(config)</span><br><span class="line">	_, err = client.CoreV1().Namespaces().Create(context.TODO(), &amp;corev1.Namespace&#123;</span><br><span class="line">		ObjectMeta: metav1.ObjectMeta&#123;</span><br><span class="line">			Name: <span class="string">&quot;demo&quot;</span>,</span><br><span class="line">		&#125;,</span><br><span class="line">	&#125;, metav1.CreateOptions&#123;&#125;)</span><br></pre></td></tr></table></figure>
+
+<h1 id="应用发布"><a href="#应用发布" class="headerlink" title="应用发布"></a>应用发布</h1><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet3.png" alt="image.png"><br>在主集群提交如下的yaml文件</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">kind: Subscription</span><br><span class="line">metadata:</span><br><span class="line">  name: app<span class="literal">-demo</span></span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">  subscribers: <span class="comment"># defines the clusters to be distributed to</span></span><br><span class="line">    - clusterAffinity:</span><br><span class="line">        matchLabels:</span><br><span class="line">          clusters.clusternet.io/cluster<span class="literal">-id</span>: dc91021d<span class="literal">-2361-4f6d-a404-7c33b9e01118</span> <span class="comment"># PLEASE UPDATE THIS CLUSTER-ID TO YOURS!!!</span></span><br><span class="line">  feeds: <span class="comment"># defines all the resources to be deployed with</span></span><br><span class="line">    - apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">      kind: HelmChart</span><br><span class="line">      name: mysql</span><br><span class="line">      namespace: default</span><br><span class="line">    - apiVersion: v1</span><br><span class="line">      kind: Namespace</span><br><span class="line">      name: foo</span><br><span class="line">    - apiVersion: apps/v1</span><br><span class="line">      kind: Service</span><br><span class="line">      name: my<span class="literal">-nginx-svc</span></span><br><span class="line">      namespace: foo</span><br><span class="line">    - apiVersion: apps/v1</span><br><span class="line">      kind: Deployment</span><br><span class="line">      name: my<span class="literal">-nginx</span></span><br><span class="line">      namespace: foo</span><br></pre></td></tr></table></figure>
+
+<h1 id="实现分析"><a href="#实现分析" class="headerlink" title="实现分析"></a>实现分析</h1><p>在主集群实现了两个aggregated apiservice</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apiregistration.k8s.io/v1</span><br><span class="line">kind: APIService</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    meta.helm.sh/release<span class="literal">-name</span>: clusternet<span class="literal">-hub</span></span><br><span class="line">    meta.helm.sh/release<span class="literal">-namespace</span>: clusternet<span class="literal">-system</span></span><br><span class="line">  labels:</span><br><span class="line">    app.kubernetes.io/instance: clusternet<span class="literal">-hub</span></span><br><span class="line">    app.kubernetes.io/managed<span class="literal">-by</span>: Helm</span><br><span class="line">    app.kubernetes.io/name: clusternet<span class="literal">-hub</span></span><br><span class="line">    helm.sh/chart: clusternet<span class="literal">-hub-0</span>.<span class="number">2.1</span></span><br><span class="line">  name: v1alpha1.proxies.clusternet.io</span><br><span class="line">spec:</span><br><span class="line">  <span class="built_in">group</span>: proxies.clusternet.io</span><br><span class="line">  groupPriorityMinimum: <span class="number">1000</span></span><br><span class="line">  insecureSkipTLSVerify: true</span><br><span class="line">  service:</span><br><span class="line">    name: clusternet<span class="literal">-hub</span></span><br><span class="line">    namespace: clusternet<span class="literal">-system</span></span><br><span class="line">    port: <span class="number">443</span></span><br><span class="line">  version: v1alpha1</span><br><span class="line">  versionPriority: <span class="number">100</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apiregistration.k8s.io/v1</span><br><span class="line">kind: APIService</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    meta.helm.sh/release<span class="literal">-name</span>: clusternet<span class="literal">-hub</span></span><br><span class="line">    meta.helm.sh/release<span class="literal">-namespace</span>: clusternet<span class="literal">-system</span></span><br><span class="line">  labels:</span><br><span class="line">    app.kubernetes.io/instance: clusternet<span class="literal">-hub</span></span><br><span class="line">    app.kubernetes.io/managed<span class="literal">-by</span>: Helm</span><br><span class="line">    app.kubernetes.io/name: clusternet<span class="literal">-hub</span></span><br><span class="line">    helm.sh/chart: clusternet<span class="literal">-hub-0</span>.<span class="number">2.1</span></span><br><span class="line">  name: v1alpha1.shadow</span><br><span class="line">spec:</span><br><span class="line">  <span class="built_in">group</span>: shadow</span><br><span class="line">  groupPriorityMinimum: <span class="number">1</span></span><br><span class="line">  insecureSkipTLSVerify: true</span><br><span class="line">  service:</span><br><span class="line">    name: clusternet<span class="literal">-hub</span></span><br><span class="line">    namespace: clusternet<span class="literal">-system</span></span><br><span class="line">    port: <span class="number">443</span></span><br><span class="line">  version: v1alpha1</span><br><span class="line">  versionPriority: <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<h1 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/BSgb2uoAuHbxQOUvn8fEsA">https://mp.weixin.qq.com/s/BSgb2uoAuHbxQOUvn8fEsA</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +350,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -318,7 +449,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -465,7 +596,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -561,7 +692,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -653,7 +784,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -848,7 +979,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -940,7 +1071,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -1042,7 +1173,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -1161,7 +1292,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -1193,87 +1324,6 @@
 <p>需要将其中的变量信息修改一下</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"></span><br><span class="line">obj_file=$1</span><br><span class="line">kind=certificates</span><br><span class="line">APISERVER=https://10.0.0.100:6443</span><br><span class="line">namespace=default</span><br><span class="line">TOKEN=eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi10b2tlbi1yMmJ2dCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJhZG1pbiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImRiY2IyNzUzLWE5OGMtMTFlYS04NGVjLTAwMTYzZTAwOGU3MCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlLXN5c3RlbTphZG1pbiJ9.tX3jyNh-GEuZQg-hmy7igqh9vpTAz8Jh9uEv-diZ5XWjX9JYhxwD9nxTQvCcvzY7iPIbvxQfW2GHDZISPoopX0vQy9mQ7npVitrOvFovk06plefI5Gxjdft6vdpt-ArsGTpm7-s9G-3aBg5x41h3Cdgyv-W-ypFlCr9dKu9K7BcRIXSq_GQlq5TBmd-LKFXoer4QGwkn7geq5-ziMk_lY21jIGVdIkq9IRiH8NWuCl7l8i6nQESQDUUpMyKDCqkJqUFV8UkrQL7TfqurFP36_TUAQTh2ZAE8nFnrKRoa09BnjT-FoPO6Jnq6COQjk3PGDHV8LKNDAjCCrs0A53IYGw</span><br><span class="line">obj=nginx-test</span><br><span class="line"></span><br><span class="line">echo &quot;begin to patch $obj the file &quot;$&#123;obj_file&#125;</span><br><span class="line">curl -XPATCH -H &quot;Accept: application/json&quot; -H  &quot;Content-Type: application/merge-patch+json&quot; --header &quot;Authorization: Bearer $TOKEN&quot; --insecure -d  @$&#123;obj_file&#125; $APISERVER/apis/kuring.me/v1alpha1/namespaces/$&#123;namespace&#125;/$&#123;kind&#125;/$obj/status</span><br></pre></td></tr></table></figure>
 
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/brctl/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/brctl/" class="post-title-link" itemprop="url">Linux Bridge brctl命令</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2020-06-21 17:01:40" itemprop="dateCreated datePublished" datetime="2020-06-21T17:01:40+00:00">2020-06-21</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="查看网桥设备以及端口"><a href="#查看网桥设备以及端口" class="headerlink" title="查看网桥设备以及端口"></a>查看网桥设备以及端口</h2><p>使用brctl show可以查看本地上的所有的网桥设备以及接到网桥设备上的所有网络设备。</p>
-<h2 id="查看网桥设备的mac地址表"><a href="#查看网桥设备的mac地址表" class="headerlink" title="查看网桥设备的mac地址表"></a>查看网桥设备的mac地址表</h2><p>执行brctl showmacs ${dev}，常用来排查一些包丢在网桥上的场景。<br>其中port no为网桥通过mac地址学习到的某个mac地址所在的网桥端口号。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ brctl showmacs br0</span><br><span class="line">port no mac addr                is local?       ageing timer</span><br><span class="line"> 1     02:50:89:59:ac:4b       no                 3.96</span><br><span class="line">69     02:e2:14:78:d7:92       no                 0.57</span><br><span class="line"> 1     0a:1e:01:dc:67:87       no                10.23</span><br><span class="line"> 1     0a:60:3c:ca:a8:85       no                 6.04</span><br><span class="line"> 1     0e:01:ce:d6:fc:66       no                 8.36</span><br><span class="line"> 1     0e:0c:f8:6c:08:75       no                56.73</span><br><span class="line">58     0e:49:85:f6:a1:40       no                 1.30</span><br><span class="line">22     0e:c0:99:b0:d9:f9       no                 0.85</span><br></pre></td></tr></table></figure>
-
-<h2 id="查看网桥设备的某个端口的挂载设备"><a href="#查看网桥设备的某个端口的挂载设备" class="headerlink" title="查看网桥设备的某个端口的挂载设备"></a>查看网桥设备的某个端口的挂载设备</h2><p>在上文中中可以获取到某个mac地址对应的网桥设备的端口号，要想知道某个网桥设备的端口号对应的设备可以使用brctl showstp ${dev}命令。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">brctl showstp br0</span><br><span class="line">br0</span><br><span class="line"> bridge id              8000.ae90501b5b47</span><br><span class="line"> designated root        8000.ae90501b5b47</span><br><span class="line"> root port                 0                    path cost                  0</span><br><span class="line"> max age                  20.00                 bridge max age            20.00</span><br><span class="line"> hello time                2.00                 bridge hello time          2.00</span><br><span class="line"> forward delay            15.00                 bridge forward delay      15.00</span><br><span class="line"> ageing time             300.00</span><br><span class="line"> hello timer               0.03                 tcn timer                  0.00</span><br><span class="line"> topology change timer     0.00                 gc timer                  62.37</span><br><span class="line"> flags</span><br><span class="line">bond0.11 (1)</span><br><span class="line"> port id                8001                    state                forwarding</span><br><span class="line"> designated root        8000.ae90501b5b47       path cost                100</span><br><span class="line"> designated bridge      8000.ae90501b5b47       message age timer          0.00</span><br><span class="line"> designated port        8001                    forward delay timer        0.00</span><br><span class="line"> designated cost           0                    hold timer                 0.00</span><br><span class="line"> flags</span><br><span class="line">veth02b41ce8 (20)</span><br><span class="line"> port id                8014                    state                forwarding</span><br><span class="line"> designated root        8000.ae90501b5b47       path cost                  2</span><br><span class="line"> designated bridge      8000.ae90501b5b47       message age timer          0.00</span><br><span class="line"> designated port        8014                    forward delay timer        0.00</span><br><span class="line"> designated cost           0                    hold timer                 0.00</span><br><span class="line"> flags</span><br><span class="line"> hairpin mode              1</span><br></pre></td></tr></table></figure>
 
       
     </div>

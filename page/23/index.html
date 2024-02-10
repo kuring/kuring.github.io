@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">232</span>
+          <span class="site-state-item-count">233</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,175 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/hadoop_setup/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/hadoop_setup/" class="post-title-link" itemprop="url">在Linux上搭建Hadoop集群环境</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-06-26 00:00:00" itemprop="dateCreated datePublished" datetime="2013-06-26T00:00:00+00:00">2013-06-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>本文选择安装的hadoop版本为网上资料较多的0.20.2，对于不懂的新技术要持保守态度。遇到问题解决问题的痛苦远比体会用不着功能的新版本的快感来的更猛烈。</p>
+<h1 id="安装环境"><a href="#安装环境" class="headerlink" title="安装环境"></a>安装环境</h1><p>本文选择了三台机器来搭建hadoop集群，1个Master和2个Slave。本文中的master主机即namenode所在的机器，slave即datanode所在的机器。节点的机器名和IP地址如下</p>
+<table>
+<tr>
+    <td>机器名</td>
+    <td>IP地址</td>
+    <td>用途</td>
+    <td>运行模块</td>
+</tr>
+<tr>
+    <td>server206</td>
+    <td>192.168.20.6</td>
+    <td>Master</td>
+    <td>NameNode、JobTracker、SecondaryNameNode</td>
+</tr>
+<tr>
+    <td>ap1</td>
+    <td>192.168.20.36</td>
+    <td>Slave</td>
+    <td>DataNode、TaskTracker</td>
+</tr>
+<tr>
+    <td>ap2</td>
+    <td>192.168.20.38</td>
+    <td>Slave</td>
+    <td>DataNode、TaskTracker</td>
+</tr>
+</table>
+
+
+<h1 id="安装Java"><a href="#安装Java" class="headerlink" title="安装Java"></a>安装Java</h1><ol>
+<li>检查本机是否已安装Java<br>在命令行中输入<code>java -version</code>判断是否已经安装。如果已经安装检查Java的版本，某些操作系统在安装的时候会安装Jdk，但可能版本会太低。如果版本过低，需要将旧的版本删除。在Redhat操作系统中可以通过rpm命令来删除系统自带的Jdk。</li>
+<li>安装java<br>本文选择jdk1.6安装，将解压出的文件夹jdk1.6.0_10复制到&#x2F;usr&#x2F;java目录下。</li>
+<li>设置java的环境变量<br>添加系统环境变量，修改&#x2F;etc&#x2F;profile文件，在文件末尾添加如下内容：<blockquote>
+<p>export JAVA_HOME&#x3D;&#x2F;usr&#x2F;java&#x2F;jdk1.6.0_10<br>export CLASSPATH&#x3D;.:$JAVA_HOME&#x2F;lib&#x2F;tools.jar:$JAVA_HOME&#x2F;lib&#x2F;dt.jar<br>export PATH&#x3D;$JAVA_HOME&#x2F;bin:$PATH<br>export JRE_HOME&#x3D;$JAVA_HOME&#x2F;jre</p>
+</blockquote>
+ 修改完profile文件后要执行<code>source /etc/profile</code>命令才能使刚才的修改在该命令行环境下生效。</li>
+<li>检查java是否安装成功<br>在命令行中输入java -version、javac命令来查看是否安装成功及安装版本。</li>
+</ol>
+<h1 id="配置hosts文件"><a href="#配置hosts文件" class="headerlink" title="配置hosts文件"></a>配置hosts文件</h1><p>本步骤必须操作，需要root用户来操作，修改完成之后立即生效。在三台机器的&#x2F;etc&#x2F;hosts文件末尾添加如下内容：</p>
+<blockquote>
+<p>192.168.20.6   server206<br>192.168.20.36   ap1<br>192.168.20.38   ap2</p>
+</blockquote>
+<p>修改完成之后可以通过<code>ping 主机名</code>的方式来测试hosts文件是否正确。</p>
+<h1 id="新建hadoop用户"><a href="#新建hadoop用户" class="headerlink" title="新建hadoop用户"></a>新建hadoop用户</h1><p>在三台机器上分别新建hadoop用户，该用户的目录为&#x2F;home&#x2F;hadoop。利用useradd命令来添加用户，利用passwd命令给用户添加密码。</p>
+<h1 id="配置SSH免登录"><a href="#配置SSH免登录" class="headerlink" title="配置SSH免登录"></a>配置SSH免登录</h1><p>该步骤非必须，推荐配置，否则在Master上执行start-all.sh命令来启动hadoop集群的时候需要手动输入ssh密码，非常麻烦。<br>原理：用户将自己的公钥储存在远程主机上。登录的时候，远程主机会向用户发送一段随机字符串，用户用自己的私钥加密后，再发回来。远程主机用事先储存的公钥进行解密，如果成功，就证明用户是可信的，直接允许登录shell，不再要求输入密码。<br>在本例中，需要实现的是192.168.20.6上的hadoop用户可以无密码登录自己、192.168.20.36和192.168.20.38的hadoop用户。需要将192.168.20.6上的ssh公钥复制到192.168.20.36和192.168.20.38机器上。</p>
+<ol>
+<li>在192.168.20.6上执行<code>ssh-keygen –t rsa</code>命令来生成ssh密钥对。会在&#x2F;home&#x2F;hadoop&#x2F;.ssh目录下生成id_rsa.pub和id_rsa两个文件，其中id_rsa.pub为公钥文件，id_rsa为私钥文件。</li>
+<li>在192.168.20.6上执行<code>cat ~/.ssh/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</code>命令将公钥添加到授权的key里。</li>
+<li>权限设置。在192.168.20.6上执行<code>chmod 600 ~/.ssh/authorized_keys</code>来修改authorized_keys文件的权限，执行<code>chmod 700 ~/.ssh</code>命令将.ssh文件夹的权限设置为700。如果权限不对无密码登录就配置不成功，而且没有错误提示，这一步特别注意。</li>
+<li>在本机上测试是否设置无密码登录成功。在192.168.20.6上执行<code>ssh -p 本机SSH服务端口号 localhost</code>，如果不需要输入密码则登录成功。</li>
+<li>利用scp命令将192.168.20.6上的公钥文件id_rsa.pub追加到192.168.20.36和192.168.20.38机器上的~&#x2F;.ssh&#x2F;authorized_keys文件中。scp命令的格式如下：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">scp -P ssh端口号 ~/.ssh/id_rsa.pub hadoop@192.168.20.36:~/id_rsa.pub</span><br></pre></td></tr></table></figure>
+在192.168.20.36和192.168.20.38机器上分别执行<code>cat ~/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</code>命令将192.168.20.6机器上的公钥添加到authorized_keys文件的尾部。</li>
+<li>配置无密码登录完成，在Master机器上执行<code>ssh -P 本机SSH服务端口号 要连接的服务器IP地址</code>命令进行测试。</li>
+</ol>
+<h1 id="搭建单机版hadoop"><a href="#搭建单机版hadoop" class="headerlink" title="搭建单机版hadoop"></a>搭建单机版hadoop</h1><p>在192.168.20.6上首先搭建单机版hadoop进行测试。</p>
+<ol>
+<li>将hadoop-0.20.2.tar.gz文件解压到hadoop用户的目录下。</li>
+<li>配置hadoop的环境变量。修改&#x2F;etc&#x2F;profile文件，在文件的下面加入如下：<blockquote>
+<p>HADOOP_HOME&#x3D;&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2<br>export HADOOP_HOME<br>export HADOOP&#x3D;$HADOOP_HOME&#x2F;bin<br>export PATH&#x3D;$HADOOP:$PATH</p>
+</blockquote>
+</li>
+</ol>
+<p>修改完成之后执行<code>source /etc/profile</code>使修改的环境变量生效。<br>3. 配置hadoop用到的java环境变量<br>修改conf&#x2F;hadoop-env.sh文件，添加<code>export JAVA_HOME=/usr/java/jdk1.6.0_10</code>。<br>4. 修改conf&#x2F;core-site.xml的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.default.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://localhost:9000&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.replication&lt;/name&gt; </span><br><span class="line">        &lt;value&gt;1&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<ol start="5">
+<li>修改&#x2F;conf&#x2F;mapred-site.xml的内容如下：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;   </span><br><span class="line">        &lt;name&gt;mapred.job.tracker&lt;/name&gt;  </span><br><span class="line">        &lt;value&gt;localhost:9001&lt;/value&gt;   </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure></li>
+<li>至此单击版搭建完毕。可以通过hadoop自带的wordcount程序测试是否运行正常。下面为运行wordcount例子的步骤。</li>
+<li>在hadoop目录下新建input文件夹。</li>
+<li>将conf目录下的内容拷贝到input文件夹下，执行<code>cp conf/* input</code>。</li>
+<li>通过start-all.sh脚本来启动单机版hadoop。</li>
+<li>执行wordcount程序：<code>hadoop jar hadoop-0.20.2-examples.jar wordcount input output</code>。</li>
+<li>通过stop-all.sh脚本来停止单机版hadoop。</li>
+</ol>
+<h1 id="搭建分布式hadoop"><a href="#搭建分布式hadoop" class="headerlink" title="搭建分布式hadoop"></a>搭建分布式hadoop</h1><p>在上述基础之上，在192.168.20.6上执行如下操作。<br>1. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的core-site.xml文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.default.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://192.168.20.6:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<p>如没有配置hadoop.tmp.dir参数，此时系统默认的临时目录为：&#x2F;tmp&#x2F;hadoo-hadoop。而这个目录在每次重启后都会被干掉，必须重新执行format才行，否则会出错。<br>2. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的hdfs-site.xml文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;dfs.replication&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;1&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;dfs.support.append&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;true&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<p>3. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的mapred-site.xml文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;mapred.job.tracker&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;http://192.168.20.6:9001&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<p>4. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的masters文件。<br>将Master机器的IP地址或主机名添加进文件，如192.168.20.6。<br>5. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的slaves文件。<em>Master主机特有</em><br>在其中将slave节点的Ip地址或主机名添加进文件中，本例中加入</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">192.168.20.36</span><br><span class="line">192.168.20.38</span><br></pre></td></tr></table></figure>
+<p>6. hadoop主机的master主机已经配置完毕，利用scp命令将hadoop-0.20.2目录复制到两台slave机器的hadoop目录下。命令为：<code>scp -r /home/hadoop hadoop@服务器IP:/home/hadoop/</code>。注意slaves文件在master和slave机器上是不同的。</p>
+<h1 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h1><ul>
+<li>hadoop dfsadmin -report 查看集群状态</li>
+<li><a target="_blank" rel="noopener" href="http://192.168.20.6:50070/dfshealth.jsp">http://192.168.20.6:50070/dfshealth.jsp</a>  查看NameNode状态</li>
+<li><a target="_blank" rel="noopener" href="http://192.168.20.6:50030/jobtracker.jsp">http://192.168.20.6:50030/jobtracker.jsp</a> Map&#x2F;Reduce管理</li>
+<li>hadoop fs -mkdir input 在HDFS上创建文件夹</li>
+<li>hadoop fs -put ~&#x2F;file&#x2F;file*.txt input 将文件放入HDFS文件系统中</li>
+</ul>
+<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><ul>
+<li><a target="_blank" rel="noopener" href="http://www.cnblogs.com/xia520pi/archive/2012/05/16/2503949.html">细细品味Hadoop系列</a>。超详细的hadoop教程，作者非常用心。</li>
+</ul>
+<h1 id="下载链接"><a href="#下载链接" class="headerlink" title="下载链接"></a>下载链接</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/share/link?shareid=1235031445&uk=3506813023">http://pan.baidu.com/share/link?shareid=1235031445&uk=3506813023</a> 提取码：v8ok</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +388,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -351,7 +520,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -437,7 +606,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -519,7 +688,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -608,7 +777,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -703,7 +872,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -798,7 +967,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -888,7 +1057,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -969,7 +1138,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
     </span>
 
   
@@ -992,91 +1161,6 @@
 <h1 id="printf中的-m打印"><a href="#printf中的-m打印" class="headerlink" title="printf中的%m打印"></a>printf中的%m打印</h1><p>应用举例如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%m\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>输出如下：<br>Permission denied</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/sbrk_and_brk/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/sbrk_and_brk/" class="post-title-link" itemprop="url">sbrk和brk函数</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-06-02 13:39:54" itemprop="dateCreated datePublished" datetime="2013-06-02T13:39:54+00:00">2013-06-02</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>Linux系统中提供了两个在堆中分配空间的底层函数，函数原型如下：</p>
-<p>void *sbrk(intptr_t increment);<br>int brk(void *end_data_segment);</p>
-<p>两个函数的作用均为从堆中分配空间，并且在内部维护一个指针，指针的值默认为NULL。如果内部指针为NULL，则得到一页的空闲地址，系统默认为4K字节。指针向后移动即为分配空间，指针向前移动为释放空间。当内部指针的位置移动到一个页的开始位置时，整个页会被操作系统回收。brk为绝对改变位置，sbrk为相对改变位置。</p>
-<h1 id="sbrk函数"><a href="#sbrk函数" class="headerlink" title="sbrk函数"></a>sbrk函数</h1><p>在sbrk函数中，参数increment为要增加的字节数，increment可以为负数。当increment为负数时表示释放空间。当increment&#x3D;&#x3D;0时，内部指针位置不动。函数调用成功返回内部指针改变前的值，失败返回(void *)-1。<br>函数使用举例如下：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> *p0 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 打印堆地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p0 is : %d\n&quot;</span>, p0);    </span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> *p1 = sbrk(<span class="number">1000</span>);</span><br><span class="line">    <span class="comment">// 这里仍然打印的是第一次的堆地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p1 is : %d\n&quot;</span>, p1);    </span><br><span class="line">    </span><br><span class="line">    <span class="type">int</span> *p2 = sbrk(<span class="number">1</span>);</span><br><span class="line">    <span class="comment">// 打印第一次堆地址+1000后的地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p2 is : %d\n&quot;</span>, p2);    </span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 回到初始堆地址，释放空间</span></span><br><span class="line">    sbrk(<span class="number">-1001</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="type">int</span> *p3 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 检查是否回到初始地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p3 is : %d\n&quot;</span>, p3);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>输出如下内容：<br>this site of p0 is : 264622080<br>this site of p1 is : 264622080<br>this site of p2 is : 264623080<br>this site of p3 is : 264622080</p>
-<h1 id="brk函数"><a href="#brk函数" class="headerlink" title="brk函数"></a>brk函数</h1><p>在brk函数中，函数作用为将当前的内部指针移动到end_data_segment位置。成功返回0，失败返回-1。<br>函数使用举例如下：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> *p0 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p0 is : %d\n&quot;</span>, p0);</span><br><span class="line">    </span><br><span class="line">    brk(p0 + <span class="number">1000</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">    </span><br><span class="line">    brk(p0 + <span class="number">1001</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">    </span><br><span class="line">    brk(p0);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>函数输出如下：<br>this site of p0 is : 206979072<br>this site is : 206983072<br>this site is : 206983076<br>this site is : 206979072</p>
-<h1 id="适用场景："><a href="#适用场景：" class="headerlink" title="适用场景："></a>适用场景：</h1><p>内存的管理方式比malloc和free更加灵活，适合申请不确定的内存空间的情况，特别适合同类型的大块数据。如果用malloc则可能存在申请内存空间过多浪费的情况，过少时需要重新调用realloc来重新申请内存的情况。速度比malloc快。</p>
 
       
     </div>
