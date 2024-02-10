@@ -219,7 +219,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
     </span>
 
   
@@ -236,7 +236,7 @@
 <blockquote>
 <p>声明：本文下面操作步骤均为从网络上获取的现有操作步骤。</p>
 </blockquote>
-<p>在电脑的浏览器上登录红米路由器的管理页面，红米路由器管理页面为：<a target="_blank" rel="noopener" href="https://miwifi.com/">https://miwifi.com/</a>，或者 <a target="_blank" rel="noopener" href="http://192.168.31.1/">http://192.168.31.1/</a>。如果本地设置过其他的 DNS 服务器，需要使用 ip 地址的形式访问。<br>登录后可以获取到当前红米路由器的版本，我的已经是最新的 1.0.67，该版本的固件可以支持开启 SSH 协议。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ax6000-version.png" alt="image.png"><br>在登录红米路由器管理页面后，查看浏览器的地址栏，<code>https://miwifi.com/cgi-bin/luci/;stok=5e55c58e949d5419c001bce8288e5a27/web/home#router</code>，可以看到参数 stok <code>5e55c58e949d5419c001bce8288e5a27</code> 即我们需要用到该值。需要注意的是参数 stok 在每次登录时均会发生改变。</p>
+<p>在电脑的浏览器上登录红米路由器的管理页面，红米路由器管理页面为：<a target="_blank" rel="noopener" href="https://miwifi.com/">https://miwifi.com/</a>，或者 <a target="_blank" rel="noopener" href="http://192.168.31.1/">http://192.168.31.1/</a>。如果本地设置过其他的 DNS 服务器，需要使用 ip 地址的形式访问。<br>登录后可以获取到当前红米路由器的版本，我的已经是最新的 1.0.67，该版本的固件可以支持开启 SSH 协议。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/ax6000/ax6000-version.png" alt="image.png"><br>在登录红米路由器管理页面后，查看浏览器的地址栏，<code>https://miwifi.com/cgi-bin/luci/;stok=5e55c58e949d5419c001bce8288e5a27/web/home#router</code>，可以看到参数 stok <code>5e55c58e949d5419c001bce8288e5a27</code> 即我们需要用到该值。需要注意的是参数 stok 在每次登录时均会发生改变。</p>
 <p>用浏览器打开下面的网址，其中 stok 为上面步骤获取到的值。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://192.168.31.1/cgi-bin/luci/;stok=5e55c58e949d5419c001bce8288e5a27/api/misystem/set_sys_time?timezone=%20%27%20%3B%20zz%3D%24%28dd%20if%3D%2Fdev%2Fzero%20bs%3D1%20count%3D2%202%3E%2Fdev%2Fnull%29%20%3B%20printf%20%27%A5%5A%25c%25c%27%20%24zz%20%24zz%20%7C%20mtd%20write%20-%20crash%20%3B%20</span><br></pre></td></tr></table></figure>
 <p>浏览器如果返回<code>&#123;&quot;code&quot;:0&#125;</code>，说明该步骤执行成功。</p>
@@ -253,6 +253,15 @@
 <p>在终端中执行如下的命令，用来设置 root 密码，开启并固化 ssh 服务：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"># 修改 root 密码</span><br><span class="line">echo -e &#x27;wangss19881.\nwangss19881.&#x27; | passwd root</span><br><span class="line"></span><br><span class="line"># 开启 ssh 服务</span><br><span class="line">nvram set ssh_en=1</span><br><span class="line">nvram set telnet_en=1</span><br><span class="line">nvram set uart_en=1</span><br><span class="line">nvram set boot_wait=on</span><br><span class="line">nvram commit</span><br><span class="line"></span><br><span class="line">sed -i &#x27;s/channel=.*/channel=&quot;debug&quot;/g&#x27; /etc/init.d/dropbear</span><br><span class="line">/etc/init.d/dropbear restart</span><br><span class="line"></span><br><span class="line"># 设置 ssh 服务开机自启动</span><br><span class="line">mkdir /data/auto_ssh</span><br><span class="line">cd /data/auto_ssh</span><br><span class="line">curl -O https://fastly.jsdelivr.net/gh/lemoeo/AX6S@main/auto_ssh.sh</span><br><span class="line">chmod +x auto_ssh.sh</span><br><span class="line">uci set firewall.auto_ssh=include</span><br><span class="line">uci set firewall.auto_ssh.type=&#x27;script&#x27;</span><br><span class="line">uci set firewall.auto_ssh.path=&#x27;/data/auto_ssh/auto_ssh.sh&#x27;</span><br><span class="line">uci set firewall.auto_ssh.enabled=&#x27;1&#x27;</span><br><span class="line">uci commit firewall</span><br><span class="line"></span><br><span class="line"># 设置时区</span><br><span class="line">uci set system.@system[0].timezone=&#x27;CST-8&#x27;</span><br><span class="line">uci set system.@system[0].webtimezone=&#x27;CST-8&#x27;</span><br><span class="line">uci set system.@system[0].timezoneindex=&#x27;2.84&#x27;</span><br><span class="line">uci commit</span><br><span class="line"></span><br><span class="line"># 关闭开发模式</span><br><span class="line">mtd erase crash</span><br><span class="line"></span><br><span class="line">reboot</span><br></pre></td></tr></table></figure>
 <p>在终端中执行 <code>ssh -o HostkeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa  root@192.168.31.1</code>即可 ssh 连接到路由器。</p>
+<p>进入到系统后我们可以看到系统为基于 Linux 5.4 内核版本的 XiaoQiang 系统，至于名字为什么叫 XiaoQiang 我还不得而知。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:~# uname -a</span><br><span class="line">Linux XiaoQiang 5.4.150 #0 SMP Mon Jan 30 09:23:25 2023 aarch64 GNU/Linux</span><br></pre></td></tr></table></figure>
+
+<p>整个磁盘分区的使用情况如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">root@XiaoQiang:~# df -h</span><br><span class="line">Filesystem                Size      Used Available Use% Mounted on</span><br><span class="line">/dev/root                15.5M     15.5M         0 100% /</span><br><span class="line">tmpfs                   240.0M      9.9M    230.1M   4% /tmp</span><br><span class="line">ubi1_0                   40.4M      7.6M     30.7M  20% /data</span><br><span class="line">ubi1_0                   40.4M      7.6M     30.7M  20% /userdisk</span><br><span class="line">/dev/root                15.5M     15.5M         0 100% /userdisk/data</span><br><span class="line">ubi1_0                   40.4M      7.6M     30.7M  20% /etc/config</span><br><span class="line">ubi1_0                   40.4M      7.6M     30.7M  20% /etc/datacenterconfig</span><br><span class="line">ubi1_0                   40.4M      7.6M     30.7M  20% /etc/smartcontroller</span><br><span class="line">ubi1_0                   40.4M      7.6M     30.7M  20% /etc/parentalctl</span><br><span class="line">ubi1_0                   40.4M      7.6M     30.7M  20% /etc/smartvpn</span><br><span class="line">ubi1_0                   40.4M      7.6M     30.7M  20% /etc/ppp</span><br><span class="line">ubi1_0                   40.4M      7.6M     30.7M  20% /etc/crontabs</span><br><span class="line">tmpfs                   512.0K     12.0K    500.0K   2% /dev</span><br></pre></td></tr></table></figure>
+
+<p>使用 top 命令查看整体的系统负载情况，cpu 利用率还是非常低。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Mem: 325692K used, 165808K free, 11208K shrd, 12652K buff, 76388K cached</span><br><span class="line">CPU:  0.3% usr  1.3% sys  0.0% nic 97.8% idle  0.0% io  0.0% irq  0.4% sirq</span><br><span class="line">Load average: 1.05 1.06 1.12 2/147 28107</span><br></pre></td></tr></table></figure>
+
 <h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><p><a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=u5Qg4zqj_V0">https://www.youtube.com/watch?v=u5Qg4zqj_V0</a><br><a target="_blank" rel="noopener" href="https://uzbox.com/tech/openwrt/ax6000.html">https://uzbox.com/tech/openwrt/ax6000.html</a><br><a target="_blank" rel="noopener" href="https://github.com/kjfx/AX6000/releases/tag/RedmiAX6000">https://github.com/kjfx/AX6000/releases/tag/RedmiAX6000</a></p>
 
       
@@ -316,7 +325,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
     </span>
 
   
@@ -529,7 +538,7 @@ helm fetch lofts/vcluster
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
     </span>
 
   
@@ -629,7 +638,7 @@ helm fetch lofts/vcluster
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
     </span>
 
   
@@ -735,7 +744,7 @@ helm fetch lofts/vcluster
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
     </span>
 
   
@@ -827,7 +836,7 @@ helm fetch lofts/vcluster
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
     </span>
 
   
@@ -956,7 +965,7 @@ helm fetch lofts/vcluster
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
     </span>
 
   
@@ -1207,7 +1216,7 @@ helm fetch lofts/vcluster
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
     </span>
 
   
@@ -1348,7 +1357,7 @@ helm fetch lofts/vcluster
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
     </span>
 
   
@@ -1467,7 +1476,7 @@ helm fetch lofts/vcluster
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 16:27:40" itemprop="dateModified" datetime="2024-02-10T16:27:40+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-10 17:05:41" itemprop="dateModified" datetime="2024-02-10T17:05:41+00:00">2024-02-10</time>
     </span>
 
   
