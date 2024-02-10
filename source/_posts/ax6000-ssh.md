@@ -9,7 +9,7 @@ author:
 
 在电脑的浏览器上登录红米路由器的管理页面，红米路由器管理页面为：[https://miwifi.com/](https://miwifi.com/)，或者 [http://192.168.31.1/](http://192.168.31.1/)。如果本地设置过其他的 DNS 服务器，需要使用 ip 地址的形式访问。
 登录后可以获取到当前红米路由器的版本，我的已经是最新的 1.0.67，该版本的固件可以支持开启 SSH 协议。
-![image.png](https://kuring.oss-cn-beijing.aliyuncs.com/common/ax6000-version.png)
+![image.png](https://kuring.oss-cn-beijing.aliyuncs.com/ax6000/ax6000-version.png)
 在登录红米路由器管理页面后，查看浏览器的地址栏，`https://miwifi.com/cgi-bin/luci/;stok=5e55c58e949d5419c001bce8288e5a27/web/home#router`，可以看到参数 stok `5e55c58e949d5419c001bce8288e5a27` 即我们需要用到该值。需要注意的是参数 stok 在每次登录时均会发生改变。
 
 用浏览器打开下面的网址，其中 stok 为上面步骤获取到的值。
@@ -74,6 +74,40 @@ mtd erase crash
 reboot
 ```
 在终端中执行 `ssh -o HostkeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa  root@192.168.31.1`即可 ssh 连接到路由器。
+
+进入到系统后我们可以看到系统为基于 Linux 5.4 内核版本的 XiaoQiang 系统，至于名字为什么叫 XiaoQiang 我还不得而知。
+
+```
+root@XiaoQiang:~# uname -a
+Linux XiaoQiang 5.4.150 #0 SMP Mon Jan 30 09:23:25 2023 aarch64 GNU/Linux
+```
+
+整个磁盘分区的使用情况如下：
+```
+root@XiaoQiang:~# df -h
+Filesystem                Size      Used Available Use% Mounted on
+/dev/root                15.5M     15.5M         0 100% /
+tmpfs                   240.0M      9.9M    230.1M   4% /tmp
+ubi1_0                   40.4M      7.6M     30.7M  20% /data
+ubi1_0                   40.4M      7.6M     30.7M  20% /userdisk
+/dev/root                15.5M     15.5M         0 100% /userdisk/data
+ubi1_0                   40.4M      7.6M     30.7M  20% /etc/config
+ubi1_0                   40.4M      7.6M     30.7M  20% /etc/datacenterconfig
+ubi1_0                   40.4M      7.6M     30.7M  20% /etc/smartcontroller
+ubi1_0                   40.4M      7.6M     30.7M  20% /etc/parentalctl
+ubi1_0                   40.4M      7.6M     30.7M  20% /etc/smartvpn
+ubi1_0                   40.4M      7.6M     30.7M  20% /etc/ppp
+ubi1_0                   40.4M      7.6M     30.7M  20% /etc/crontabs
+tmpfs                   512.0K     12.0K    500.0K   2% /dev
+```
+
+使用 top 命令查看整体的系统负载情况，cpu 利用率还是非常低。
+```
+Mem: 325692K used, 165808K free, 11208K shrd, 12652K buff, 76388K cached
+CPU:  0.3% usr  1.3% sys  0.0% nic 97.8% idle  0.0% io  0.0% irq  0.4% sirq
+Load average: 1.05 1.06 1.12 2/147 28107
+```
+
 # 资料
 [https://www.youtube.com/watch?v=u5Qg4zqj_V0](https://www.youtube.com/watch?v=u5Qg4zqj_V0)
 [https://uzbox.com/tech/openwrt/ax6000.html](https://uzbox.com/tech/openwrt/ax6000.html)
