@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">233</span>
+          <span class="site-state-item-count">235</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,182 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/http_range/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/http_range/" class="post-title-link" itemprop="url">一个实例讲解HTTP的断点续传</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2014-11-06 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-06T00:00:00+00:00">2014-11-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>本文以从服务器下载一个文件为例，讲解HTTP的断点续传功能。</p>
+<p>客户端IP地址为：192.168.1.2<br>服务器IP地址为：192.168.1.3</p>
+<h1 id="客户端向服务器发送请求"><a href="#客户端向服务器发送请求" class="headerlink" title="客户端向服务器发送请求"></a>客户端向服务器发送请求</h1><p>客户端向服务器发送的请求为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br></pre></td></tr></table></figure>
+
+<p>从中可以看出请求的文件名为deepc.a文件。</p>
+<h1 id="客户端向服务器发送具体请求"><a href="#客户端向服务器发送具体请求" class="headerlink" title="客户端向服务器发送具体请求"></a>客户端向服务器发送具体请求</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.100.189/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=0-32767</span><br></pre></td></tr></table></figure>
+
+<p>Range字段表示请求文件的范围为0-32767。</p>
+<h1 id="服务器响应"><a href="#服务器响应" class="headerlink" title="服务器响应"></a>服务器响应</h1><p>第一次服务器的HTTP响应报文如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.1.3</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.1.3/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=0-32767</span><br><span class="line"></span><br><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 32768</span><br><span class="line">Content-Range: bytes 0-32767/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=100</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
+
+<p>HTTP的状态为206，表示服务器已经处理了部分HTTP相应。其中Content-Range字段表示服务器已经响应了0-32767个字节的文件内容。8322278表示文件的总长度为8322278字节。</p>
+<h1 id="客户端继续向服务器发送请求"><a href="#客户端继续向服务器发送请求" class="headerlink" title="客户端继续向服务器发送请求"></a>客户端继续向服务器发送请求</h1><p>客户端根据上次HTTP报文中服务器已经返回给的客户端的数据情况继续向服务器发送请求报文，向服务器发送的请求报文内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.100.189/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=32768-8322277</span><br><span class="line">If-Range: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line"></span><br><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 8289510</span><br><span class="line">Content-Range: bytes 32768-8322277/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=98</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
+
+<p>Content-Range的内容表示客户端向服务器请求文件中32768-8322277之间的字节数据。</p>
+<h1 id="第二次服务器的HTTP响应报文如下："><a href="#第二次服务器的HTTP响应报文如下：" class="headerlink" title="第二次服务器的HTTP响应报文如下："></a>第二次服务器的HTTP响应报文如下：</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 8289510</span><br><span class="line">Content-Range: bytes 32768-8322277/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=98</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
+
+<p>表示服务器已经相应完成了32768-8322277之间的数据。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_listen_shell/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux_listen_shell/" class="post-title-link" itemprop="url">一个Linux下的监听脚本程序</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2014-11-06 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-06T00:00:00+00:00">2014-11-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>为了避免linux下的控制台程序A死掉，可以通过一个另外一个程序B来监听A程序，当A程序异常退出时将B程序带起来。当然程序设计的最好方式为程序不崩溃，但是程序中存在bug很难避免，该方法还是有一定的实践意义。对于B程序可以通过shell脚本或者单独一个应用程序来解决。本文将通过shell脚本来解决此问题。</p>
+<h1 id="shell脚本的内容"><a href="#shell脚本的内容" class="headerlink" title="shell脚本的内容"></a>shell脚本的内容</h1><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash">!/bin/bash</span></span><br><span class="line"></span><br><span class="line">check_process()</span><br><span class="line">&#123;</span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">check parameter</span></span><br><span class="line">	if [ $1 = &quot;&quot; ];</span><br><span class="line">	then</span><br><span class="line">		return -1</span><br><span class="line">	fi</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">get the running process</span></span><br><span class="line">	process_names=$(ps -ef | grep $1 | grep -v grep | awk &#x27;&#123;print $8&#125;&#x27;)</span><br><span class="line">	for process_name in $process_names</span><br><span class="line">	do</span><br><span class="line">		if [ $process_name = $1 ] ;</span><br><span class="line">		then</span><br><span class="line">			return 1</span><br><span class="line">		fi</span><br><span class="line">	done</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">	# </span><span class="language-bash">not run and run the process</span></span><br><span class="line">	echo &quot;$(date) : process $1 not run, just run it&quot;</span><br><span class="line"><span class="meta prompt_">	$</span><span class="language-bash">1</span></span><br><span class="line">	return 0</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">while [ 1 ];do</span><br><span class="line">	check_process &quot;/usr/bin/app/process&quot;	# programe path</span><br><span class="line">	sleep 5</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<h1 id="将shell脚本在脱离控制台下可以运行"><a href="#将shell脚本在脱离控制台下可以运行" class="headerlink" title="将shell脚本在脱离控制台下可以运行"></a>将shell脚本在脱离控制台下可以运行</h1><p>一旦断开了控制台，shell脚本就会由于接收到SIGHUP信号而退出。这里有两种思路来解决该问题，一种是通过系统的crontab来定期调用脚本程序，另外一种是通过神奇的screen程序来解决该问题，我这里通过screen程序来解决该问题，具体screen程序的应用见我的另外一篇文章《》。</p>
+<h1 id="应用程序为daemon方式运行"><a href="#应用程序为daemon方式运行" class="headerlink" title="应用程序为daemon方式运行"></a>应用程序为daemon方式运行</h1><p>为了能够保证该脚本监控多个应用程序，需要将应用程序设置为daemon方式运行，可以调用函数daemon实现。也可以调用单独实现的daemon函数，具体代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">void init_daemon(void) </span><br><span class="line">&#123; </span><br><span class="line">    int pid; </span><br><span class="line">    int i;  </span><br><span class="line"></span><br><span class="line">    if(pid=fork()) </span><br><span class="line">        exit(0);//是父进程，结束父进程 </span><br><span class="line">    else if(pid&lt; 0)  </span><br><span class="line">        exit(1);//fork失败，退出 </span><br><span class="line">    //是第一子进程，后台继续执行 </span><br><span class="line"></span><br><span class="line">    setsid();//第一子进程成为新的会话组长和进程组长 </span><br><span class="line">    //并与控制终端分离 </span><br><span class="line">    if(pid=fork()) </span><br><span class="line">        exit(0);//是第一子进程，结束第一子进程 </span><br><span class="line">    else if(pid&lt; 0)  </span><br><span class="line">        exit(1);//fork失败，退出 </span><br><span class="line">    //是第二子进程，继续 </span><br><span class="line">    //第二子进程不再是会话组长 </span><br><span class="line"></span><br><span class="line">    for(i=0;i&lt; NOFILE;++i)//关闭打开的文件描述符 </span><br><span class="line">        close(i); </span><br><span class="line">    chdir(&quot;/tmp&quot;);//改变工作目录到/tmp </span><br><span class="line">    umask(0);//重设文件创建掩模 </span><br><span class="line">    return; </span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +395,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -327,7 +503,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -415,7 +591,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -508,7 +684,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -606,7 +782,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -694,7 +870,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -786,7 +962,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -875,7 +1051,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -977,174 +1153,6 @@
 <hr>
 <h1 id="尾"><a href="#尾" class="headerlink" title="尾"></a>尾</h1><p>本来是计划写成散文的，文笔有限，写着写着就写成记叙文了。要是有足够的文采，绝对可以写出比《从百草园到三味书屋》中需要背诵的片段更优美的文字，可惜不是作家的料，仅能码字而已。</p>
 <p>旅游不易，码字更难，且行且珍惜。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/coolshell_puzzle/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/coolshell_puzzle/" class="post-title-link" itemprop="url">coolshell博客解谜题游戏</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2014-08-20 00:00:00" itemprop="dateCreated datePublished" datetime="2014-08-20T00:00:00+00:00">2014-08-20</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>有些闲暇时间了解了下酷壳的谜题活动，共10道题，每道题都不是非常简单，我这里参考着攻略做了下。</p>
-<h1 id="字符替换题"><a href="#字符替换题" class="headerlink" title="字符替换题"></a>字符替换题</h1><p>我编写的C++语言程序</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">char</span> <span class="title">change</span><span class="params">(<span class="type">char</span> input)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span> *after = <span class="string">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span>;</span><br><span class="line">    <span class="type">char</span> *before = <span class="string">&quot;pvwdgazxubqfsnrhocitlkeymj&quot;</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="built_in">strlen</span>(before); i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (before[i] == input)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">return</span> after[i];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> input;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span> *input = <span class="string">&quot;Wxgcg txgcg ui p ixgff, txgcg ui p epm. I gyhgwt mrl lig txg ixgff wrsspnd tr irfkg txui hcrvfgs, nre, hfgpig tcm liunz txg crt13 ra \&quot;ixgff\&quot; tr gntgc ngyt fgkgf.&quot;</span>;</span><br><span class="line">    <span class="type">char</span> *output = <span class="keyword">new</span> <span class="type">char</span>[<span class="built_in">strlen</span>(input) + <span class="number">1</span>];</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="built_in">strlen</span>(input); i++)</span><br><span class="line">    &#123;</span><br><span class="line">        output[i] = <span class="built_in">change</span>(input[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    output[<span class="built_in">strlen</span>(input)] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, output);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>好久没有用shell了，又写了个shell版本的解题方法，该问题可能有更简单的shell解决办法，我这里肯定写复杂了。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line">result=<span class="string">&#x27;&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="function"><span class="title">change</span></span>()</span><br><span class="line">&#123;</span><br><span class="line">    result=<span class="variable">$1</span></span><br><span class="line">    before=<span class="string">&#x27;pvwdgazxubqfsnrhocitlkeymj&#x27;</span></span><br><span class="line">    after=<span class="string">&#x27;abcdefghijklmnopqrstuvwxyz&#x27;</span></span><br><span class="line">    <span class="keyword">for</span> ((i=<span class="number">0</span>; i &lt;= <span class="variable">$&#123;#before&#125;</span>; i++))</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">        <span class="keyword">if</span> [[ <span class="variable">$&#123;before:<span class="variable">$&#123;i&#125;</span>:1&#125;</span> = <span class="variable">$&#123;1&#125;</span> ]]</span><br><span class="line">        <span class="keyword">then</span></span><br><span class="line">            result=<span class="variable">$&#123;after:<span class="variable">$&#123;i&#125;</span>:1&#125;</span></span><br><span class="line">            <span class="built_in">break</span></span><br><span class="line">        <span class="keyword">fi</span></span><br><span class="line">    <span class="keyword">done</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">input=<span class="string">&#x27;Wxgcg txgcg ui p ixgff, txgcg ui p epm. I gyhgwt mrl lig txg ixgff wrsspnd tr irfkg txui hcrvfgs, nre, hfgpig tcm liunz txg crt13 ra &quot;ixgff&quot; tr gntgc ngyt fgkgf.&#x27;</span></span><br><span class="line"></span><br><span class="line">output=<span class="string">&#x27;&#x27;</span></span><br><span class="line">j=0</span><br><span class="line"><span class="keyword">while</span> [ <span class="string">&quot;<span class="variable">$j</span>&quot;</span> -le <span class="variable">$&#123;#input&#125;</span> ]</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">    change <span class="string">&quot;<span class="variable">$&#123;input:<span class="variable">$&#123;j&#125;</span>:1&#125;</span>&quot;</span></span><br><span class="line">    output=<span class="string">&quot;<span class="variable">$&#123;output&#125;</span><span class="variable">$&#123;result&#125;</span>&quot;</span></span><br><span class="line">    j=$((j+<span class="number">1</span>))</span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$&#123;output&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p>关于rol13的转码可以采用<a target="_blank" rel="noopener" href="http://rot13.de/index.php">rot13</a>这个网址来在线转码。</p>
-<h1 id="穷举变量题"><a href="#穷举变量题" class="headerlink" title="穷举变量题"></a>穷举变量题</h1><p>该题需要不断的请求url来获取最终的网址，我这里写一个shell脚本来穷举。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line">res=2014</span><br><span class="line"><span class="keyword">while</span> [ <span class="variable">$&#123;#res&#125;</span> &gt; 0 ]</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">res=`curl -s <span class="string">&quot;http://fun.coolshell.cn/n/<span class="variable">$&#123;res&#125;</span>&quot;</span>`</span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$res</span></span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></table></figure>
-
-<p>得到答案tree</p>
-<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><a target="_blank" rel="noopener" href="http://fun.coolshell.cn/">游戏页面</a><br><a target="_blank" rel="noopener" href="http://blog.e10t.net/coolshell-puzzle-game-walkthrough/">CoolShell puzzle game 攻略</a><br><a target="_blank" rel="noopener" href="http://joseph.yy.blog.163.com/blog/static/5097395920147782756165/">我也不产生代码 – Coolshell 谜题一游 </a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/eclipse_theme/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/eclipse_theme/" class="post-title-link" itemprop="url">修改eclipse主题</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2014-06-23 00:00:00" itemprop="dateCreated datePublished" datetime="2014-06-23T00:00:00+00:00">2014-06-23</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>Eclipse默认提供的主题过于刺眼，自己比较习惯黑色背景色。本文分享下修改Eclipse主题的步骤。我所使用的Eclipse版本为Kepler。相关的说明在插件的网站都有相关说明，本文不再赘述。安装完插件后的效果图如下：</p>
-<p><img src="http://kuring.qiniudn.com/eclipse_theme.png" alt="我的Eclipse效果图"></p>
-<h1 id="安装Eclipse-Color-Theme插件"><a href="#安装Eclipse-Color-Theme插件" class="headerlink" title="安装Eclipse Color Theme插件"></a>安装Eclipse Color Theme插件</h1><p>该插件仅会更新编辑栏中的背景颜色和字体颜色等信息，不会修改Eclipse的整体主题颜色。该插件网址为：<a target="_blank" rel="noopener" href="https://github.com/eclipse-color-theme/eclipse-color-theme%E3%80%82">https://github.com/eclipse-color-theme/eclipse-color-theme。</a></p>
-<h1 id="安装Eclipse-UI-Themes主题"><a href="#安装Eclipse-UI-Themes主题" class="headerlink" title="安装Eclipse UI Themes主题"></a>安装Eclipse UI Themes主题</h1><p>该插件会更新除编辑栏之外的其他Eclipse背景色等信息，其Github地址为：<a target="_blank" rel="noopener" href="http://eclipsecolorthemes.org/%E3%80%82">http://eclipsecolorthemes.org/。</a></p>
-<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p>为了方便使用，我这里备份了插件放在百度网盘共享，相关插件下载地址：<a target="_blank" rel="noopener" href="http://pan.baidu.com/s/1eQnDI86">http://pan.baidu.com/s/1eQnDI86</a></p>
 
       
     </div>

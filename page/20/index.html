@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">233</span>
+          <span class="site-state-item-count">235</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,205 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/lfs/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/lfs/" class="post-title-link" itemprop="url">Linux From Scratch学习笔记</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2014-01-20 00:00:00" itemprop="dateCreated datePublished" datetime="2014-01-20T00:00:00+00:00">2014-01-20</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>最近买了本新书《深度探索Linux操作系统》，在按照书中步骤学习的过程中，无奈在安装步骤中出错，于是只能到网上找书评。在浏览书评的过程中偶然看到LFS三个名词，google之，发现是手动安装Linux的官方学习手册，学习之。</p>
+<h1 id="解压命令"><a href="#解压命令" class="headerlink" title="解压命令"></a>解压命令</h1><p>一直对解压命令的参数记不清楚，记录一下：<br>tar -Jvxf *.tar.xz<br>tar -zvxf *.tar.gz<br>tar -xvf *.tar.bz2</p>
+<h1 id="将一般用户可以使用sudo命令执行命令的方法"><a href="#将一般用户可以使用sudo命令执行命令的方法" class="headerlink" title="将一般用户可以使用sudo命令执行命令的方法"></a>将一般用户可以使用sudo命令执行命令的方法</h1><p>执行visudo命令来修改文件内容，将本用户添加到文本文件中。修改的文件为&#x2F;etc&#x2F;sudoers，该文件默认为只读的，但是可以通过visudo命令来修改。</p>
+<h1 id="login-shell和non-login-shell"><a href="#login-shell和non-login-shell" class="headerlink" title="login shell和non-login shell"></a>login shell和non-login shell</h1><p>login shell：shell会重新读取&#x2F;etc&#x2F;profile和<del>&#x2F;.bash_profile来应用新的环境变量。通过<code>su - 用户名</code>的方式登录为login shell方式。<br>non-login shell：此时shell不会读取&#x2F;etc&#x2F;profile和</del>&#x2F;.bash_profile，而是读取~&#x2F;.bashrc来应用新的环境变量。通过<code>su 用户名</code>登录的方式为non-login shell方式。</p>
+<p>文中lfs用户下的~&#x2F;.bash_profile的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exec env -i HOME=$HOME TERM=$TERM PS1=&#x27;\u:\w\$ &#x27; /bin/bash</span><br></pre></td></tr></table></figure>
+
+<p>而lfs用户下的~&#x2F;.bashrc文件的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">set +h</span><br><span class="line">umask 022</span><br><span class="line">LFS=/mnt/lfs</span><br><span class="line">LC_ALL=POSIX</span><br><span class="line">LFS_TGT=$(uname -m)-lfs-linux-gnu</span><br><span class="line">PATH=/tools/bin:/bin:/usr/bin</span><br><span class="line">export LFS LC_ALL LFS_TGT PATH</span><br></pre></td></tr></table></figure>
+
+<p>而最令人奇怪的是即使通过<code>su - lfs</code>命令登录也会执行到.bashrc文件的内容，不信可以通过在.bash_profile和.bashrc文件的开始地方打印内容来验证。之所以出现如此奇怪的问题，原因在于~&#x2F;.bash_profile中的命令。其中exec命令和linux系统中的exec系列函数的含义是一致的，即在当前bash中直接执行exec后面的命令，而不用fork一个新的进程来执行。env命令会通过当前用户的HOME和TERM环境变量及自定义的PS1环境变量来执行新的&#x2F;bin&#x2F;bash，而新执行的bash为non-login shell方式，因此会执行lfs用户下的.bahsrc文件。</p>
+<p>总结一下，就是~&#x2F;.bash_profile文件中的env命令通过non-login shell方式执行了新的bash，exec命令的作用是不在当前bash中执行新的bash，而不是通过产生一个新进程的方式来执行bash。</p>
+<h1 id="POSIX-amp-amp-FHS-amp-amp-LSB"><a href="#POSIX-amp-amp-FHS-amp-amp-LSB" class="headerlink" title="POSIX &amp;&amp; FHS &amp;&amp; LSB"></a>POSIX &amp;&amp; FHS &amp;&amp; LSB</h1><p><a target="_blank" rel="noopener" href="http://pubs.opengroup.org/onlinepubs/9699919799/">POSIX.1-2008</a>，通过该网站来查询系统函数等非常方便。<br>Filesystem Hierarchy Standard (FHS)<br><a target="_blank" rel="noopener" href="http://www.pathname.com/fhs/pub/fhs-2.3.html">Filesystem Hierarchy Standard (FHS)</a>，可以通过此标准来学习Linux的目录含义。<br><a target="_blank" rel="noopener" href="http://refspecs.linuxfoundation.org/lsb.shtml">Linux Standard Base (LSB) Specifications</a></p>
+<h1 id="set-h"><a href="#set-h" class="headerlink" title="set +h"></a>set +h</h1><p>The set +h command turns off bash’s hash function. Hashing is ordinarily a useful feature—bash uses a hash table to remember the full path of executable files to avoid searching the PATH time and again to find the same executable.</p>
+<h1 id="虚拟终端PTYs"><a href="#虚拟终端PTYs" class="headerlink" title="虚拟终端PTYs"></a>虚拟终端PTYs</h1><p>PTY 设备与终端设备（terminal device）相类似——它接受来自键盘的输入，并将文字传递给运行在其上的程序以备输出。PTY 被依次编号，且每个 PTY 的编号就是它在 &#x2F;dev&#x2F;pts 目录中对应设备文件的文件名。</p>
+<h1 id="devpts-file-system"><a href="#devpts-file-system" class="headerlink" title="devpts file system"></a>devpts file system</h1><p>远程登陆(telnet,ssh等)后创建的控制台设备文件所在的目录。 </p>
+<h1 id="specs文件"><a href="#specs文件" class="headerlink" title="specs文件"></a>specs文件</h1><p>gcc 是一个驱动式的程序. 它调用其它程序来依次进行编译, 汇编和链接. GCC 分析命令行参数, 然后决定该调用哪一个子程序, 哪些参数应该传递给子程序. 所有这些行为都是由 SPEC 字符串(spec strings)来控制的. 通常情况下, 每一个 GCC 可以调用的子程序都对应着一个 SPEC 字符串, 不过有少数的子程序需要多个 SPEC 字符串来控制他们的行为.</p>
+<h1 id="查看当前shell"><a href="#查看当前shell" class="headerlink" title="查看当前shell"></a>查看当前shell</h1><ol>
+<li>查看默认shell可以用命令：<code>echo $SHELL</code>。</li>
+<li>查看当前shell：<code>ps | grep $$ | awk &#39;&#123;print $4&#125;&#39; </code>。</li>
+<li>通过输入一个不存在的命令来查看，如输入tom，可显示<code>bash: tom: command not found</code>，说明当前的shell为bash。</li>
+</ol>
+<h1 id="expect"><a href="#expect" class="headerlink" title="expect"></a>expect</h1><p>一种提供自动交互的脚本语言。</p>
+<h1 id="tee命令"><a href="#tee命令" class="headerlink" title="tee命令"></a>tee命令</h1><p>重定向输出到多个文本文件命令。</p>
+<h1 id="pkg-config"><a href="#pkg-config" class="headerlink" title="pkg-config"></a>pkg-config</h1><p>configure脚本在检查相应依赖环境时(例：所依赖软件的版本、相应库版本等)，通常会通过pkg-config的工具来检测相应依赖环境。</p>
+<p>详细内容见：<a target="_blank" rel="noopener" href="http://www.mike.org.cn/articles/description-configure-pkg-config-pkg_config_path-of-the-relations-between/">简述configure、pkg-config、pkg_config_path三者的关系</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/2013_summary/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/2013_summary/" class="post-title-link" itemprop="url">2013年总结</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2014-01-07 00:00:00" itemprop="dateCreated datePublished" datetime="2014-01-07T00:00:00+00:00">2014-01-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>2013年在不经意间过去了，总结起来收获还是不小的。我的大部分业余时间用在了学习上，看书看书再看书。每个周五或周六晚上会玩上一晚上dota以放松，周末会抽一天时间出去散散心。</p>
+<h1 id="学习"><a href="#学习" class="headerlink" title="学习"></a>学习</h1><p>学习上进步还算比较大，学习方式以看书为主，尤其是对Linux有了较深入了解。在年初的时候制定了深入学习Linux的计划，包括Linux内核，大约从五月下旬开始学习。</p>
+<h2 id="信息系统项目管理师"><a href="#信息系统项目管理师" class="headerlink" title="信息系统项目管理师"></a>信息系统项目管理师</h2><p>当时抱着该考试可以挂靠的心态来学习PM，从春节后开始学习，五月末考试，大约花了三个月时间。学习思路为从淘宝上买的YY讲课的培训视频，价格还算便宜，隔一天晚上上一课，一次讲课时间在一个半小时左右。听了几次课之后就发现老师废话挺多，但是如果自己看书复习又抓不住重点，因此还是硬着头皮听老师讲课，就当作休息了。参考图书共三本，加起来足够2000页的样子，还做了历年的部分真题。由于自己手懒，写作在考试之前没有写过一篇，只是在考试之前背了两篇范文，结果考试的时候写作没有压中，离分数线差了两分。</p>
+<p>下半年考试没有报名，经过了一次考试后看清了PM的真面目，纯属搞理论，距离实际太远。如果为了挂靠去花费宝贵的业余时间来学习实在有点不得不偿失。现在回想起来多少有些后悔，但是不尝试怎么能知道PM到底是个啥东西呢。</p>
+<h2 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h2><p>Linux的系统知识今年进步挺大的，无论是在编码、对系统的理解还是内核方面都有非常大的进步。</p>
+<h3 id="《鸟哥的Linux私房菜–基础学习篇》"><a href="#《鸟哥的Linux私房菜–基础学习篇》" class="headerlink" title="《鸟哥的Linux私房菜–基础学习篇》"></a>《鸟哥的Linux私房菜–基础学习篇》</h3><p>两年多前看过一次，利用工作中的空闲时间重新回顾了一边，收获还是挺大的。</p>
+<h3 id="《鸟哥的Linux私房菜–服务器架设篇》"><a href="#《鸟哥的Linux私房菜–服务器架设篇》" class="headerlink" title="《鸟哥的Linux私房菜–服务器架设篇》"></a>《鸟哥的Linux私房菜–服务器架设篇》</h3><p>两年前买的书，当时没有通读，感觉含金量跟基础学习篇太大。利用工作之余通读一遍，收获也还算可以。</p>
+<h3 id="《Unix环境高级编程》"><a href="#《Unix环境高级编程》" class="headerlink" title="《Unix环境高级编程》"></a>《Unix环境高级编程》</h3><p>Linux编程圣经，花了接近两个月时间看完，看完后收获很大。</p>
+<h3 id="《Unix网络编程》"><a href="#《Unix网络编程》" class="headerlink" title="《Unix网络编程》"></a>《Unix网络编程》</h3><p>Linux网络编程圣经，花了一个月时间看完，看完后对写TCP&#x2F;IP通信的程序很有帮助，作为《Unix环境高级编程》的很好补充。</p>
+<h3 id="《Linux内核完全剖析》"><a href="#《Linux内核完全剖析》" class="headerlink" title="《Linux内核完全剖析》"></a>《Linux内核完全剖析》</h3><p>该书花了我接近半年的时间来学习，现在看完了五分之四左右，还有文件系统章节没有学习。学习下来收获很大，后续会结合《Linux内核图解》一书来补充学习和归纳。</p>
+<h3 id="《程序员的自我修养》"><a href="#《程序员的自我修养》" class="headerlink" title="《程序员的自我修养》"></a>《程序员的自我修养》</h3><p>通过学习对Linux的elf和windows的pe结构都有了较深入的了解，不过事隔半年之后已经全部忘记了，需要再温习一遍。</p>
+<h2 id="微信公共帐号"><a href="#微信公共帐号" class="headerlink" title="微信公共帐号"></a>微信公共帐号</h2><p>从年初开始，每天会花一定时间来阅读微信公共帐号的文章，初期订阅的文章基本都会阅读，后期订阅量大了有些就仅浏览标题了。我订阅的公共帐号里比较好的有：鬼脚七、道哥的黑板报、小道消息、Mac Talk等。鬼脚七写人生类的文章我比较喜欢看，也比较赞同作者的观点。</p>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>###《30天自制操作系统》<br>从2012年年底开始读的图书，花了接近三个月的时间通读，读到中间部分还反过头来重读一遍。学习到三分之二的时候感觉对我用处不大，因为不会对我理解Linux或Windows操作系统有太大帮助，放弃之。</p>
+<h3 id="《Hadoop权威指南》"><a href="#《Hadoop权威指南》" class="headerlink" title="《Hadoop权威指南》"></a>《Hadoop权威指南》</h3><p>项目需要，对Hadoop没有足够的兴趣，理解了是怎么回事对我就足够了。同时还研究了Solr、HBase、MonogoDB等大数据软件。</p>
+<h3 id="《Git权威指南》"><a href="#《Git权威指南》" class="headerlink" title="《Git权威指南》"></a>《Git权威指南》</h3><p>向对Git有进一步的理解，目前仅看完了一半，分支管理部分还没有学习。</p>
+<p>###《浪潮之巅》<br>吴军博士的经典，我主要拿来在看书看累的时候消遣用，和《黑客与画家》的效果相当，很抱歉看了大半年了到现在仍然在看。</p>
+<h3 id="《深度探索C-对象模型》"><a href="#《深度探索C-对象模型》" class="headerlink" title="《深度探索C++对象模型》"></a>《深度探索C++对象模型》</h3><p>之前曾一度要学习，无奈一直没有看进去，lippman写的和侯捷翻译的实在是诡异。这次边写博客记录边看，居然效果很不错。最后时间有限，留了个小尾巴没有看完。</p>
+<h1 id="工作"><a href="#工作" class="headerlink" title="工作"></a>工作</h1><p>由于之前的公司经营不善，加上今年全国经济形式不好，公司持续几个月发不下工资来，考虑到个人经济状况换了一份工作。在济南这种小地方，找个理想的工作实在是不容易，甚至今年很多公司都不再招聘。我找工作以技术为导向，家附近一堆做电信BOSS的外包公司，一概不考虑。新工作还算可以，依旧加班较少，只是周六是间歇性上班，这个可以忍，还算有较充足的业余时间来学习。</p>
+<p>工作中用到的技术以C、C++为主，兼涉及到Android、PHP等。从元旦之后上班第一天，自己单打独斗从零开始做了一个短信管家类项目，到五月份后终止，结果跟我预想的完全一致，以失败而告终。回想当初真该将我当时对项目的看法跟领导沟通一下，而不是盲目的接下公司安排的任务。当时领导对互联网、APP的理解完全是幼稚园水平，一家传统行业的软件企业想来玩转互联网行业困难可想而知，我作为唯一的项目成员在项目的开始已经看到了没有任何意外的结局。如果当初将这五个多月的时间用来做些Linux的东西，对我个人的成长将是相当巨大的。</p>
+<h1 id="生活"><a href="#生活" class="headerlink" title="生活"></a>生活</h1><p>2013经济上不是很宽裕，没有旅游，仅有的一次市外旅游是南部山区的红叶谷。在济南这种地方，工资压得低，技术牛人又少，实在悲剧。生活虽然对我少了些许精彩，但过的还算比较充实。</p>
+<h1 id="博客"><a href="#博客" class="headerlink" title="博客"></a>博客</h1><p>为了能够更好的总结学习经验，年初准备有写博客的计划。之前零零散散的也写过一些，没有坚持住，现在看来我的博客写作计划坚持的还算不错，从6月份到年底共写了40篇博客，大都是自己的学习经验总结。前期博客写了一些非技术类博文，后期觉得没有这个必要不再写非技术类博客。</p>
+<p>为了搭建博客，又不想花钱买个不稳定的空间。我研究了Github上的jekyll、基于网盘（DropBox、Google Driver）的Farbox等搭建博客技术，参照了大量的jekyll主题，几乎将jekyll wiki上列出的主题都看了一个遍，也没有发现一个令我非常满意的主题，后挑选一个主题在Github上实验，不知是我markdown语法写的问题还是Github对markdown的解析问题，解析效果不够理想，但是我写的markdown在Farbox上却没有问题。最后采用了Farbox作为博客平台，并对Farbox的默认主题进行了少量修改。并从Godaddy上购买了kuring.me域名。</p>
+<h1 id="2014年计划"><a href="#2014年计划" class="headerlink" title="2014年计划"></a>2014年计划</h1><p>2014，除了工作之外，我也业余时间仍然会大部分奉献给阅读书籍，以Linux内核方向为主。趁着年轻，多读些书，永远是正确的。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +418,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -304,7 +503,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -388,7 +587,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -465,7 +664,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -557,7 +756,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -640,7 +839,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -722,7 +921,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -808,7 +1007,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
+      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
     </span>
 
   
@@ -855,174 +1054,6 @@
 <li>执行显式代码。</li>
 </ol>
 <h1 id="对象复制语意学"><a href="#对象复制语意学" class="headerlink" title="对象复制语意学"></a>对象复制语意学</h1>
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/my_data_bak/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/my_data_bak/" class="post-title-link" itemprop="url">我的个人数据备份方案</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-09-16 18:33:32" itemprop="dateCreated datePublished" datetime="2013-09-16T18:33:32+00:00">2013-09-16</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>没有一成不坏的硬件，尤其是数据放到物理硬盘中，说不定哪天硬盘闹脾气就崩掉了，硬盘不值钱，可是里面的数据值钱。下面分享下我的数据备份方案，我的原则是数据无论何时都至少留有一个备份。</p>
-<h1 id="博客"><a href="#博客" class="headerlink" title="博客"></a>博客</h1><p>我的博客是放到Dropbox中的，在云端和本地均有备份，确保了博客数据的绝对安全，即使云端坏掉还有本地，本地丢了还有云端。</p>
-<h1 id="个人照片"><a href="#个人照片" class="headerlink" title="个人照片"></a>个人照片</h1><p>由于照片都较大，放到本地硬盘很容易占满空间，而且还不经常用。除了在自己电脑上留有照片之外，选择将照片压缩并加密后按照年份放到百度云上。</p>
-<h1 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h1><p>工作几年了，已经积攒了一些代码，有些代码时不时的会查看到。对于可以公开的自己写的代码我以后打算放到我的Github上，一方面是由于Github上可以在线浏览代码，另一方面可以向别人分享我的代码。<br>对于私有的代码，暂时放到了金山快盘上，没有找到可以方便浏览代码的云端。</p>
-<h1 id="文档"><a href="#文档" class="headerlink" title="文档"></a>文档</h1><p>由于文档之类的资料也是经常用到，我选择了金山快盘。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_windows_network/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux_windows_network/" class="post-title-link" itemprop="url">Linux和Windows平台下的网络通信问题</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-09-15 10:41:25" itemprop="dateCreated datePublished" datetime="2013-09-15T10:41:25+00:00">2013-09-15</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-10 17:15:19" itemprop="dateModified" datetime="2024-02-10T17:15:19+00:00">2024-02-10</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>大小端问题跟CPU的架构直接相关，我们常见的80x86系列CPU采用小端字节序模式。Windows平台就采用的80x86系列CPU，因此为小端字节序。<br>而主机之间进行网络通信时往往采用大端字节序，因此小端字节序机器在发送数据前需要进行字节序转换，在接收到数据处理处理数据之前要将网络字节序转换成本地字节序。</p>
-<p>在Linux平台下提供了四个函数用来字节序转换：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;arpa/inet.h&gt;</span><br><span class="line">uint32_t htonl(uint32_t hostlong);</span><br><span class="line">uint16_t htons(uint16_t hostshort);</span><br><span class="line">uint32_t ntohl(uint32_t netlong);</span><br><span class="line">uint16_t ntohs(uint16_t netshort);</span><br></pre></td></tr></table></figure>
-
-<p>Windows平台下也提供了相关的自己序转换函数：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;WinSock2.h&gt;</span><br><span class="line">unsigned __int64 __inline htond(</span><br><span class="line">  double value</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">unsigned __int32 __inline htonf(</span><br><span class="line">  float value</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">u_long WSAAPI htonl(</span><br><span class="line">  _In_  u_long hostlong</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">unsigned __int64 __inline htonll(</span><br><span class="line">  unsigned __int64 value</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">u_short WSAAPI htons(</span><br><span class="line">  _In_  u_short hostshort</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">double __inline ntohd(</span><br><span class="line">  unsigned __int64 value</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">float __inline ntohf(</span><br><span class="line">  unsigned __int32 value</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">u_long WSAAPI ntohl(</span><br><span class="line">  _In_  u_long netlong</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">u_long __inline ntohll(</span><br><span class="line">  unsigned __int64 value</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">u_short WSAAPI ntohs(</span><br><span class="line">  _In_  u_short netshort</span><br><span class="line">);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>这里有个技巧需要说明以下，比如要发送如下的结构体：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">struct foo</span><br><span class="line">&#123;</span><br><span class="line">    int a;</span><br><span class="line">    long b;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>为了避免每个成员都调用字节序转换函数，可以在结构体的内部定义两个方法用于转换字节序，添加字节序后的foo如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">struct foo</span><br><span class="line">&#123;</span><br><span class="line">    int a;</span><br><span class="line">    long b;</span><br><span class="line">    void ntoh()</span><br><span class="line">    &#123;</span><br><span class="line">         a = ntohl(a);</span><br><span class="line">         b = ntohl(b);</span><br><span class="line">    &#125;</span><br><span class="line">    void hton()</span><br><span class="line">    &#123;</span><br><span class="line">         a = htonl(a);</span><br><span class="line">         b = htonl(b);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>需要特别注意的是，在发送结构体类型的数据时要注意字节对齐的问题，这里不再展开讨论，不同的平台有不同的解决办法。大体分为Winodws平台、AIX平台和GNU类平台。</p>
-
       
     </div>
 
