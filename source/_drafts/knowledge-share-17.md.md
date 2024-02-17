@@ -22,3 +22,11 @@ sshfs 允许用户将远程主机的目录挂载到本地，只需要可以本�
 ## [lazyvim](https://www.lazyvim.org/)
 
 一直在使用 [SpaceVim](https://spacevim.org/)，但是使用起来还是有些繁琐，最近源码的托管从 Github 迁移到了 Gitlab。lazyvim 基于 neovim，无论从文档还是从用户体验上比 SpaceVim 更好一些。
+
+# 资源
+
+## [Liber3](https://liber3.eth.limo/)
+基于区块链技术建立的去中心化的电子书搜索引擎，想查找电子书的不防试一下该网站。
+
+# 引用
+- [去中心化电子书搜索引擎，打开无限阅读的大门-Liber3](https://mp.weixin.qq.com/s/UiXfQaRFXnkjem_GUNG5Vg)
