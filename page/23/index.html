@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">235</span>
+          <span class="site-state-item-count">236</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,90 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/solr_setup_distribute/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/solr_setup_distribute/" class="post-title-link" itemprop="url">搭建分布式的solr环境</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-07-02 14:29:23" itemprop="dateCreated datePublished" datetime="2013-07-02T14:29:23+00:00">2013-07-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>本文以《<a href="/post/solr_setup">在Linux上搭建solr环境</a>》为基础，假设已经在192.168.20.6和192.168.20.38上搭建了单机版solr环境。</p>
+<h1 id="主服务器配置"><a href="#主服务器配置" class="headerlink" title="主服务器配置"></a>主服务器配置</h1><p>找到solr的环境目录下的conf文件夹下的solrconfig.xml文件，我的是在<code>/hadoop/solr/conf/solrconfig.xml</code>目录下，打开后找到如下行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br></pre></td></tr></table></figure>
+<p>默认是被注释的，将其修改为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br><span class="line">       &lt;lst name=&quot;master&quot;&gt;</span><br><span class="line">         &lt;str name=&quot;replicateAfter&quot;&gt;commit&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;replicateAfter&quot;&gt;startup&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;confFiles&quot;&gt;schema.xml,stopwords.txt&lt;/str&gt;</span><br><span class="line">       &lt;/lst&gt;</span><br><span class="line">&lt;/requestHandler&gt;</span><br></pre></td></tr></table></figure>
+<p>replicateAfter表示solr会在什么情况下复制，可选项包括：commit、startup、optimize，这里保持默认。<br>confFiles表示要分发的配置文件。</p>
+<h1 id="从服务器配置"><a href="#从服务器配置" class="headerlink" title="从服务器配置"></a>从服务器配置</h1><p>在从服务器上，将<code>/hadoop/solr/conf/solrconfig.xml</code>文件相应的修改为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br><span class="line">       &lt;lst name=&quot;slave&quot;&gt;</span><br><span class="line">         &lt;str name=&quot;masterUrl&quot;&gt;http://192.168.20.6:8080/solr/replication&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;pollInterval&quot;&gt;00:00:60&lt;/str&gt;</span><br><span class="line">       &lt;/lst&gt;</span><br><span class="line">&lt;/requestHandler&gt;</span><br></pre></td></tr></table></figure>
+<p>masterUrl为服务器的url地址。<br>pollInterval为从服务器的同步时间间隔。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +303,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -359,7 +443,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -492,7 +576,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -661,7 +745,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -793,7 +877,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -879,7 +963,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -961,7 +1045,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -1050,7 +1134,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -1145,7 +1229,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -1178,96 +1262,6 @@
 <li>对项目的进度没有很好的把握。</li>
 <li>对技术较为熟悉之后可以适当的学习后期开发功能需要技术，比如一直没有研究彩信的技术实现，导致后期在开发彩信功能时遇到技术问题。如果能够提前学习相关技术就能够提前预支项目的风险。</li>
 </ol>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_get_and_set_env_variable/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux_get_and_set_env_variable/" class="post-title-link" itemprop="url">在linux程序中获取和设置环境变量</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-06-04 21:59:37" itemprop="dateCreated datePublished" datetime="2013-06-04T21:59:37+00:00">2013-06-04</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="shell中的环境变量"><a href="#shell中的环境变量" class="headerlink" title="shell中的环境变量"></a>shell中的环境变量</h1><h3 id="查看环境变量"><a href="#查看环境变量" class="headerlink" title="查看环境变量"></a>查看环境变量</h3><ol>
-<li>通过env命令可以查看所有的环境变量</li>
-<li>通过echo $环境变量名方式来查看单个环境变量</li>
-</ol>
-<h3 id="设置环境变量"><a href="#设置环境变量" class="headerlink" title="设置环境变量"></a>设置环境变量</h3><p>export命令来设置环境变量</p>
-<p>在程序中该如何获取和设置环境变量呢？</p>
-<h1 id="通过main函数的第三个参数"><a href="#通过main函数的第三个参数" class="headerlink" title="通过main函数的第三个参数"></a>通过main函数的第三个参数</h1><p>通常大家接触比较多的是两个参数的main函数，实际上还有一个包含三个参数的main函数，第三个参数为包含了系统的环境变量的二级指针。<br>用法如下：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span> <span class="params">( <span class="type">int</span> argc, <span class="type">char</span> *argv[], <span class="type">char</span> *arge[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">while</span> (*arge)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, *arge);</span><br><span class="line">        arge++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>实例将会输出该用户的所有环境变量。</p>
-<h1 id="通过外部环境变量environ"><a href="#通过外部环境变量environ" class="headerlink" title="通过外部环境变量environ"></a>通过外部环境变量environ</h1><p>该变量定义在“unistd.h”头文件中，定义为：extern char **environ;<br>用法如下：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="type">char</span> **environ;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span> <span class="params">( <span class="type">int</span> argc, <span class="type">char</span> *argv[] )</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span> **env = environ;</span><br><span class="line">    <span class="keyword">while</span> (*env)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, *env);</span><br><span class="line">        env++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
-<p>实例将会输出该用户的所有环境变量。</p>
-<h1 id="通过系统函数"><a href="#通过系统函数" class="headerlink" title="通过系统函数"></a>通过系统函数</h1><p>在C语言的头文件“stdlib.h”中定义了三个和环境变量相关的函数：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> *<span class="title function_">getenv</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *name)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">setenv</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *name, <span class="type">const</span> <span class="type">char</span> *value, <span class="type">int</span> overwrite)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">unsetenv</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *name)</span>;</span><br></pre></td></tr></table></figure>
-<p>比较简单，不再举例。</p>
 
       
     </div>

@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">235</span>
+          <span class="site-state-item-count">236</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,119 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-backlog/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux-backlog/" class="post-title-link" itemprop="url">Linux TCP backlog</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-12-01 21:24:07" itemprop="dateCreated datePublished" datetime="2018-12-01T21:24:07+00:00">2018-12-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_connect.webp"></p>
+<p>一个正常的tcp server在处理请求时会经过如下的系统调用：socket() bind() listen() accept() read() write() close()。一个请求在被应用程序读取之前，可能处于SYN_RCVD和ESTABLISHED两种状态。</p>
+<p>第一个队列：SYN_RCVD状态是server端接收到了client端的SYN包，server端会将该连接放到半连接队列中，并向客户端发送SYN+ACK包，此时连接处于半连接状态。通常该队列被称为半连接队列。</p>
+<p>第二个队列：ESTABLISHED状态为已经完成了三次握手，但是server端的应用程序还未调用accept系统调用的情况。通常该队列被称为全连接队列。</p>
+<p>这两种情况下都需要操作系统提供相应队列来保存连接状态。</p>
+<p>backlog用来设置这两个队列的最大值，但在不同的操作系统中有不同的含义，下面的说明以linux操作系统为准。</p>
+<p>其中第一个维护SYN_RCVD状态的队列使用内核参数<code>net.ipv4.tcp_max_syn_backlog</code>来控制，如果队列超过这一阈值，连接会被拒绝。该值默认为1000.</p>
+<p>第二个维护ESTABLISHED状态的队列，该队列的长度由应用程序调用listen系统调用时指定。</p>
+<h1 id="内核参数"><a href="#内核参数" class="headerlink" title="内核参数"></a>内核参数</h1><ol>
+<li>net.ipv4.tcp_max_syn_backlog</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tcp_max_syn_backlog (integer; default: see below; since Linux 2.2)</span><br><span class="line">              The  maximum number of queued connection requests which have still not received an acknowledgement from the connecting client.  If this number is exceeded, the kernel will begin dropping requests.  The default value of 256 is increased to 1024 when the memory present in the system is adequate or greater (&gt;= 128Mb), and  reduced  to 128  for  those systems with very low memory (&lt;= 32Mb).  It is recommended that if this needs to be increased above 1024, TCP_SYNQ_HSIZE in include/net/tcp.h be modified to keep TCP_SYNQ_HSIZE*16&lt;=tcp_max_syn_backlog, and the kernel be recompiled.</span><br></pre></td></tr></table></figure>
+
+<p>用来设置 syn 队列的大小，通常也会称为半连接队列。该参数的默认值一般为 1024。如果 syn 队列满，此时 syn 报文会被丢弃，无法回复 syn + ack 报文。可以通过 <code>netstat -s</code> 命令看到 “XX SYNs to LISTEN sockets dropped”. 的报错信息。</p>
+<ol start="2">
+<li>net.ipv4.tcp_syncookies</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tcp_syncookies (Boolean; since Linux 2.2) Enable TCP syncookies. The kernel must be compiled with CONFIG_SYN_COOKIES.  Send out syncookies when the syn backlog queue of a socket overflows.  The syncookies feature attempts to protect a socket from a SYN flood attack.  This should be used as a last resort, if at all.  This is a violation of the  TCP  protocol,  and  con‐ flicts  with other areas of TCP such as TCP extensions.  It can cause problems for clients and relays.  It is not recommended as a tuning mechanism for heavily loaded servers to help with overloaded or misconfigured conditions.  For recommended alternatives see tcp_max_syn_backlog, tcp_synack_retries, and tcp_abort_on_overflow.</span><br></pre></td></tr></table></figure>
+
+<p>因为 syn 队列的存在，当客户端一直在发送 syn 包，但是不回 ack 报文时，一旦服务端的队列超过 <code>net.ipv4.tcp_max_syn_backlog</code> 设置的大小就会存在队列溢出的问题，从而导致服务端无法响应客户端的请求，这就是 syn flood 攻击。</p>
+<p>为了防止 syn flood 攻击，引入了 syn cookies 机制，该机制并非 tcp 协议的一部分。原理参见：<a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000019292140">深入浅出TCP中的SYN-Cookies</a></p>
+<p>一旦开启了 syn cookies 机制后，即使 syn 队列满，仍可以对新建的连接回复 syn + ack 报文，但是不需要进入队列。</p>
+<p>因为 syn cookies 存在部分缺陷，只有当 syn 队列满时该特性才会生效。</p>
+<ol start="3">
+<li>net.ipv4.tcp_abort_on_overflow</li>
+</ol>
+<p>在三次握手完成后，该连接会进入到 ESTABLISHED 状态，并将该连接放入到用户程序队列中。若该队列已满，默认会将该连接重新设置为 SYN_ACK 状态，相当于是服务端没有接收到客户端的 syn + ack 报文，后续可以利用客户端的重传机制重新接收报文。</p>
+<p>一旦开启了 <code>net.ipv4.tcp_abort_on_overflow</code> 选项后，会直接发送 RST 报文给到客户端，客户端会终止该连接，并报错 <code>104 Connection reset by peer</code>。</p>
+<ol start="4">
+<li>net.core.somaxconn</li>
+</ol>
+<p>全连接队列的最大值，该配置为全局默认配置。单个 socket 的全连接队列的长度选择为 Min(backlog, somaxconn)。</p>
+<h1 id="内核源码"><a href="#内核源码" class="headerlink" title="内核源码"></a>内核源码</h1><p>在整个内核模块中主要涉及到 listen() 和 accept() 系统调用，listen() 系统调用的作用是申请和初始化半连接队列和全连接队列。队列位于内核代码的 include&#x2F;net&#x2F;inet_connection_sock.h 中的如下位置:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">inet_connection_sock</span> &#123;</span></span><br><span class="line">	<span class="comment">/* inet_sock has to be the first member! */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">inet_sock</span>	  <span class="title">icsk_inet</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">request_sock_queue</span> <span class="title">icsk_accept_queue</span>;</span> <span class="comment">// 队列</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">inet_bind_bucket</span>	  *<span class="title">icsk_bind_hash</span>;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="如何参看"><a href="#如何参看" class="headerlink" title="如何参看"></a>如何参看</h1><p>查看 tcp 状态为 SYN_RECV 的链接即为半连接状态的请求：<code>netstat -napt | grep SYN_RECV</code>。也可以通过 <code>netstat -s | grep &#39;SYNs to LISTEN&#39;</code> 查看。</p>
+<p>全连接队列可以使用 <code>ss -nlt | grep 8080</code> 的方式查看 Recv-Q 的值。<br>也可通过如下命令来查看全连接队列的溢出情况。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$</span><span class="language-bash">netstat -s | grep overflow</span></span><br><span class="line">    3255 times the listen queue of a socket overflowed</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +332,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -339,7 +452,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -576,7 +689,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -656,7 +769,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -748,7 +861,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -866,7 +979,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -955,7 +1068,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -1042,7 +1155,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -1159,7 +1272,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
+      <time title="Modified: 2024-02-21 10:05:23" itemprop="dateModified" datetime="2024-02-21T10:05:23+00:00">2024-02-21</time>
     </span>
 
   
@@ -1210,121 +1323,6 @@
 <p>早期的终端设备为电传打字机(Teletype)，该设备价格比较低廉，通过键盘输入，并将输出内容打印出来。图中的设备为ASR-33，在YouTube上可以可以看到<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=MikoF6KZjm0">视频</a>。</p>
 <p>有意思的是，实际上Teletype的出现要早于计算机，原本用于在电报线路上发送电报，但是后来计算机出现后直接拿来作为计算机的终端设备。</p>
 <p>在linux操作系统中设计了tty子系统用于支持tty设备，并将具体的硬件设备放到&#x2F;dev&#x2F;tty*目录下，这里的tty设备即Teletype。不过后来随着其他终端设备的引入，tty这个名字仍旧保留了下来，tty目前已基本代表终端的总称。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/knowledge-share-3/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/knowledge-share-3/" class="post-title-link" itemprop="url">知识分享第3期</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-09-26 00:01:27" itemprop="dateCreated datePublished" datetime="2018-09-26T00:01:27+00:00">2018-09-26</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-17 04:21:26" itemprop="dateModified" datetime="2024-02-17T04:21:26+00:00">2024-02-17</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/yudushan.jpeg" alt="玉渡山"></p>
-<p>题图为北京玉渡山风景区中的盘山公路，旁边有个观景台，在观景台上可以鸟瞰官厅水库。</p>
-<h2 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h2><p>1.<a target="_blank" rel="noopener" href="https://www.intel.cn/content/www/cn/zh/architecture-and-technology/resource-director-technology.html">Intel RDT</a></p>
-<p>Intel RDT(Resource Director Technology)资源调配技术框架，包括高速缓存监控技术（CMT）、高速缓存分配技术（CAT）、内存带宽监控（MBM）和代码和数据优先级（CDP），容器技术的runc项目中使用到了CAT技术来解决cgroup下的CPU的三级缓存隔离性问题。</p>
-<p>在linux 4.10以上内核中通过资源控制文件系统的方式来提供给用户接口，类似cgroup的管理方式。</p>
-<p>感兴趣的可以了解下<a target="_blank" rel="noopener" href="https://github.com/opencontainers/runc/blob/master/libcontainer/intelrdt/intelrdt.go">runc项目源码</a>。</p>
-<p>2.<a target="_blank" rel="noopener" href="https://github.com/improbable-eng/thanos">Thanos</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/Thanos-logo_fullmedium.png" alt="Thanos"></p>
-<p>Prometheus作为Google内部监控系统Borgmon的开源实现版本，存在高可用和历史数据存储两个致命的缺点，Thanos利用Sidecar等技术来解决Prometheus的缺点。</p>
-<p>3.<a target="_blank" rel="noopener" href="https://github.com/nicolaka/netshoot">netshoot</a></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">                    dP            dP                           dP</span><br><span class="line">                    88            88                           88</span><br><span class="line">88d888b. .d8888b. d8888P .d8888b. 88d888b. .d8888b. .d8888b. d8888P</span><br><span class="line">88&#x27;  `88 88ooood8   88   Y8ooooo. 88&#x27;  `88 88&#x27;  `88 88&#x27;  `88   88</span><br><span class="line">88    88 88.  ...   88         88 88    88 88.  .88 88.  .88   88</span><br><span class="line">dP    dP `88888P&#x27;   dP   `88888P&#x27; dP    dP `88888P&#x27; `88888P&#x27;   dP</span><br></pre></td></tr></table></figure>
-
-<p>用于排查docker网络问题的工具，以容器的方式运行在跟要排查问题的容器同一个网络命名空间中，该容器中已经具备了较为丰富的网络命令行工具，用于排查容器中的网络问题。</p>
-<p>4.<a target="_blank" rel="noopener" href="https://github.com/sharkdp/bat">bat</a></p>
-<p>用来替代cat的命令行工具，支持语法高亮、自动分页。mac下可直接使用<code>brew install bat</code>来安装。</p>
-<p><img src="https://camo.githubusercontent.com/9d3d89364f2cc83ace8f29646a6236bc15ea1da0/68747470733a2f2f696d6775722e636f6d2f724773646e44652e706e67" alt="image"></p>
-<p>5.<a target="_blank" rel="noopener" href="http://asciiflow.com/">asciiflow</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/asciiflow.png" alt="asciiflow"></p>
-<p>写博客的往往都比较痛恨图片的存储问题，尤其是使用markdown语法写作的，图片往往需要图床来存储，常常跟文章不在一起存储。asciiflow是较为小众的一款ascii图形工具，可以应付较为简单的图形绘制，直接以文字的形式呈现简单图形，省去了存储图片的繁琐。</p>
-<p>6.<a target="_blank" rel="noopener" href="https://www.processon.com/">processon</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/processon.gif" alt="processon"></p>
-<p>免费的在线图行绘制协作工具，支持流程图、思维导图等多种图形，有类似visio的使用体验，同时是web版的，支持多人协作。我目前在使用，不过免费版有使用限制。</p>
-<h2 id="精彩文章"><a href="#精彩文章" class="headerlink" title="精彩文章"></a>精彩文章</h2><p>1.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzI3MTI2NzkxMA==&mid=2247486254&idx=1&sn=c78b509e84a64cb921280a5e1e111bb7&chksm=eac52a07ddb2a311c2a21a3decf26c8ab5d9b0d6c9ff8701a8db3e369d76fe9c6045e34808f1&mpshare=1&scene=1&srcid=0915GAFGR2dEjnoRI1ngfo8f%23rd">手把手教你打造高效的 Kubernetes 命令行终端
-</a></p>
-<p>文中汇总了各种可以取代kubernetes的命令行kubectl的工具，以便提供更方便的操作，比如更完善的自动补全。</p>
-<p>2.<a target="_blank" rel="noopener" href="http://pierrchen.blogspot.com/2018/08/understand-container-index.html">Understand Container - Index Page</a></p>
-<p>学习容器的cgroup和namespace的系列文章。</p>
-<p>3.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzA5OTAyNzQ2OA==&mid=2649698847&idx=1&sn=b1ffce56c1397b3f60f8c776aff0ae85&chksm=88930d7cbfe4846a14fe50e9824e8a81abce19097717b1fbd3834101b21872f5ccdb6aab9366&mpshare=1&scene=1&srcid=0919nVdgzYLK9dtdRUsf2ifa%23rd">gVisor是什么？可以解决什么问题？</a></p>
-<p>docker容器技术基于cgroup和namespace来实现，但系统调用仍是调用宿主机的系统调用，比如在其中一个容器中通过系统调用修改了当前系统时间，在其他容器中看到的时间也已经修改过了，这显然不是符合期望的，通常可以通过Seccomp来限制容器中的系统调用。</p>
-<p>gVisor为Google开源的容器Runtime，通过pstrace技术来截获系统调用，从而保证系统的安全。目前还不成熟，单就凭Google的开源项目，该项目还是非常值得关注的。</p>
-<p>4.<a target="_blank" rel="noopener" href="https://docs.docker.com/develop/develop-images/multistage-build/">Use multi-stage builds</a></p>
-<p>Dockerfile的多阶段构建技术，对于解决编译型语言的发布非常有帮助，可以在其中一个image中编译源码，另外一个image用于将编译完成后的二进制文件复制过来后打包成单独的线上运行镜像。而这两部操作可以合并到一个Dockerfile中来完成。</p>
-<p>5.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzA5OTAyNzQ2OA==&mid=2649698903&idx=1&sn=6392175b0cf62825e4981b08acc85fda&chksm=88930d34bfe48422ee85d50037489868e2432b6aa4c7bef6dc46b8eaa3852f91bd5da14c5da1&mpshare=1&scene=1&srcid=09255FcTm8fVdN6r5OqWkTvK%23rd">唯品会Noah云平台实现内幕披露</a></p>
-<p>唯品会内部云平台的实践，涉及到大量的干货，值的花时间一读。</p>
-<h2 id="App推荐"><a href="#App推荐" class="headerlink" title="App推荐"></a>App推荐</h2><p>1.Nike Training</p>
-<p>健身类app我用过keep、火辣健身、FitTime（以收费课程居多），偶然间在AppStore上看到了Nike Training，如果厌倦了国内的健身类app，不防尝试一下。</p>
-<h2 id="新奇"><a href="#新奇" class="headerlink" title="新奇"></a>新奇</h2><p>1.手机QQ扫一扫</p>
-<p>用手机QQ扫一扫100元人民币正面，可以出现浮动的凤凰图案，并会跳转到人民币鉴别真伪的视频页面，视频效果确实不错，忍不住会多扫描几遍。</p>
-<p>2.kubeadm</p>
-<p>kubernetes的组件非常多，部署起来非常复杂，因此社区就推出了kubeadm工具来简化集群的部署，将除了kubelet外的其他组件都部署在容器中。令人惊奇的是，kubeadm几乎完全是一个芬兰高中生Lucas KaIdstrom的作品，是他在17岁时利用业余时间完成的一个社区项目。</p>
 
       
     </div>
