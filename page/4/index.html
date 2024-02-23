@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">236</span>
+          <span class="site-state-item-count">237</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,113 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-auditd/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux-auditd/" class="post-title-link" itemprop="url">linux auditd</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-28 11:57:28" itemprop="dateCreated datePublished" datetime="2022-03-28T11:57:28+00:00">2022-03-28</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="audit简介"><a href="#audit简介" class="headerlink" title="audit简介"></a>audit简介</h2><p>audit为linux内核安全体系的重要组成部分，用来记录内核的系统调用，文件修改等事件，用于审计目的。</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/linux_audit.png"></p>
+<ul>
+<li>auditctl: 面向用户的工具，类似于iptables命令</li>
+<li>auditd: 负责将审计信息写入到&#x2F;var&#x2F;</li>
+</ul>
+<h2 id="启动auditd服务"><a href="#启动auditd服务" class="headerlink" title="启动auditd服务"></a>启动auditd服务</h2><p>auditd作为单独的服务运行在系统上，Redhat系统使用<code>systemctl start auditd</code>启动服务，启动后通过 <code>ps -ef | grep auditd</code>查看进程是否启动成功。</p>
+<h2 id="auditctl"><a href="#auditctl" class="headerlink" title="auditctl"></a>auditctl</h2><p>查看auditd的运行状态</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -s</span><br><span class="line">enabled 1</span><br><span class="line">failure 1</span><br><span class="line">pid 638</span><br><span class="line">rate_limit 0</span><br><span class="line">backlog_limit 8192</span><br><span class="line">lost 0</span><br><span class="line">backlog 0</span><br><span class="line">loginuid_immutable 0 unlocked</span><br></pre></td></tr></table></figure>
+
+<p>查看当前环境规则</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -l</span><br><span class="line">-w /tmp/hosts -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries1 -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries2 -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries2 -p wa</span><br></pre></td></tr></table></figure>
+
+<p>删除所有的audit规则</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -D</span><br><span class="line">No rules</span><br></pre></td></tr></table></figure>
+
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="监控文件变化"><a href="#监控文件变化" class="headerlink" title="监控文件变化"></a>监控文件变化</h3><ol>
+<li>执行 auditctl -w $file -p wa 来监控文件，比如监控内核参数 auditctl -w &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2 -p wa，其中-p指定了监控文件的行为，支持rwxa。</li>
+<li>查看文件 cat &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2。</li>
+<li>使用vim打开文件 vim &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2。</li>
+<li>执行 ausearch -f &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2 命令查看，可以看到如下的日志</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ ausearch -f /proc/sys/net/ipv4/tcp_retries1</span><br><span class="line">----</span><br><span class="line">time-&gt;Mon Mar 28 12:44:48 2022</span><br><span class="line">type=PROCTITLE msg=audit(1648442688.159:6232591): proctitle=76696D002F70726F632F7379732F6E65742F697076342F7463705F7265747269657331</span><br><span class="line">type=PATH msg=audit(1648442688.159:6232591): item=1 name=&quot;/proc/sys/net/ipv4/tcp_retries1&quot; inode=46629229 dev=00:03 mode=0100644 ouid=0 ogid=0 rdev=00:00 objtype=NORMAL cap_fp=0000000000000000 cap_fi=0000000000000000 cap_fe=0 cap_fver=0</span><br><span class="line">type=PATH msg=audit(1648442688.159:6232591): item=0 name=&quot;/proc/sys/net/ipv4/&quot; inode=8588 dev=00:03 mode=040555 ouid=0 ogid=0 rdev=00:00 objtype=PARENT cap_fp=0000000000000000 cap_fi=0000000000000000 cap_fe=0 cap_fver=0</span><br><span class="line">type=CWD msg=audit(1648442688.159:6232591):  cwd=&quot;/root&quot;</span><br><span class="line">type=SYSCALL msg=audit(1648442688.159:6232591): arch=c000003e syscall=2 success=yes exit=3 a0=11687a0 a1=241 a2=1a4 a3=7ffe33dc14e0 items=2 ppid=8375 pid=8629 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts1 ses=250225 comm=&quot;vim&quot; exe=&quot;/usr/bin/vim&quot; key=(null)</span><br></pre></td></tr></table></figure>
+
+<h3 id="监控文件夹变化"><a href="#监控文件夹变化" class="headerlink" title="监控文件夹变化"></a>监控文件夹变化</h3><p>监控文件夹同样采用跟上述文件相同的方式，但有个问题是如果文件夹下内容较多，会一起监控，从而导致audit的log内容过多。</p>
+<h3 id="监控系统定期reboot"><a href="#监控系统定期reboot" class="headerlink" title="监控系统定期reboot"></a>监控系统定期reboot</h3><p>执行如下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">auditctl -w /bin/systemctl -p rwxa -k systemd_call</span><br><span class="line">auditctl -a always,exit -F arch=b64 -S reboot -k reboot_call</span><br></pre></td></tr></table></figure>
+
+<p>待系统重启后执行如下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ausearch -f reboot</span><br></pre></td></tr></table></figure>
+
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a target="_blank" rel="noopener" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/security_guide/chap-system_auditing">RedHat auditd文档</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +326,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -381,7 +488,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -483,7 +590,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -578,7 +685,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -701,7 +808,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -813,7 +920,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -893,7 +1000,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -986,7 +1093,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -1072,7 +1179,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -1174,482 +1281,6 @@
 <li><a target="_blank" rel="noopener" href="https://openkruise.io/zh/docs/installation">https://openkruise.io/zh/docs/installation</a></li>
 <li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/0YulmrteQSARXHa2NOBLeA">如何基于 OpenKruise 打破原生 Kubernetes 中的容器运行时操作局限？</a></li>
 </ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/ack/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/ack/" class="post-title-link" itemprop="url">阿里云容器服务ack技术调研（个人笔记）</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-03-08 19:54:17" itemprop="dateCreated datePublished" datetime="2022-03-08T19:54:17+00:00">2022-03-08</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>阿里云容器服务是阿里云公有云基于Kubernetes企业级服务，在社区的Kubernetes版本基础上有能力增强， 本文用于调研社区增强功能，记录解决的问题、以及实现方法。ACK集群的增强功能有一部分是基于Kubernetes的api的prodiver实现，另外一部分是基于Kubernetes增加的额外组件，其中很多都已经开源，可以看到<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/196039.html">开源软件</a>列表。</p>
-<p>ACK的一些组件列表可以参见：<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/277412.html">组件概述</a></p>
-<h1 id="产品形态"><a href="#产品形态" class="headerlink" title="产品形态"></a>产品形态</h1><ul>
-<li>专有版Kubernetes：master和worker阶段均需要创建</li>
-<li>托管版Kubernetes：只需要创建worker节点，master节点通过ack托管</li>
-<li>Serverless Kubernetes：master节点和worker节点均不需要自己创建</li>
-</ul>
-<h1 id="节点管理"><a href="#节点管理" class="headerlink" title="节点管理"></a>节点管理</h1><table>
-<thead>
-<tr>
-<th>大类</th>
-<th>特性</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>节点</td>
-<td>节点自动扩缩容</td>
-<td>完全利用k8s的autoscaler实现，提供了白屏的配置功能。<a target="_blank" rel="noopener" href="https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md?spm=a2c4g.11186623.0.0.5e09135f2AAa2u&file=FAQ.md">https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md?spm=a2c4g.11186623.0.0.5e09135f2AAa2u&file=FAQ.md</a></td>
-</tr>
-<tr>
-<td></td>
-<td>节点资源变配</td>
-<td>master和worker节点的资源变配，通过调用ecs的变配规格接口来实现。</td>
-</tr>
-<tr>
-<td>节点池</td>
-<td></td>
-<td>将节点进行了分组，同一个分组内的节点可以统一来管理。比如，可以统一设置标签污点、设置期望节点数。通过节点池实现，节点池跟弹性伸缩组为一对一关系。</td>
-</tr>
-</tbody></table>
-<h1 id="弹性伸缩"><a href="#弹性伸缩" class="headerlink" title="弹性伸缩"></a>弹性伸缩</h1><table>
-<thead>
-<tr>
-<th>类型</th>
-<th>特性</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>调度层</td>
-<td>hpa</td>
-<td>基于k8s的hpa功能实现</td>
-</tr>
-<tr>
-<td></td>
-<td>自定义指标的hpa</td>
-<td>基于<a target="_blank" rel="noopener" href="https://github.com/kubernetes-sigs/prometheus-adapter">prometheus-adapter</a>实现的自定义指标监控</td>
-</tr>
-<tr>
-<td></td>
-<td>vpa</td>
-<td>适用于大型单体应用。k8s的vpa功能实现，基于cluster-autoscaler实现</td>
-</tr>
-<tr>
-<td></td>
-<td>CronHPA</td>
-<td>定期对pod进行伸缩，组件已开源：<a target="_blank" rel="noopener" href="https://github.com/AliyunContainerService/kubernetes-cronhpa-controller">kubernetes-cronhpa-controller</a></td>
-</tr>
-<tr>
-<td></td>
-<td>ElasticWorkload</td>
-<td></td>
-</tr>
-<tr>
-<td>资源层</td>
-<td>节点自动伸缩</td>
-<td>k8s的node自动伸缩，基于社区的cluster-autoscaler实现</td>
-</tr>
-<tr>
-<td></td>
-<td>使用ECI弹性调度</td>
-<td>通过virtual-kubelet实现，将ECI抽象为k8s的node节点</td>
-</tr>
-</tbody></table>
-<h1 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h1><table>
-<thead>
-<tr>
-<th>大类</th>
-<th>特性</th>
-<th>详细描述</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>操作系统</td>
-<td>基于Alibaba Cloud Linux 2支持等保2.0三级加固</td>
-<td></td>
-</tr>
-<tr>
-<td></td>
-<td>基于Alibaba Cloud Linux 2支持CIS安全加固</td>
-<td></td>
-</tr>
-<tr>
-<td>基础设施</td>
-<td>使用阿里云KMS提供Secret的落盘加密功能</td>
-<td>在默认情况下，k8s的Secret是基于base64转码后明文存储的，存在一定的安全风险。<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/tasks/administer-cluster/kms-provider/#ensuring-all-secrets-are-encrypted">k8s提供了使用外部的KMS provider来对Secret的数据进行加密的功能</a>，apiserver和provider之间的通讯协议采用<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1/service.proto">grpc接口</a>。Secret中的数据在经过KMS provider加密后存储在etcd中。ACK借助阿里云的秘钥管理服务（KMS）提供了provider实现，该<a target="_blank" rel="noopener" href="https://github.com/AliyunContainerService/ack-kms-plugin?spm=a2c4g.11186623.0.0.1cf429ecKKZx1J">provider完全开源</a>。</td>
-</tr>
-<tr>
-<td></td>
-<td>为pod动态配置阿里云产品白名单</td>
-<td>ack-kubernetes-webhook-injector组件会自动将pod ip添加到阿里云产品的白名单中。</td>
-</tr>
-<tr>
-<td></td>
-<td>k8s审计日志白屏化展示</td>
-<td></td>
-</tr>
-<tr>
-<td></td>
-<td>安全巡检功能</td>
-<td>基于CIS Kubernetes基线的实现，用来校验k8s的安全性</td>
-</tr>
-<tr>
-<td>容器</td>
-<td>配置容器安全策略</td>
-<td>基于opa实现的策略引擎，可以根据预置的规则对k8s中创建的资源进行校验，校验不通过会返回失败</td>
-</tr>
-<tr>
-<td></td>
-<td>通过巡检来检查集群中存在的安全隐患的pod</td>
-<td>无</td>
-</tr>
-</tbody></table>
-<h1 id="可观测性"><a href="#可观测性" class="headerlink" title="可观测性"></a>可观测性</h1><table>
-<thead>
-<tr>
-<th>大类</th>
-<th>功能项</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>日志</td>
-<td>日志采集功能基于logtail实现，可以采集容器日志</td>
-<td>类似于开源组件log-pilot，仅需要配置环境变量，即可对日志进行收集。也可以通过AliyunLogConfig CR旁路的对日志采集进行配置。</td>
-</tr>
-<tr>
-<td>日志</td>
-<td>coredns日志</td>
-<td>收集coredns日志</td>
-</tr>
-<tr>
-<td>监控</td>
-<td>基于arms产品支持应用性能监控</td>
-<td></td>
-</tr>
-<tr>
-<td>监控</td>
-<td>基于ahas产品实现的架构感知监控</td>
-<td></td>
-</tr>
-<tr>
-<td>监控</td>
-<td>node节点异常监控</td>
-<td>npd将节点异常信息产生k8s的event</td>
-</tr>
-<tr>
-<td>监控</td>
-<td>k8s event监控</td>
-<td>kube-eventer收集k8s的event</td>
-</tr>
-</tbody></table>
-<h1 id="操作系统"><a href="#操作系统" class="headerlink" title="操作系统"></a>操作系统</h1><p>Container OS：为容器场景而生的操作系统，操作系统镜像大大精简，提供了安全加固能力，不支持单个软件包的升级，软件包只能跟操作系统一起原子升级。<br>安全容器katacontainer</p>
-<h1 id="容器-amp-镜像"><a href="#容器-amp-镜像" class="headerlink" title="容器&amp;镜像"></a>容器&amp;镜像</h1><table>
-<thead>
-<tr>
-<th>大类</th>
-<th>特性</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>镜像</td>
-<td>容器镜像服务ACR</td>
-<td>使用公有云的容器镜像服务ACR</td>
-</tr>
-<tr>
-<td></td>
-<td>验证容器镜像</td>
-<td>基于开源组件kritis的kritis-validation-hook组件通过webhook的方式对镜像进行验证，确保镜像安全</td>
-</tr>
-</tbody></table>
-<h1 id="调度"><a href="#调度" class="headerlink" title="调度"></a>调度</h1><table>
-<thead>
-<tr>
-<th>大类</th>
-<th>特性</th>
-<th>解决问题</th>
-<th>适用场景</th>
-<th>具体实现</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>pod调度</td>
-<td>使用Descheduler组件对Pod进行调度优化</td>
-<td>k8s的调度为静态的，可以确保在pod调度时为最优的，但当集群运行一段时间后，集群中资源水位会发生变化，此处无法保证整个集群是最优的。</td>
-<td></td>
-<td>使用社区的开源组件Descheduler对pod进行重新调度</td>
-</tr>
-<tr>
-<td>cpu调度</td>
-<td>cpu拓扑感知调度</td>
-<td>k8s的cpu manager特性解决的是pod调度到同一个节点上后，通过cpuset来隔离pod的cpu争抢。但却缺乏集群级别的资源视角，从而无法做到全局最优。该特性解决cpu密集型的pod调度到同一个节点上后的争抢问题，允许不是Guaranteed级别的pod实现cpuset特性。</td>
-<td>cpu敏感型应用</td>
-<td>通过调度器扩展来实现pod的cpu优化调度。ack-slo-manager agent负责实现每台机器上的绑核策略。</td>
-</tr>
-<tr>
-<td></td>
-<td>cpu Brust策略优化容器性能</td>
-<td>k8s的cpu limit机制会在特定的时间段内将进程可以使用的时间片进行限制。但该特性不太适合一些突发类的应用，会导致这类应用在想要cpu的时间不够用，但不想用的时候却有空闲的时间片。</td>
-<td>cpu突发型应用</td>
-<td>ack通过slo-manager实现cpu brust的优化，该组件会监控容器的cpu throtteld状态，并且动态调整容器中的cgroup cfs quota限制。每个节点上会部署一个resource-controller的组件来动态修改pod的cgroup配置。</td>
-</tr>
-<tr>
-<td></td>
-<td>动态调整pod的资源上限</td>
-<td>k8s中要想修改pod的limit配置，只能修改pod的yaml，此时一定会导致pod重建。对于想调整pod的limit限制，却又不想重启pod的场景。</td>
-<td></td>
-<td>通过一个Cgroups的CR来对pod使用的cpu、内存以及磁盘的上限进行动态调整，但并不会修改pod的yaml配置，因此不会导致pod的重建。每个节点上会部署一个resource-controller的组件来动态修改pod的cgroup配置。</td>
-</tr>
-<tr>
-<td></td>
-<td>通过控制L3 cache和MBA提高不同优先级任务的隔离能力</td>
-<td>不同优先级的任务调度到同一台机器上存在L3 Cache和内存带宽的资源争抢的问题</td>
-<td>cpu敏感型应用</td>
-<td>底层利用Intel的<a target="_blank" rel="noopener" href="https://www.intel.cn/content/www/cn/zh/architecture-and-technology/resource-director-technology.html?spm=a2c4g.11186623.0.0.77dc7ccaJFCP94">RDT技术</a>来实现，该技术可以跟踪和控制同一台机器上同时运行的多个应用程序的共享资源情况，比如L3 Cache、内存带宽。每个节点上会部署一个resource-controller的组件来应用RDT的控制。</td>
-</tr>
-<tr>
-<td></td>
-<td>控制动态水位提高不同优先级pod的资源利用效率</td>
-<td>为了充分利用机器资源，通常将不同优先级的pod部署在同一个节点上，pod的优先级往往随着时间段而有所变化。在白天的时候，在线业务pod优先级高；晚上离线任务优先级高。该特定可以调整一个节点上pod可以使用的资源上限。</td>
-<td>在线业务pod和离线业务pod混部</td>
-<td>通过ConfigMap来配置一台机器上的在线业务和离线业务可以使用的资源比例。通过Cronjob的方式来修改ConfigMap的配置，从而达到变配的效果。</td>
-</tr>
-<tr>
-<td></td>
-<td>动态资源超卖</td>
-<td>一台机器上的pod在设计request和limit的时候总会预留一部分buffer，如果将所有pod的buffer加起来就非常多，从而导致机器的资源利用率很难上去。</td>
-<td>pod预留buffer</td>
-<td>引入了reclaimed资源来解决，未完全理解实现。文档：<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/412172.html">动态资源超卖</a></td>
-</tr>
-<tr>
-<td>gpu调度</td>
-<td>GPU拓扑感知调度</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td></td>
-<td>共享GPU调度</td>
-<td>GPU核共享</td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>FPGA调度</td>
-<td>暂未深入研究</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>任务调度</td>
-<td>Gang scheduling</td>
-<td>Coscheduling将N个pod调度到M个节点上同时运行，需要部分pod同时启动该批处理任务即可运行。如果允许的部分pod为N时，则退化为Gang Scheduling。该场景要求pod要同时创建。</td>
-<td>批处理任务</td>
-<td>基于Scheduling Framework实现的自定义调度器，核心机制是借助了Permit插件的pod延迟绑定功能，等到同一个group下的pod都创建后再调度。参考文章：<a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/766275">支持批任务的Coscheduling&#x2F;Gang scheduling</a></td>
-</tr>
-<tr>
-<td></td>
-<td>Binpack scheduling</td>
-<td>k8s默认的调度策略会将pod优先分配到空闲的节点上，但这样集群中的节点会存在资源碎片化的问题。Binpack调度策略会优先将节点的资源用完。</td>
-<td>减少资源碎片化，尤其是GPU场景</td>
-<td>基于Scheduling Framework实现的自定义调度器。参考文章：<a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/770336">支持批任务的Binpack Scheduling</a></td>
-</tr>
-<tr>
-<td></td>
-<td>Capacity Scheduling</td>
-<td>k8s支持的namespace ResourceQuota特性可以设置一个namespace下的pod可以使用的资源上限，但不够灵活。比如一个namespace下资源耗尽，另外一个namespace还有额外的资源，但这部分资源却不能给资源耗尽的namespace使用。</td>
-<td>namespace ResourceQuota特性增强</td>
-<td>使用ElasticQuotaTree的方式来定义每个namespace下可以使用的资源最小值和资源上限，配合Scheduling Framework扩展来实现。</td>
-</tr>
-<tr>
-<td>弹性调度</td>
-<td>ECI弹性调度</td>
-<td>充分利用ECI的弹性功能，解决k8s的node资源不够灵活的问题。</td>
-<td>将pod调度到ECI</td>
-<td>virtual kubelet技术将ECI抽象为k8s的node，并将pod指向调度到该node。调度到该node的pod最终会在ECI拉起容器。</td>
-</tr>
-<tr>
-<td></td>
-<td>自定义资源的优先级调度</td>
-<td>k8s的调度器的策略采用固定的算法，会将所有node一视同仁，并不能针对某种类型的节点采用不同的策略。</td>
-<td>自定义基于node调度策略</td>
-<td>引入CRD ResourcePolicy用来定义节点调度的优先级。</td>
-</tr>
-<tr>
-<td>负载感知调度</td>
-<td>负载感知调度</td>
-<td>在pod调度时，参考node节点历史的负载信息，优先将pod调度到负载较低的节点上，避免出现单个节点负载过高的情况。</td>
-<td>避免node的资源使用率不均</td>
-<td>通过调度器扩展实现，pod要开启该特性需要增加特性的annotation。</td>
-</tr>
-</tbody></table>
-<h1 id="网络"><a href="#网络" class="headerlink" title="网络"></a>网络</h1><table>
-<thead>
-<tr>
-<th>大类</th>
-<th>特性</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>容器网络</td>
-<td>terway网络</td>
-<td>基于ENI实现，支持ipvlan模式，基于ipvlan和eBPF实现。NetworkPolicy基于eBPF实现。</td>
-</tr>
-<tr>
-<td></td>
-<td>terway网络的Hubble组件</td>
-<td>基于eBPF实现的网络流量可视化</td>
-</tr>
-<tr>
-<td></td>
-<td>为pod挂载独立公网ip</td>
-<td>pod声明annotation k8s.aliyun.com&#x2F;pod-with-eip:”true”</td>
-</tr>
-<tr>
-<td>Service网络</td>
-<td>ccm跨集群部署服务</td>
-<td>同一个vip可以挂载到两个k8s集群内部的Service</td>
-</tr>
-<tr>
-<td>Ingress</td>
-<td>基于Nginx Ingress实现灰度发布</td>
-<td>扩展Nginx Ingress实现</td>
-</tr>
-<tr>
-<td></td>
-<td>通过AHAS支持流控特性</td>
-<td></td>
-</tr>
-<tr>
-<td></td>
-<td>基于Nginx Ingress实现流量复制</td>
-<td></td>
-</tr>
-<tr>
-<td></td>
-<td>基于ALB实现了ALB Ingress</td>
-<td>数据面直接使用ALB的七层负载均衡功能</td>
-</tr>
-<tr>
-<td>DNS</td>
-<td>引入kubernetes项目中的addon组件NodeLocal DNSCache来增加cache层</td>
-<td><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/dns/nodelocaldns">NodeLocal DNS Cache</a> nodelocal dns cache位于kubernetes项目中，以DaemonSet的方式运行在k8s集群中</td>
-</tr>
-<tr>
-<td></td>
-<td>ExternalDNS服务</td>
-<td>用来将DNS注册到外部的公共域名服务器</td>
-</tr>
-<tr>
-<td></td>
-<td>使用DNSTAP Analyser诊断异常</td>
-<td>s使用CoreDNS DNSTAP Analyser组件来接收coredns的DNS解析报文格式dnstap协议，并最终可以输出到sls对异常的DNS解析报文进行分析。</td>
-</tr>
-</tbody></table>
-<h1 id="存储"><a href="#存储" class="headerlink" title="存储"></a>存储</h1><p>存储为ACK的一大亮点，借助云的丰富存储类型，通过k8s的CSI插件机制提供了块存储、文件存储、对象存储OSS和本地存储的支持。</p>
-<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2022/png/220839/1645347493244-2af51b21-0150-48e4-a15e-0585d5a59852.png#clientId=ub8a97252-9d7b-4&from=paste&height=916&id=ufabccb6c&margin=%5Bobject%20Object%5D&name=image.png&originHeight=916&originWidth=2458&originalType=binary&ratio=1&size=143128&status=done&style=none&taskId=uf542f250-6209-4734-8564-306faaaaca5&width=2458" alt="image.png"></p>
-<h2 id="本地存储"><a href="#本地存储" class="headerlink" title="本地存储"></a>本地存储</h2><ol>
-<li>LVM数据卷功能，基于lvm来动态创建pv</li>
-<li>QuotaPath，基于ext4的quota特性实现的本地存储的quota隔离功能</li>
-<li>内存数据卷</li>
-<li>持久化内存技术</li>
-</ol>
-<h2 id="云盘存储卷"><a href="#云盘存储卷" class="headerlink" title="云盘存储卷"></a>云盘存储卷</h2><ol>
-<li>支持云盘的在线扩容，k8s 1.16版本之前可以手工扩容磁盘，但是pvc保持必变。在k8s 1.16之后，在pvc修改后，可以自动完成云盘的扩容。</li>
-<li>可根据磁盘的使用水位支持云盘的自动扩容，该功能通过额外的组件storage-operator来实现，策略存放到了额外的CRD StorageAutoScalerPolicy。跟k8s的hpa和vpa功能相比，该功能没有自动缩容的功能。</li>
-<li>使用k8s的存储快照功能实现了存储快照。k8s定义了VolumeSnapshotContent（类似pv）、VolumeSnapshot（类似pvc）和VolumeSnapshotClass（类似StorageClass）三个类型来实现打快照功能，快照的恢复则借助pvc的spec.dataSource字段实现。</li>
-<li>加密云盘功能，同样借助云上能力实现。使用时，仅需要在StorageClass的parameters参数中指定加密参数即可。</li>
-</ol>
-<h1 id="Serverless-Kubernetes（ASK）"><a href="#Serverless-Kubernetes（ASK）" class="headerlink" title="Serverless Kubernetes（ASK）"></a>Serverless Kubernetes（ASK）</h1><p>适用场景：</p>
-<ol>
-<li>业务要求高弹性，如互联网在线服务存在波峰波谷特别明显</li>
-</ol>
-<p>ACK提供了k8s以及k8s的管理功能，其中k8s的master节点需要单独创建和维护，每个k8s集群使用的资源是完全独立的。在ASK中，用户仅需要创建k8s集群，而不需要关心k8s集群的核心组件具体是怎么创建的。</p>
-<p>在实际上，k8s的核心组件如etcd、kube-apiserver、kube-scheduler、kube-controller-manager可能是以pod的形式运行在另外的k8s集群之上，即所谓的k8s on k8s（KOK）的方案。而且这部分组件是多个k8s集群混部的，对用户完全屏蔽了实现细节，用户仅需要聚焦在如何使用k8s即可。</p>
-<p>对于k8s的node节点，用户同样不需要创建，可以认为k8s的节点资源是无限多的。ask采用了virtual kubelet的技术创建了一个虚拟的k8s node节点 <code>virtual-kubelet-$&#123;region&#125;-$&#123;zone&#125;</code>，整个k8s集群仅有一个节点。因为只有一个k8s节点，实际上k8s的管控作用会大大弱化，尤其是kube-scheduler，因为只有一个k8s节点，不存在pod调度的问题。</p>
-<p>用户创建的pod资源，实际上会部署在阿里云产品弹性容器实例ECI上。新创建ask集群完成后，再到ECI上即可看到有默认的容器创建出来。ECI了创建容器的功能，给用户暴露的功能是跟k8s无关的，而ask相当于是给用户提供了以k8s的方式来创建容器。</p>
-<p>ask还集成了knative，用户可以使用knative的Serving和Eventing的功能来实现社区通用的serverless服务。</p>
-<p>相关链接：</p>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/3zxbdvx2LmeAjt74xqhVbw">全新的网关能力增强</a></li>
-</ul>
-<h1 id="分布式云容器平台ACK-One"><a href="#分布式云容器平台ACK-One" class="headerlink" title="分布式云容器平台ACK One"></a>分布式云容器平台ACK One</h1><p>ack one提供了两个相对独立的功能，一个是第三方k8s集群的注册，另外一个是k8s多集群的管理和应用发布。两个功能的入口也未统一，其中一个是在ack界面，另外一个是在分布式云容器平台ack one。</p>
-<p>第三方k8s集群的注册，允许用户将自己的k8s集群注册到ack上，可以从ack上来管理用户的k8s集群，而且可以部署一些ack自己的组件到用户的k8s集群上面。需要在用户的k8s集群部署一个ack-cluster-agent的服务，在用户的k8s集群跟ack可达的情况下，即可完成用户k8s集群的托管。</p>
-<p>k8s多集群的管理功能，底层直接使用了kubevela项目，实现了k8s多集群的管理、多集群的应用发布功能。</p>
-<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>集群成本分析</p>
 
       
     </div>

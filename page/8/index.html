@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">236</span>
+          <span class="site-state-item-count">237</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,107 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/ipip/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/ipip/" class="post-title-link" itemprop="url">Linux IPIP隧道协议</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2020-02-01 00:00:15" itemprop="dateCreated datePublished" datetime="2020-02-01T00:00:15+00:00">2020-02-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>ipip协议为在ip协议报文的基础上继续封装ip报文，基于tun设备实现，是一种点对点的通讯技术。</p>
+<h2 id="install"><a href="#install" class="headerlink" title="install"></a>install</h2><p>ipip需要内核模块ipip的支持</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ modprobe ipip</span><br><span class="line">$ lsmod | grep ipip</span><br><span class="line">ipip                   13465  0</span><br><span class="line">tunnel4                13252  1 ipip</span><br><span class="line">ip_tunnel              25163  1 ipip</span><br></pre></td></tr></table></figure>
+
+<h2 id="实战"><a href="#实战" class="headerlink" title="实战"></a>实战</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipip.png"></p>
+<p>两台主机：172.16.5.126(host1)和172.16.5.127(host2)</p>
+<p>在host1上创建tun1设备，执行如下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"># 用来创建tun1设备，并ipip协议的外层ip，目的ip为172.16.5.127， 源ip为172.16.5.126</span><br><span class="line">ip tunnel add tun1 mode ipip remote 172.16.5.127 local 172.16.5.126</span><br><span class="line"># 给tun1设备增加ip地址，并设置tun1设备的对端ip地址为10.10.200.10</span><br><span class="line">ip addr add 10.10.100.10 peer 10.10.200.10 dev tun1</span><br><span class="line">ip link set tun1 up</span><br><span class="line"></span><br><span class="line">$ ifconfig tun1</span><br><span class="line">tun1: flags=209&lt;UP,POINTOPOINT,RUNNING,NOARP&gt;  mtu 1480</span><br><span class="line">        inet 10.10.100.10  netmask 255.255.255.255  destination 10.10.200.10</span><br><span class="line">        tunnel   txqueuelen 1000  (IPIP Tunnel)</span><br><span class="line">        RX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line"></span><br><span class="line"># 增加一条路由，所有到达10.10.200.10的请求会经过设备tun1</span><br><span class="line">$ route -n</span><br><span class="line">Kernel IP routing table</span><br><span class="line">Destination     Gateway         Genmask         Flags Metric Ref    Use Iface</span><br><span class="line">0.0.0.0         172.16.7.253    0.0.0.0         UG    0      0        0 eth0</span><br><span class="line">10.10.200.10    0.0.0.0         255.255.255.255 UH    0      0        0 tun1</span><br><span class="line">172.16.0.0      0.0.0.0         255.255.248.0   U     0      0        0 eth0</span><br></pre></td></tr></table></figure>
+
+<p>同样在host2上创建tun1设备：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ip tunnel add tun1 mode ipip remote 172.16.5.126 local 172.16.5.127</span><br><span class="line">ip addr add 10.10.200.10 peer 10.10.100.10 dev tun1</span><br><span class="line">ip link set tun1 up</span><br></pre></td></tr></table></figure>
+
+<p>并分别在host1和host2上打开ip_forward功能</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">echo 1 &gt;  /proc/sys/net/ipv4/ip_forward</span><br></pre></td></tr></table></figure>
+
+<p>然后在host1上ping 10.10.200.10，可以ping通。</p>
+<p>在host1的tun1上抓包，可以看到正常的ping包。</p>
+<p>在host1的eth1上抓包，可以看到已经是ipip的数据包了。</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipip-wireshark.jpg"></p>
+<p><a target="_blank" rel="noopener" href="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipip-wireshark.jpg">tun1.pcap</a></p>
+<p>清理现场分别在两台主机上执行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ip link delete tun0</span><br></pre></td></tr></table></figure>
+
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.bbsmax.com/A/ke5jRmjV5r/">什么是 IP 隧道，Linux 怎么实现隧道通信？</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +320,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -329,7 +430,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -407,7 +508,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -512,7 +613,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -645,7 +746,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -726,7 +827,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -813,7 +914,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -897,7 +998,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -1006,7 +1107,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -1054,118 +1155,6 @@
 <h2 id="当天终点-大柴旦"><a href="#当天终点-大柴旦" class="headerlink" title="当天终点 - 大柴旦"></a>当天终点 - 大柴旦</h2><p>又是在晚上的时候到达了当天的终点站大柴旦县。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">天空之镜湖</span><br><span class="line">白雪皑皑山</span><br><span class="line">漫漫柴达木</span><br><span class="line">渺渺无人烟</span><br><span class="line">盆地全是宝</span><br><span class="line">可惜只见草</span><br><span class="line">戈壁连成片</span><br><span class="line">夜宿大柴旦</span><br></pre></td></tr></table></figure>
 
-<p>未完待续…</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/qinghai-4/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/qinghai-4/" class="post-title-link" itemprop="url">北京自驾青海甘肃大环线系列 - 4</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2019-05-18 08:56:57" itemprop="dateCreated datePublished" datetime="2019-05-18T08:56:57+00:00">2019-05-18</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="第四天"><a href="#第四天" class="headerlink" title="第四天"></a>第四天</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-1.png"></p>
-<p>行程：西宁市 -&gt; 海南藏族自治州黑马河镇</p>
-<p>路程：250公里</p>
-<p>日期：2019.4.21</p>
-<p>经过了前三天的长途跋涉，今天开始了正式的旅行。早上在西宁市的华润万家采购了一些食物，因为还不太清楚接下来的大环线旅行中沿途的住宿饮食条件是什么样子的，也不太清楚很多情况下是否有足够的时间来饱餐一顿，毕竟每天都要赶很多的路。</p>
-<h3 id="第一站-塔尔寺"><a href="#第一站-塔尔寺" class="headerlink" title="第一站 塔尔寺"></a>第一站 塔尔寺</h3><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-2.jpg"></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-9.jpg"></p>
-<p>塔尔寺通常都是大家青海旅游的第一站，因为距离西宁市区比较近，大概有几十公里的路程，开车一个小时即可到达。</p>
-<p>塔尔寺属于典型的藏传佛教圣地，藏传佛教是受印度佛教、青藏高原本土的苯波教和汉传佛教影响的共同产物，因此有很多区别于其他佛教分支的特点。唐朝时期的文成公主是信奉佛教的，远嫁松赞干布后，为汉族的佛教向青藏地区的渗透起到了非常大的作用。</p>
-<p>塔尔寺在藏传佛教中的地位应该跟五台山差不多，但同时也吸收了一些中原道教的文化，比如寺内能看到有西王母的塑像。寺内建筑宏伟，院落也较多，比起五台山而言，除了整体面积小点，其它方面并不逊色。</p>
-<p>未能领悟佛教的我，草草的参观塔尔寺后，明显发现了藏传佛教的很多特色，也带给了我不少的震撼。</p>
-<p>好几个大殿的院内或者周围都有虔诚的佛教徒在做周而复始的朝拜，口中还振振有词，木质结构的地板早已磨的光滑无比。那种虔诚、执着非常值得敬佩，虽然以我现在的阅历还很难理解这种宗教行为。</p>
-<h3 id="第二站-日月山"><a href="#第二站-日月山" class="headerlink" title="第二站 日月山"></a>第二站 日月山</h3><p>从塔尔寺出来后，已经是下午两点了，接下来就要往青海湖进发了。日月山是此行的必经之路，属于祁连山脉的支脉，也是此行中看到的第一个雪山，沿途海拔在3000米以上。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-10.jpg"></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-11.jpg"></p>
-<p>进入日月山之前，阳光普照，高原的阳光相当强烈，隔着车玻璃都能感觉到。一开进日月山，雪山清晰可见，突然下起了冰雹，紧接着又下起了雨夹雪，原本没有积雪覆盖的山上也披上了一层薄薄的银装。这一切仿佛在预示着什么，仿佛在迎接着远道而来的客人，又仿佛是在告诫我不要打扰到了雪山上的神灵。</p>
-<p>因为日月山的风景太美，全然没有了赶路的想法，就想驻足体验一下日月山的神奇。主干道是京藏高速，有条公路可以通往日月山风景区，索性直接开往日月山风景区。到了景区门口，雨夹雪渐小，一下车发现空气凉了好多，原本仅穿了单件衣服，感觉立马要穿羽绒服的节奏，穿了件外套仍冻得直打哆嗦。高原的天气就是这般神奇，有阳光和没有阳光完全就是两个世界。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-3.jpg"></p>
-<p>日月山风景区并没有必要进入参观，因为景观在景区外一览无余。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-4.jpg"></p>
-<p>景区旁边能看到很多高原鼠兔，发出吱吱的响声，这玩意特别爱打洞，鼠兔的旁边可以看到几个洞。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-5.jpg"></p>
-<p>之后的行程中在公路边上看到了一只死去的马匹，马的头颅已不知所踪。我想放到东部地区，这种现象是肯定不会出现的，死去的马儿肯定还有它的利用价值。</p>
-<h3 id="第三站-青海湖"><a href="#第三站-青海湖" class="headerlink" title="第三站 青海湖"></a>第三站 青海湖</h3><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-6.jpg"></p>
-<p>从日月山出来沿着G109国道继续前行，中间经过了倒淌河风景区，倒淌河水源自日月山，自东向西注入青海湖，故名倒淌河。倒淌河的水量不大，加上本来也很难分清东南西北，就很难体会到倒淌河的精妙。看评价景点比较坑，并没有进入参观。</p>
-<p>过不了多久，青海湖就会出现在了眼前，而且接下来的两个多小时会一直沿着青海湖南沿的公路前进，足足有一百公里的距离，不愧为中国最大的湖泊。青海湖有个游客去的较多的二郎剑景区，并没有进入，据说性价比依旧很低，无非就是看湖，青海湖的美从哪个角度都能感受到。</p>
-<p>G109国道跟青海湖稍微有一段距离，最近处差不多有一里路的样子，中间都是草原，被牧民给围成了一块一块，山羊绵羊在悠闲的吃着草。找了一处牧民的区域，开车过去，一人10元的门票，即可到青海湖边拍照。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-12.jpg"></p>
-<p>身为游客一定觉得湖边的牧民是真正的逍遥快活，每天在自己的牧场上骑马放牧，住在青海湖畔，远处有雪山作伴，呼吸着几乎没有污染的空气。可是一旦天天都是这样的生活，又有几个游客可以放下尘世间的所有诱惑来到这近乎纯净的地方呢？牧民们也有自己的烦恼，牧民的孩子上学怎么办，牧民们生病了怎么办，各种生活的不便利。虽呼吸着最新鲜的空气，却也承受着杀伤力很强的紫外线。冬天的高原夜晚想想都会瑟瑟发抖，但牧民们也要忍受。</p>
-<p>我天真的以为，青海湖最初是真正的大海，后来由于地壳运动，地壳上升，而青海湖变成了一个内陆湖。哈哈，不过这个来源忽悠人还是蛮不错的。后来经查阅资料，青海湖的最初是一个内陆淡水湖，并且注入黄河。后来由于地壳运动，青海湖流入黄河的入口被切断，从而青海湖没有了任何出水口。再加上天气较为干旱，湖水的蒸发量大于湖水的注入量，导致湖水的盐分浓度逐渐增加，从而变成了一个咸水湖。青海境内的咸水湖成因都是因为蒸发量大于注入量，包括比较出名的茶卡盐湖。青海湖的湖水浓度并没有海水的浓度高，湖水帮大家尝过了，确实挺咸的。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-8.jpeg"></p>
-<p>青海湖的湖水非常清澈，虽湖水很宽，但空气透彻，一眼可以望到河对面远处的雪山。远处的云朵看起来非常低，跟湖水连在一起，微风吹过，湖水上一层层的波澜。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-7.jpeg"></p>
-<p>湖边的小水坑里已经有了青蛙，晚上的青海湖畔温度还是非常低的，不知道这些青蛙夜晚是怎么度过的。当然这些小水坑的水是纯淡水，亲尝无误。</p>
-<h3 id="终点站-黑马河镇"><a href="#终点站-黑马河镇" class="headerlink" title="终点站 黑马河镇"></a>终点站 黑马河镇</h3><p>黑马河位于青海湖的西端，因为是去往茶卡盐湖的必经之地，且可以看到青海湖，因此顺其自然靠着旅游而生存。早晨起来看日出的是个不错的地方，可以想象一下朝霞倒映在湖水中的场景，很多游客都会选择在黑马河观日出。</p>
-<p>到达黑马河已经是晚上八点多了，温度较低，索性换上羽绒服，一点也不觉得热。住宿条件比较一般，但价格却不便宜，是整个行程住的性价比最低的宾馆了。找了一家餐馆就餐，全都是组团的游客，非常不错的食材却做的难吃的不行，上等的牦牛肉放到餐桌上后却嚼也嚼不烂，看着放弃的牦牛肉甚是可惜。这大概就是国内很多因旅游而起的餐馆的真实写照，反正能坑一个是一个，不要回头客，回回都是新客人。做的烂对自己的生意影响不大，但游客在心中对于当地的评价确实难以磨灭的。</p>
 <p>未完待续…</p>
 
       

@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">236</span>
+          <span class="site-state-item-count">237</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,115 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/resolv-conf/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/resolv-conf/" class="post-title-link" itemprop="url">/etc/resolv.conf文件</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-06-16 21:57:43" itemprop="dateCreated datePublished" datetime="2022-06-16T21:57:43+00:00">2022-06-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>&#x2F;etc&#x2F;resolv.conf文件为Linux主机的DNS配置文件，在 Linux 主机上可以执行 <code>man resolv.conf</code> 查看帮助信息。</p>
+<h2 id="配置文件说明"><a href="#配置文件说明" class="headerlink" title="配置文件说明"></a>配置文件说明</h2><p>整个配置文件分为了4个部分：nameserver、search、sortlist和options</p>
+<h3 id="nameserver"><a href="#nameserver" class="headerlink" title="nameserver"></a>nameserver</h3><p>用来配置DNS服务器地址。支持ipv4和ipv6地址。如果要配置多个DNS服务器，可以增加多条配置，域名按照DNS服务器配置的顺序来解析。配置多条的例子如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nameserver 100.100.2.136</span><br><span class="line">nameserver 100.100.2.138</span><br></pre></td></tr></table></figure>
+
+<h3 id="search"><a href="#search" class="headerlink" title="search"></a>search</h3><p>在默认情况下，如果要查找的域名中不包含domain信息（即不包含<code>.</code>字符），此时会以当前hostname的domain信息来进行查找。可以通过search字段来修改该行为，即可以通过在域名的后面增加配置的后缀来进行查找。</p>
+<p>如果存在多条search记录，则以最后一条search记录为准。</p>
+<p>比如k8s的pod中的search域格式如下，如果要查找defaultnamespace下的service的svc1，此时系统会自动追加 svc1.default.svc.cluster.local来进行查找：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">search default.svc.cluster.local svc.cluster.local cluster.local</span><br></pre></td></tr></table></figure>
+
+<h3 id="sortlist"><a href="#sortlist" class="headerlink" title="sortlist"></a>sortlist</h3><p>该字段极少场景下会用到。在做域名解析时，如果返回的A记录为多条，可以对结果进行排序，排序的依据为当前的字段配置。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sortlist 130.155.160.0/255.255.240.0 130.155.0.0</span><br></pre></td></tr></table></figure>
+
+<h4 id="options"><a href="#options" class="headerlink" title="options"></a>options</h4><p>该配置必须加载一行中，格式如下，其中option部分可以为多个，多个之间用空格分割：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">options option ...</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>inet6: 应用程序在执行系统调用 gethostbyname 时，会优先执行 AAAA 记录的查询。如果查询不到 ipv6 地址，再去查询 ipv4 地址。</li>
+</ul>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><h3 id="实验一"><a href="#实验一" class="headerlink" title="实验一"></a>实验一</h3><p>修改&#x2F;resolv.conf配置文件的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nameserver 8.8.8.8</span><br></pre></td></tr></table></figure>
+
+<p>可以看到该nameserver是生效的，但是访问map域名是不生效的，因为没有map这个域名.</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[vagrant@localhost ~]$ ping map.baidu.com</span><br><span class="line">PING map.n.shifen.com (119.75.222.71) 56(84) bytes of data.</span><br><span class="line">64 bytes from 119.75.222.71: icmp_seq=1 ttl=63 time=4.22 ms</span><br><span class="line"></span><br><span class="line">[vagrant@localhost ~]$ ping map</span><br><span class="line">ping: unknown host map</span><br></pre></td></tr></table></figure>
+
+<h3 id="实验二"><a href="#实验二" class="headerlink" title="实验二"></a>实验二</h3><p>修改文件内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nameserver 8.8.8.8</span><br><span class="line"></span><br><span class="line">search baidu.com google.com</span><br></pre></td></tr></table></figure>
+<p>此时可以ping通map域名，解析到了跟map.baidu.com相同的域名.如果map.baidu.com的域名没有解析到，会继续解析map.google.com的域名。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[vagrant@localhost ~]$ ping map</span><br><span class="line">PING map.n.shifen.com (112.80.248.48) 56(84) bytes of data.</span><br><span class="line">64 bytes from 112.80.248.48: icmp_seq=1 ttl=63 time=28.6 ms</span><br></pre></td></tr></table></figure>
+
+<p>domain的作用跟search类似，作为search的默认值，因为search可以使用多个域。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/resolv.conf.5.html">resolv.conf(5) - Linux manual page (man7.org)</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +328,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -1123,7 +1232,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -1238,7 +1347,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -1327,7 +1436,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -1426,7 +1535,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -1524,7 +1633,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -1652,7 +1761,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -1782,7 +1891,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -2018,7 +2127,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
+      <time title="Modified: 2024-02-23 16:54:07" itemprop="dateModified" datetime="2024-02-23T16:54:07+00:00">2024-02-23</time>
     </span>
 
   
@@ -2084,113 +2193,6 @@
 <li><a target="_blank" rel="noopener" href="https://firewalld.org/">firewalld官方文档</a></li>
 <li><a target="_blank" rel="noopener" href="https://www.certdepot.net/rhel7-get-started-firewalld/">RHEL7: How to get started with Firewalld</a></li>
 </ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-auditd/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux-auditd/" class="post-title-link" itemprop="url">linux auditd</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-03-28 11:57:28" itemprop="dateCreated datePublished" datetime="2022-03-28T11:57:28+00:00">2022-03-28</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-23 12:21:27" itemprop="dateModified" datetime="2024-02-23T12:21:27+00:00">2024-02-23</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="audit简介"><a href="#audit简介" class="headerlink" title="audit简介"></a>audit简介</h2><p>audit为linux内核安全体系的重要组成部分，用来记录内核的系统调用，文件修改等事件，用于审计目的。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/linux_audit.png"></p>
-<ul>
-<li>auditctl: 面向用户的工具，类似于iptables命令</li>
-<li>auditd: 负责将审计信息写入到&#x2F;var&#x2F;</li>
-</ul>
-<h2 id="启动auditd服务"><a href="#启动auditd服务" class="headerlink" title="启动auditd服务"></a>启动auditd服务</h2><p>auditd作为单独的服务运行在系统上，Redhat系统使用<code>systemctl start auditd</code>启动服务，启动后通过 <code>ps -ef | grep auditd</code>查看进程是否启动成功。</p>
-<h2 id="auditctl"><a href="#auditctl" class="headerlink" title="auditctl"></a>auditctl</h2><p>查看auditd的运行状态</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -s</span><br><span class="line">enabled 1</span><br><span class="line">failure 1</span><br><span class="line">pid 638</span><br><span class="line">rate_limit 0</span><br><span class="line">backlog_limit 8192</span><br><span class="line">lost 0</span><br><span class="line">backlog 0</span><br><span class="line">loginuid_immutable 0 unlocked</span><br></pre></td></tr></table></figure>
-
-<p>查看当前环境规则</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -l</span><br><span class="line">-w /tmp/hosts -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries1 -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries2 -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries2 -p wa</span><br></pre></td></tr></table></figure>
-
-<p>删除所有的audit规则</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -D</span><br><span class="line">No rules</span><br></pre></td></tr></table></figure>
-
-<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="监控文件变化"><a href="#监控文件变化" class="headerlink" title="监控文件变化"></a>监控文件变化</h3><ol>
-<li>执行 auditctl -w $file -p wa 来监控文件，比如监控内核参数 auditctl -w &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2 -p wa，其中-p指定了监控文件的行为，支持rwxa。</li>
-<li>查看文件 cat &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2。</li>
-<li>使用vim打开文件 vim &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2。</li>
-<li>执行 ausearch -f &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2 命令查看，可以看到如下的日志</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ ausearch -f /proc/sys/net/ipv4/tcp_retries1</span><br><span class="line">----</span><br><span class="line">time-&gt;Mon Mar 28 12:44:48 2022</span><br><span class="line">type=PROCTITLE msg=audit(1648442688.159:6232591): proctitle=76696D002F70726F632F7379732F6E65742F697076342F7463705F7265747269657331</span><br><span class="line">type=PATH msg=audit(1648442688.159:6232591): item=1 name=&quot;/proc/sys/net/ipv4/tcp_retries1&quot; inode=46629229 dev=00:03 mode=0100644 ouid=0 ogid=0 rdev=00:00 objtype=NORMAL cap_fp=0000000000000000 cap_fi=0000000000000000 cap_fe=0 cap_fver=0</span><br><span class="line">type=PATH msg=audit(1648442688.159:6232591): item=0 name=&quot;/proc/sys/net/ipv4/&quot; inode=8588 dev=00:03 mode=040555 ouid=0 ogid=0 rdev=00:00 objtype=PARENT cap_fp=0000000000000000 cap_fi=0000000000000000 cap_fe=0 cap_fver=0</span><br><span class="line">type=CWD msg=audit(1648442688.159:6232591):  cwd=&quot;/root&quot;</span><br><span class="line">type=SYSCALL msg=audit(1648442688.159:6232591): arch=c000003e syscall=2 success=yes exit=3 a0=11687a0 a1=241 a2=1a4 a3=7ffe33dc14e0 items=2 ppid=8375 pid=8629 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts1 ses=250225 comm=&quot;vim&quot; exe=&quot;/usr/bin/vim&quot; key=(null)</span><br></pre></td></tr></table></figure>
-
-<h3 id="监控文件夹变化"><a href="#监控文件夹变化" class="headerlink" title="监控文件夹变化"></a>监控文件夹变化</h3><p>监控文件夹同样采用跟上述文件相同的方式，但有个问题是如果文件夹下内容较多，会一起监控，从而导致audit的log内容过多。</p>
-<h3 id="监控系统定期reboot"><a href="#监控系统定期reboot" class="headerlink" title="监控系统定期reboot"></a>监控系统定期reboot</h3><p>执行如下命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">auditctl -w /bin/systemctl -p rwxa -k systemd_call</span><br><span class="line">auditctl -a always,exit -F arch=b64 -S reboot -k reboot_call</span><br></pre></td></tr></table></figure>
-
-<p>待系统重启后执行如下命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ausearch -f reboot</span><br></pre></td></tr></table></figure>
-
-<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a target="_blank" rel="noopener" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/security_guide/chap-system_auditing">RedHat auditd文档</a></p>
 
       
     </div>
