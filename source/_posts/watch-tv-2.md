@@ -19,11 +19,14 @@ HDMI CEC（Consumer Electronics Control） 功能可以实现通过 HDMI 连接�
 1. 当关闭投影仪的时候也可以关闭 Android TV。
 2. 当打开投影仪的时候可以打开 Android TV。
 
-要想使用 HDMI CEC 功能，需要在 Android TV 系统中开启相关的功能。<br />![IMG_2893.HEIC](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-2.HEIC)<br />下面的界面用来选择 HDMI CEC 的支持接口，只能支持一个 HDMI 接口。<br />![IMG_2894.HEIC](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-3.HEIC)
+要想使用 HDMI CEC 功能，需要在 Android TV 系统中开启相关的功能。<br />![IMG_2893.HEIC](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-2.png)<br />下面的界面用来选择 HDMI CEC 的支持接口，只能支持一个 HDMI 接口。<br />![IMG_2894.HEIC](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-3.png)
 
 由于跟投影仪共用一个遥控器，功能上还是有所受限。比如音量的大小功能，只能操作投影仪，而不能再设置 Android TV 的音量大小。但绝大多数的功能已经具备。
+
 # 使用蓝牙遥控器
-家里正巧有个办移动宽带送的电视盒子，该遥控器为蓝牙遥控器。在遥控器的背面正巧有蓝牙配对的方法。<br />![IMG_2891.HEIC](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-4.heic)<br />打开 Android Tv 系统中的 `设置` -> `系统` -> `遥控器和手柄` 功能。同时按住菜单键和返回键即可蓝牙配对。<br />![IMG_2892.HEIC](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-5.HEIC)<br />蓝牙配对成功后，使用过程中功能正常。但发现个致命的缺点：蓝牙会自动断开，而且无法自动连接，下次只能重新配对。我不太确定是否为遥控器的问题，但单这一点已经否定了我使用蓝牙遥控器的方案。
+家里正巧有个办移动宽带送的电视盒子，该遥控器为蓝牙遥控器。在遥控器的背面正巧有蓝牙配对的方法。<br />![IMG_2891.HEIC](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-4.png)<br />
+打开 Android Tv 系统中的 `设置` -> `系统` -> `遥控器和手柄` 功能。同时按住菜单键和返回键即可蓝牙配对。<br />![IMG_2892.HEIC](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-5.png)<br />
+蓝牙配对成功后，使用过程中功能正常。但发现个致命的缺点：蓝牙会自动断开，而且无法自动连接，下次只能重新配对。我不太确定是否为遥控器的问题，但单这一点已经否定了我使用蓝牙遥控器的方案。
 
 # 使树莓派设备支持遥控器控制
 树莓派通过 24 个 GPIO 引脚提供了强大的扩展性，可以接入外部硬件设备来接收遥控器的信号。<br />我们来了解下常见的遥控器的实现原理：
@@ -36,9 +39,14 @@ HDMI CEC（Consumer Electronics Control） 功能可以实现通过 HDMI 连接�
 我家里正巧有几个废弃的红外遥控器，因此可以作为树莓派的遥控器来使用。剩下的事情首先需要树莓派通过 GPIO 引脚接收到红外信号。<br />在万能的淘宝上，花了几块钱买到了红外接收器和杜邦线（用来连接红外接收头和 GPIO 引脚），杜邦线需要注意为母对母规格。<br />![image.png](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-6.png)<br />![image.png](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-7.png)
 
 ## 红外接收器连接到树莓派
-在默认情况下，树莓派 GPIO 引脚的功能并未开启。打开 Android TV 系统中的 `Raspberry Pi settings` -> `IR` -> `Infrared remote`开关。可以看到接收信号的为 GPIO 18 引脚。<br />![IMG_2887.HEIC](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-8.heic)<br />在红外接收器上包含了三个引脚，依次为：OUT（输出信号）、GND（接地信号）、VCC（工作电压），其中红外接收器的 OUT 引脚对应的 GPIO 18 引脚。<br />
-![image.png](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-9.png)<br />树莓派提供了 3.3V 和 5V 两种工作电压，查看红外信号接收器的工作电压在 2.7V ~ 5.5V 之间，我直接使用了 GPIO 的 5V 的引脚。<br />
-![image.png](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-10.png)<br />查看树莓派的各个引脚线路图：<br />![来源：https://pinout.vvzero.com/](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-11.png "来源：https://pinout.vvzero.com/")<br />即可得到红外信号接收器跟 GPIO 引脚的对应关系：
+在默认情况下，树莓派 GPIO 引脚的功能并未开启。打开 Android TV 系统中的 `Raspberry Pi settings` -> `IR` -> `Infrared remote`开关。可以看到接收信号的为 GPIO 18 引脚。<br />
+![IMG_2887.HEIC](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-8.png)<br />
+
+在红外接收器上包含了三个引脚，依次为：OUT（输出信号）、GND（接地信号）、VCC（工作电压），其中红外接收器的 OUT 引脚对应的 GPIO 18 引脚。<br />
+![image.png](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-9.png)<br />
+树莓派提供了 3.3V 和 5V 两种工作电压，查看红外信号接收器的工作电压在 2.7V ~ 5.5V 之间，我直接使用了 GPIO 的 5V 的引脚。<br />
+![image.png](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-10.png)<br />查看树莓派的各个引脚线路图：<br />
+![来源：https://pinout.vvzero.com/](https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/tv-2-11.png "来源：https://pinout.vvzero.com/")<br />即可得到红外信号接收器跟 GPIO 引脚的对应关系：
 
 | 红外信号接收器引脚 |  GPIO 引脚 |
 | --- | --- |
