@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">237</span>
+          <span class="site-state-item-count">238</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,134 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/firewalld/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/firewalld/" class="post-title-link" itemprop="url">firewalld</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-29 19:24:27" itemprop="dateCreated datePublished" datetime="2022-03-29T19:24:27+00:00">2022-03-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-02-24 16:22:31" itemprop="dateModified" datetime="2024-02-24T16:22:31+00:00">2024-02-24</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>在RHEL7系统中，firewalld和iptabels两个防火墙的服务并存，firewalld通过调用iptables命令来实现，firewalld和iptables均用来维护系统的netfilter规则，底层实现为内核的netfilter模块。</p>
+<p>firewalld为systemd项目的一部分，为python语言实现，跟iptables相比，使用上更加人性化，提供了更高层次的抽象，用户不用关心netfilter的链和表的概念。</p>
+<h2 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/firewalld-structure.png"></p>
+<p>最上层为用户界面层，提供了firewall-cmd和firewall-offline-cmd两个命令行工具，其中firewall-cmd为最主要的命令行工具。firewall-config为GUI工具。用户界面层通过firewalld提供的D-Bus接口进行通讯。</p>
+<p>firewalld为daemon进程，其中zone、service、ipset等为firewalld抽象的概念。在接收到用户界面层的命令后，一方面需要将操作保存到本地文件，另外还需要调用更底层的如iptables、ipset、ebtables等命令来产生规则，最终在内核层的netfilter模块生效。</p>
+<h2 id="firewalld的管理"><a href="#firewalld的管理" class="headerlink" title="firewalld的管理"></a>firewalld的管理</h2><p>在RHEL7系统下，firewalld作为systemd家族的一员会默认安装。其service文件定义如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">$ cat /usr/lib/systemd/system/firewalld.service </span><br><span class="line">[Unit]</span><br><span class="line">Description=firewalld - dynamic firewall daemon</span><br><span class="line">Before=network-pre.target</span><br><span class="line">Wants=network-pre.target</span><br><span class="line">After=dbus.service</span><br><span class="line">After=polkit.service</span><br><span class="line">Conflicts=iptables.service ip6tables.service ebtables.service ipset.service</span><br><span class="line">Documentation=man:firewalld(1)</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">EnvironmentFile=-/etc/sysconfig/firewalld</span><br><span class="line">ExecStart=/usr/sbin/firewalld --nofork --nopid $FIREWALLD_ARGS</span><br><span class="line">ExecReload=/bin/kill -HUP $MAINPID</span><br><span class="line"># supress to log debug and error output also to /var/log/messages</span><br><span class="line">StandardOutput=null</span><br><span class="line">StandardError=null</span><br><span class="line">Type=dbus</span><br><span class="line">BusName=org.fedoraproject.FirewallD1</span><br><span class="line">KillMode=mixed</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=multi-user.target</span><br><span class="line">Alias=dbus-org.fedoraproject.FirewallD1.service</span><br></pre></td></tr></table></figure>
+
+<p>查看firewall-cmd的运行状态</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ firewall-cmd --state</span><br><span class="line">not running</span><br></pre></td></tr></table></figure>
+
+<p>在安装完firewalld后，会在&#x2F;usr&#x2F;lib&#x2F;firewalld&#x2F;目录下产生默认的配置，该部分配置不可修改。同时会在&#x2F;etc&#x2F;firewalld目录下产生firewalld的配置，该部分配置会覆盖&#x2F;usr&#x2F;lib&#x2F;firewalld&#x2F;下的配置。&#x2F;etc&#x2F;firewalld目录下的文件内容如下，其中firewalld.conf文件为最主要的配置文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ls </span><br><span class="line">firewalld.conf  helpers  icmptypes  ipsets  lockdown-whitelist.xml  services  zones</span><br></pre></td></tr></table></figure>
+
+<h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p>firewalld抽象了zone、service、ipset、helper、icmptypes几个概念。</p>
+<h3 id="zone"><a href="#zone" class="headerlink" title="zone"></a>zone</h3><p>firewalld 将网络按照安全等级划分了不同的zone，zone的定义位于&#x2F;usr&#x2F;lib&#x2F;firewalld&#x2F;zones&#x2F;目录下，文件格式为xml，包括了如下的zone。</p>
+<ol>
+<li>drop：只允许出向，任何入向的网络数据包被丢弃，不会回复icmp报文。</li>
+<li>block：任何入向的网络数据包均会被拒绝，会回复icmp报文。</li>
+<li>public：公共区域网络流量。不信任网络上的流量，选择接收入向的网络流量。</li>
+<li>external：不信任网络上的流量，选择接收入向的网络流量。</li>
+<li>DMZ：隔离区域，内网和外网增加的一层网络，起到缓冲作用。选择接收入向的网络连接。</li>
+<li>work：办公网络，信任网络流量，选择接收入向的网络流量。</li>
+<li>home：家庭网络，信任网络流量，选择接收入向的网络流量。</li>
+<li>internal：内部网络，信任网络流量，选择接收入向的网络流量。</li>
+<li>trusted：信任区域。所有网络连接可接受。</li>
+</ol>
+<p>firewalld的默认zone为public，zone目录下的public.xml的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;zone&gt;</span><br><span class="line">  &lt;short&gt;Public&lt;/short&gt;</span><br><span class="line">  &lt;description&gt;For use in public areas. You do not trust the other computers on networks to not harm your computer. Only selected incoming connections are accepted.&lt;/description&gt;</span><br><span class="line">  &lt;service name=&quot;ssh&quot;/&gt;</span><br><span class="line">  &lt;service name=&quot;dhcpv6-client&quot;/&gt;</span><br><span class="line">  &lt;service name=&quot;cockpit&quot;/&gt;</span><br><span class="line">&lt;/zone&gt;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到Public zone关联了三个service对象 ssh、dhcpv6-client、cockpit。没有匹配到该zone的流量，默认情况下会被拒绝。</p>
+<p>在配置文件&#x2F;etc&#x2F;firewalld&#x2F;firewalld.conf中，通过DefaultZone字段指定的默认zone为public。即如果开启了firewalld规则，那么默认仅会放行访问上述三个服务的流量。执行 iptables-save 命令实际上并为看到任何的iptables规则，说明firewalld是直接调用内核的netfilter来实现的。</p>
+<h3 id="service"><a href="#service" class="headerlink" title="service"></a>service</h3><p>service为firewalld对运行在宿主机上的进程的抽象，并在zone文件中跟zone进行绑定。比如ssh.xml的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;service&gt;</span><br><span class="line">  &lt;short&gt;SSH&lt;/short&gt;</span><br><span class="line">  &lt;description&gt;Secure Shell (SSH) is a protocol for logging into and executing commands on remote machines. It provides secure encrypted communications. If you plan on accessing your machine remotely via SSH over a firewalled interface, enable this option. You need the openssh-server package installed for this option to be useful.&lt;/description&gt;</span><br><span class="line">  &lt;port protocol=&quot;tcp&quot; port=&quot;22&quot;/&gt;</span><br><span class="line">&lt;/service&gt;</span><br></pre></td></tr></table></figure>
+
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="向某个zone内增加端口号"><a href="#向某个zone内增加端口号" class="headerlink" title="向某个zone内增加端口号"></a>向某个zone内增加端口号</h3><p>执行 <code>firewall-cmd --permanent --zone=public --add-port=80/tcp</code> 即可向public zone内增加80端口号。同时可以在 &#x2F;etc&#x2F;firewalld&#x2F;zones&#x2F;public.xml 文件中看到新增加了80端口号。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ cat public.xml</span><br><span class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span><br><span class="line">&lt;zone&gt;</span><br><span class="line">  &lt;short&gt;Public&lt;/short&gt;</span><br><span class="line">  &lt;description&gt;For use in public areas. You do not trust the other computers on networks to not harm your computer. Only selected incoming connections are accepted.&lt;/description&gt;</span><br><span class="line">  &lt;service name=&quot;ssh&quot;/&gt;</span><br><span class="line">  &lt;service name=&quot;dhcpv6-client&quot;/&gt;</span><br><span class="line">  &lt;service name=&quot;cockpit&quot;/&gt;</span><br><span class="line">  &lt;port port=&quot;80&quot; protocol=&quot;tcp&quot;/&gt;</span><br><span class="line">&lt;/zone&gt;</span><br></pre></td></tr></table></figure>
+
+<p>参数 <code>--permanent</code> 为固化到文件中，如果不增加该参数重启firewalld进程后配置会失效。</p>
+<h3 id="获取当前zone信息"><a href="#获取当前zone信息" class="headerlink" title="获取当前zone信息"></a>获取当前zone信息</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ firewall-cmd --get-active-zones</span><br><span class="line">public</span><br><span class="line">  interfaces: eth0</span><br></pre></td></tr></table></figure>
+
+<p>每个网络设备可以属于不同的zone，可以根据网络设备名来查询所属的zone</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ firewall-cmd --get-zone-of-interface=eth0</span><br><span class="line">public</span><br></pre></td></tr></table></figure>
+
+<h3 id="设置当前默认zone"><a href="#设置当前默认zone" class="headerlink" title="设置当前默认zone"></a>设置当前默认zone</h3><p>该命令会自动修改&#x2F;etc&#x2F;firewalld&#x2F;firewalld.conf配置文件中的DefaultZone字段。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ firewall-cmd --set-default-zone=trusted</span><br></pre></td></tr></table></figure>
+
+<h3 id="查看当前配置规则"><a href="#查看当前配置规则" class="headerlink" title="查看当前配置规则"></a>查看当前配置规则</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ firewall-cmd --list-all</span><br><span class="line">public (active)</span><br><span class="line">  target: default</span><br><span class="line">  icmp-block-inversion: no</span><br><span class="line">  interfaces: eth0</span><br><span class="line">  sources: </span><br><span class="line">  services: cockpit dhcpv6-client ssh</span><br><span class="line">  ports: 80/tcp</span><br><span class="line">  protocols: </span><br><span class="line">  masquerade: no</span><br><span class="line">  forward-ports: </span><br><span class="line">  source-ports: </span><br><span class="line">  icmp-blocks: </span><br><span class="line">  rich rules: </span><br></pre></td></tr></table></figure>
+
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://firewalld.org/">firewalld官方文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.certdepot.net/rhel7-get-started-firewalld/">RHEL7: How to get started with Firewalld</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +347,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-24 14:38:47" itemprop="dateModified" datetime="2024-02-24T14:38:47+00:00">2024-02-24</time>
+      <time title="Modified: 2024-02-24 16:22:31" itemprop="dateModified" datetime="2024-02-24T16:22:31+00:00">2024-02-24</time>
     </span>
 
   
@@ -326,7 +454,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-24 14:38:47" itemprop="dateModified" datetime="2024-02-24T14:38:47+00:00">2024-02-24</time>
+      <time title="Modified: 2024-02-24 16:22:31" itemprop="dateModified" datetime="2024-02-24T16:22:31+00:00">2024-02-24</time>
     </span>
 
   
@@ -488,7 +616,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-24 14:38:47" itemprop="dateModified" datetime="2024-02-24T14:38:47+00:00">2024-02-24</time>
+      <time title="Modified: 2024-02-24 16:22:31" itemprop="dateModified" datetime="2024-02-24T16:22:31+00:00">2024-02-24</time>
     </span>
 
   
@@ -590,7 +718,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-24 14:38:47" itemprop="dateModified" datetime="2024-02-24T14:38:47+00:00">2024-02-24</time>
+      <time title="Modified: 2024-02-24 16:22:31" itemprop="dateModified" datetime="2024-02-24T16:22:31+00:00">2024-02-24</time>
     </span>
 
   
@@ -685,7 +813,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-24 14:38:47" itemprop="dateModified" datetime="2024-02-24T14:38:47+00:00">2024-02-24</time>
+      <time title="Modified: 2024-02-24 16:22:31" itemprop="dateModified" datetime="2024-02-24T16:22:31+00:00">2024-02-24</time>
     </span>
 
   
@@ -808,7 +936,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-24 14:38:47" itemprop="dateModified" datetime="2024-02-24T14:38:47+00:00">2024-02-24</time>
+      <time title="Modified: 2024-02-24 16:22:31" itemprop="dateModified" datetime="2024-02-24T16:22:31+00:00">2024-02-24</time>
     </span>
 
   
@@ -920,7 +1048,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-24 14:38:47" itemprop="dateModified" datetime="2024-02-24T14:38:47+00:00">2024-02-24</time>
+      <time title="Modified: 2024-02-24 16:22:31" itemprop="dateModified" datetime="2024-02-24T16:22:31+00:00">2024-02-24</time>
     </span>
 
   
@@ -1000,7 +1128,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-24 14:38:47" itemprop="dateModified" datetime="2024-02-24T14:38:47+00:00">2024-02-24</time>
+      <time title="Modified: 2024-02-24 16:22:31" itemprop="dateModified" datetime="2024-02-24T16:22:31+00:00">2024-02-24</time>
     </span>
 
   
@@ -1093,7 +1221,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-24 14:38:47" itemprop="dateModified" datetime="2024-02-24T14:38:47+00:00">2024-02-24</time>
+      <time title="Modified: 2024-02-24 16:22:31" itemprop="dateModified" datetime="2024-02-24T16:22:31+00:00">2024-02-24</time>
     </span>
 
   
@@ -1117,170 +1245,6 @@
 <h2 id="ssh隧道"><a href="#ssh隧道" class="headerlink" title="ssh隧道"></a>ssh隧道</h2><p>动态端口转发：执行 <code>ssh root@xxxx -ND 127.0.0.1:1080</code> 即可在本机的1080端口开启一个ssh隧道。</p>
 <h2 id="rsync"><a href="#rsync" class="headerlink" title="rsync"></a>rsync</h2><p>rsync的常用命令：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rsync -avzP --delete $local_idr  $user@$remote:$remote_dir</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/OpenKruise/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/OpenKruise/" class="post-title-link" itemprop="url">OpenKruise调研</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-03-08 21:14:34" itemprop="dateCreated datePublished" datetime="2022-03-08T21:14:34+00:00">2022-03-08</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-24 14:38:47" itemprop="dateModified" datetime="2024-02-24T14:38:47+00:00">2024-02-24</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>OpenKruise是阿里云开源的一系列基于k8s的扩展组件的集合，其中包含了像增强版的workload、sidecar容器管理、高可用性防护等特性，包含了很多的“黑科技”。</p>
-<p>如果k8s的kube-controller-manager组件可以提供非常强的扩展能力，可以实现自定义的Deployment、StatefulSet的controller，而不是使用原生的kube-controller-manager的功能，类似于实现自定义的调度器扩展功能。那么很有可能OpenKruise的实现方案就不再会采用CRD扩展的方式，而是直接在原生的Deployment、StatefulSet等对象上通过annotation的方式来实现。</p>
-<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>可以直接使用helm的方式安装</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">helm</span> <span class="string">repo</span> <span class="string">add</span> <span class="string">openkruise</span> <span class="string">https://openkruise.github.io/charts/</span></span><br><span class="line"><span class="string">helm</span> <span class="string">install</span> <span class="string">kruise</span> <span class="string">openkruise/kruise</span> <span class="string">--version</span> <span class="number">1.0</span><span class="number">.1</span></span><br></pre></td></tr></table></figure>
-<p>安装完成后，可以看到在kruise-system下创建了一个DeamonSet和一个Deployment。并且安装了很多的CRD和webhook组件。</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">kubectl</span>  <span class="string">get</span> <span class="string">pod</span> <span class="string">-n</span> <span class="string">kruise-system</span></span><br><span class="line"><span class="string">NAME</span>                                        <span class="string">READY</span>   <span class="string">STATUS</span>    <span class="string">RESTARTS</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">kruise-controller-manager-67878b65d-cv6f4</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"><span class="string">kruise-controller-manager-67878b65d-jrmnd</span>   <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"><span class="string">kruise-daemon-ktwvv</span>                         <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"><span class="string">kruise-daemon-nf84r</span>                         <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"><span class="string">kruise-daemon-rjs26</span>                         <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"><span class="string">kruise-daemon-vghw4</span>                         <span class="number">1</span><span class="string">/1</span>     <span class="string">Running</span>   <span class="number">0</span>          <span class="string">92s</span></span><br><span class="line"></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span> <span class="string">get</span> <span class="string">crd</span> <span class="string">|</span> <span class="string">grep</span> <span class="string">kruise.io</span></span><br><span class="line"><span class="string">advancedcronjobs.apps.kruise.io</span>                           <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">broadcastjobs.apps.kruise.io</span>                              <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">clonesets.apps.kruise.io</span>                                  <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">containerrecreaterequests.apps.kruise.io</span>                  <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">daemonsets.apps.kruise.io</span>                                 <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">imagepulljobs.apps.kruise.io</span>                              <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">nodeimages.apps.kruise.io</span>                                 <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">podunavailablebudgets.policy.kruise.io</span>                    <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">resourcedistributions.apps.kruise.io</span>                      <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">sidecarsets.apps.kruise.io</span>                                <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">statefulsets.apps.kruise.io</span>                               <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">uniteddeployments.apps.kruise.io</span>                          <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"><span class="string">workloadspreads.apps.kruise.io</span>                            <span class="number">2022-03-05T13:21:39Z</span></span><br><span class="line"></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span>  <span class="string">get</span> <span class="string">validatingwebhookconfigurations</span> <span class="string">kruise-validating-webhook-configuration</span> </span><br><span class="line"><span class="string">NAME</span>                                      <span class="string">WEBHOOKS</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">kruise-validating-webhook-configuration</span>   <span class="number">17</span>         <span class="string">17m</span></span><br><span class="line"><span class="string">$</span> <span class="string">kubectl</span>  <span class="string">get</span> <span class="string">mutatingwebhookconfigurations</span> <span class="string">kruise-mutating-webhook-configuration</span> </span><br><span class="line"><span class="string">NAME</span>                                    <span class="string">WEBHOOKS</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">kruise-mutating-webhook-configuration</span>   <span class="number">11</span>         <span class="string">17m</span></span><br></pre></td></tr></table></figure>
-<h2 id="功能"><a href="#功能" class="headerlink" title="功能"></a>功能</h2><table>
-<thead>
-<tr>
-<th>大类</th>
-<th>子类</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>通用工作负载</td>
-<td>CloneSet</td>
-<td>定位是用来代替k8s的Deployment，但做了很多能力的增强。增强的功能点：<br>1. 支持声明pvc，给pod来申请pv。当pod销毁后，pvc会同步销毁。<br>2. 指定pod来进行缩容。<br>3. 流式扩容，可以指定扩容的步长等更高级的库容特性。<br >4. 分批灰度。<br>5. 通过partition回滚。<br>6. 控制pod的升级顺序。<br>7. 发布暂停。<br>8. 原地升级自动镜像预热。<br>9. 生命周期钩子。pod的多个声明周期之间可以读取finalizer，如果finalizer中有指定的值，则controller会停止。该行为作为k8s的一种hook方式，用户可以自定义controller来控制finalizer的行为。</td>
-</tr>
-<tr>
-<td>通用工作负载</td>
-<td>Advanced StatefulSet</td>
-<td>用来取代k8s原生的StatefulSet，很多增强特性跟CloneSet比较类似。<br>1. 原地升级。<br>2. 升级顺序增强。<br>3. 发布暂停。<br>4. 原地升级自动预热。<br>5. 序号跳过。StatefulSet创建的pod的后缀会从0开始依次累加，可以指定某个特定的序号跳过。<br>6. 流式扩容。</td>
-</tr>
-<tr>
-<td>通用工作负载</td>
-<td>Advanced DaemonSet</td>
-<td>用来取代k8s原生的DaemonSet。1. 热升级<br>2. 暂停升级<br></td>
-</tr>
-<tr>
-<td>任务工作负载</td>
-<td>BroadcastJob</td>
-<td>agent类型的job，每个节点上都会执行</td>
-</tr>
-<tr>
-<td>任务工作负载</td>
-<td>AdvancedCronJob</td>
-<td>原生的CronJob的扩展版本，可以周期性创建BroadcastJob。</td>
-</tr>
-<tr>
-<td>Sidecar容器管理</td>
-<td>SidecarSet</td>
-<td>用来管理Sidecar容器，其最核心的功能是支持在pod不重启的情况下Sidecar容器的热升级</td>
-</tr>
-<tr>
-<td>多区域管理</td>
-<td>WorkloadSpread</td>
-<td>将workload按照不同的策略来打散，随着k8s功能不断完善，部分功能k8s已经具备。支持Deployment、ReplicaSet、CloneSet。</td>
-</tr>
-<tr>
-<td>多区域管理</td>
-<td>UnitedDeployment</td>
-<td>k8s集群内可能存在不同种类型的node，该特性通过UnitedDeployment对象来管理将一个workload的不同pod分发到不同类型的节点上，并且可以指定不同类型节点的pod副本数。</td>
-</tr>
-<tr>
-<td>增强运维</td>
-<td>重启一个pod中的某个容器</td>
-<td>该特性依赖于kurise-daemon组件实现，通过将容器进程停掉，kubelet检测到容器停掉后会自动将容器拉起。停掉容器的方式跟kubelet实现一致。</td>
-</tr>
-<tr>
-<td>增强运维</td>
-<td>镜像预热</td>
-<td>通过ImagePullJob CR提供操作入口，底层的实现通过调用CRI的pod image接口实现</td>
-</tr>
-<tr>
-<td>增强运维</td>
-<td>控制pod中容器的启动顺序</td>
-<td>kruise创建一个ConfigMap，并在pod中注入来挂载该ConfigMap，每个容器使用ConfigMap中的不同key。kruise依次往CM中增加key来实现控制容器启动顺序的目的。</td>
-</tr>
-<tr>
-<td>增强运维</td>
-<td>资源分发ResourceDestribution</td>
-<td>可以跨namespace来分发CM、Secret，保证每个namespace下均有</td>
-</tr>
-<tr>
-<td>应用安全防护</td>
-<td>资源删除防护</td>
-<td>通过webhook技术实现</td>
-</tr>
-<tr>
-<td>应用安全防护</td>
-<td>PodUnavailableBudget</td>
-<td>通过webhook实现的k8s原生的pdb能力的增强，覆盖pdb不具备的场景</td>
-</tr>
-</tbody></table>
-<h2 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://openkruise.io/zh/docs/installation">https://openkruise.io/zh/docs/installation</a></li>
-<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/0YulmrteQSARXHa2NOBLeA">如何基于 OpenKruise 打破原生 Kubernetes 中的容器运行时操作局限？</a></li>
-</ul>
 
       
     </div>
@@ -1352,7 +1316,7 @@
 
 
 
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"preferred_color_scheme","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
 
 <script>
 document.addEventListener('page:loaded', () => {
