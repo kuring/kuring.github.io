@@ -9,12 +9,16 @@ NUMA（Non-Uniform Memory Access）非统一内存访问，是一种针对多处
 
 几个概念：
 
-1. Node：逻辑概念，对 CPU 分组的抽象，一个 Node 即为一个分组，一个分组下可以包含多个 CPU。每个 Node 都有自己的本地资源，包括内存和 IO。
-2. Socket：一颗物理 CPU。
-3. Core：一颗物理 CPU 的物理核。
-4. Thread/Processor：一颗物理 CPU 的逻辑核，用超线程的方式实现。
+![](https://kuring.oss-cn-beijing.aliyuncs.com/images/numa.jpg)
+
+1. Socket：一颗物理 CPU。
+2. Numa Node：逻辑概念，对 CPU 分组的抽象，一个 Node 即为一个分组，一个分组下可以包含多个 CPU。每个 Node 都有自己的本地资源，包括内存和 IO。Numa Node 之间不共享 L3 cache。一个 Numa Node 内的不同 core 之间共享 L3.
+3. Core：一颗物理 CPU 的物理核，每个 Core 有独立的 L1 和 L2，Core 之间共享 L3。
+4. Thread/Processor：一颗物理 CPU 的逻辑核，用超线程的方式模拟出两个逻辑核。Processor 之间共享 L1 和 L2 cache，在开启超线程后单核的性能会下降一些。
 
 一个 NUMA Node 可以有一个 Socket，每个 Socket 包含一个或者多个物理 Core。
+
+
 # 常用命令
 查看物理核数 Socket：`lscpu | grep Socket`
 每个 Socket 包含的物理核 Core：`lscpu  | grep 'Core(s) per socket'`

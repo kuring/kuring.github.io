@@ -91,7 +91,7 @@ kubectl get secret -n ark-system ark.cmdb.https.origin.tls -o jsonpath='{.data.c
 导出 configmap 中特定的 key：
 
 ```
-kubectl get cm -n kube-system  networkpolicy-config -o jsonpath='{.data.config\.yaml}' -o yaml
+kubectl get cm -n kube-system  networkpolicy-config -o jsonpath='{.data.config\.yaml}'
 ```
 
 修改完成后，将文件重新 apply cm
