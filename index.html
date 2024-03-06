@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">238</span>
+          <span class="site-state-item-count">239</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,124 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/k8s-kubelet-cpuset/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/k8s-kubelet-cpuset/" class="post-title-link" itemprop="url">k8s 中的 cpuset 绑核策略</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2024-03-06 21:23:11 / Modified: 13:25:06" itemprop="dateCreated datePublished" datetime="2024-03-06T21:23:11+00:00">2024-03-06</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>在 k8s 中使用 cgroup 的 CFS 配额来执行 pod 的 CPU 约束，在 CFS 的模式下，pod 可能会运行在不同的核上，会导致 pod 的缓存失效的问题。对于性能要求非常高的 pod，为了提升性能，可以通过 cgroup 中的 cpuset 绑核的特性来提升 pod 的性能。</p>
+<p>在 k8s 中仅针对如下的 pod 类型做了绑核操作：</p>
+<ol>
+<li>必须为 guaranteed pod 类型。即 pod 需要满足如下两个条件：<ol>
+<li>pod 中的每个容器都必须指定cpu 和 内存的 request 和 limit。</li>
+<li>pod 中的每个容器的 cpu 和内存的 request 和 limit 必须相等。</li>
+</ol>
+</li>
+<li>pod 的 cpu request 和 limit 必须为整数。</li>
+</ol>
+<h1 id="kubelet-的参数配置"><a href="#kubelet-的参数配置" class="headerlink" title="kubelet 的参数配置"></a>kubelet 的参数配置</h1><p>在 k8s 中仅通过 kubelet 来支持 pod 的绑核操作，跟其他组件无关。<br />kubelet 通过参数 <code>--cpu-manager-policy</code> 或者在 kubelet 的配置文件中参数<code>cpuManagerPolicy</code> 来配置，支持如下值：</p>
+<ol>
+<li>none：默认策略。即不执行绑核操作。</li>
+<li>static：允许为节点上的某些特征的 pod 赋予增强的 cpu 亲和性和独占性。</li>
+</ol>
+<p>kubelet 通过参数 <code>--cpu-manager-reconcile-period</code> 来指定内存中的 cpu 分配跟 cgroupfs 一致。<br />kubelet 通过参数 <code>--cpu-manager-policy-options</code>来微调。该特性通过特性门控 CPUManagerPolicyOptions 来控制。</p>
+<h1 id="模式之间切换"><a href="#模式之间切换" class="headerlink" title="模式之间切换"></a>模式之间切换</h1><p>默认的 kubelet <code>cpuManagerPolicy</code> 配置为 none，策略配置位于文件 <code>/var/lib/kubelet/cpu_manager_state</code>，文件内容如下：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span><span class="attr">&quot;policyName&quot;</span><span class="punctuation">:</span><span class="string">&quot;none&quot;</span><span class="punctuation">,</span><span class="attr">&quot;defaultCpuSet&quot;</span><span class="punctuation">:</span><span class="string">&quot;&quot;</span><span class="punctuation">,</span><span class="attr">&quot;checksum&quot;</span><span class="punctuation">:</span><span class="number">1353318690</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>修改 kubelet 的<code>cpuManagerPolicy</code> 为 static，将模式从 none 切换为 static，重启 kubelet。发现 kubelet 会启动失败，kubelet 并不能支持仅修改参数就切换模式，报如下错误：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Mar 06 15:00:02 iZt4nd5yyw9vfuxn3q2g3tZ kubelet[102800]: E0306 15:00:02.463939  102800 cpu_manager.go:223] &quot;Could not initialize checkpoint manager, please drain node and remove policy state file&quot; err=&quot;could not restore state from checkpoint: configured policy \&quot;static\&quot; differs from state checkpoint policy \&quot;none\&quot;, please drain this node and delete the CPU manager checkpoint file \&quot;/var/lib/kubelet/cpu_manager_state\&quot; before restarting Kubelet&quot;</span><br><span class="line">Mar 06 15:00:02 iZt4nd5yyw9vfuxn3q2g3tZ kubelet[102800]: E0306 15:00:02.463972  102800 kubelet.go:1392] &quot;Failed to start ContainerManager&quot; err=&quot;start cpu manager error: could not restore state from checkpoint: configured policy \&quot;static\&quot; differs from state checkpoint policy \&quot;none\&quot;, please drain this node and delete the CPU manager checkpoint file \&quot;/var/lib/kubelet/cpu_manager_state\&quot; before restarting Kubelet&quot;</span><br></pre></td></tr></table></figure>
+<p>将文件 <code>/var/lib/kubelet/cpu_manager_state</code> 删除后，kubelet 即可启动成功，新创建的 <code>/var/lib/kubelet/cpu_manager_state</code> 文件内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;policyName&quot;:&quot;static&quot;,&quot;defaultCpuSet&quot;:&quot;0-3&quot;,&quot;checksum&quot;:611748604&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到已经存在了绑核的 pod。</p>
+<p>如果节点上已经存在符合绑核条件的 pod，在修改配置并重启 kubelet 后即可绑核生效。</p>
+<h1 id="绑核实践"><a href="#绑核实践" class="headerlink" title="绑核实践"></a>绑核实践</h1><p>配置 kubelet 的<code>cpuManagerPolicy</code>值为 static，创建 guaranteed pod：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: nginx-deployment</span><br><span class="line">  labels:</span><br><span class="line">    app: nginx</span><br><span class="line">spec:</span><br><span class="line">  replicas: 2</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: nginx</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: nginx</span><br><span class="line">    spec:</span><br><span class="line">      containers:</span><br><span class="line">      - name: nginx</span><br><span class="line">        image: nginx:latest</span><br><span class="line">        ports:</span><br><span class="line">        - containerPort: 80</span><br><span class="line">        resources:</span><br><span class="line">          limits:</span><br><span class="line">            memory: &quot;200Mi&quot;</span><br><span class="line">            cpu: &quot;2&quot;</span><br><span class="line">          requests:</span><br><span class="line">            memory: &quot;200Mi&quot;</span><br><span class="line">            cpu: &quot;2&quot;</span><br></pre></td></tr></table></figure>
+<p>在 pod 调度的节点上，进入到 &#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;cpuset&#x2F;kubepods.slice 目录下，跟绑核相关的设置均在该目录下，该目录的结构如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">$ ll /sys/fs/cgroup/cpuset/kubepods.slice</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cgroup.clone_children</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cgroup.procs</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cpuset.cpu_exclusive</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cpuset.cpus</span><br><span class="line">-r--r--r--  1 root root 0 Mar  6 10:31 cpuset.effective_cpus</span><br><span class="line">-r--r--r--  1 root root 0 Mar  6 10:31 cpuset.effective_mems</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cpuset.mem_exclusive</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cpuset.mem_hardwall</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cpuset.memory_migrate</span><br><span class="line">-r--r--r--  1 root root 0 Mar  6 10:31 cpuset.memory_pressure</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cpuset.memory_spread_page</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cpuset.memory_spread_slab</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cpuset.mems</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cpuset.sched_load_balance</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 cpuset.sched_relax_domain_level</span><br><span class="line">drwxr-xr-x  2 root root 0 Mar  6 10:31 kubepods-besteffort.slice</span><br><span class="line">drwxr-xr-x 10 root root 0 Mar  6 10:31 kubepods-burstable.slice</span><br><span class="line">drwxr-xr-x  4 root root 0 Mar  6 15:09 kubepods-pod4dc3ad18_5bad_4728_9f79_59f2378de46e.slice</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 notify_on_release</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 pool_size</span><br><span class="line">-rw-r--r--  1 root root 0 Mar  6 10:31 tasks</span><br></pre></td></tr></table></figure>
+<p>其中 kubepods-besteffort.slice 和 kubepods-burstable.slice 分别对应的 besteffort 和 burstable 类型的 pod 配置，因为这两种类型的 pod 并不执行绑核操作，所有的子目录下的 cpuset.cpus 文件均绑定的 cpu 核。<br />kubepods-pod4dc3ad18_5bad_4728_9f79_59f2378de46e.slice 目录为要绑核的 pod 目录，其中 4dc3ad18_5bad_4728_9f79_59f2378de46e 根据 pod 的 uid 转换而来，pod 的 <code>metadata.uid</code> 字段的值为 4dc3ad18-5bad-4728-9f79-59f2378de46e，即目录结构中将<code>-</code>转换为<code>_</code>。<br />目录结构如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">$ ll /sys/fs/cgroup/cpuset/kubepods.slice/kubepods-pod4dc3ad18_5bad_4728_9f79_59f2378de46e.slice</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cgroup.clone_children</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cgroup.procs</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cpuset.cpu_exclusive</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cpuset.cpus</span><br><span class="line">-r--r--r-- 1 root root 0 Mar  6 15:09 cpuset.effective_cpus</span><br><span class="line">-r--r--r-- 1 root root 0 Mar  6 15:09 cpuset.effective_mems</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cpuset.mem_exclusive</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cpuset.mem_hardwall</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cpuset.memory_migrate</span><br><span class="line">-r--r--r-- 1 root root 0 Mar  6 15:09 cpuset.memory_pressure</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cpuset.memory_spread_page</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cpuset.memory_spread_slab</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cpuset.mems</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cpuset.sched_load_balance</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 cpuset.sched_relax_domain_level</span><br><span class="line">drwxr-xr-x 2 root root 0 Mar  6 15:09 cri-containerd-75f8e4b4185f673869604d300629ec2de934cf253244bf91c577f9fc0ba0f14a.scope</span><br><span class="line">drwxr-xr-x 2 root root 0 Mar  6 15:09 cri-containerd-cce0a338829921419407fcdc726d1a4bd5d4489da712b49a4834a020131ce718.scope</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 notify_on_release</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 pool_size</span><br><span class="line">-rw-r--r-- 1 root root 0 Mar  6 15:09 tasks</span><br></pre></td></tr></table></figure>
+<p>其中 cri-containerd-75f8e4b4185f673869604d300629ec2de934cf253244bf91c577f9fc0ba0f14a.scope 和 cri-containerd-cce0a338829921419407fcdc726d1a4bd5d4489da712b49a4834a020131ce718.scope 为 pod 的两个容器，其中一个为 pause 容器，另外一个为 nginx 容器。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ crictl pods | grep nginx-deploy</span><br><span class="line">cce0a33882992       6 hours ago         Ready               nginx-deployment-67778646bb-mgcpg                          default             0                   (default)</span><br></pre></td></tr></table></figure>
+<p>其中第一列的 cce0a33882992 为 pod id，cri-containerd-cce0a338829921419407fcdc726d1a4bd5d4489da712b49a4834a020131ce718.scope 对应的为 pause 容器，查看该目录下的 cpuset.cpus 文件，绑定了所有的核，并未做绑核操作。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ crictl ps | grep nginx-deploy</span><br><span class="line">75f8e4b4185f6       e4720093a3c13       6 hours ago         Running             nginx                      0                   cce0a33882992       nginx-deployment-67778646bb-mgcpg</span><br></pre></td></tr></table></figure>
+<p>其中第一列的 75f8e4b4185f6 为 container id，cri-containerd-75f8e4b4185f673869604d300629ec2de934cf253244bf91c577f9fc0ba0f14a.scope 对应的为 nginx 容器。查看 &#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;cpuset&#x2F;kubepods.slice&#x2F;kubepods-pod4dc3ad18_5bad_4728_9f79_59f2378de46e.slice&#x2F;cri-containerd-75f8e4b4185f673869604d300629ec2de934cf253244bf91c577f9fc0ba0f14a.scope&#x2F;cpuset.cpus 对应的值为<code>2-3</code>，说明绑核成功。</p>
+<p><code>/var/lib/kubelet/cpu_manager_state</code> 文件内容如下，跟 cgroup cpuset 实际配置可以完全对应：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;policyName&quot;:&quot;static&quot;,&quot;defaultCpuSet&quot;:&quot;0-1&quot;,&quot;entries&quot;:&#123;&quot;4dc3ad18-5bad-4728-9f79-59f2378de46e&quot;:&#123;&quot;nginx&quot;:&quot;2-3&quot;&#125;&#125;,&quot;checksum&quot;:3689800814&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="kubelet-内部实现"><a href="#kubelet-内部实现" class="headerlink" title="kubelet 内部实现"></a>kubelet 内部实现</h1><p>在 kubelet 内部，采用 <a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/cm/cpumanager/cpu_manager.go">cpu manager</a> 模式实现绑核功能。</p>
+<h1 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h1><ol>
+<li>只能 by 节点配置，不能按照 pod 来灵活的配置。</li>
+<li>无法适用于所有类型的 pod，pod 必须为 Guaranteed 时才允许开启。</li>
+<li>修复配置较为麻烦，一旦配置变更后，需要删除文件 <code>/var/lib/kubelet/cpu_manager_state</code> 后才可生效，而且对现有的 pod 均有影响。</li>
+</ol>
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://www.alibabacloud.com/help/zh/ack/ack-managed-and-ack-dedicated/user-guide/topology-aware-cpu-scheduling">ACK CPU拓扑感知调度</a></li>
+<li><a target="_blank" rel="noopener" href="https://v1-25.docs.kubernetes.io/zh-cn/docs/tasks/administer-cluster/cpu-management-policies/">控制节点上的 CPU 管理策略</a></li>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/zh-cn/docs/tasks/configure-pod-container/quality-service-pod/">配置 Pod 的服务质量</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +337,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -320,7 +438,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -463,7 +581,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -558,7 +676,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -727,7 +845,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -849,7 +967,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -932,7 +1050,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -1038,7 +1156,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -1251,7 +1369,7 @@ helm fetch lofts/vcluster
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -1289,112 +1407,6 @@ helm fetch lofts/vcluster
 <figure class="highlight protobuf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">service </span><span class="title class_">Node</span> &#123;</span><br><span class="line">  <span class="comment">// 针对块存储类型，将块设备格式化后先挂载到一个临时全局目录</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeStageVolume (NodeStageVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeStageVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeUnstageVolume (NodeUnstageVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeUnstageVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果是块存储设备，在执行完 NodeStageVolume 后，使用 linux 的 bind mount 技术将全局目录挂载到pod 中的对应目录</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodePublishVolume (NodePublishVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodePublishVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeUnpublishVolume (NodeUnpublishVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeUnpublishVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeGetVolumeStats (NodeGetVolumeStatsRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeGetVolumeStatsResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeExpandVolume(NodeExpandVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeExpandVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeGetCapabilities (NodeGetCapabilitiesRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeGetCapabilitiesResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeGetInfo (NodeGetInfoRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeGetInfoResponse) </span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><p>协议：<a target="_blank" rel="noopener" href="https://github.com/container-storage-interface/spec/blob/master/spec.md">https://github.com/container-storage-interface/spec/blob/master/spec.md</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/PXE/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/PXE/" class="post-title-link" itemprop="url">PXE</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2023-10-12 20:12:55" itemprop="dateCreated datePublished" datetime="2023-10-12T20:12:55+00:00">2023-10-12</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>重装过电脑操作系统的同学大概知道操作系统的安装流程如下：</p>
-<ol>
-<li>在 BIOS 中将系统设置为光驱&#x2F;USB开机优先模式</li>
-<li>以DVD或者 U 盘中的操作系统开机，进入到装机界面</li>
-<li>完成一系列的装机初始化，比如磁盘分区、语言选择等</li>
-<li>重启进入新安装的操作系统</li>
-</ol>
-<p>以上过程必须要手工才能完成，安装一台电脑还可以，但如果要大批量安装一批机器就不适用了。为此，Intel 公司研发了 PXE(Pre-boot Execution Environment) 技术，可以通过网络的方式批量安装操作系统。</p>
-<p>PXE 基于 C&#x2F;S 架构，分为PXE client 和PXE server，其中 PXE client 为要安装操作系统的机器，PXE server 用来提供安装操作系统必须的镜像等信息。要想实现从网络上安装操作系统，必须要解决如下几个问题：</p>
-<ol>
-<li>因为还没有安装操作系统，此时并不存在 ip 地址，在装机之前必须要获取到一个 ip 地址。</li>
-<li>安装操作系统需要的 boot loader 和操作系统镜像如何获取。</li>
-</ol>
-<p>为了解决 PXE client 的 ip 地址问题，PXE 中采用了 DHCP 协议来给 client 分配 ip 地址，这就要求 PXE server 必须要运行 dhcp server。为了解决 PXE server 可以提供 boot loader 和操作系统基线，PXE server 通过 tftp 协议的方式对 client 提供服务。</p>
-<p>client 端需要 DHCP client 和 tftp client 的功能，为此 PXE 协议中将该功能以硬件的方式内置在网卡 ROM 中。当启动时，BIOS 会加载内置在网卡中的 ROM，从而该机器具备了 DHCP client 和 tftp client 的功能。</p>
-<p>优点：</p>
-<ol>
-<li>规模化：可以批量实现多台服务器的安装</li>
-<li>自动化：可以自动化安装</li>
-<li>远程实现：不用本地的光盘来安装 OS</li>
-</ol>
-<p>客户机的前提条件：</p>
-<ol>
-<li>网络必须要支持 PXE 协议</li>
-<li>主板支持网络引导，一般在 BIOS 中可以配置</li>
-</ol>
-<p>服务端：</p>
-<ol>
-<li>DHCP 服务，用来给客户机分配 ip 地址</li>
-<li>TFTP 服务：用来提供操作系统文件的下载</li>
-</ol>
 
       
     </div>

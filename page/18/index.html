@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">238</span>
+          <span class="site-state-item-count">239</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,94 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_convert_ary/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux_convert_ary/" class="post-title-link" itemprop="url">Linux下通过命令行进行进制转换</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2014-09-27 00:00:00" itemprop="dateCreated datePublished" datetime="2014-09-27T00:00:00+00:00">2014-09-27</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>在Windows下可以通过计算器进行进制之间的转换，非常方便。本文总结Linux下可用的进行进制之间的转换方法。</p>
+<h1 id="利用shell"><a href="#利用shell" class="headerlink" title="利用shell"></a>利用shell</h1><p>shell脚本默认数值是由10进制数处理，除非这个数字某种特殊的标记法或前缀开头，才可以表示其它进制类型数值。如：以0开头就是8进制、以0x开头就是16进制数。使用“BASE#NUMBER”这种形式可以表示其它进制。BASE值的范围为2-64。</p>
+<p>其他进制转10进制</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">kuring@T420:~$ echo $((16#4000000))</span><br><span class="line">67108864</span><br><span class="line">kuring@T420:~$ echo $((2#111))</span><br><span class="line">7</span><br><span class="line">kuring@T420:~$ echo $((0x10))</span><br><span class="line">16</span><br><span class="line">kuring@T420:~$ echo $((010))</span><br><span class="line">8</span><br><span class="line"></span><br><span class="line">// 对进制转换为10进制进行运算，稍显啰嗦</span><br><span class="line">kuring@T420:~$ echo $(($((16#4000000))/1014/1024));</span><br><span class="line">64</span><br></pre></td></tr></table></figure>
+
+<h1 id="利用let命令"><a href="#利用let命令" class="headerlink" title="利用let命令"></a>利用let命令</h1><p>let用来执行算数运算和数值表达式测试。可以利用该命令完成简单的计算，并将计算结果赋给其他变量。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// 对进制转换为10进制后进行运算，比纯shell方式简洁</span><br><span class="line">kuring@T420:~$ let a=$((16#4000000))/1014/1024;</span><br><span class="line">kuring@T420:~$ echo $a</span><br><span class="line">64</span><br></pre></td></tr></table></figure>
+
+<h1 id="利用bc命令"><a href="#利用bc命令" class="headerlink" title="利用bc命令"></a>利用bc命令</h1><p>该命令是一个强大的计算器软件，可以利用其中的ibase和obase进行输入进制的转换，ibase表示输入数字的进制，obase表示输出数字的进制。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// 如果没有制定，则默认为10进制</span><br><span class="line">// 对于16进制，要使用F，而不能使用f</span><br><span class="line">kuring@T420:~$ echo &quot;ibase=16;FF&quot; | bc</span><br><span class="line">255</span><br><span class="line">kuring@T420:~$ echo &quot;obase=2;ibase=16;FF&quot; | bc</span><br><span class="line">11111111</span><br></pre></td></tr></table></figure>
+
+<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a target="_blank" rel="noopener" href="http://www.cnblogs.com/chengmo/archive/2010/10/14/1851570.html">linux shell 不同进制数据转换（二进制，八进制，十六进制，base64)</a></p>
+<p><a target="_blank" rel="noopener" href="http://blog.csdn.net/fengyuxing168/article/details/8896955">Shell进制转换小结</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +307,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -311,7 +399,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -400,7 +488,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -564,7 +652,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -652,7 +740,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -732,7 +820,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -876,7 +964,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -993,7 +1081,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -1076,7 +1164,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -1105,95 +1193,6 @@
 <p>我现在还不具备单独创业的实力，但我一直梦想能够加入一家有梦想有激情的创业公司。加入创业公司就意味着不会清闲，我只期望每天能够过的充实并快乐着。《黑客与画家》中提到快速致富的手段就是加入一家创业公司，在美国如此，在中国亦如此。</p>
 <hr>
 <p>总结一下，我想加入一家技术为王的互联网行业的创业公司。如果你知道在济南有哪家公司可以满足我的要求，请告诉我，谢谢！</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_change_netcardname/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux_change_netcardname/" class="post-title-link" itemprop="url">Linux更改网卡名称</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2014-05-02 00:00:00" itemprop="dateCreated datePublished" datetime="2014-05-02T00:00:00+00:00">2014-05-02</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>本实验为在虚拟机环境中实验，操作系统为Red Hat Enterprise6.0 32位，当前网卡列表如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# ifconfig </span><br><span class="line">eth1      Link encap:Ethernet  HWaddr 00:0C:29:8C:58:06  </span><br><span class="line">          inet addr:192.168.124.140  Bcast:192.168.124.255  Mask:255.255.255.0</span><br><span class="line">          inet6 addr: fe80::20c:29ff:fe8c:5806/64 Scope:Link</span><br><span class="line">          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1</span><br><span class="line">          RX packets:123 errors:0 dropped:0 overruns:0 frame:0</span><br><span class="line">          TX packets:57 errors:0 dropped:0 overruns:0 carrier:0</span><br><span class="line">          collisions:0 txqueuelen:1000</span><br><span class="line">          RX bytes:18770 (18.3 KiB)  TX bytes:11684 (11.4 KiB)</span><br><span class="line">          Interrupt:19 Base address:0x2024</span><br><span class="line"></span><br><span class="line">eth2      Link encap:Ethernet  HWaddr 00:50:56:3F:B3:90</span><br><span class="line">          inet addr:192.168.124.141  Bcast:192.168.124.255  Mask:255.255.255.0</span><br><span class="line">          inet6 addr: fe80::250:56ff:fe3f:b390/64 Scope:Link</span><br><span class="line">          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1</span><br><span class="line">          RX packets:111 errors:0 dropped:0 overruns:0 frame:0</span><br><span class="line">          TX packets:43 errors:0 dropped:0 overruns:0 carrier:0</span><br><span class="line">          collisions:0 txqueuelen:1000</span><br><span class="line">          RX bytes:16101 (15.7 KiB)  TX bytes:10343 (10.1 KiB)</span><br><span class="line">          Interrupt:19 Base address:0x20a4</span><br></pre></td></tr></table></figure>
-
-<p>目的为将网卡eth1更改为eth0，将eth2更改为eth3。</p>
-<h1 id="修改grub-conf文件"><a href="#修改grub-conf文件" class="headerlink" title="修改grub.conf文件"></a>修改grub.conf文件</h1><p>在文件中内核启动时增加_biosdevname&#x3D;0_选项。修改后的文件内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">default=0</span><br><span class="line">timeout=5</span><br><span class="line">splashimage=(hd0,0)/grub/splash.xpm.gz</span><br><span class="line">hiddenmenu</span><br><span class="line">title Red Hat Enterprise Linux (2.6.32-71.el6.i686)</span><br><span class="line">        root (hd0,0)</span><br><span class="line">        kernel /vmlinuz-2.6.32-71.el6.i686 ro root=/dev/mapper/VolGroup-lv_root rd_LVM_LV=VolGroup/lv_root rd_LVM_LV=VolGroup/lv_swap rd_NO_LUKS rd_NO_MD rd_NO_DM LANG=zh_CN.UTF-8 KEYBOARDTYPE=pc KEYTABLE=us nomodeset crashkernel=auto rhgb quiet biosdevname=0</span><br><span class="line">        initrd /initramfs-2.6.32-71.el6.i686.img</span><br></pre></td></tr></table></figure>
-
-<h1 id="更改网卡配置文件内容和文件名称"><a href="#更改网卡配置文件内容和文件名称" class="headerlink" title="更改网卡配置文件内容和文件名称"></a>更改网卡配置文件内容和文件名称</h1><p>在&#x2F;etc&#x2F;sysconfig&#x2F;network-scripts目录中将原有的网卡配置文件ifcfg_Auto_eth1和ifcfg_Auto_eth2更改为ifcfg_eth0和ifcfg_eth3，同时修改文件的内容，将文件的内容中的网卡设备名称进行替换。替换后的文件ifcfg_eth0内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">TYPE=Ethernet</span><br><span class="line">BOOTPROTO=dhcp</span><br><span class="line">DEFROUTE=yes</span><br><span class="line">IPV4_FAILURE_FATAL=yes</span><br><span class="line">IPV6INIT=no</span><br><span class="line">NAME=&quot;Auto eth0&quot;</span><br><span class="line">UUID=995d037e-3b65-4490-a1fa-f26f6abf066d</span><br><span class="line">ONBOOT=yes</span><br><span class="line">HWADDR=00:0C:29:8C:58:06</span><br><span class="line">PEERDNS=yes</span><br><span class="line">PEERROUTES=yes</span><br><span class="line">DEVICE=eth0</span><br></pre></td></tr></table></figure>
-
-<h1 id="删除70-persistent-net-rules文件"><a href="#删除70-persistent-net-rules文件" class="headerlink" title="删除70-persistent-net.rules文件"></a>删除70-persistent-net.rules文件</h1><p>该文件存在于&#x2F;etc&#x2F;udev&#x2F;rules.d目录下。该文件如果不存在，开始时会自动创建，里面包含了网卡名称的配置信息。</p>
-<hr>
-<p>在修改完上述内容后重新启动机器配置就修改过来了,修改完成之后的网卡配置如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost rules.d]# ifconfig                                                                                                                  </span><br><span class="line">eth0      Link encap:Ethernet  HWaddr 00:0C:29:8C:58:06                                                                                             </span><br><span class="line">          inet addr:192.168.124.140  Bcast:192.168.124.255  Mask:255.255.255.0                                                                      </span><br><span class="line">          inet6 addr: fe80::20c:29ff:fe8c:5806/64 Scope:Link</span><br><span class="line">          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1</span><br><span class="line">          RX packets:87 errors:0 dropped:0 overruns:0 frame:0</span><br><span class="line">          TX packets:75 errors:0 dropped:0 overruns:0 carrier:0</span><br><span class="line">          collisions:0 txqueuelen:1000</span><br><span class="line">          RX bytes:17174 (16.7 KiB)  TX bytes:14520 (14.1 KiB)</span><br><span class="line">          Interrupt:19 Base address:0x2024</span><br><span class="line"></span><br><span class="line">eth3      Link encap:Ethernet  HWaddr 00:50:56:3F:B3:90</span><br><span class="line">          inet addr:192.168.124.141  Bcast:192.168.124.255  Mask:255.255.255.0</span><br><span class="line">          inet6 addr: fe80::250:56ff:fe3f:b390/64 Scope:Link</span><br><span class="line">          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1</span><br><span class="line">          RX packets:72 errors:0 dropped:0 overruns:0 frame:0</span><br><span class="line">          TX packets:76 errors:0 dropped:0 overruns:0 carrier:0</span><br><span class="line">          collisions:0 txqueuelen:1000</span><br><span class="line">          RX bytes:14164 (13.8 KiB)  TX bytes:14955 (14.6 KiB)</span><br><span class="line">          Interrupt:19 Base address:0x20a4</span><br></pre></td></tr></table></figure>
 
       
     </div>

@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">238</span>
+          <span class="site-state-item-count">239</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,168 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/kube-proxy-iptables/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/kube-proxy-iptables/" class="post-title-link" itemprop="url">kube-proxy iptables规则分析</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2020-02-08 12:10:33" itemprop="dateCreated datePublished" datetime="2020-02-08T12:10:33+00:00">2020-02-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>kube-proxy默认使用iptables规则来做k8s集群内部的负载均衡，本文通过例子来分析创建的iptabels规则。</p>
+<p>主要的自定义链涉及到：</p>
+<ul>
+<li>KUBE-SERVICES： 访问集群内服务的CLusterIP数据包入口，根据匹配到的目标ip+port将数据包分发到相应的KUBE-SVC-xxx链上。一个Service对应一条规则。由OUTPUT链调用。</li>
+<li>KUBE-NODEPORTS: 用来匹配nodeport端口号，并将规则转发到KUBE-SVC-xxx。一个NodePort类型的Service一条。在KUBE-SERVICES链的最后被调用</li>
+<li>KUBE-SVC-xxx：相当于是负载均衡，将流量利用random模块均分到KUBE-SEP-xxx链上。</li>
+<li>KUBE-SEP-xxx：通过dnat规则将连接的目的地址和端口号做dnat，从Service的ClusterIP或者NodePort转换为后端的pod ip</li>
+<li>KUBE-MARK-MASQ: 使用mark命令，对数据包设置标记0x4000&#x2F;0x4000。在KUBE-POSTROUTING链上有MARK标记的数据包进行一次MASQUERADE，即SNAT，会用节点ip替换源ip地址。</li>
+</ul>
+<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><p>创建nginx deployment</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx-svc</span></span><br><span class="line">    <span class="attr">version:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">default</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">2</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">nginx-svc</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">nginx-svc</span></span><br><span class="line">        <span class="attr">version:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">image:</span> <span class="string">&#x27;nginx:1.9.0&#x27;</span></span><br><span class="line">          <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">          <span class="attr">ports:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">443</span></span><br><span class="line">              <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br><span class="line">              <span class="attr">protocol:</span> <span class="string">TCP</span></span><br></pre></td></tr></table></figure>
+
+<p>创建service对象</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-svc</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">default</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&#x27;80&#x27;</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">8000</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">80</span></span><br><span class="line">      <span class="attr">nodePort:</span> <span class="number">30080</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx-svc</span></span><br><span class="line">  <span class="attr">sessionAffinity:</span> <span class="string">None</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">NodePort</span></span><br></pre></td></tr></table></figure>
+
+<p>环境信息如下：</p>
+<ul>
+<li>容器网段：172.20.0.0&#x2F;16</li>
+<li>Service ClusterIP cidr: 192.168.0.0&#x2F;20</li>
+<li>k8s版本：</li>
+</ul>
+<p>提交后创建出来的信息如下：</p>
+<ul>
+<li>Service ClusterIP：192.168.103.148</li>
+<li>nginx pod的两个ip地址：172.16.3.3 172.16.4.4</li>
+</ul>
+<h2 id="从宿主机上访问ClusterIP"><a href="#从宿主机上访问ClusterIP" class="headerlink" title="从宿主机上访问ClusterIP"></a>从宿主机上访问ClusterIP</h2><p>从本机请求ClusterIP的数据包会经过iptables的链：OUTPUT -&gt; POSTROUTING</p>
+<p>要想详细知道iptabels的执行情况，可以通过iptables的trace功能。如何开启trace功能可以参考：<a href="http://kuring.me/post/iptables/%E3%80%82">http://kuring.me/post/iptables/。</a></p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/kube-proxy-clusterip.png" alt="image"></p>
+<p>执行 <code>iptables -nvL OUTPUT -t nat</code> 可以看到如下的iptables规则命令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target         prot opt in     out     source               destination         </span><br><span class="line">17M  1150M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br></pre></td></tr></table></figure>
+
+<p>执行 <code>iptables -nvL KUBE-SERVICES -t nat</code> 可以查看自定义链的具体内容，里面包含了多条规则，其中跟当前Service相关的规则如下。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target                     prot opt in     out     source               destination</span><br><span class="line">1    60    KUBE-SVC-Y5VDFIEGM3DY2PZE  tcp  --  *      *       0.0.0.0/0            192.168.103.148      /* default/nginx-svc:80 cluster IP */ tcp dpt:8000</span><br></pre></td></tr></table></figure>
+
+<p>执行 <code>iptables -nvL KUBE-SVC-Y5VDFIEGM3DY2PZE -t nat</code> 查看自定义链的具体规则</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pkts  bytes target                     prot opt in     out     source               destination</span><br><span class="line">0     0     KUBE-SEP-IFV44I3EMZAL3LH3  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ statistic mode random probability 0.50000000000</span><br><span class="line">1    60     KUBE-SEP-6PNQETFAD2JPG53P  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */</span><br></pre></td></tr></table></figure>
+
+<p>上述规则会按照特定的概率将流量均等的执行自定义链的规则，两个自定义的链的规则跟endpoint相关，执行 <code>iptables -nvL  KUBE-SEP-IFV44I3EMZAL3LH3 -t nat</code>可查看endpoint级别的iptabels规则。dnat操作会修改数据包的目的地址和端口，从clusterip+service port修改为访问pod ip+pod端口。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target          prot opt in     out     source               destination</span><br><span class="line">0     0    KUBE-MARK-MASQ  all  --  *      *       172.16.3.3           0.0.0.0/0            /* default/nginx-svc:80 */</span><br><span class="line">0     0    DNAT            tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ tcp to:172.16.3.3:80</span><br></pre></td></tr></table></figure>
+
+<p>会在dnat操作之前为对数据包执行打标签操作。KUBE-MARK-MASQ 自定义链为对数据包打标记的自定义规则，执行 <code>iptables -nvL  KUBE-MARK-MASQ -t nat</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target     prot opt in     out     source               destination         </span><br><span class="line"> 1    60   MARK       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MARK or 0x4000</span><br></pre></td></tr></table></figure>
+
+<p>接下来看一下POSTROUTING链上的规则，<code>iptables -nvL  POSTROUTING -t nat</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target            prot opt in     out     source               destination         </span><br><span class="line">205K   13M KUBE-POSTROUTING  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes postrouting rules */</span><br></pre></td></tr></table></figure>
+
+<p>继续看一下KUBE-POSTROUTING链的内容，<code>iptables -nvL  KUBE-POSTROUTING -t nat</code>，其中最后一条的MASQUERADE指令的操作实际上为SNAT操作。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Chain KUBE-POSTROUTING (1 references)</span><br><span class="line">pkts bytes target     prot opt in     out     source               destination         </span><br><span class="line">6499  398K RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0            mark match ! 0x4000/0x4000</span><br><span class="line">   1    60 MARK       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MARK xor 0x4000</span><br><span class="line">   1    60 MASQUERADE  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service traffic requiring SNAT */</span><br></pre></td></tr></table></figure>
+
+<p>即从本机访问service clusterip的数据包，在output链上经过了dnat操作，在postrouting链上经过了snat操作后，最终会发往目标pod。pod在处理完请求后，回的数据包最终会经过nat的逆过程返回到本机。</p>
+<h2 id="外部访问nodeport"><a href="#外部访问nodeport" class="headerlink" title="外部访问nodeport"></a>外部访问nodeport</h2><p>从外部访问本机的nodeport数据包会经过iptables的链：PREROUTING -&gt; FORWARD -&gt; POSTROUTING</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/kube-proxy-clusterip.png" alt="image"></p>
+<p>nodeport都是被外部访问的情况，入口位于PREROUTING链上。执行 <code>iptables -nvL PREROUTING  -t nat</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target         prot opt in     out     source               destination         </span><br><span class="line">349K   21M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br></pre></td></tr></table></figure>
+
+<p>在KUBE-SERVICES链的最后一条规则为跳转到KUBE-NODEPORTS链</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">4079  246K KUBE-NODEPORTS  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service nodeports; NOTE: this must be the last rule in this chain */ ADDRTYPE match dst-type LOCAL</span><br></pre></td></tr></table></figure>
+
+<p>执行<code>iptables -nvL KUBE-NODEPORTS -t nat</code>， 查看KUBE-NODEPORTS链 </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target                     prot opt in     out     source               destination         </span><br><span class="line">0     0    KUBE-MARK-MASQ             tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ tcp dpt:30080</span><br><span class="line">0     0    KUBE-SVC-Y5VDFIEGM3DY2PZE  tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ tcp dpt:30080</span><br></pre></td></tr></table></figure>
+
+<p>其中KUBE-MARK-MASQ链只有一条规则，即打上0x4000的标签。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target     prot opt in     out     source               destination         </span><br><span class="line">0     0    MARK       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MARK or 0x4000</span><br></pre></td></tr></table></figure>
+
+<p>自定义链KUBE-SVC-Y5VDFIEGM3DY2PZE的内容如下，跟clusterip的规则是重叠的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target     prot opt in     out     source               destination         </span><br><span class="line">0    0     KUBE-SEP-IFV44I3EMZAL3LH3  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ statistic mode random probability 0.50000000000</span><br><span class="line">0    0     KUBE-SEP-6PNQETFAD2JPG53P  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */</span><br></pre></td></tr></table></figure>
+
+<p>KUBE-SEP-IFV44I3EMZAL3LH3的内容为，会经过一次DNAT操作:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target          prot opt in     out     source               destination         </span><br><span class="line">0    0     KUBE-MARK-MASQ  all  --  *      *       172.16.3.3           0.0.0.0/0            /* default/nginx-svc:80 */</span><br><span class="line">0    0     DNAT            tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ tcp to:172.16.3.3:80</span><br></pre></td></tr></table></figure>
+
+<p>在经过了PREROUTING链后，接下来会判断目的ip地址不是本机的ip地址，接下来会经过FORWARD链。在FORWARD链上，仅做了一件事情，就是将前面大了0x4000的数据包允许转发。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target              prot opt in     out     source               destination         </span><br><span class="line">0    0 KUBE-FORWARD            all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes forwarding rules */</span><br><span class="line">0    0 KUBE-SERVICES           all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate NEW /* kubernetes service portals */</span><br><span class="line">0    0 KUBE-EXTERNAL-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate NEW /* kubernetes externally-visible service portals */</span><br></pre></td></tr></table></figure>
+
+<p>KUBE-FORWARD的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target     prot opt in     out     source               destination         </span><br><span class="line">0     0    DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate INVALID</span><br><span class="line">0     0    ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes forwarding rules */ mark match 0x4000/0x4000</span><br><span class="line">0     0    ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes forwarding conntrack pod source rule */ ctstate RELATED,ESTABLISHED</span><br><span class="line">0     0    ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes forwarding conntrack pod destination rule */ ctstate RELATED,ESTABLISHED</span><br></pre></td></tr></table></figure>
+
+<p>跟clusterip一样，会在POSTROUTING阶段匹配mark为0x4000&#x2F;0x4000的数据包，并进行一次MASQUERADE转换，将ip包替换为宿主上的ip地址。</p>
+<p>加入这里不做MASQUERADE，流量发到目的的pod后，pod回包时目的地址为发起端的源地址，而发起端的源地址很可能是在k8s集群外部的，此时pod发回的包是不能回到发起端的。NodePort跟ClusterIP的最大不同就是NodePort的发起端很可能是在集群外部的，从而这里必须做一层SNAT转换。</p>
+<p>在上述分析中，访问NodePort类型的Service会经过snat，从而服务端的pod不能获取到正确的客户端ip。可以设置Service的spec.externalTrafficPolicy为Local，此时iptables规则只会将ip包转发给运行在这台宿主机上的pod，而不需要经过snat。pod回包时，直接回复源ip地址即可，此时源ip地址是可达的，因为源ip地址跟宿主机是可达的。如果所在的宿主机上没有pod，那么此时流量就不可以转发，此为限制。</p>
+<h2 id="使用LoadBalancer类型访问的情况"><a href="#使用LoadBalancer类型访问的情况" class="headerlink" title="使用LoadBalancer类型访问的情况"></a>使用LoadBalancer类型访问的情况</h2><h3 id="externalTrafficPolicy为local"><a href="#externalTrafficPolicy为local" class="headerlink" title="externalTrafficPolicy为local"></a>externalTrafficPolicy为local</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">-A KUBE-SERVICES -d 10.149.30.186/32 -p tcp -m comment --comment &quot;acs-system/nginx-ingress-lb-cloudbiz:http loadbalancer IP&quot; -m tcp --dport 80 -j KUBE-FW-76HLDRT5IPNSMPF5</span><br><span class="line">-A KUBE-FW-76HLDRT5IPNSMPF5 -m comment --comment &quot;acs-system/nginx-ingress-lb-cloudbiz:http loadbalancer IP&quot; -j KUBE-XLB-76HLDRT5IPNSMPF5</span><br><span class="line">-A KUBE-FW-76HLDRT5IPNSMPF5 -m comment --comment &quot;acs-system/nginx-ingress-lb-cloudbiz:http loadbalancer IP&quot; -j KUBE-MARK-DROP</span><br><span class="line"></span><br><span class="line"># 10.149.112.0/23为pod网段</span><br><span class="line">-A KUBE-XLB-76HLDRT5IPNSMPF5 -s 10.149.112.0/23 -m comment --comment &quot;Redirect pods trying to reach external loadbalancer VIP to clusterIP&quot; -j KUBE-SVC-76HLDRT5IPNSMPF5</span><br><span class="line">-A KUBE-XLB-76HLDRT5IPNSMPF5 -m comment --comment &quot;Balancing rule 0 for acs-system/nginx-ingress-lb-cloudbiz:http&quot; -j KUBE-SEP-XZXLBWOKJBSJBGVU</span><br><span class="line"></span><br><span class="line">-A KUBE-SVC-76HLDRT5IPNSMPF5 -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-XZXLBWOKJBSJBGVU</span><br><span class="line">-A KUBE-SVC-76HLDRT5IPNSMPF5 -j KUBE-SEP-GP4UCOZEF3X7PGLR</span><br><span class="line"></span><br><span class="line">-A KUBE-SEP-XZXLBWOKJBSJBGVU -s 10.149.112.45/32 -j KUBE-MARK-MASQ</span><br><span class="line">-A KUBE-SEP-XZXLBWOKJBSJBGVU -p tcp -m tcp -j DNAT --to-destination 10.149.112.45:80</span><br><span class="line">-A KUBE-SEP-GP4UCOZEF3X7PGLR -s 10.149.112.46/32 -j KUBE-MARK-MASQ</span><br><span class="line">-A KUBE-SEP-GP4UCOZEF3X7PGLR -p tcp -m tcp -j DNAT --to-destination 10.149.112.46:80</span><br></pre></td></tr></table></figure>
+
+<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><ol>
+<li>iptables规则特别乱，一旦出现问题非常难以排查</li>
+<li>由于iptables规则是串行执行，算法复杂度为O(n)，一旦iptables规则多了后，性能将非常差。</li>
+<li>iptables规则提供的负载均衡功能非常有限，不支持较为复杂的负载均衡算法。</li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +381,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -316,7 +478,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -417,7 +579,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -527,7 +689,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -605,7 +767,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -710,7 +872,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -843,7 +1005,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -924,7 +1086,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -1011,7 +1173,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
+      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
     </span>
 
   
@@ -1032,115 +1194,6 @@
 <h2 id="docker-registry"><a href="#docker-registry" class="headerlink" title="docker registry"></a>docker registry</h2><ul>
 <li>列出镜像：<code>curl http://127.0.0.1:5000/v2/_catalog?n=1000</code></li>
 <li>查询镜像的tag: <code>curl http://127.0.0.1:5000/v2/nginx/tags/list</code>，如果遇到镜像名类似<code>aa/bb</code>的情况，需要转移一下 <code>curl http://127.0.0.1:5000/v2/aa\/bb/tags/list</code></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-network-tap-tun/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux-network-tap-tun/" class="post-title-link" itemprop="url">Linux虚拟网络设备 - tap/tun</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2019-07-06 16:48:41" itemprop="dateCreated datePublished" datetime="2019-07-06T16:48:41+00:00">2019-07-06</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-02-29 04:17:42" itemprop="dateModified" datetime="2024-02-29T04:17:42+00:00">2024-02-29</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="Linux虚拟网络设备-tap-x2F-tun"><a href="#Linux虚拟网络设备-tap-x2F-tun" class="headerlink" title="Linux虚拟网络设备 - tap&#x2F;tun"></a>Linux虚拟网络设备 - tap&#x2F;tun</h1><p>tap&#x2F;tun常用于隧道通讯，通过一个字符设备来实现用户态和内核态的通讯，字符设备一端连接着用户空间，一端连接着内核空间。</p>
-<p>对应的字符设备文件位置：</p>
-<ul>
-<li>tap: &#x2F;dev&#x2F;tap0</li>
-<li>tun: &#x2F;dev&#x2F;net&#x2F;tun</li>
-</ul>
-<p>当应用程序打开字符设备文件时，驱动程序会创建并注册相应的虚拟设备接口，以tunX或tapX命名。应用程序关闭设备文件时，驱动程序会删除tunX和tapX网络虚拟设备，并删除建立起来的路由信息。</p>
-<p>两个设备的不同点：</p>
-<ul>
-<li>tap是一个二层网络设备，只能处理二层的以太网帧</li>
-<li>tun是一个点对点的三层网络设备，只能处理处理三层的IP数据包</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">                ┌──────────────┐</span><br><span class="line">                │              │</span><br><span class="line">                │     APP      │</span><br><span class="line">                │              │</span><br><span class="line">                └───────┬──────┘</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">           ┌────────────▼──────────┐</span><br><span class="line">           │                       │</span><br><span class="line">─ ─ ─ ─ ─ ─│     /dev/net/tun      ├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─</span><br><span class="line">           │                       │</span><br><span class="line">           └────────────┬──────────┘</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                        │</span><br><span class="line">                ┌───────▼──────┐                 ┌──────────────┐</span><br><span class="line">                │              │                 │              │</span><br><span class="line">                │     tunX     ├────────────────▶│Network Stack │</span><br><span class="line">                │              │                 │              │</span><br><span class="line">                └──────────────┘                 └──────────────┘</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="tun设备应用举例"><a href="#tun设备应用举例" class="headerlink" title="tun设备应用举例"></a>tun设备应用举例</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">          ┌──────────────┐         ┌──────────────┐</span><br><span class="line">          │              │         │              │</span><br><span class="line">          │    APP A     │         │    APP B     │◀┐</span><br><span class="line">          │              │         │              │ │</span><br><span class="line">          └───────┬──────┘         └───────┬──────┘ │</span><br><span class="line">                  │                        │        │</span><br><span class="line">                  │                        │        │</span><br><span class="line">                 1│                        │        │</span><br><span class="line">                  │                       5│        │</span><br><span class="line">                  │                        │        │</span><br><span class="line">  ─ ─ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│─ ─ ─ ─ ┼ ─ ─ ─ ─ ─</span><br><span class="line">                  │                        │        │</span><br><span class="line">                  │                        │       4│</span><br><span class="line">                  │                        │        │</span><br><span class="line">     ┌────────────▼────────────────────────▼─────┐  │</span><br><span class="line">     │                                           │  │</span><br><span class="line">     │               Network Stack               │  │</span><br><span class="line">     │                                           │  │</span><br><span class="line">     └────────────┬───────────────────────┬──────┘  │</span><br><span class="line">                  │                       │         │</span><br><span class="line">                 6│                      3│         │</span><br><span class="line">                  │                       │         │</span><br><span class="line">          ┌───────▼──────┐              ┌─▼─────────┴──┐</span><br><span class="line">          │              │              │              │</span><br><span class="line">10.1.1.11 │     eth0     │              │     tun0     │ 192.168.1.11</span><br><span class="line">          │              │              │              │</span><br><span class="line">          └───────┬──────┘              └──────────────┘</span><br><span class="line">                  │</span><br><span class="line">                 7│</span><br><span class="line">                  │</span><br><span class="line">                  ▼</span><br><span class="line"></span><br><span class="line">             10.1.1.100 / 192.168.1.100</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>应用程序A要发送数据到其他物理机192.168.1.100，由于物理网络环境下只有10.1.1.11和10.1.1.100是相互连通的，192.168.1.11和192.168.1.100是不通的，为了192.168.1.11和192.168.1.100能够进行通讯，需要将数据包进行一次封装。</p>
-<p>应用程序B是通过打开字符设备文件&#x2F;dev&#x2F;net&#x2F;tun0的方式来打开网络设备</p>
-<p>流程如下：</p>
-<ol>
-<li>A构造数据包，目的ip为192.168.1.100，并发送给协议栈</li>
-<li>协议栈根据数据包中的ip地址，匹配路由规则，要从tun0出去</li>
-<li>内核协议栈将数据包发送给tun0网络设备</li>
-<li>tun0发送应用程序B打开，于是将数据发送给应用程序B</li>
-<li>B收到数据包后，在用户态构造一个新的数据包，源IP为eth0的IP 10.1.1.11，目的IP为配置的对端10.1.1.100，并封装原来的数据包</li>
-<li>协议栈根据当前数据包的IP地址选择路由，将数据包发送给eth0</li>
-</ol>
-<h2 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/bakari/p/10450711.html">详解云计算网络底层技术——虚拟网络设备 tap&#x2F;tun 原理解析</a></li>
-<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/bakari/p/10449664.html">Linux 网络工具详解之 ip tuntap 和 tunctl 创建 tap&#x2F;tun 设备</a></li>
-<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000009249039">Linux虚拟网络设备之tun&#x2F;tap</a></li>
 </ul>
 
       
