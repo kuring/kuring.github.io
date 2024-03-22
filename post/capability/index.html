@@ -27,7 +27,7 @@
 <meta property="og:description" content="传统的unix权限模型将进程分为root用户进程（有效用户id为0）和普通用户进程。普通用户需要root权限的某些功能，通常通过setuid系统调用实现。但普通用户并不需要root的所有权限，可能仅仅需要修改系统时间的权限而已。这种粗放的权限管理方式势必会带来一定的安全隐患。 linux内核中引入了capability，用于消除需要执行某些操作的程序对root权限的依赖。 capability用于">
 <meta property="og:locale">
 <meta property="article:published_time" content="2018-09-23T21:42:36.000Z">
-<meta property="article:modified_time" content="2024-03-06T13:25:06.305Z">
+<meta property="article:modified_time" content="2024-03-22T12:05:12.404Z">
 <meta name="twitter:card" content="summary">
 
 
@@ -151,7 +151,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">239</span>
+          <span class="site-state-item-count">240</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -225,7 +225,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+      <time title="Modified: 2024-03-22 12:05:12" itemprop="dateModified" datetime="2024-03-22T12:05:12+00:00">2024-03-22</time>
     </span>
 
   
@@ -264,8 +264,9 @@
 <li>getcap用于获取程序文件所具有的能力。</li>
 <li>getpcaps用于获取进程所具有的能力。</li>
 <li>setcap用于设置程序文件所具有的能力。</li>
+<li>capsh 查看和设置程序的能力</li>
 </ol>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">将<span class="built_in">chown</span>命令授权给普通用户也具备更改文件owner的能力</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">其中eip分别代表cap_effective(e) cap_inheritable(i) cap_permitted(p)</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo setcap cap_chown=eip /usr/bin/chown</span><br><span class="line">[vagrant@localhost tmp]$ getcap /usr/bin/chown</span><br><span class="line">/usr/bin/chown = cap_chown+eip</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">使用root创建测试文件</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo touch /tmp/aa</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">普通用户也可以修改root用户创建文件的owner了</span></span><br><span class="line">[vagrant@localhost tmp]$ chown vagrant:vagrant /tmp/aa</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">清除<span class="built_in">chown</span>的能力</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo setcap -r /usr/bin/chown</span><br><span class="line">[vagrant@localhost tmp]$ getcap /usr/bin/chown</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">将<span class="built_in">chown</span>命令授权给普通用户也具备更改文件owner的能力</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">其中eip分别代表cap_effective(e) cap_inheritable(i) cap_permitted(p)</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo setcap cap_chown=eip /usr/bin/chown</span><br><span class="line">[vagrant@localhost tmp]$ getcap /usr/bin/chown</span><br><span class="line">/usr/bin/chown = cap_chown+eip</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">使用root创建测试文件</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo touch /tmp/aa</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">普通用户也可以修改root用户创建文件的owner了</span></span><br><span class="line">[vagrant@localhost tmp]$ chown vagrant:vagrant /tmp/aa</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">清除<span class="built_in">chown</span>的能力</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo setcap -r /usr/bin/chown</span><br><span class="line">[vagrant@localhost tmp]$ getcap /usr/bin/chown</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">获取到进程的 capability</span></span><br><span class="line">[vagrant@localhost tmp]$ cat /proc/95373/status | grep Cap</span><br><span class="line">CapInh:	0000000000000000</span><br><span class="line">CapPrm:	0000000000000000</span><br><span class="line">CapEff:	0000000000000000</span><br><span class="line">CapBnd:	0000003fffffffff</span><br><span class="line">CapAmb:	0000000000000000</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">对上述 capability 进行解码</span></span><br><span class="line">[vagrant@localhost tmp]$ capsh --decode=0000003fffffffff</span><br><span class="line">0x0000003fffffffff=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,35,36,37</span><br></pre></td></tr></table></figure>
 
 <h2 id="runc项目中的应用"><a href="#runc项目中的应用" class="headerlink" title="runc项目中的应用"></a>runc项目中的应用</h2><p>runc的容器配置文件<code>spec.Process.Capabilities</code>可以定义各个能力集的能力，用来限制容器的能力。</p>
 <h2 id="docker中的应用"><a href="#docker中的应用" class="headerlink" title="docker中的应用"></a>docker中的应用</h2><p>docker默认情况下给容器去掉了一些比较危险的capabilities，比如<code>cap_sys_admin</code>。</p>

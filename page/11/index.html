@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">239</span>
+          <span class="site-state-item-count">240</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,107 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/rate-limit/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/rate-limit/" class="post-title-link" itemprop="url">流量控制算法</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-12-16 01:25:50" itemprop="dateCreated datePublished" datetime="2018-12-16T01:25:50+00:00">2018-12-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-03-22 12:05:12" itemprop="dateModified" datetime="2024-03-22T12:05:12+00:00">2024-03-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>限流的方式有多种，每种都有其应用场景。</p>
+<p>限制请求的方式包括：</p>
+<ol>
+<li>丢弃请求</li>
+<li>放在队列中，等有令牌后再请求</li>
+<li>走降级逻辑</li>
+</ol>
+<h2 id="计数器"><a href="#计数器" class="headerlink" title="计数器"></a>计数器</h2><p>我之前设计的流控系统，以每秒为单位，如果一秒内超过固定的QPS，则将请求进行降级处理。该算法已经在生产环境中平稳运行了很久，也确实满足了业务的需求。</p>
+<p>计数器流控算法简单粗暴，有一个缺点，即流控的单位为秒，但一秒的请求很可能是不均匀的，不能进行更细粒度的控制，也不允许流量存在某种程度的突发。</p>
+<h2 id="漏桶算法"><a href="#漏桶算法" class="headerlink" title="漏桶算法"></a>漏桶算法</h2><p>请求先进入漏桶中，漏桶以一定的速度出水，当水流的速度过大时会直接溢出。</p>
+<p>漏桶大小：起到缓冲的作用</p>
+<p>漏桶的出水速度：该值固定</p>
+<h2 id="令牌桶算法"><a href="#令牌桶算法" class="headerlink" title="令牌桶算法"></a>令牌桶算法</h2><p>令牌桶算法相比漏桶算法而言，允许请求存在某种程度的突发，常用于网络流量整形和速率限制。</p>
+<p>系统会恒定的速度往令牌桶中注入令牌，如果令牌桶中的令牌满后就不再增加。新请求来临时，会拿走一个令牌，如果没有令牌就会限制该请求。</p>
+<p>这里的请求可以代表一个网络请求，或者网络的一个字节。</p>
+<p>涉及到的变量：</p>
+<ol>
+<li>网络请求平均速率r：每隔1&#x2F;r秒向令牌桶中放入一个令牌，1秒共放入r个令牌</li>
+<li>令牌桶的最大大小：令牌桶慢后，再放入的令牌会直接丢弃</li>
+</ol>
+<p>令牌相当于操作系统中信号量机制。</p>
+<p>业界较为出名的流控工具当属Guava中的RateLimiter，基于令牌桶算法实现。</p>
+<p>在实际的代码实现中，并不一定需要一个固定的线程来定期往令牌桶中放入令牌，而是在请求到来时，直接计算得出当前是否还有令牌。比如下面的python代码实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TokenBucket</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line"></span><br><span class="line">    <span class="comment"># rate是令牌发放速度，capacity是桶的大小</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, rate, capacity</span>):</span><br><span class="line">        self._rate = rate</span><br><span class="line">        self._capacity = capacity</span><br><span class="line">        self._current_amount = <span class="number">0</span></span><br><span class="line">        self._last_consume_time = <span class="built_in">int</span>(time.time())</span><br><span class="line"></span><br><span class="line">    <span class="comment"># token_amount是发送数据需要的令牌数</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">consume</span>(<span class="params">self, token_amount</span>):</span><br><span class="line">        increment = (<span class="built_in">int</span>(time.time()) - self._last_consume_time) * self._rate  <span class="comment"># 计算从上次发送到这次发送，新发放的令牌数量</span></span><br><span class="line">        self._current_amount = <span class="built_in">min</span>(</span><br><span class="line">            increment + self._current_amount, self._capacity)  <span class="comment"># 令牌数量不能超过桶的容量</span></span><br><span class="line">        <span class="keyword">if</span> token_amount &gt; self._current_amount:  <span class="comment"># 如果没有足够的令牌，则不能发送数据</span></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">False</span></span><br><span class="line">        self._last_consume_time = <span class="built_in">int</span>(time.time())</span><br><span class="line">        self._current_amount -= token_amount</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">True</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><p><a target="_blank" rel="noopener" href="https://juejin.im/post/5ab10045518825557005db65">15行Python代码，帮你理解令牌桶算法</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +320,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+      <time title="Modified: 2024-03-22 12:05:12" itemprop="dateModified" datetime="2024-03-22T12:05:12+00:00">2024-03-22</time>
     </span>
 
   
@@ -305,7 +406,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+      <time title="Modified: 2024-03-22 12:05:12" itemprop="dateModified" datetime="2024-03-22T12:05:12+00:00">2024-03-22</time>
     </span>
 
   
@@ -406,7 +507,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+      <time title="Modified: 2024-03-22 12:05:12" itemprop="dateModified" datetime="2024-03-22T12:05:12+00:00">2024-03-22</time>
     </span>
 
   
@@ -519,7 +620,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+      <time title="Modified: 2024-03-22 12:05:12" itemprop="dateModified" datetime="2024-03-22T12:05:12+00:00">2024-03-22</time>
     </span>
 
   
@@ -632,7 +733,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+      <time title="Modified: 2024-03-22 12:05:12" itemprop="dateModified" datetime="2024-03-22T12:05:12+00:00">2024-03-22</time>
     </span>
 
   
@@ -752,7 +853,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+      <time title="Modified: 2024-03-22 12:05:12" itemprop="dateModified" datetime="2024-03-22T12:05:12+00:00">2024-03-22</time>
     </span>
 
   
@@ -989,7 +1090,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+      <time title="Modified: 2024-03-22 12:05:12" itemprop="dateModified" datetime="2024-03-22T12:05:12+00:00">2024-03-22</time>
     </span>
 
   
@@ -1069,7 +1170,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+      <time title="Modified: 2024-03-22 12:05:12" itemprop="dateModified" datetime="2024-03-22T12:05:12+00:00">2024-03-22</time>
     </span>
 
   
@@ -1161,7 +1262,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
+      <time title="Modified: 2024-03-22 12:05:12" itemprop="dateModified" datetime="2024-03-22T12:05:12+00:00">2024-03-22</time>
     </span>
 
   
@@ -1217,95 +1318,6 @@
 <p>我们要求大家做出的任何举动，出发点都是以对客户和公司最有利为出发点，而不是试图证明自己正确。</p>
 </blockquote>
 <p>- 奈飞文化手册:“硅谷重要文件”的深度解读</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/golang-pprof/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/golang-pprof/" class="post-title-link" itemprop="url">golang使用pprof分析程序性能瓶颈</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-11-16 22:07:49" itemprop="dateCreated datePublished" datetime="2018-11-16T22:07:49+00:00">2018-11-16</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-06 13:25:06" itemprop="dateModified" datetime="2024-03-06T13:25:06+00:00">2024-03-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>golang中的pprof工具可以分析系统问题，开启pprof功能非常简单，即在import中增加<code>_ &quot;net/http/pprof&quot;</code>的导入即可，然后通过http调用<code>/debug/pprof</code>接口即可在web界面上看到pprof的相关信息。</p>
-<p>golang 1.11版本中已经自带了火焰图功能，火焰图为性能分析的利器，可以快速找到程序性能的瓶颈。不再需要使用<a target="_blank" rel="noopener" href="https://github.com/uber/go-torch">go-torch</a>项目。</p>
-<p>查看火焰图需要用到Graphviz工具，该工具需要单独安装。</p>
-<p>Graphviz工具运行的服务器系统为CentOS，使用下载<a target="_blank" rel="noopener" href="https://graphviz.gitlab.io/pub/graphviz/stable/SOURCES/graphviz.tar.gz">源码包</a>的方式进行安装。</p>
-<p>依次执行下面命令：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./configure</span><br><span class="line">make</span><br><span class="line">make install</span><br></pre></td></tr></table></figure>
-
-<h2 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h2><p>本文的使用环境：服务器程序为transfer，运行在linux系统中。执行<code>go tool pprof</code>命令运行在linux服务器10.103.17.184上。</p>
-<p>程序运行后调用程序的<code>/debug/pprof/profile</code>http接口，可获取到cpu profile数据文件。例如，在服务器上可以执行运行<code>wget http://10.103.34.138:3300/debug/pprof/profile</code>命令，将profile文件下载到另外一台分析的服务器上。</p>
-<p>在分析服务器上执行<code>go tool pprof -http=&quot;10.103.17.184:20000&quot; transfer profile</code></p>
-<p>在浏览器中打开<code>10.103.17.184:20000</code>即可得到性能分析的结果。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/pprof_graph.png" alt="调用关系图"></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/pprof_flame.png" alt="火焰图"></p>
-<p>同样也可以在本机访问远程的程序暴露的pprof数据，使用命令如：go tool pprof -http :9090  <a target="_blank" rel="noopener" href="http://10.66.161.43:10245/debug/pprof/heap">http://10.66.161.43:10245/debug/pprof/heap</a></p>
 
       
     </div>
