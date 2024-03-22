@@ -4,6 +4,20 @@ tags:
 ---
 经常有快速创建一个测试k8s集群的场景，为了能够快速完成，整理了如下的命令，即可在主机上快速启动一个k8s集群。部分命令需要外网访问，推荐直接使用海外的主机。
 
+# 常用工具安装
+
+```
+yum install vim git make -y
+
+# neovim
+curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
+sudo rm -rf /opt/nvim
+sudo tar -C /opt -xzf nvim-linux64.tar.gz
+echo 'export PATH="$PATH:/opt/nvim-linux64/bin"' >>~/.bash_profile
+source ~/.bash_profile
+git clone https://github.com/LazyVim/starter ~/.config/nvim
+```
+
 # 安装docker
 
 下面命令可以安装最新版本的docker-ce
@@ -23,7 +37,6 @@ yum-config-manager \
     https://download.docker.com/linux/centos/docker-ce.repo
 yum install docker-ce docker-ce-cli containerd.io -y
 systemctl enable docker && systemctl start docker
-yum install vim git make -y
 ```
 ## 安装特定版本的docker
 
@@ -62,10 +75,11 @@ echo 'complete -F __start_kubectl k' >>~/.bash_profile
 source ~/.bash_profile
 
 # 安装helm
-wget https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz
-tar zvxf helm-v3.7.2-linux-amd64.tar.gz
+wget https://get.helm.sh/helm-v3.14.2-linux-amd64.tar.gz
+tar zvxf helm-v3.14.2-linux-amd64.tar.gz
 mv linux-amd64/helm /usr/bin/
 rm -rf linux-amd64
+rm -f helm-v3.14.2-linux-amd64.tar.gz
 
 # 安装kubectx kubens
 git clone https://github.com/ahmetb/kubectx /tmp/kubectx
@@ -132,8 +146,8 @@ curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack
 mv kustomize /usr/local/bin/
 
 # 安装golang
-wget https://go.dev/dl/go1.17.5.linux-amd64.tar.gz -P /opt
-tar zvxf /opt/go1.17.5.linux-amd64.tar.gz -C /opt/
+wget https://go.dev/dl/go1.21.8.linux-amd64.tar.gz -P /opt
+tar zvxf /opt/go1.21.8.linux-amd64.tar.gz -C /opt/
 mkdir /opt/gopath
 echo -e '\n# golang' >> ~/.bash_profile
 echo 'export GOROOT=/opt/go' >> ~/.bash_profile

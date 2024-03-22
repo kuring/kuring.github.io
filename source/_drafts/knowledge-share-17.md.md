@@ -21,7 +21,18 @@ sshfs 允许用户将远程主机的目录挂载到本地，只需要可以本�
 
 ## [lazyvim](https://www.lazyvim.org/)
 
-一直在使用 [SpaceVim](https://spacevim.org/)，但是使用起来还是有些繁琐，最近源码的托管从 Github 迁移到了 Gitlab。lazyvim 基于 neovim，无论从文档还是从用户体验上比 SpaceVim 更好一些。
+一直在使用 [SpaceVim](https://spacevim.org/)，但是使用起来还是有些繁琐，最近源码的托管从 Github 迁移到了 Gitlab。lazyvim 基于 neovim，无论从文档
+还是从用户体验上比 SpaceVim 更好一些。
+
+## [Arc](https://arc.net/)
+
+![](https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/arc.jpg)
+
+颜值非常高的一款 mac 下的浏览器软件，跟 mac 的适配度非常高。基于 chrome 开发，兼容 chrome 的插件。支持 workspace，可以在不同的 workspace 下切换。除了浏览器的功能外，还不务正业的支持了笔记本和画图的功能。如果你是 mac 用户，不防尝试下该浏览器，或许会让你抛弃 chrome 浏览器。
+
+## [CDK](https://github.com/cdk-team/CDK/wiki/CDK-Home-CN)
+
+容器环境下的渗透测试工具，可以用来测试容器的进程逃逸等安全漏洞。
 
 # 资源
 

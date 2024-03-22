@@ -152,6 +152,7 @@ Cap data 0xffffffff, 0xffffffff, 0x0
 1. getcap用于获取程序文件所具有的能力。
 2. getpcaps用于获取进程所具有的能力。
 3. setcap用于设置程序文件所具有的能力。
+4. capsh 查看和设置程序的能力
 
 ```shell
 # 将chown命令授权给普通用户也具备更改文件owner的能力
@@ -168,6 +169,18 @@ Cap data 0xffffffff, 0xffffffff, 0x0
 # 清除chown的能力
 [vagrant@localhost tmp]$ sudo setcap -r /usr/bin/chown
 [vagrant@localhost tmp]$ getcap /usr/bin/chown
+
+# 获取到进程的 capability
+[vagrant@localhost tmp]$ cat /proc/95373/status | grep Cap
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	0000003fffffffff
+CapAmb:	0000000000000000
+
+# 对上述 capability 进行解码
+[vagrant@localhost tmp]$ capsh --decode=0000003fffffffff
+0x0000003fffffffff=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,35,36,37
 ```
 
 ## runc项目中的应用
