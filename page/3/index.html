@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">240</span>
+          <span class="site-state-item-count">241</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,113 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/cri/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/cri/" class="post-title-link" itemprop="url">Container Runtime Interface(CRI)</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-06-29 22:20:52" itemprop="dateCreated datePublished" datetime="2022-06-29T22:20:52+00:00">2022-06-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-04-07 12:04:03" itemprop="dateModified" datetime="2024-04-07T12:04:03+00:00">2024-04-07</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>CRI为k8s提供的kubelet扩展接口，用来支持多种容器运行时。CRI协议为protobuf格式，kubelet作为客户端，容器运行时作为服务端，两者通过gRpc协议通讯。下面主要解读 <a target="_blank" rel="noopener" href="https://github.com/kubernetes/cri-api/blob/c75ef5b/pkg/apis/runtime/v1/api.proto">CRI的协议定义</a></p>
+<h2 id="spec解读"><a href="#spec解读" class="headerlink" title="spec解读"></a>spec解读</h2><h3 id="RuntimeService"><a href="#RuntimeService" class="headerlink" title="RuntimeService"></a>RuntimeService</h3><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/cri-api-to-construct.png" alt="https://github.com/kata-containers/kata-containers/blob/main/docs/design/arch-images/api-to-construct.png"></p>
+<p>包括了Pod和容器相关的操作。</p>
+<p>Pod相关的操作包括：</p>
+<ol>
+<li>启：RunPodSandbox</li>
+<li>停：StopPodSandbox</li>
+<li>删：RemovePodSandbox</li>
+<li>查：PodSandboxStatus、ListPodSandbox、ListPodSandboxStats、PodSandboxStats</li>
+</ol>
+<p>容器相关的操作：</p>
+<ol>
+<li>增、启：CreateContainer、StartContainer</li>
+<li>停：StopContainer</li>
+<li>删：RemoveContainer</li>
+<li>查：ListContainers、ContainerStatus、</li>
+<li>改：UpdateContainerResources</li>
+<li>控：ReopenContainerLog、ExecSync、Exec、Attach、PortForward</li>
+</ol>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Runtime service defines the public APIs for remote container runtimes</span></span><br><span class="line">service RuntimeService <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="comment">// Version returns the runtime name, runtime version, and runtime API version.</span></span><br><span class="line">    rpc Version(VersionRequest) returns (VersionResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// RunPodSandbox creates and starts a pod-level sandbox. Runtimes must ensure</span></span><br><span class="line">    <span class="comment">// the sandbox is in the ready state on success.</span></span><br><span class="line">    rpc RunPodSandbox(RunPodSandboxRequest) returns (RunPodSandboxResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// StopPodSandbox stops any running process that is part of the sandbox and</span></span><br><span class="line">    <span class="comment">// reclaims network resources (e.g., IP addresses) allocated to the sandbox.</span></span><br><span class="line">    <span class="comment">// If there are any running containers in the sandbox, they must be forcibly</span></span><br><span class="line">    <span class="comment">// terminated.</span></span><br><span class="line">    <span class="comment">// This call is idempotent, and must not return an error if all relevant</span></span><br><span class="line">    <span class="comment">// resources have already been reclaimed. kubelet will call StopPodSandbox</span></span><br><span class="line">    <span class="comment">// at least once before calling RemovePodSandbox. It will also attempt to</span></span><br><span class="line">    <span class="comment">// reclaim resources eagerly, as soon as a sandbox is not needed. Hence,</span></span><br><span class="line">    <span class="comment">// multiple StopPodSandbox calls are expected.</span></span><br><span class="line"></span><br><span class="line">    rpc StopPodSandbox(StopPodSandboxRequest) returns (StopPodSandboxResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line">    <span class="comment">// RemovePodSandbox removes the sandbox. If there are any running containers</span></span><br><span class="line">    <span class="comment">// in the sandbox, they must be forcibly terminated and removed.</span></span><br><span class="line">    <span class="comment">// This call is idempotent, and must not return an error if the sandbox has</span></span><br><span class="line">    <span class="comment">// already been removed.</span></span><br><span class="line"></span><br><span class="line">    rpc RemovePodSandbox(RemovePodSandboxRequest) returns (RemovePodSandboxResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line">    <span class="comment">// PodSandboxStatus returns the status of the PodSandbox. If the PodSandbox is not</span></span><br><span class="line">    <span class="comment">// present, returns an error.</span></span><br><span class="line"></span><br><span class="line">    rpc PodSandboxStatus(PodSandboxStatusRequest) returns (PodSandboxStatusResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ListPodSandbox returns a list of PodSandboxes.</span></span><br><span class="line">    rpc ListPodSandbox(ListPodSandboxRequest) returns (ListPodSandboxResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// CreateContainer creates a new container in specified PodSandbox</span></span><br><span class="line">    rpc CreateContainer(CreateContainerRequest) returns (CreateContainerResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// StartContainer starts the container.</span></span><br><span class="line">    rpc StartContainer(StartContainerRequest) returns (StartContainerResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// StopContainer stops a running container with a grace period (i.e., timeout).</span></span><br><span class="line">    <span class="comment">// This call is idempotent, and must not return an error if the container has</span></span><br><span class="line">    <span class="comment">// already been stopped.</span></span><br><span class="line">    <span class="comment">// The runtime must forcibly kill the container after the grace period is</span></span><br><span class="line">    <span class="comment">// reached.</span></span><br><span class="line">    rpc StopContainer(StopContainerRequest) returns (StopContainerResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// RemoveContainer removes the container. If the container is running, the</span></span><br><span class="line">    <span class="comment">// container must be forcibly removed.</span></span><br><span class="line">    <span class="comment">// This call is idempotent, and must not return an error if the container has</span></span><br><span class="line">    <span class="comment">// already been removed.</span></span><br><span class="line"></span><br><span class="line">    rpc RemoveContainer(RemoveContainerRequest) returns (RemoveContainerResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ListContainers lists all containers by filters.</span></span><br><span class="line">    rpc ListContainers(ListContainersRequest) returns (ListContainersResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ContainerStatus returns status of the container. If the container is not</span></span><br><span class="line">    <span class="comment">// present, returns an error.</span></span><br><span class="line">    rpc ContainerStatus(ContainerStatusRequest) returns (ContainerStatusResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// UpdateContainerResources updates ContainerConfig of the container.</span></span><br><span class="line">    rpc UpdateContainerResources(UpdateContainerResourcesRequest) returns (UpdateContainerResourcesResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ReopenContainerLog asks runtime to reopen the stdout/stderr log file</span></span><br><span class="line">    <span class="comment">// for the container. This is often called after the log file has been</span></span><br><span class="line">    <span class="comment">// rotated. If the container is not running, container runtime can choose</span></span><br><span class="line">    <span class="comment">// to either create a new log file and return nil, or return an error.</span></span><br><span class="line">    <span class="comment">// Once it returns error, new container log file MUST NOT be created.</span></span><br><span class="line">    rpc ReopenContainerLog(ReopenContainerLogRequest) returns (ReopenContainerLogResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ExecSync runs a command in a container synchronously.</span></span><br><span class="line">    rpc ExecSync(ExecSyncRequest) returns (ExecSyncResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// Exec prepares a streaming endpoint to execute a command in the container.</span></span><br><span class="line">    rpc Exec(ExecRequest) returns (ExecResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// Attach prepares a streaming endpoint to attach to a running container.</span></span><br><span class="line">    rpc Attach(AttachRequest) returns (AttachResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// PortForward prepares a streaming endpoint to forward ports from a PodSandbox.</span></span><br><span class="line">    rpc PortForward(PortForwardRequest) returns (PortForwardResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ContainerStats returns stats of the container. If the container does not</span></span><br><span class="line">    <span class="comment">// exist, the call returns an error.</span></span><br><span class="line">    rpc ContainerStats(ContainerStatsRequest) returns (ContainerStatsResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ListContainerStats returns stats of all running containers.</span></span><br><span class="line">    rpc ListContainerStats(ListContainerStatsRequest) returns (ListContainerStatsResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// PodSandboxStats returns stats of the pod sandbox. If the pod sandbox does not</span></span><br><span class="line">    <span class="comment">// exist, the call returns an error.</span></span><br><span class="line">    rpc PodSandboxStats(PodSandboxStatsRequest) returns (PodSandboxStatsResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ListPodSandboxStats returns stats of the pod sandboxes matching a filter.</span></span><br><span class="line">    rpc ListPodSandboxStats(ListPodSandboxStatsRequest) returns (ListPodSandboxStatsResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// UpdateRuntimeConfig updates the runtime configuration based on the given request.</span></span><br><span class="line">    rpc UpdateRuntimeConfig(UpdateRuntimeConfigRequest) returns (UpdateRuntimeConfigResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// Status returns the status of the runtime.</span></span><br><span class="line">    rpc Status(StatusRequest) returns (StatusResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="ImageService"><a href="#ImageService" class="headerlink" title="ImageService"></a>ImageService</h3><p>跟镜像相关的操作，包括了</p>
+<ol>
+<li>增：PullImage</li>
+<li>查：ListImages、ImageStatus和ImageFsInfo</li>
+<li>删：RemoveImage</li>
+</ol>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ImageService defines the public APIs for managing images.</span></span><br><span class="line">service ImageService <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="comment">// ListImages lists existing images.</span></span><br><span class="line">    rpc ListImages(ListImagesRequest) returns (ListImagesResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ImageStatus returns the status of the image. If the image is not</span></span><br><span class="line">    <span class="comment">// present, returns a response with ImageStatusResponse.Image set to</span></span><br><span class="line">    <span class="comment">// nil.</span></span><br><span class="line">    rpc ImageStatus(ImageStatusRequest) returns (ImageStatusResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// PullImage pulls an image with authentication config.</span></span><br><span class="line">    rpc PullImage(PullImageRequest) returns (PullImageResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// RemoveImage removes the image.</span></span><br><span class="line">    <span class="comment">// This call is idempotent, and must not return an error if the image has</span></span><br><span class="line">    <span class="comment">// already been removed.</span></span><br><span class="line">    rpc RemoveImage(RemoveImageRequest) returns (RemoveImageResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ImageFSInfo returns information of the filesystem that is used to store images.</span></span><br><span class="line">    rpc ImageFsInfo(ImageFsInfoRequest) returns (ImageFsInfoResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="CRI-CLI"><a href="#CRI-CLI" class="headerlink" title="CRI CLI"></a>CRI CLI</h2><p>CRI 自带了命令行工具 crictl。</p>
+<p>Linux 下安装脚本：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">VERSION=&quot;v1.26.0&quot; # check latest version in /releases page</span><br><span class="line">wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$VERSION-linux-amd64.tar.gz</span><br><span class="line">sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin</span><br><span class="line">rm -f crictl-$VERSION-linux-amd64.tar.gz</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +326,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-22 12:12:50" itemprop="dateModified" datetime="2024-03-22T12:12:50+00:00">2024-03-22</time>
+      <time title="Modified: 2024-04-07 12:04:03" itemprop="dateModified" datetime="2024-04-07T12:04:03+00:00">2024-04-07</time>
     </span>
 
   
@@ -323,7 +430,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-22 12:12:50" itemprop="dateModified" datetime="2024-03-22T12:12:50+00:00">2024-03-22</time>
+      <time title="Modified: 2024-04-07 12:04:03" itemprop="dateModified" datetime="2024-04-07T12:04:03+00:00">2024-04-07</time>
     </span>
 
   
@@ -477,7 +584,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-22 12:12:50" itemprop="dateModified" datetime="2024-03-22T12:12:50+00:00">2024-03-22</time>
+      <time title="Modified: 2024-04-07 12:04:03" itemprop="dateModified" datetime="2024-04-07T12:04:03+00:00">2024-04-07</time>
     </span>
 
   
@@ -576,7 +683,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-22 12:12:50" itemprop="dateModified" datetime="2024-03-22T12:12:50+00:00">2024-03-22</time>
+      <time title="Modified: 2024-04-07 12:04:03" itemprop="dateModified" datetime="2024-04-07T12:04:03+00:00">2024-04-07</time>
     </span>
 
   
@@ -685,7 +792,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-22 12:12:50" itemprop="dateModified" datetime="2024-03-22T12:12:50+00:00">2024-03-22</time>
+      <time title="Modified: 2024-04-07 12:04:03" itemprop="dateModified" datetime="2024-04-07T12:04:03+00:00">2024-04-07</time>
     </span>
 
   
@@ -1589,7 +1696,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-22 12:12:50" itemprop="dateModified" datetime="2024-03-22T12:12:50+00:00">2024-03-22</time>
+      <time title="Modified: 2024-04-07 12:04:03" itemprop="dateModified" datetime="2024-04-07T12:04:03+00:00">2024-04-07</time>
     </span>
 
   
@@ -1704,7 +1811,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-22 12:12:50" itemprop="dateModified" datetime="2024-03-22T12:12:50+00:00">2024-03-22</time>
+      <time title="Modified: 2024-04-07 12:04:03" itemprop="dateModified" datetime="2024-04-07T12:04:03+00:00">2024-04-07</time>
     </span>
 
   
@@ -1793,7 +1900,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-22 12:12:50" itemprop="dateModified" datetime="2024-03-22T12:12:50+00:00">2024-03-22</time>
+      <time title="Modified: 2024-04-07 12:04:03" itemprop="dateModified" datetime="2024-04-07T12:04:03+00:00">2024-04-07</time>
     </span>
 
   
@@ -1892,7 +1999,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-22 12:12:50" itemprop="dateModified" datetime="2024-03-22T12:12:50+00:00">2024-03-22</time>
+      <time title="Modified: 2024-04-07 12:04:03" itemprop="dateModified" datetime="2024-04-07T12:04:03+00:00">2024-04-07</time>
     </span>
 
   
@@ -1946,136 +2053,8 @@
 
 
 
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/pod-memory-stats/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/pod-memory-stats/" class="post-title-link" itemprop="url">内存使用分析</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-04-14 20:33:17" itemprop="dateCreated datePublished" datetime="2022-04-14T20:33:17+00:00">2022-04-14</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-03-22 12:12:50" itemprop="dateModified" datetime="2024-03-22T12:12:50+00:00">2024-03-22</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="操作系统级别"><a href="#操作系统级别" class="headerlink" title="操作系统级别"></a>操作系统级别</h2><h3 id="x2F-proc-x2F-meminfo"><a href="#x2F-proc-x2F-meminfo" class="headerlink" title="&#x2F;proc&#x2F;meminfo"></a>&#x2F;proc&#x2F;meminfo</h3><p>其中的Buffers和Cached的迷惑性非常大，非常难理解。Buffers是指的磁盘数据的缓存，Cached是指对文件数据的缓存.</p>
-<h3 id="free"><a href="#free" class="headerlink" title="free"></a>free</h3><p>该命令实际上是通过读取&#x2F;proc&#x2F;meminfo文件得到的如下输出</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ free -h</span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:            30G         22G        412M         47M        7.6G        7.3G</span><br><span class="line">Swap:            0B          0B          0B</span><br></pre></td></tr></table></figure>
-
-<p>具体列含义：</p>
-<ul>
-<li>total: 总内存大小</li>
-<li>used：已经使用的内存大小，包含共享内存</li>
-<li>free：未使用的内存大小</li>
-<li>shared：共享内存大小</li>
-<li>buff&#x2F;cache：缓存和缓冲区的大小</li>
-<li>available：新进程可用的内存大小</li>
-</ul>
-<h3 id="vmstat"><a href="#vmstat" class="headerlink" title="vmstat"></a>vmstat</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ vmstat 1</span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 4  0      0 1091484 1142360 34545436    0    0   146   265    0    0  8  5 86  1  0</span><br></pre></td></tr></table></figure>
-
-<h2 id="容器级别"><a href="#容器级别" class="headerlink" title="容器级别"></a>容器级别</h2><h3 id="通过kubectl命令来查看内存使用"><a href="#通过kubectl命令来查看内存使用" class="headerlink" title="通过kubectl命令来查看内存使用"></a>通过kubectl命令来查看内存使用</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl top pod nginx-ingress-controller-85cd6c7b5d-md6vc</span><br><span class="line">NAME                                        CPU(cores)   MEMORY(bytes)</span><br><span class="line">nginx-ingress-controller-85cd6c7b5d-md6vc   22m          502Mi</span><br></pre></td></tr></table></figure>
-
-<h3 id="通过docker-stats命令来查看容器"><a href="#通过docker-stats命令来查看容器" class="headerlink" title="通过docker stats命令来查看容器"></a>通过docker stats命令来查看容器</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ docker stats $container_id</span><br><span class="line">CONTAINER ID  NAME                CPU %   MEM USAGE / LIMIT   MEM %  NET I/O   BLOCK I/O           PIDS</span><br><span class="line">97d8bff3f89f  k8s_nginx-ingress   6.33%   180.3MiB / 512MiB   35.21% 0B / 0B   0B / 0B             119</span><br></pre></td></tr></table></figure>
-
-<p>docker通过cgroup的统计数据来获取的内存值</p>
-<p>参考文档：<a target="_blank" rel="noopener" href="https://docs.docker.com/engine/reference/commandline/stats/">https://docs.docker.com/engine/reference/commandline/stats/</a></p>
-<h2 id="进程级别"><a href="#进程级别" class="headerlink" title="进程级别"></a>进程级别</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/vm-1.png"></p>
-<p>具体的含义可以通过下文的&#x2F;proc&#x2F;$pid&#x2F;status来查看，其他进程的内存含义</p>
-<h3 id="cat-x2F-proc-x2F-pid-x2F-status"><a href="#cat-x2F-proc-x2F-pid-x2F-status" class="headerlink" title="cat &#x2F;proc&#x2F;$pid&#x2F;status"></a>cat &#x2F;proc&#x2F;$pid&#x2F;status</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">cat status</span><br><span class="line">Name:   nginx</span><br><span class="line">Umask:  0022</span><br><span class="line">State:  S (sleeping)</span><br><span class="line">Tgid:   46787</span><br><span class="line">Ngid:   0</span><br><span class="line">Pid:    46787</span><br><span class="line">PPid:   33</span><br><span class="line">TracerPid:      0</span><br><span class="line">Uid:    1000    1000    1000    1000</span><br><span class="line">Gid:    19062   19062   19062   19062</span><br><span class="line">FDSize: 128</span><br><span class="line">Groups:</span><br><span class="line">VmPeak:   559768 kB</span><br><span class="line">VmSize:   559120 kB</span><br><span class="line">VmLck:         0 kB</span><br><span class="line">VmPin:         0 kB</span><br><span class="line">VmHWM:    285240 kB</span><br><span class="line">VmRSS:    284752 kB</span><br><span class="line">RssAnon:          279016 kB</span><br><span class="line">RssFile:            3420 kB</span><br><span class="line">RssShmem:           2316 kB</span><br><span class="line">VmData:   371784 kB</span><br><span class="line">VmStk:       136 kB</span><br><span class="line">VmExe:      4716 kB</span><br><span class="line">VmLib:      6828 kB</span><br><span class="line">VmPTE:       900 kB</span><br><span class="line">VmSwap:        0 kB</span><br><span class="line">Threads:        33</span><br><span class="line">SigQ:   1/123857</span><br><span class="line">SigPnd: 0000000000000000</span><br><span class="line">ShdPnd: 0000000000000000</span><br><span class="line">SigBlk: 0000000000000000</span><br><span class="line">SigIgn: 0000000040001000</span><br><span class="line">SigCgt: 0000000198016eef</span><br><span class="line">CapInh: 0000001fffffffff</span><br><span class="line">CapPrm: 0000000000000400</span><br><span class="line">CapEff: 0000000000000400</span><br><span class="line">CapBnd: 0000001fffffffff</span><br><span class="line">CapAmb: 0000000000000000</span><br><span class="line">NoNewPrivs:     0</span><br><span class="line">Seccomp:        0</span><br><span class="line">Speculation_Store_Bypass:       vulnerable</span><br><span class="line">Cpus_allowed:   0001</span><br><span class="line">Cpus_allowed_list:      0</span><br><span class="line">Mems_allowed:   00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001</span><br><span class="line">Mems_allowed_list:      0</span><br><span class="line">voluntary_ctxt_switches:        343464</span><br><span class="line">nonvoluntary_ctxt_switches:     35061</span><br></pre></td></tr></table></figure>
-
-<p>具体字段含义可以查看man文档：<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/proc.5.html%EF%BC%8C%E8%B7%9F%E5%86%85%E5%AD%98%E7%9B%B8%E5%85%B3%E7%9A%84%E5%AD%97%E6%AE%B5%E5%A6%82%E4%B8%8B%EF%BC%9A">https://man7.org/linux/man-pages/man5/proc.5.html，跟内存相关的字段如下：</a></p>
-<ul>
-<li>VmRSS：虚拟内存驻留在物理内存中的部分大小</li>
-<li>VmHWM：使用物理内存的峰值</li>
-<li>VmData：进程占用的数据段大小</li>
-</ul>
-<h3 id="top命令查看"><a href="#top命令查看" class="headerlink" title="top命令查看"></a>top命令查看</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ top -p $pid</span><br><span class="line">    PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND</span><br><span class="line">  46787 www-data  20   0  559120 286544   5740 S   1.3  0.9   2:43.64 nginx</span><br></pre></td></tr></table></figure>
-
-<p>具体列含义如下：</p>
-<ul>
-<li>VIRT：进程使用虚拟内存总大小，即使没有占用物理内存，包括了进程代码段、数据段、共享内存、已经申请的堆内存和已经换到swap空间的内存等</li>
-<li>RES: 进程实际使用的物理内存大小，不包括swap和共享内存</li>
-<li>SHR：与其他进程的共享内存、加载的动态链接库、程序代码段的大小</li>
-<li>MEM：进程使用的物理内存占系统总内存的百分比</li>
-</ul>
-<h3 id="ps命令查看"><a href="#ps命令查看" class="headerlink" title="ps命令查看"></a>ps命令查看</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ps aux</span><br><span class="line">USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND</span><br><span class="line">www-data       1  0.0  0.0    212     8 ?        Ss   Apr09   0:00 /usr/bin/dumb-init -- /nginx-ingress-controller</span><br><span class="line">www-data       6  0.9  0.3 813500 99644 ?        Ssl  Apr09  67:32 /nginx-ingress-controller</span><br><span class="line">www-data      33  0.0  0.7 458064 242252 ?       S    Apr09   0:53 nginx: master process /usr/local/nginx/sbin/nginx -c /etc/nginx/nginx.conf</span><br><span class="line">www-data   46786  0.0  0.7 459976 239996 ?       S    17:57   0:00 rollback logs/eagleeye.log interval=60 adjust=600</span><br><span class="line">www-data   46787  1.3  0.8 559120 284452 ?       Sl   17:57   2:22 nginx: worker process</span><br><span class="line">www-data   46788  1.0  0.8 558992 285168 ?       Sl   17:57   1:51 nginx: worker process</span><br><span class="line">www-data   46789  0.0  0.7 452012 237152 ?       S    17:57   0:01 nginx: cache manager process</span><br><span class="line">www-data   46790  0.0  0.8 490832 267600 ?       S    17:57   0:00 nginx: x</span><br><span class="line">www-data   47533  0.0  0.0  60052  1832 pts/2    R+   20:50   0:00 ps aux</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>RSS：虚拟内存中的常驻内存，即实际占用的物理内存，包括所有已经分配的堆内存、栈内存、共享内存，由于共享内存非独占，实际上进程独占的物理内存要少于RSS</li>
-</ul>
-<h3 id="pmap"><a href="#pmap" class="headerlink" title="pmap"></a>pmap</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"># pmap -x 452021</span><br><span class="line">452021:   nginx: worker process</span><br><span class="line">Address           Kbytes     RSS   Dirty Mode  Mapping</span><br><span class="line">0000000000400000    4716    1540       0 r-x-- tengine</span><br><span class="line">0000000000a9a000      20      16       4 r---- tengine</span><br><span class="line">0000000000a9f000     212     196     176 rw--- tengine</span><br><span class="line">0000000000ad4000     248      60      60 rw---   [ anon ]</span><br><span class="line">00002b0da6cb0000     136       4       0 r-x-- ld-2.17.so</span><br><span class="line">00002b0da6cd2000       4       4       4 rw---   [ anon ]</span><br><span class="line">00002b0da6cd3000       4       4       4 rw-s- zero (deleted)</span><br><span class="line">00002b0da6cd7000      28      24      24 rw---   [ anon ]</span><br><span class="line">00002b0da6cde000      64       8       8 rwx--   [ anon ]</span><br><span class="line">00002b0da6ed1000       4       4       4 r---- ld-2.17.so</span><br><span class="line">00002b0da6ed2000       4       4       4 rw--- ld-2.17.so</span><br><span class="line">00002b0da6ed3000       4       4       4 rw---   [ anon ]</span><br><span class="line">00002b0da6ed4000       8       0       0 r-x-- libdl-2.17.so</span><br><span class="line">00002b0da70d8000      92      32       0 r-x-- libpthread-2.17.so</span><br><span class="line">00002b0da72f0000      16       4       4 rw---   [ anon ]</span><br><span class="line">00002b0da72f4000      32       0       0 r-x-- libcrypt-2.17.so</span><br><span class="line">00002b0da72fc000    2044       0       0 ----- libcrypt-2.17.so</span><br><span class="line">00002b0da74fb000       4       4       4 r---- libcrypt-2.17.so</span><br><span class="line">00002b0da74fc000       4       4       4 rw--- libcrypt-2.17.so</span><br><span class="line">00002b0da74fd000     184       0       0 rw---   [ anon ]</span><br><span class="line">00002b0da752b000    1028       8       0 r-x-- libm-2.17.so</span><br><span class="line">00002b0da7a35000     760     372       0 r-x-- libssl.so.1.1</span><br><span class="line">00002b0da7d03000    2812    1124       0 r-x-- libcrypto.so.1.1</span><br><span class="line">00002b0da7fc2000    2044       0       0 ----- libcrypto.so.1.1</span><br><span class="line">00002b0da81c1000     172     172     172 r---- libcrypto.so.1.1</span><br><span class="line">00002b0da81ec000      12      12      12 rw--- libcrypto.so.1.1</span><br><span class="line">00002b0da81ef000      16       8       8 rw---   [ anon ]</span><br><span class="line">00002b0da81f3000      84      40       0 r-x-- libgcc_s-4.8.5-20150702.so.1</span><br><span class="line">00002b0da8409000    1808     316       0 r-x-- libc-2.17.so</span><br><span class="line">00002b0da85cd000    2044       0       0 ----- libc-2.17.so</span><br><span class="line">00002b0da87cc000      16      16      16 r---- libc-2.17.so</span><br><span class="line">00002b0da87d0000       8       8       8 rw--- libc-2.17.so</span><br><span class="line">00002b0da87d2000      20      12      12 rw---   [ anon ]</span><br><span class="line">00002b0da87d7000       8       0       0 r-x-- libfreebl3.so</span><br><span class="line">00002b0da87d9000    2044       0       0 ----- libfreebl3.so</span><br><span class="line">00002b0da89d8000       4       4       4 r---- libfreebl3.so</span><br><span class="line">00002b0da89d9000       4       4       4 rw--- libfreebl3.so</span><br><span class="line">00002b0da8a00000   24576   21936   21936 rw---   [ anon ]</span><br><span class="line">00002b0daa200000    8192    8180    8180 rw---   [ anon ]</span><br><span class="line">00002b0daaa00000    8192    8192    8192 rw---   [ anon ]</span><br><span class="line">00002b0dab200000    8192    8192    8192 rw---   [ anon ]</span><br><span class="line">00002b0daba00000    8192    8172    8172 rw---   [ anon ]</span><br><span class="line">00002b0dac200000    4096    4096    4096 rw---   [ anon ]</span><br><span class="line">00002b0dac600000    4096    4096    4096 rw---   [ anon ]</span><br><span class="line">00002b0daca00000    4096      12      12 rw-s- zero (deleted)</span><br><span class="line">00002b0dace00000    1024       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0dacf00000    1024       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0dad000000   16384   16384   16384 rw---   [ anon ]</span><br><span class="line">00002b0dae000000   10240       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0db3f00000      24      16       0 r-x-- cjson.so</span><br><span class="line">00002b0db3f06000    2048       0       0 ----- cjson.so</span><br><span class="line">00002b0db4106000       4       4       4 r---- cjson.so</span><br><span class="line">00002b0db4107000       4       4       4 rw--- cjson.so</span><br><span class="line">00002b0db4108000       8       0       0 r-x-- librestychash.so</span><br><span class="line">00002b0db410a000    2044       0       0 ----- librestychash.so</span><br><span class="line">00002b0db4309000       4       4       4 r---- librestychash.so</span><br><span class="line">00002b0db430a000       4       4       4 rw--- librestychash.so</span><br><span class="line">00002b0db430b000   10240    1784    1784 rw-s- zero (deleted)</span><br><span class="line">00002b0db4d0b000   10240       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0db5800000    6144    6144    6144 rw---   [ anon ]</span><br><span class="line">00002b0db5e00000    6144    6144    6144 rw---   [ anon ]</span><br><span class="line">00002b0db6400000    8192    8192    8192 rw---   [ anon ]</span><br><span class="line">00002b0db6c0b000    5120       8       8 rw-s- zero (deleted)</span><br><span class="line">00002b0db7200000    8192    8192    8192 rw---   [ anon ]</span><br><span class="line">00002b0dc2800000    1024       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0dc2900000   10240       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0dc3300000   10240       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0dc861f000    2048       8       8 rw---   [ anon ]</span><br><span class="line">00002b0dc881f000       4       0       0 -----   [ anon ]</span><br><span class="line">00002b0dc8820000    2048       8       8 rw---   [ anon ]</span><br><span class="line">00007fff60f6c000     136      44      44 rw---   [ stack ]</span><br><span class="line">00007fff60fdd000       8       4       0 r-x--   [ anon ]</span><br><span class="line">ffffffffff600000       4       0       0 r-x--   [ anon ]</span><br><span class="line">---------------- ------- ------- -------</span><br><span class="line">total kB          558996  289376  285888</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>Mapping: 支持如下值<ul>
-<li>[anon]：分配的内存</li>
-</ul>
-</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
   <nav class="pagination">
-    <a class="extend prev" rel="prev" title="Previous page" aria-label="Previous page" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/24/">24</a><a class="extend next" rel="next" title="Next page" aria-label="Next page" href="/page/4/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" title="Previous page" aria-label="Previous page" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/25/">25</a><a class="extend next" rel="next" title="Next page" aria-label="Next page" href="/page/4/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 </div>
