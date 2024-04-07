@@ -4,6 +4,7 @@ tags:
 author:
 ---
 # kubeconfig 文件结构
+
 ```yaml
 apiVersion: v1
 kind: Config
@@ -37,8 +38,10 @@ users:
     client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUQyRENDQXNDZ0F3SUJBZ0lVYlBFdGx4LzRTYm9TckRvZTd1djllS1YrckZNd0RRWUpLb1pJaHZjTkFRRUwKQlFBd1lqRUxNQWtHQTFVRUJoTUNWVk14Q3pBSkJnTlZCQWdUQWtOQk1SSXdFQVlEVlFRSEV3bFRkVzV1ZVhaaApiR1V4RURBT0JnTlZCQW9UQjB0MVltVmFiMjh4Q3pBSkJnTlZCQXNUQWtOQk1STXdFUVlEVlFRREV3cExkV0psCmNtNWxkR1Z6TUI0WERUSTBNRE15TVRBNE16a3dNRm9YRFRJMU1ETXlNVEE0TXprd01Gb3dhVEVMTUFrR0ExVUUKQmhNQ1ZWTXhDekFKQmdOVkJBZ1RBa05CTVJJd0VBWURWUVFIRXdsVGRXNXVlWFpoYkdVeEZ6QVZCZ05WQkFvVApEbk41YzNSbGJUcHRZWE4wWlhKek1SQXdEZ1lEVlFRTEV3ZExkV0psV205dk1RNHdEQVlEVlFRREV3VmhaRzFwCmJqQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCQU1PYnpoeDBOTW5ubTdHbmFjb2sKWHJ1RmxrRVBXc01la2xLNnBtbWFDRUVVUTNocHdsUWw2Z09UekpwaUVYVGZMZU1Uc29ZZ1NtNGFySWdjdVlTcwo3cDdzdWhhUi9RN1g3SUZjMXJEMzFtODB5amZEVUhYZi9jSWhDVmp0NDhLY1JLL2QrK2NzZkU5eHpEdlVBdDVxCmxmNFNvMy9YSnJyYzdtdURiUXdYdDgvaGQ4RnVZYUFWN2YraXVMMW5DRTB3b01IaFNPSkpEWC9TQ1pMakxTS2wKYU9aM2lOL0dDRXo4cldPUmVBbGUwQzRwazRwc0xmN1h6UlJpcnFTT21lQ3JTZzJoNlU1OS8xTHN5dXVqeTVFWQpxT3RsZ0R0Z3l5RDhBRWZhanM5R0NNRnFFOStHZWR6NkpuRmFlUlpOZThlVWNhVU1GWFVSWjYxb0pqT2UraUZ4CjU3TUNBd0VBQWFOL01IMHdEZ1lEVlIwUEFRSC9CQVFEQWdXZ01CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUIKQmdnckJnRUZCUWNEQWpBTUJnTlZIUk1CQWY4RUFqQUFNQjBHQTFVZERnUVdCQlRPL0JxUE9HcVU1V0JYSW9wQgoxajdxYVBvTkh6QWZCZ05WSFNNRUdEQVdnQlJqUEdGcDd0N0F5d2ZFSEp1M3hJS2FneXhPSGpBTkJna3Foa2lHCjl3MEJBUXNGQUFPQ0FRRUF0SVRaN0FUVVhManB6UWtQVGM0RVFKYi9IZlJTcklOV3pSMlpRcVI1Q2J1dXEzR08KUktDZFphenVrakJjMCtXVkhGcVo4SEtNNUR2YThKbzZCUXgycXoxZ0ptVE1oYUdRMFlyNWFFcmxFZWJCWUcwVgpLMGh4LzJuMmNmMkt3N3VBOWdkeUJKSVFJbnY2RFJPUmt6VVNuQXJEd21TNitUNXdKK0lTUGlPdHVGRnQzazRyClZsZ1N3bjE5WHRSRnJ4OEI4dWRkSlZ4VEloN3FPa09hbURQaFJrTGJKNFdOUk5hYlpVMFVxdmxUQzVnQkhnS2QKSm1FaVQybHNoUENjS2lRZWsrTVNzNU9mNG9ZQml0TXM0eW1iendXb1hVaGcvVnRTbTdtT2MzUmo2ZGhrQXl2NwozQTJoZW1xUENKQ1JwbndzUDlpd0VrWUE0SlFZMG53aEUrd1h2Zz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
     client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBdzV2T0hIUTB5ZWVic2FkcHlpUmV1NFdXUVE5YXd4NlNVcnFtYVpvSVFSUkRlR25DClZDWHFBNVBNbW1JUmROOHQ0eE95aGlCS2JocXNpQnk1aEt6dW51eTZGcEg5RHRmc2dWeldzUGZXYnpUS044TlEKZGQvOXdpRUpXTzNqd3B4RXI5Mzc1eXg4VDNITU85UUMzbXFWL2hLamY5Y211dHp1YTROdERCZTN6K0Yzd1c1aApvQlh0LzZLNHZXY0lUVENnd2VGSTRra05mOUlKa3VNdElxVm81bmVJMzhZSVRQeXRZNUY0Q1Y3UUxpbVRpbXd0Ci90Zk5GR0t1cEk2WjRLdEtEYUhwVG4zL1V1eks2NlBMa1JpbzYyV0FPMkRMSVB3QVI5cU96MFlJd1dvVDM0WjUKM1BvbWNWcDVGazE3eDVSeHBRd1ZkUkZucldnbU01NzZJWEhuc3dJREFRQUJBb0lCQUhMZ0ZYTndhM0FIck0vdwpXWmgxTTQwOUxyaVdvOTdqSFZ1b2NnS2lpeVp0R0JLblNaRFJrMVQyZjdwS3phV3RTKzJIcTloSkxtenJEVmdDClJwRThYZ2JIVDZIaHFwUUZDc2dPRmFkb1pXNTV1aWgxYzlORjhHa0pyY3VrS1pZbzM4M0l1QjlUYU0zZkx1b1QKNEh0dWJSZ0JLalB4enJUKytxWDVVUmxBOUpvSDc2c1hUb1JkYXF5YzR6VXMwcm9LNmVTb3dZeE8ydVN5TmtQcQpkai9reFJ4WTV2djYveHpPOHhVU1dUWndwVit2VUgvbVJiU1hjSjJrKzRvTDB5VmJSLzFpVStPYmpkSWU4UXNOCkhHMjBNSk9zRS9LTVVuVUlSeGxqRGlaM1o4WjVabXIrTUVTV3daOWRkUWlJbm80dSt6UkVaRTcvbnlwQ2lTY0UKOHlBNG9FRUNnWUVBOVpHbHRLdG8yaHRzZXBuWnNwdFVFdEorbXo2a001bEI2SHdpVVd3Q05ZSXpUQzRra2J2MwpXSzVMYXFpaXEwUk5zOHZSbmNXSHlwMHFidTlyOHNUellRUVVvc0luVStReGlLMUd0Uk81cVV4TE9SZzZlSjViClNCM0JoNnVQdVMyUU9qSlNKbU9uWldkUHFrRXJqSW9LWWZhT00wUGIxaUVlUzBWVUVyVWZaVGNDZ1lFQXkrcmgKeDlzM0FnMVk0bkVpVThsbGpDNlZQYk8yQ3pRM3ViWXJlcjhobVFTYkRsQjBHMEhOVE01YWNaSFdNVUdnWWVlagpUbFJCcVQvbFZtOXV3NFBxc1Ezejl4QnB0YmZDVUpqeEVucnJWQkdpeElNeHlGMU85WTh2WVRkZENLa3VVVVE5CnEybnpuNzNMNGdDRDlMcW4yYlFpaEFucHdTamcySytFQ2V4RlQyVUNnWUVBdWJIM2tsV0VKbHBTZjZ0VG1lSW4KZzB3MWZRT3plMmxMRTVpN0FzTWdNSUpTZENyNGNGT3BTU0FUMjRYRjdLanI4U2dSVExNUWFrREswN1NzOXBuRQpTUHFpK0NqRlFJVHdpQ0F2dGNKQ3hTanlRU3gzR3JyMDMrWFFjTjFsQTJ6WEFZc0g0QXUvaThqQnowY1V2V090ClVrTDFhUUxKZkhUeXlZeVZkTWdPQTZVQ2dZQndDcUY5dDFRVkc1SlA4UXVFYis4TXcvZWFUR2prNVE4TlNpdS8KcU03a0RhVElpNm9QNCtyU25ic1NGYWhUcmhSYVZ2VGlyK2JZQU5TWTFtZE1vK25LMkxqSWNrc3kza0cxR1NPMApITGU2bkdvTGdXNVVBZmpGY2FQOXpYYWZzSjFUWjZSZXo3dGRkT0pXVGlReXpuQTFiUVZkK1RobnVuYzRkOCtiCnlDY1pCUUtCZ0ZWcFZacDdjWUxHYlE1dERkL0orZ1BhcFo0TWFYSzluWDFTaktlalhjcVFFSUc3NEYrdkxzdEwKZCs4R3N0VkRzdy8vQ0VNcW9pYXZ1MkVlQ0VQZzF3ZHpDU3pWa2IrZ1FRZXA0cE1LZEhaai9YaysvNVVXTUJzOApkNnNwMWxrTTRqSGhjYkFLU056VTUrTG1NRnk0MzBPZlI2dmxVTFZjNVlaR2hSU0ZCdzdDCi0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
 ```
+
 ## cluster 字段
 certificate-authority-data 字段：服务端的 ca 证书，用来验证 kube-apiserver 证书的正确性。<br />当使用 kubectl 发送请求到 kube-apiserver 时，kube-apiserver 会返回通过参数 `--tls-cert-file` 配置的证书文件，kubectl 通过 kubeconfig 中的 certificate-authority-data 字段来校验 kube-apiserver 返回证书的有效性。<br />当 kubectl 指定了参数 `--insecure-skip-tls-verify=true`，即可跳过对 kube-apiserver 证书的校验。
+
 ## users
 
 - name：用户名称
@@ -46,6 +49,7 @@ certificate-authority-data 字段：服务端的 ca 证书，用来验证 kube-a
 - client-key-data：客户端私钥信息。内容经过 base64 编码。
 
 client-certificate-data 对应的为用户的公钥信息，使用命令 `echo 'xx' | base64 -d > /tmp/client.crt; openssl x509 -in /tmp/client.crt -noout -text`可对证书的内容进行解密。解密完成后的证书内容如下：
+
 ```yaml
 Certificate:
     Data:
@@ -107,7 +111,34 @@ Certificate:
         49:ea:90:d8:3f:66:31:18:7c:95:a9:bf:d9:76:e2:62:b6:4f:
         70:02:19:17
 ```
-其中的 Subject 中的 O 对应的 k8s 中的 Group，CN 对应的 k8s 中的 User。kube-apiserver 会通过证书的 O 和 CN 获取到 User 和 Group 信息。
+其中的 Subject 中的 O 对应的 k8s 中的 Group，CN 对应的 k8s 中的 User。kube-apiserver 会通过证书的 O 和 CN 获取到 User 和 Group 信息。在 k8s 系统中，实际上并没有存储 Group 和 User 信息，而是完全依赖该证书中的信息。
+
+# kubeconfig 文件生成
+
+kubeconfig 文件本质上是个证书，包含了 ca、证书公钥和证书私钥，在有了证书后可以通过 kubectl 命令生成新的 kubeconfig 文件
+
+```
+kubectl --kubeconfig ~/.kube/111111.kubeconfig config set-cluster hello --certificate-authority=/tmp/ca.pem --embed-certs=true --server=https://127.0.0.1:6443
+kubectl --kubeconfig ~/.kube/111111.kubeconfig config set-credentials hello-admin --client-certificate=/tmp/tls.crt --client-key=/tmp/tls.key --embed-certs=true
+kubectl --kubeconfig ~/.kube/111111.kubeconfig config set-context hello --cluster=hello --user=hello-admin
+kubectl --kubeconfig ~/.kube/111111.kubeconfig config use-context hello
+```
+
+# 使用 curl 命令直接访问 kube-apiserver
+
+由于 kube-apiserver 开启了双向认证，使用 curl 命令访问 kube-apiserver 时，curl 需要指定证书信息，证书信息可以使用 kubeconfig 中的证书信息。
+
+```
+WORK_DIR=/tmp
+KUBECONFIG=~/.kube/config
+CONTEXT=kind-kind
+server=`yq eval '.clusters.[]|select(.name=="'$CONTEXT'")|.cluster.server' $KUBECONFIG`
+yq eval '.users.[]|select(.name=="'$CONTEXT'")|.user.client-certificate-data' $KUBECONFIG | base64 --decode > ${WORK_DIR}/client.crt
+yq eval '.users.[]|select(.name=="'$CONTEXT'")|.user.client-key-data' ~/.kube/config | base64 --decode > ${WORK_DIR}/client.key
+yq eval '.clusters.[]|select(.name=="'$CONTEXT'")|.cluster.certificate-authority-data' $KUBECONFIG | base64 --decode > ${WORK_DIR}/ca.crt
+curl --cert ${WORK_DIR}/client.crt --key ${WORK_DIR}/client.key --cacert ${WORK_DIR}/ca.crt "$server/apis/apiextensions.k8s.io/v1/customresourcedefinitions?limit=500&resourceVersion=0"
+```
+
 # 资料
 
 - [kubeconfig文件全解析](https://www.cnblogs.com/orchidzjl/p/17306985.html)

@@ -95,6 +95,8 @@ openssl x509 -in server.crt -out server.pem
 
 获取特定域名的证书内容：`openssl s_client -servername www.baidu.com -connect www.baidu.com:443 </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'`
 
+在 k8s 中，证书通常存放在 secret 中，可以使用 kubeclt + openssl 命令查看证书内容：`kubectl get secret -n test-cluster sharer -o jsonpath='{.data.tls\.crt}' | base64 --decode | openssl x509 -text -noout`
+
 # 证书的使用
 
 curl命令关于证书的用法：

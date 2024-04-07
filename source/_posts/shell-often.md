@@ -137,3 +137,11 @@ split [-bl] file [prefix]
 - `rpm -ql`: 查看已经安装的 rpm 的文件内容
 - `rpm -qpR *.rpm`: 查看rpm包的依赖
 - `rpm -e *`：要删除的rpm包
+
+## cloc
+
+用来统计代码行数
+
+- `cloc .`： 用来统计当前的代码行数
+- `cloc . --exclude-dir vendor`：忽略目录 vendor，`--exclude-dir` 仅能支持一级目录
+- `cloc . --fullpath --not-match-d=pkg/apis/`：用来忽略目录 pkg/apis 下的文件
