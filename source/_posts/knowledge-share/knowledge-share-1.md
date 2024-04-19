@@ -1,7 +1,9 @@
 ---
 title: 知识分享第一期
 date: 2018-08-26 17:38:29
-tags: 知识分享
+tags:
+  - 知识分享
+url: knowledge-share-1
 ---
 
 ![北京青龙峡](https://kuring.oss-cn-beijing.aliyuncs.com/images/qinglongxia.jpeg)
