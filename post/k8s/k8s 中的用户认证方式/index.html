@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.18.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="在 k8s 中包含两类用户：  ServiceAccount。又称服务账号，在运行 pod 时必须绑定 ServiceAccount，如果没有指定，则使用当前 namespace 下的 ServiceAccount default。是针对程序而言，用于 pod 中的程序访问 kube-apiserver。 普通用户。在 k8s 中并没有使用单独的对象来存储，而是通过了分发证书、外部用户认证系统等方">
+<meta property="og:type" content="article">
+<meta property="og:title" content="k8s 中的用户认证方式">
+<meta property="og:url" content="http://kuring.me/post/k8s/k8s%20%E4%B8%AD%E7%9A%84%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81%E6%96%B9%E5%BC%8F/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="在 k8s 中包含两类用户：  ServiceAccount。又称服务账号，在运行 pod 时必须绑定 ServiceAccount，如果没有指定，则使用当前 namespace 下的 ServiceAccount default。是针对程序而言，用于 pod 中的程序访问 kube-apiserver。 普通用户。在 k8s 中并没有使用单独的对象来存储，而是通过了分发证书、外部用户认证系统等方">
+<meta property="og:locale">
+<meta property="article:published_time" content="2024-04-22T00:00:00.000Z">
+<meta property="article:modified_time" content="2024-04-22T11:30:48.358Z">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://kuring.me/post/k8s/k8s%20%E4%B8%AD%E7%9A%84%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81%E6%96%B9%E5%BC%8F/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/k8s/k8s%20%E4%B8%AD%E7%9A%84%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81%E6%96%B9%E5%BC%8F/","path":"post/k8s/k8s 中的用户认证方式/","title":"k8s 中的用户认证方式"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>k8s 中的用户认证方式 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#1-X509-%E8%AF%81%E4%B9%A6%E8%AE%A4%E8%AF%81"><span class="nav-number">1.</span> <span class="nav-text">1. X509 证书认证</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-1-CertificateSigningRequest-%E7%AD%BE%E5%8F%91%E8%AF%81%E4%B9%A6"><span class="nav-number">1.1.</span> <span class="nav-text">1.1. CertificateSigningRequest 签发证书</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2-ServiceAccount"><span class="nav-number">2.</span> <span class="nav-text">2. ServiceAccount</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#2-1-Secret-%E5%AD%98%E6%94%BE-token"><span class="nav-number">2.1.</span> <span class="nav-text">2.1. Secret 存放 token</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-2-TokenRequest-API-%E4%BA%A7%E7%94%9F-token"><span class="nav-number">2.2.</span> <span class="nav-text">2.2. TokenRequest API 产生 token</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#3-%E7%94%A8%E6%88%B7%E4%BC%AA%E8%A3%85"><span class="nav-number">3.</span> <span class="nav-text">3. 用户伪装</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#4-bootstrap-token"><span class="nav-number">4.</span> <span class="nav-text">4. bootstrap token</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B5%84%E6%96%99"><span class="nav-number">5.</span> <span class="nav-text">资料</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">241</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/k8s/k8s%20%E4%B8%AD%E7%9A%84%E7%94%A8%E6%88%B7%E8%AE%A4%E8%AF%81%E6%96%B9%E5%BC%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="k8s 中的用户认证方式 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          k8s 中的用户认证方式
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2024-04-22 00:00:00 / Modified: 11:30:48" itemprop="dateCreated datePublished" datetime="2024-04-22T00:00:00+00:00">2024-04-22</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>在 k8s 中包含两类用户：</p>
+<ol>
+<li>ServiceAccount。又称服务账号，在运行 pod 时必须绑定 ServiceAccount，如果没有指定，则使用当前 namespace 下的 ServiceAccount default。是针对程序而言，用于 pod 中的程序访问 kube-apiserver。</li>
+<li>普通用户。在 k8s 中并没有使用单独的对象来存储，而是通过了分发证书、外部用户认证系统等方式实现，是针对用户而言。</li>
+</ol>
+<h1 id="1-X509-证书认证"><a href="#1-X509-证书认证" class="headerlink" title="1. X509 证书认证"></a>1. X509 证书认证</h1><p>使用场景：使用 kubectl 访问 k8s 集群即通过 X509 证书认证方式，kubeconfig 本质上是个证书文件。</p>
+<p>客户端使用证书中的 Common Name 作为请求的用户名，organization 作为用户组的成员信息。</p>
+<p>证书的签发可以使用 openssl、cfssl 等工具来签发，也可以使用 k8s 自带的 CertificateSigningRequest 对象来实现签发。</p>
+<h2 id="1-1-CertificateSigningRequest-签发证书"><a href="#1-1-CertificateSigningRequest-签发证书" class="headerlink" title="1.1. CertificateSigningRequest 签发证书"></a>1.1. CertificateSigningRequest 签发证书</h2><p>创建私钥信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">openssl genrsa -out myuser.key 2048</span><br><span class="line">openssl req -new -key myuser.key -out myuser.csr -subj &quot;/CN=myuser&quot;</span><br></pre></td></tr></table></figure>
+
+<p>创建如下的 CertificateSigningRequest 对象</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">cat &lt;&lt;EOF | kubectl apply -f -</span><br><span class="line">apiVersion: certificates.k8s.io/v1</span><br><span class="line">kind: CertificateSigningRequest</span><br><span class="line">metadata:</span><br><span class="line">  name: myuser</span><br><span class="line">spec:</span><br><span class="line">  # value 使用命令 cat myuser.csr | base64 | tr -d &quot;\n&quot; 获取</span><br><span class="line">  request: xxx</span><br><span class="line">  # 固定值</span><br><span class="line">  signerName: kubernetes.io/kube-apiserver-client</span><br><span class="line">  # 过期时间</span><br><span class="line">  expirationSeconds: 86400  # one day</span><br><span class="line">  usages:</span><br><span class="line">  - client auth</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<p>查看 csr 处于 Pending 状态：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl get csr</span><br><span class="line">NAME     AGE   SIGNERNAME                            REQUESTOR          REQUESTEDDURATION   CONDITION</span><br><span class="line">myuser   12s   kubernetes.io/kube-apiserver-client   kubernetes-admin   24h                 Pending</span><br></pre></td></tr></table></figure>
+
+<p>批准给证书签发请求：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl certificate approve myuser</span><br></pre></td></tr></table></figure>
+
+<p>签发完成后的证书会存放到 status.certificate 字段中，至此证书签发完成。</p>
+<h1 id="2-ServiceAccount"><a href="#2-ServiceAccount" class="headerlink" title="2. ServiceAccount"></a>2. ServiceAccount</h1><p>使用场景：该方式使用较为常见，用于 pod 中访问 k8s apiserver。</p>
+<p>原理：pod 可以通过 spec.serviceAccountName 字段来指定要使用的 ServiceAccount，如果没有指定则使用 namespace 下默认的 default ServiceAccount。kube-controller-manager 中的 ServiceAccount 控制器会在拉起的 pod 中自动注入如下的信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">spec:</span><br><span class="line">  volumeMounts: </span><br><span class="line">  - mountPath: /var/run/secrets/kubernetes.io/serviceaccount</span><br><span class="line">    name: kube-api-access-j6vpz</span><br><span class="line">    readOnly: true</span><br><span class="line">  volumes:</span><br><span class="line">  - name: kube-api-access-j6vpz</span><br><span class="line">    projected:</span><br><span class="line">      defaultMode: 420</span><br><span class="line">      sources:</span><br><span class="line">      - serviceAccountToken:</span><br><span class="line">          expirationSeconds: 3607</span><br><span class="line">          path: token</span><br><span class="line">      - configMap:</span><br><span class="line">          items:</span><br><span class="line">          - key: ca.crt</span><br><span class="line">            path: ca.crt</span><br><span class="line">          name: kube-root-ca.crt</span><br><span class="line">      - downwardAPI:</span><br><span class="line">          items:</span><br><span class="line">          - fieldRef:</span><br><span class="line">              apiVersion: v1</span><br><span class="line">              fieldPath: metadata.namespace</span><br><span class="line">            path: namespace</span><br></pre></td></tr></table></figure>
+
+<p>即将信息注入到 pod 的 &#x2F;var&#x2F;run&#x2F;secrets&#x2F;kubernetes.io&#x2F;serviceaccount 目录下，目录结构如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/var/run/secrets/kubernetes.io/serviceaccount</span><br><span class="line">|-- ca.crt -&gt; ..data/ca.crt</span><br><span class="line">|-- namespace -&gt; ..data/namespace</span><br><span class="line">`-- token -&gt; ..data/token</span><br></pre></td></tr></table></figure>
+
+<p>token 为 JWT 认证，对其格式解密后如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;alg&quot;: &quot;RS256&quot;,</span><br><span class="line">  &quot;kid&quot;: &quot;u7rF5JCtJRNiMzSUOFAYvDpCwPqUII-N-OtxR59cnQ0&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;iss&quot;: &quot;kubernetes/serviceaccount&quot;,</span><br><span class="line">  &quot;kubernetes.io/serviceaccount/namespace&quot;: &quot;default&quot;,</span><br><span class="line">  &quot;kubernetes.io/serviceaccount/secret.name&quot;: &quot;ingress-token-s9gtm&quot;,</span><br><span class="line">  &quot;kubernetes.io/serviceaccount/service-account.name&quot;: &quot;ingress&quot;,</span><br><span class="line">  &quot;kubernetes.io/serviceaccount/service-account.uid&quot;: &quot;19ce4f11-7105-43ce-b189-f3d71a2ffc74&quot;,</span><br><span class="line">  &quot;sub&quot;: &quot;system:serviceaccount:default:ingress&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-1-Secret-存放-token"><a href="#2-1-Secret-存放-token" class="headerlink" title="2.1. Secret 存放 token"></a>2.1. Secret 存放 token</h2><p>在 1.22 版本及之前版本中，token 以 Secret 的形式存在于 pod 所在的 namespace 下，且 token 不会过期。Secret 的名字存在于 ServiceAccount 的 spec 中，格式如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">secrets:</span><br><span class="line">- name: nginx-token-scjvn</span><br></pre></td></tr></table></figure>
+
+<p>而 Secret 通过 Annotation <code>kubernetes.io/service-account.name</code> 指定了关联的 ServiceAccount。</p>
+<p>在后续版本中，为了兼容当前方案，如果 ServiceAccount 关联了 Secret，则认为仍然使用 Secret 中存放 token 的方式。如果 Secret 已经很长时间没有使用，则自动回收 Secret。</p>
+<p>如果要手工创建一个 token Secret，可以创建如下的 Secret，k8s 自动会为 Secret 产生 token：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Secret</span><br><span class="line">metadata:</span><br><span class="line">  name: build-robot-secret</span><br><span class="line">  annotations:</span><br><span class="line">    # 带有 annotation</span><br><span class="line">    kubernetes.io/service-account.name: build-robot</span><br><span class="line">type: kubernetes.io/service-account-token</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-2-TokenRequest-API-产生-token"><a href="#2-2-TokenRequest-API-产生-token" class="headerlink" title="2.2. TokenRequest API 产生 token"></a>2.2. TokenRequest API 产生 token</h2><p>在 1.22 之后的版本中，kubelet 使用 TokenRequest API 获取有时间限制的临时 token，该 token</p>
+<p>会在 pod 删除或者 token 生命周期（默认为 1h）结束后失效。</p>
+<p>可以使用 <code>kubectl create token default</code> 来为 ServiceAccount default 创建 token，该命令实际上向 kube-apiserver 发送了请求 <code>/api/v1/namespaces/default/serviceaccounts/default/token</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;kind&quot;: &quot;TokenRequest&quot;,</span><br><span class="line">    &quot;apiVersion&quot;: &quot;authentication.k8s.io/v1&quot;,</span><br><span class="line">    &quot;metadata&quot;:</span><br><span class="line">    &#123;</span><br><span class="line">        &quot;creationTimestamp&quot;: null</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;spec&quot;:</span><br><span class="line">    &#123;</span><br><span class="line">        &quot;audiences&quot;: null,</span><br><span class="line">        &quot;expirationSeconds&quot;: null,</span><br><span class="line">        &quot;boundObjectRef&quot;: null</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;status&quot;:</span><br><span class="line">    &#123;</span><br><span class="line">        &quot;token&quot;: &quot;&quot;,</span><br><span class="line">        &quot;expirationTimestamp&quot;: null</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>kube-apiserver 支持如下参数：</p>
+<ol>
+<li>–service-account-key-file：用来验证服务账号的 token。</li>
+<li>–service-account-issuer：ServiceAccount token 的签发机构。</li>
+<li>–service-account-signing-key-file：ServiceAccount token 的签发私钥。</li>
+</ol>
+<h1 id="3-用户伪装"><a href="#3-用户伪装" class="headerlink" title="3. 用户伪装"></a>3. 用户伪装</h1><p>一个用户通过 Http Header Impersonation- 的方式来扮演另外一个用户的身份。</p>
+<p>场景：跨 k8s 集群访问的网关服务</p>
+<p>支持的 Http Header 如下：</p>
+<ol>
+<li>Impersonate-User：要伪装的用户名。</li>
+<li>Impersonate-Group：要伪装的组名。该 Header 可以为多个，即支持多个组。</li>
+</ol>
+<h1 id="4-bootstrap-token"><a href="#4-bootstrap-token" class="headerlink" title="4. bootstrap token"></a>4. bootstrap token</h1><p>使用 kube-apiserver 参数 <code>--enable-bootstrap-token-auth=true</code> 启用功能，引导 token 以 Secret 的形式存放在 kube-system 下。</p>
+<p>该功能仅用于节点初始化时加入到 k8s 集群中。</p>
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/zh-cn/docs/reference/access-authn-authz/authentication/">用户认证</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/k8s-apiserver-request-limit/" rel="prev" title="k8s apiserver 的限流">
+                  <i class="fa fa-angle-left"></i> k8s apiserver 的限流
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder"></span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>
