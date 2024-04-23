@@ -3,6 +3,8 @@ url: k8s-authenticate
 Status: public
 date: 2024-04-22
 title: k8s 中的用户认证方式
+tags:
+  - k8s
 ---
 
 在 k8s 中包含两类用户：
