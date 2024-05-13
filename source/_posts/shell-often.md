@@ -145,3 +145,20 @@ split [-bl] file [prefix]
 - `cloc .`： 用来统计当前的代码行数
 - `cloc . --exclude-dir vendor`：忽略目录 vendor，`--exclude-dir` 仅能支持一级目录
 - `cloc . --fullpath --not-match-d=pkg/apis/`：用来忽略目录 pkg/apis 下的文件
+
+# jq
+
+用来解析 json 格式
+
+key 中包含特殊字符，假设文件 data.json 格式如下：
+```json
+{
+  "data": {
+	  "a.json": "abc"
+  }
+}
+```
+可以使用 `cat data.json | jq '.data."a.json"'` 或者 `cat data.json | jq '.data["a.json"]'`  的方式来解析其中的内容。
+
+-r 参数：
+`echo '"{}"' | jq .` 输出结果为 `"{}"` 即对应的格式为字符串。`echo -r '"{}"' | jq -r .` 输出结果为 `{}`，已经解析为标准的 json 格式。
