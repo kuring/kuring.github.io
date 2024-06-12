@@ -144,6 +144,7 @@ OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 
 提问小爱同学：“请问一下太阳的重量是多少”，小爱同学可以顺利的回答出答案。
 
+通过 `docker logs mi-gpt -f` 可以看到如下的输出日志：
 ```
 2024/06/12 16:15:38 Speaker 🔥 请问一下太阳的重量是多少
 
