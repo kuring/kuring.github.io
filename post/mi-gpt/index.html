@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.18.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="无意间发现了开源项目 mi-gpt，该项目可以将家里的小爱音箱接入到 GPT 中，增强小爱音箱的功能。在跟小爱音箱对话的过程中，可以根据特定的提示词走 GPT 来回答，而不是用小爱音箱原生的傻傻的回复。 部署要求：  必须有一个小米音响。 必须要有可以长期运行的服务器，可以是树莓派等设备。 要有一个 GPT 的账号，可以不是 OpenAI 的 ChatGPT，也可以用兼容 ChatGPT API">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 mi-gpt 将小爱音箱接入大模型">
+<meta property="og:url" content="http://kuring.me/post/mi-gpt/index.html">
+<meta property="og:site_name" content="404频道">
+<meta property="og:description" content="无意间发现了开源项目 mi-gpt，该项目可以将家里的小爱音箱接入到 GPT 中，增强小爱音箱的功能。在跟小爱音箱对话的过程中，可以根据特定的提示词走 GPT 来回答，而不是用小爱音箱原生的傻傻的回复。 部署要求：  必须有一个小米音响。 必须要有可以长期运行的服务器，可以是树莓派等设备。 要有一个 GPT 的账号，可以不是 OpenAI 的 ChatGPT，也可以用兼容 ChatGPT API">
+<meta property="og:locale">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240612234942.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240612235825.png">
+<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240611230914.png">
+<meta property="article:published_time" content="2024-06-13T00:00:00.000Z">
+<meta property="article:modified_time" content="2024-06-12T16:32:04.620Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240612234942.png">
+
+
+<link rel="canonical" href="http://kuring.me/post/mi-gpt/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/mi-gpt/","path":"post/mi-gpt/","title":"使用 mi-gpt 将小爱音箱接入大模型"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>使用 mi-gpt 将小爱音箱接入大模型 | 404频道</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">404频道</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">学习笔记</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E9%83%A8%E7%BD%B2"><span class="nav-number">1.</span> <span class="nav-text">部署部署</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6-migpt-js%EF%BC%9A"><span class="nav-number">1.1.</span> <span class="nav-text">创建配置文件 .migpt.js：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%96%87%E4%BB%B6-env"><span class="nav-number">1.2.</span> <span class="nav-text">创建文件 .env</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E6%9C%8D%E5%8A%A1"><span class="nav-number">1.3.</span> <span class="nav-text">启动服务</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD%E6%BC%94%E7%A4%BA"><span class="nav-number">2.</span> <span class="nav-text">功能演示</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">242</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">35</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/mi-gpt/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="使用 mi-gpt 将小爱音箱接入大模型 | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用 mi-gpt 将小爱音箱接入大模型
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2024-06-13 00:00:00" itemprop="dateCreated datePublished" datetime="2024-06-13T00:00:00+00:00">2024-06-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>无意间发现了开源项目 <a target="_blank" rel="noopener" href="https://github.com/idootop/mi-gpt">mi-gpt</a>，该项目可以将家里的小爱音箱接入到 GPT 中，增强小爱音箱的功能。在跟小爱音箱对话的过程中，可以根据特定的提示词走 GPT 来回答，而不是用小爱音箱原生的傻傻的回复。</p>
+<p>部署要求：</p>
+<ol>
+<li>必须有一个小米音响。</li>
+<li>必须要有可以长期运行的服务器，可以是树莓派等设备。</li>
+<li>要有一个 GPT 的账号，可以不是 OpenAI 的 ChatGPT，也可以用兼容 ChatGPT API 的国内大模型。</li>
+</ol>
+<h1 id="部署部署"><a href="#部署部署" class="headerlink" title="部署部署"></a>部署部署</h1><p>部署比较简单，下面为我的部署过程，供大家参考。更详细的信息大家可以直接参考 github 项目中的<a target="_blank" rel="noopener" href="https://github.com/idootop/mi-gpt/tree/main/docs">相关文档</a>。</p>
+<h2 id="创建配置文件-migpt-js："><a href="#创建配置文件-migpt-js：" class="headerlink" title="创建配置文件 .migpt.js："></a>创建配置文件 <code>.migpt.js</code>：</h2><p>参考项目中的文件 <a target="_blank" rel="noopener" href="https://github.com/idootop/mi-gpt/blob/main/.migpt.example.js">.migpt.example.js</a>内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line">// 小爱音箱扮演角色的简介</span><br><span class="line">const botProfile = `</span><br><span class="line">性别：女</span><br><span class="line">性格：乖巧可爱</span><br><span class="line">爱好：喜欢搞怪，爱吃醋。</span><br><span class="line">`;</span><br><span class="line"></span><br><span class="line">// 小爱音箱主人（你）的简介</span><br><span class="line">const masterProfile = `</span><br><span class="line">性别：男</span><br><span class="line">性格：善良正直</span><br><span class="line">其他：总是舍己为人，是傻妞的主人。</span><br><span class="line">`;</span><br><span class="line"></span><br><span class="line">export default &#123;</span><br><span class="line">  bot: &#123;</span><br><span class="line">    name: &quot;傻妞&quot;,</span><br><span class="line">    profile: botProfile,</span><br><span class="line">  &#125;,</span><br><span class="line">  master: &#123;</span><br><span class="line">    name: &quot;陆小千&quot;,</span><br><span class="line">    profile: masterProfile,</span><br><span class="line">  &#125;,</span><br><span class="line">  speaker: &#123;</span><br><span class="line">    // 小米 ID</span><br><span class="line">    userId: &quot;12345&quot;, // 注意：不是手机号或邮箱，请在「个人信息」-「小米 ID」查看</span><br><span class="line">    // 账号密码</span><br><span class="line">    password: &quot;xxx&quot;,</span><br><span class="line">    // 小爱音箱 ID 或在米家中设置的名称</span><br><span class="line">    did: &quot;Redmi小爱触屏音箱8&quot;,</span><br><span class="line">    // 当消息以下面的关键词开头时，会调用 AI 来回复消息</span><br><span class="line">    callAIKeywords: [&quot;请&quot;, &quot;你&quot;, &quot;傻妞&quot;],</span><br><span class="line">    // 当消息以下面的关键词开头时，会进入 AI 唤醒状态</span><br><span class="line">    wakeUpKeywords: [&quot;打开&quot;, &quot;进入&quot;, &quot;召唤&quot;],</span><br><span class="line">    // 当消息以下面的关键词开头时，会退出 AI 唤醒状态</span><br><span class="line">    exitKeywords: [&quot;关闭&quot;, &quot;退出&quot;, &quot;再见&quot;],</span><br><span class="line">    </span><br><span class="line">    // 进入 AI 模式的欢迎语</span><br><span class="line">    onEnterAI: [&quot;你好，我是傻妞，很高兴认识你&quot;],</span><br><span class="line">    </span><br><span class="line">    // 退出 AI 模式的提示语</span><br><span class="line">    onExitAI: [&quot;傻妞已退出&quot;],</span><br><span class="line">    </span><br><span class="line">    // AI 开始回答时的提示语</span><br><span class="line">    onAIAsking: [&quot;让我先想想&quot;, &quot;请稍等&quot;],</span><br><span class="line">    </span><br><span class="line">    // AI 结束回答时的提示语</span><br><span class="line">    onAIReplied: [&quot;我说完了&quot;, &quot;还有其他问题吗&quot;],</span><br><span class="line">    </span><br><span class="line">    // AI 回答异常时的提示语</span><br><span class="line">    onAIError: [&quot;啊哦，出错了，请稍后再试吧！&quot;],</span><br><span class="line">    </span><br><span class="line">    // 无响应一段时间后，多久自动退出唤醒模式（默认 30 秒）</span><br><span class="line">    exitKeepAliveAfter: 30,</span><br><span class="line">    </span><br><span class="line">    // TTS 指令，请到 https://home.miot-spec.com 查询具体指令</span><br><span class="line">    ttsCommand: [3, 1],</span><br><span class="line">    </span><br><span class="line">    // 设备唤醒指令，请到 https://home.miot-spec.com 查询具体指令</span><br><span class="line">    wakeUpCommand: [3, 2],</span><br><span class="line">    </span><br><span class="line">    // 是否启用流式响应，部分小爱音箱型号不支持查询播放状态，此时需要关闭流式响应</span><br><span class="line">    streamResponse: false,</span><br><span class="line">    </span><br><span class="line">    // 查询是否在播放中指令，请到 https://home.miot-spec.com 查询具体指令</span><br><span class="line">    playingCommand: [2, 1, 1], // 默认无需配置此参数，播放出现问题时再尝试开启</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>必须要修改的内容涉及到如下字段，其他字段可以根据含义来定义：</p>
+<ol>
+<li>speaker.userId：小米的用户 ID。</li>
+<li>speaker.password：小米的账号密码。</li>
+<li>speaker.did：小爱音箱的 ID 或者小爱音箱在米家的设备名字。</li>
+<li>ttsCommand：需要设置。如果设置不正常，会导致小爱音箱无法播放 GPT 回复内容的情况。</li>
+<li>wakeUpCommand：需要设置。</li>
+<li>streamResponse：在某些音箱设备上需要关闭。我的设备因为无法读完完整的句子，选择了关闭该功能，相关参考：<a target="_blank" rel="noopener" href="https://github.com/idootop/mi-gpt/blob/main/docs/faq.md#q%E5%B0%8F%E7%88%B1%E9%9F%B3%E7%AE%B1%E6%B2%A1%E6%9C%89%E8%AF%BB%E5%AE%8C%E6%95%B4%E4%B8%AA%E5%8F%A5%E5%AD%90%E6%80%BB%E6%98%AF%E6%88%9B%E7%84%B6%E8%80%8C%E6%AD%A2">小爱音箱没有读完整个句子，总是戛然而止</a>。</li>
+</ol>
+<p>ttsCommand 和 wakeUpCommand 需要在 <a target="_blank" rel="noopener" href="https://home.miot-spec.com/">https://home.miot-spec.com</a> 页面搜索对应的音箱型号<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240612234942.png" alt="image.png"></p>
+<p>点击规格后任选一个，选择 <code>Intelligent Speaker</code>，其中的 <code>[3, 1]</code> 对应的为 ttsCommand，<code>[3, 2]</code> 对应的为 wakeUpCommand。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240612235825.png" alt="image.png"></p>
+<h2 id="创建文件-env"><a href="#创建文件-env" class="headerlink" title="创建文件 .env"></a>创建文件 <code>.env</code></h2><p>该文件中需要配置 OPENAI 的账号信息，我这里直接采用了阿里云的通义千问大模型服务，<a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/dashscope/developer-reference/compatibility-of-openai-with-dashscope/">API 是完全兼容的</a>。</p>
+<p>参考文档《<a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/dashscope/developer-reference/activate-dashscope-and-create-an-api-key">开通DashScope并创建API-KEY</a>》 阿里云上开通大模型服务，获取到 API-KEY<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240611230914.png" alt="image.png"></p>
+<p>参考项目中的文件<a target="_blank" rel="noopener" href="https://github.com/idootop/mi-gpt/blob/main/.env.example">.env.example</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"># OpenAI（也支持通义千问、MoonShot、DeepSeek 等模型）</span><br><span class="line">OPENAI_MODEL=qwen-turbo</span><br><span class="line">OPENAI_API_KEY=获取到的API_KEY</span><br><span class="line">OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1</span><br><span class="line"></span><br><span class="line"># Azure OpenAI Service（可选）</span><br><span class="line"># OPENAI_API_VERSION=2024-04-01-preview</span><br><span class="line"># AZURE_OPENAI_API_KEY=你的密钥</span><br><span class="line"># AZURE_OPENAI_ENDPOINT=https://你的资源名.openai.azure.com</span><br><span class="line"># AZURE_OPENAI_DEPLOYMENT=你的模型部署名，比如：gpt-35-turbo-instruct</span><br><span class="line"></span><br><span class="line"># 提示音效（可选，一般不用填，你也可以换上自己的提示音链接试试看效果）</span><br><span class="line"># AUDIO_SILENT=静音音频链接，示例：https://example.com/slient.wav</span><br><span class="line"># AUDIO_BEEP=默认提示音链接，同上</span><br><span class="line"># AUDIO_ACTIVE=唤醒提示音链接，同上</span><br><span class="line"># AUDIO_ERROR=出错了提示音链接，同上</span><br><span class="line"></span><br><span class="line"># Doubao TTS（可选，用于调用第三方 TTS 服务，比如：豆包）</span><br><span class="line"># TTS_DOUBAO=豆包 TTS 接口</span><br><span class="line"># SPEAKERS_DOUBAO=豆包 TTS 音色列表接口</span><br></pre></td></tr></table></figure>
+<p>主要修改如下两个值：</p>
+<ol>
+<li>OPENAI_API_KEY：即为上文获取到阿里云<a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/dashscope/">模型服务灵积</a>的 API-KEY。</li>
+<li>OPENAI_MODEL：支持的模型，可以在《<a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/dashscope/developer-reference/compatibility-of-openai-with-dashscope/#7f9c78ae99pwz">支持的模型列表</a>》中查询模型列表。</li>
+</ol>
+<h2 id="启动服务"><a href="#启动服务" class="headerlink" title="启动服务"></a>启动服务</h2><p>提供了两种方式：docker 和 宿主机 Node.js 方式运行，我自然会选择更加简洁的 docker 方式。</p>
+<p>执行 <code>docker run -d --name mi-gpt --env-file $(pwd)/.env -v $(pwd)/.migpt.js:/app/.migpt.js idootop/mi-gpt:latest</code> 即可本地运行。</p>
+<h1 id="功能演示"><a href="#功能演示" class="headerlink" title="功能演示"></a>功能演示</h1><p>提问小爱同学：“请问一下太阳的重量是多少”，小爱同学可以顺利的回答出答案。</p>
+<p>通过 <code>docker logs mi-gpt -f</code> 可以看到如下的输出日志：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">2024/06/12 16:15:38 Speaker 🔥 请问一下太阳的重量是多少</span><br><span class="line"></span><br><span class="line">2024/06/12 16:15:38 Speaker 🔊 让我先想想</span><br><span class="line"></span><br><span class="line">2024/06/12 16:15:41 Open AI ✅ Answer: 傻妞: 哦，太阳的重量可大了，它是个恒星，比我们的地球重得多。科学家们用的是质量而不是重量来衡量，太阳的质量大约是地球的333,000倍，真是个超级大块头，想想如果它能变成棉花糖，那得多软多亮啊！不过，太阳对我们来说太遥远了，它的重量咱们还是别去抱了，哈哈。</span><br><span class="line"></span><br><span class="line">2024/06/12 16:15:41 Speaker 🔊 傻妞: 哦，太阳的重量可大了，它是个恒星，比我们的地球重得多。科学家们用的是质量而不是重量来衡量，太阳的质量大约是地球的333,000倍，真是个超级大块头，想想如果它能变成棉花糖，那得多软多亮啊！不过，太阳对我们来说太遥远了，它的重量咱们还是别去抱了，哈哈</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/post/k8s/k8s-authenticate/" rel="prev" title="k8s 中的用户认证方式">
+                  <i class="fa fa-angle-left"></i> k8s 中的用户认证方式
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    
+  
+  <div class="comments giscus-container">
+  </div>
+  
+  
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder"></span>
+  </div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
+
+<script>
+document.addEventListener('page:loaded', () => {
+  if (!CONFIG.page.comments) return;
+
+  NexT.utils.loadComments('.giscus-container')
+    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
+      attributes: {
+        async                   : true,
+        crossOrigin             : 'anonymous',
+        'data-repo'             : CONFIG.giscus.repo,
+        'data-repo-id'          : CONFIG.giscus.repo_id,
+        'data-category'         : CONFIG.giscus.category,
+        'data-category-id'      : CONFIG.giscus.category_id,
+        'data-mapping'          : CONFIG.giscus.mapping,
+        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
+        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
+        'data-theme'            : CONFIG.giscus.theme,
+        'data-lang'             : CONFIG.giscus.lang,
+        'data-input-position'   : CONFIG.giscus.input_position,
+        'data-loading'          : CONFIG.giscus.loading
+      },
+      parentNode: document.querySelector('.giscus-container')
+    }));
+});
+</script>
+
+</body>
+</html>

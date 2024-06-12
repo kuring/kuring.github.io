@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">241</span>
+          <span class="site-state-item-count">242</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,111 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/aws_net/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/aws_net/" class="post-title-link" itemprop="url">利用aws科学上网</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2016-02-17 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-17T00:00:00+00:00">2016-02-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>曾经使用过多种科学上网方式，​最近尝试了使用aws的免费试用一年的功能搭建shadowsocks，访问google的速度非常不错，比很多收费的服务要好用，amazon真是良心企业！</p>
+<p>本文用于记录在aws上搭建服务的步骤及其中的一些注意事项，步骤不会太详细，aws上关于主机的功能需要读者自己在试验的过程中去自己探索。</p>
+<h1 id="注册aws账号"><a href="#注册aws账号" class="headerlink" title="注册aws账号"></a>注册aws账号</h1><p>为了能够搭建搭建aws服务，拥有一个amazon账号是必须的，在<a target="_blank" rel="noopener" href="https://aws.amazon.com/cn/free/">aws免费套餐</a>的页面点击『创建免费账号』按钮即可按照步骤创建aws账号。</p>
+<p>值得一提的是，注册aws的账号需要一张信用卡。</p>
+<h1 id="开启EC2主机实例"><a href="#开启EC2主机实例" class="headerlink" title="开启EC2主机实例"></a>开启EC2主机实例</h1><p>该步骤的目的是开启aws上的主机实例。​</p>
+<p>进入aws的控制面板，在左上角的服务中选择EC2，aws提供了多种类型的主机，这里选择EC2即可。</p>
+<p>在EC2控制面板界面中需要选择右上角的区域，这个用于选择EC2主机所在的机房，不同机房之间主机是不可以共享的。我这里选择了『美国西部（俄勒冈）』，感觉速度还不错，没有试验过亚洲地区的，新加坡的速度是不是会更好些。后续经过验证，首尔的服务器确实速度更快一些。<br>​<br>下面即可创建EC2的实例了，点击界面上的『启动实例』按钮即可按照步骤创建EC2实例了，创建实例的时候一定要选择免费的EC2主机，否则就会悲剧了。我选择了ubuntu14.04的主机，redhat7.2的主机yum源不太全，没有选择使用。</p>
+<p>最终会得到ssh登录用的pem文件，用于ssh远程登录主机。并在界面上启动刚刚创建的实例。</p>
+<h1 id="按照shadowsocks"><a href="#按照shadowsocks" class="headerlink" title="按照shadowsocks"></a>按照shadowsocks</h1><p>接下来就是在EC2实例上安装sock5代理工具了。</p>
+<p>登录刚刚启动的EC2，需要pem文件。可以通过<code>ssh -i &quot;key.pem&quot; ubuntu@ec2-52-26-2-14.us-west-2.compute.amazonaws.com</code>命令来登录到远程主机，其他工具请自行google。</p>
+<p>使用命令<code>pip install shadowsocks</code>来安装shadowssocks，pip命令的安装自行解决。</p>
+<p>在ubuntu的home目录下执行<code>mkdir shadowsocks</code>创建保存配置文件的文件夹，并创建配置文件config.json，内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;server&quot;:&quot;0.0.0.0&quot;,</span><br><span class="line">    &quot;server_port&quot;:10001,</span><br><span class="line">    &quot;local_port&quot;:1080,</span><br><span class="line">    &quot;password&quot;:&quot;xxx&quot;,</span><br><span class="line">    &quot;timeout&quot;:600,</span><br><span class="line">    &quot;method&quot;:&quot;bf-cfb&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>需要说明的是最好配置一下server_port选项，更改shadowsocks的默认端口号。method选项用于控制加密方式，我这里更改为了bf-cfb。</p>
+<p>执行<code>nohup ssserver -c config.json &amp;</code>命令即可启动shadowsocks服务。</p>
+<p>由于对外增加了10001端口号，aws的默认安全策略为仅对外提供22端口，需要在EC2主机的安全策略中增加外放访问tcp端口10001的权限。</p>
+<h1 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h1><p>为了安装方便，我简单写了个脚本如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">yum -y install epel-release</span><br><span class="line">#yum update -y</span><br><span class="line">yum install python2-pip -y</span><br><span class="line">pip install shadowsocks</span><br><span class="line">mkdir ~/shadowsocks</span><br><span class="line">echo &#x27;&#123;</span><br><span class="line">    &quot;server&quot;:&quot;0.0.0.0&quot;,</span><br><span class="line">    &quot;server_port&quot;:10001,</span><br><span class="line">    &quot;local_port&quot;:1080,</span><br><span class="line">    &quot;password&quot;:&quot;xxx&quot;,</span><br><span class="line">    &quot;timeout&quot;:600,</span><br><span class="line">    &quot;method&quot;:&quot;aes-256-cfb&quot;</span><br><span class="line">&#125;&#x27; &gt; ~/shadowsocks/config.json</span><br><span class="line">systemctl disable firewalld.service</span><br><span class="line">systemctl stop firewalld.service</span><br><span class="line">nohup ssserver -c ~/shadowsocks/config.json &amp;</span><br></pre></td></tr></table></figure>
+
+<p>在某些云主机的CentOS7系统发现无法使用<code>yum install python2-pip</code>进行安装，原因是有些源被禁用了，可以使用<code>yum repolist disabled</code>来查看被禁用的源，其中会包含epel源。可以使用<code>yum install python2-pip -y --enablerepo=epel</code>的方式来安装。</p>
+<h1 id="安装shadowsocks客户端"><a href="#安装shadowsocks客户端" class="headerlink" title="安装shadowsocks客户端"></a>安装shadowsocks客户端</h1><p>这里是支持的<a target="_blank" rel="noopener" href="https://shadowsocks.com/client.html">客户端列表</a>，​我这里仅使用的mac客户端ShadowsocksX，支持Auto Proxy Mode和Global Mode两种方式，其中Auto方式会自动下载使用sock5代理的列表，非常方便。</p>
+<h1 id="kcptun"><a href="#kcptun" class="headerlink" title="kcptun"></a>kcptun</h1><p>为了加快访问速度，推荐使用kcp + shadowsocks</p>
+<p>kcp的服务端配置如下，即启用20001端口，该端口会将流量导入到127.0.0.1:10001端口，即本机的shadowsocks端口</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd ~ &amp;&amp; mkdir kcptun &amp;&amp; cd kcptun</span><br><span class="line">wget https://github.com/xtaci/kcptun/releases/download/v20190109/kcptun-linux-amd64-20190109.tar.gz</span><br><span class="line">tar zvxf kcptun-linux-amd64-20190109.tar.gz</span><br><span class="line">nohup ./server_linux_amd64 -l :20001 -t 127.0.0.1:10001 -key xxx -mode fast2 --log ~/kcptun/20001.log &amp;</span><br></pre></td></tr></table></figure>
+
+<p>配置了kcptun的shadowsocks客户端仅需要配置代理为远程的kcpdun端口即可，不再需要指定shadowsocks的端口，相当于shadowsocks是透明的。</p>
+<h1 id="监控"><a href="#监控" class="headerlink" title="监控"></a>监控</h1><p>为了避免aws产生额外的费用，一定要设置一下费用报警，否则被扣费了就麻烦了。</p>
+<p>另外，可定期查看下aws的费用。试用期为一年，一年后一定要记得停掉aws服务。</p>
+<p>最后，祝你玩的愉快！</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +324,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-05-13 01:42:32" itemprop="dateModified" datetime="2024-05-13T01:42:32+00:00">2024-05-13</time>
+      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
     </span>
 
   
@@ -341,7 +446,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-05-13 01:42:32" itemprop="dateModified" datetime="2024-05-13T01:42:32+00:00">2024-05-13</time>
+      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
     </span>
 
   
@@ -445,7 +550,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-05-13 01:42:32" itemprop="dateModified" datetime="2024-05-13T01:42:32+00:00">2024-05-13</time>
+      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
     </span>
 
   
@@ -536,7 +641,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-05-13 01:42:32" itemprop="dateModified" datetime="2024-05-13T01:42:32+00:00">2024-05-13</time>
+      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
     </span>
 
   
@@ -625,7 +730,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-05-13 01:42:32" itemprop="dateModified" datetime="2024-05-13T01:42:32+00:00">2024-05-13</time>
+      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
     </span>
 
   
@@ -714,7 +819,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-05-13 01:42:32" itemprop="dateModified" datetime="2024-05-13T01:42:32+00:00">2024-05-13</time>
+      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
     </span>
 
   
@@ -823,7 +928,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-05-13 01:42:32" itemprop="dateModified" datetime="2024-05-13T01:42:32+00:00">2024-05-13</time>
+      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
     </span>
 
   
@@ -916,7 +1021,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-05-13 01:42:32" itemprop="dateModified" datetime="2024-05-13T01:42:32+00:00">2024-05-13</time>
+      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
     </span>
 
   
@@ -1018,7 +1123,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-05-13 01:42:32" itemprop="dateModified" datetime="2024-05-13T01:42:32+00:00">2024-05-13</time>
+      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
     </span>
 
   
@@ -1126,94 +1231,6 @@
 <h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><ol>
 <li><a target="_blank" rel="noopener" href="http://www.cnblogs.com/hnrainll/archive/2013/01/06/2847069.html">运用Autoconf和Automake生成Makefile的学习之路</a></li>
 </ol>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/company_question/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/company_question/" class="post-title-link" itemprop="url">公司问题及经验总结</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-06-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-06-01T00:00:00+00:00">2015-06-01</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-05-13 01:42:32" itemprop="dateModified" datetime="2024-05-13T01:42:32+00:00">2024-05-13</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>我在软件行业工作已经有五个年头了，在现在这家公司已经有两个年头了。虽然身为公司的研发部经理可以参与公司的一些决定，但是没有绝对的话语权，对于公司的很多决定我深知是错误的，虽然后来也证明是错误的，但是我仍然无能为力。这里总结一下在公司中遇到的问题。</p>
-<p>宁可招聘一个技术水平高的也不愿招聘三个技术水平低的。在工作中能够非常有力的证明这一点，三个刚工作的技术人员，尤其对于C++这样门槛稍微高一些，需要工作经验来弥补C++中坑的语言，三个C++技术人员远没有一个高水平的工作效率高，因为三个菜鸟需要将大牛踩过的坑全部踩一遍，踩过多少坑就代表走了多少弯路。</p>
-<p>兴趣是最大的老师。我带过不少人，很多都是新人，我给他们制定了学习计划，期望他们能够在业余时间多学习，但实际上哪有几个人能够充分利用业余时间的。我就非常怀疑他们对技术的兴趣问题，如果他们对技术不感兴趣那为什么要加入该行业，为没有兴趣的工作而工作就是自己对自己耍流氓。如果他们对技术感兴趣，那只能说明他们业余时间中有更大的诱惑。</p>
-<p>在招聘中不要过于在意金钱，便宜无好货在招聘行业中仍然非常适用。在招聘中千万不要吝惜给员工的那点钱，因为一千块钱而错失一个好的员工是非常不值得的。</p>
-<p>盈利模式决定了公司对产品的态度。我所在的软件行业属于传统的软件行业，传统软件行业的盈利模式为销售，由于软件具有可复制性的特点，因此只要一套产品卖的越多就赚的越多。对于传统软件行业的产品使用者很多情况下就是几个人，至少跟互联网产品的用户数量不在一个量级。使用的人数决定了传统软件行业的用户体验可以做的很烂，技术水平可以不用那么高，只要能用就行，慢点无所谓，只要能卖出去就行了。身为一个技术人员，一个对技术有追求的技术人员，这令我非常反感，我做技术我不能对技术无所谓，我讨厌听到无所谓这样的字眼。</p>
-<p>一定要明确公司的定位，明白什么时候应该干什么，什么应该干，野心太大也是问题。公司处于成长阶段提出了今年营业额比去年增长10倍的目标，我听到之后就是嗤之以鼻，这压根就是不可能的任务，而事实证明这也根本不可能完成，实际上当年营业额仅比去年增长了一倍。</p>
-<p>一家公司一定要有自己的明确产品线，要抵住外界的诱惑。公司的产品线本来是非常明确的，后来由于客户需求和各种方面的原因，开始考虑疯狂扩展产品，这就造成了本来人手就紧蹙的情况下，没有时间去改善现有的系统，不得不去研发新的产品。自己没有的产品甚至跟客户合作或者完全购买别人的产品，导致公司很多人都在考虑跟其他公司合作的事宜。结果可想而知，新产品的销售并不理想，旧有的产品升级维护的也开始变慢。ps：我是非常讨厌在技术上跟其他公司之间考虑合作的问题，因为这从本质上讲并没有产生任何的社会价值，技术上必然涉及到接口的问题，只要是接口必然会有很多细节问题，这些往往会出现技术人员扯皮的问题，一个问题你可以解决他也可以解决，但是谁都不愿意解决，你说烦不烦。</p>
-<p>技术人员后来要么转行要么做管理了。在济南技术人员就这两种出路吧，没见过多少大龄的程序员，很多情况下写着写着程序突然发现自己转为公司的中层了，比如我，并逐渐参与公司的事务。很多对程序不感兴趣的，可能就直接换个行业或者转行做销售了。</p>
-<p>有些人再怎么培养也成不了高手。在工作我发现，有些人即使有了几年的工作经验，对公司的产品也非常了解，但是在解决问题的时候总是找不到点子上，占了一大堆资源，最后解决起问题来即慢又绕弯路，还留下一堆bug。对于这部分人，我想说也许这个行业不适合你。</p>
-<p>领导千万不可三天两头一个想法，这在员工看来就是一个不靠谱的领导。谁都不愿意追随一个拿着自己当猴耍的领导，一会一个想法只能说明领导不够成熟，不适合做领导。跟随杰出的人，为杰出的人工作。</p>
-<p>搞公司最好不要搞施工太久的。公司很多做工程的都在为现场的情况忙碌，一个点架设完毕后往往还需要耗费大量的时间来维护，维护对于公司而言牵涉到精力太大，尽量避免需要整天跟客户打交道和整天维护的业务。</p>
-<p>专科生是很难撑起一家科技企业。虽然我不完全认同学历就能决定能力，但学历跟能力之间是成正比关系的。我的朋友中有专科生在工作几年后可以做专业的视频教程，并且业余时间写过几部玄幻小说。由于学习经历的不同这就造就了科班出身的程度不同，自然能力之间是有差异的。虽然中国的大学教育跟工作很脱节，但是在工作中还是能够跟大学教育挂起钩来的。学历跟素质之间也是成正比关系的，这里的素质体现在工作中就包括了工作中的责任心，工作态度等方面，这里就不展开了，要展开的话我可以举出非常多活生生的例子。因此，我非常不提倡在公司招聘中招聘专科生。我发现在很多情况下，很多专科人员是连普通话都不会的，操着各种方言或各种被普通话的方言。基本上能不能说普通话也是一个断定人素质的标准，扩展到其他行业同样适用。</p>
-<p>也许本文的观点有些偏激，没错我就是一个偏激的IT工程师，就酱。</p>
 
       
     </div>
