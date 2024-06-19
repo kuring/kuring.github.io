@@ -2,13 +2,13 @@
 title: 使用 mi-gpt 将小爱音箱接入大模型
 date: 2024-06-13
 ---
-无意间发现了开源项目 [mi-gpt](https://github.com/idootop/mi-gpt)，该项目可以将家里的小爱音箱接入到 GPT 中，增强小爱音箱的功能。在跟小爱音箱对话的过程中，可以根据特定的提示词走 GPT 来回答，而不是用小爱音箱原生的傻傻的回复。
+无意间发现了开源项目 [mi-gpt](https://github.com/idootop/mi-gpt)，该项目可以将家里的小爱音箱接入到 GPT 中，增强小爱音箱的功能。在跟小爱音箱对话的过程中，可以根据特定的提示词走 GPT 来回答，而不是用小爱音箱原生的回复。
 
-部署要求：
-1. 必须有一个小米音响。
+必备条件：
+1. 必须有一个小米音箱。
 2. 必须要有可以长期运行的服务器，可以是树莓派等设备。
-3. 要有一个 GPT 的账号，可以不是 OpenAI 的 ChatGPT，也可以用兼容 ChatGPT API 的国内大模型。
-# 部署部署
+3. 要有一个 OpenAI 的账号，也可以用兼容 ChatGPT API 的国内大模型。
+# 部署
 
 部署比较简单，下面为我的部署过程，供大家参考。更详细的信息大家可以直接参考 github 项目中的[相关文档](https://github.com/idootop/mi-gpt/tree/main/docs)。
 ## 创建配置文件 `.migpt.js`：
@@ -99,7 +99,7 @@ ttsCommand 和 wakeUpCommand 需要在 https://home.miot-spec.com 页面搜索�
 点击规格后任选一个，选择 `Intelligent Speaker`，其中的 `[3, 1]` 对应的为 ttsCommand，`[3, 2]` 对应的为 wakeUpCommand。
 ![image.png](https://kuring.oss-cn-beijing.aliyuncs.com/images/20240612235825.png)
 
-## 创建文件 `.env`
+## 创建配置文件 `.env`
 
 该文件中需要配置 OPENAI 的账号信息，我这里直接采用了阿里云的通义千问大模型服务，[API 是完全兼容的](https://help.aliyun.com/zh/dashscope/developer-reference/compatibility-of-openai-with-dashscope/)。
 
@@ -138,7 +138,7 @@ OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 
 提供了两种方式：docker 和 宿主机 Node.js 方式运行，我自然会选择更加简洁的 docker 方式。
 
-执行 `docker run -d --name mi-gpt --env-file $(pwd)/.env -v $(pwd)/.migpt.js:/app/.migpt.js idootop/mi-gpt:latest` 即可本地运行。
+执行 `docker run -d --name mi-gpt --env-file $(pwd)/.env -v $(pwd)/.migpt.js:/app/.migpt.js idootop/mi-gpt:3.1.0` 即可本地运行。
 
 # 功能演示
 
