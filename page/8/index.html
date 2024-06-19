@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">242</span>
+          <span class="site-state-item-count">243</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,100 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/update-cr-status/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/update-cr-status/" class="post-title-link" itemprop="url">手动更新Custom Resource中的status部分</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2020-06-21 21:27:09" itemprop="dateCreated datePublished" datetime="2020-06-21T21:27:09+00:00">2020-06-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>在k8s中的内置资源很多都有status部分，比如deployment，用来标识当前资源的状态信息。同样在CRD的体系中，也都有status部分。这些status部分信息，是由operator来负责维护的。</p>
+<p>如果直接采用kubectl edit的方式来修改status部分信息，会发现是无法直接修改status部分的，因为status是无法修改成功的，因为status部分是CR的一个子资源。</p>
+<p>可以通过如下的方式来完成修改</p>
+<ol>
+<li>首先要准备一个完整的yaml文件，包含了status部分信息</li>
+</ol>
+<p>这个的格式必须为json</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;apiVersion&quot;: &quot;kuring.me/v1alpha1&quot;,</span><br><span class="line">  &quot;kind&quot;: &quot;Certificate&quot;,</span><br><span class="line">  &quot;metadata&quot;: &#123;</span><br><span class="line">    &quot;name&quot;: &quot;test&quot;,</span><br><span class="line">    &quot;namespace&quot;: &quot;default&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;spec&quot;: &#123;</span><br><span class="line">    &quot;secretName&quot;: &quot;test&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;status&quot;: &#123;</span><br><span class="line">    &quot;phase&quot;: &quot;pending&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>获取系统的TOKEN信息</li>
+</ol>
+<p>通常在kube-system下会有admin的ServiceAccount，会有一个对应的Secret来存放该ServiceAccount的token信息。执行<code>kubectl get secret -n kube-system admin-token-r2bvt   -o yaml</code>获取到token信息，并其中的token部分进行base64解码。</p>
+<ol start="3">
+<li>执行如下的脚本</li>
+</ol>
+<p>需要将其中的变量信息修改一下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"></span><br><span class="line">obj_file=$1</span><br><span class="line">kind=certificates</span><br><span class="line">APISERVER=https://10.0.0.100:6443</span><br><span class="line">namespace=default</span><br><span class="line">TOKEN=eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi10b2tlbi1yMmJ2dCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJhZG1pbiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImRiY2IyNzUzLWE5OGMtMTFlYS04NGVjLTAwMTYzZTAwOGU3MCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlLXN5c3RlbTphZG1pbiJ9.tX3jyNh-GEuZQg-hmy7igqh9vpTAz8Jh9uEv-diZ5XWjX9JYhxwD9nxTQvCcvzY7iPIbvxQfW2GHDZISPoopX0vQy9mQ7npVitrOvFovk06plefI5Gxjdft6vdpt-ArsGTpm7-s9G-3aBg5x41h3Cdgyv-W-ypFlCr9dKu9K7BcRIXSq_GQlq5TBmd-LKFXoer4QGwkn7geq5-ziMk_lY21jIGVdIkq9IRiH8NWuCl7l8i6nQESQDUUpMyKDCqkJqUFV8UkrQL7TfqurFP36_TUAQTh2ZAE8nFnrKRoa09BnjT-FoPO6Jnq6COQjk3PGDHV8LKNDAjCCrs0A53IYGw</span><br><span class="line">obj=nginx-test</span><br><span class="line"></span><br><span class="line">echo &quot;begin to patch $obj the file &quot;$&#123;obj_file&#125;</span><br><span class="line">curl -XPATCH -H &quot;Accept: application/json&quot; -H  &quot;Content-Type: application/merge-patch+json&quot; --header &quot;Authorization: Bearer $TOKEN&quot; --insecure -d  @$&#123;obj_file&#125; $APISERVER/apis/kuring.me/v1alpha1/namespaces/$&#123;namespace&#125;/$&#123;kind&#125;/$obj/status</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +313,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -300,7 +394,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -384,7 +478,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -510,7 +604,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -651,7 +745,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -813,7 +907,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -910,7 +1004,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -1011,7 +1105,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -1121,7 +1215,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -1137,111 +1231,6 @@
           <p>网卡的混杂模式是指网卡将其接收的所有流量都交给cpu。非混杂模式下，网卡仅接收目的mac地址是自己mac地址的单播，以及多播和广播包，可以看出混杂模式是工作在二层的。</p>
 <p>通过ifconfig eth0的方式，如果输出中包含了PROMISC字段，说明网卡处于混杂模式。但是如果ifconfig 命令的输出中未包含PROMISC字段，并不能说明网卡处于非混杂模式下。</p>
 <p>可以通过查看 cat &#x2F;sys&#x2F;class&#x2F;net&#x2F;bond0&#x2F;flags 的输出得知，如果置位了0x100，说明处于混杂模式。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/veth-pair/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/veth-pair/" class="post-title-link" itemprop="url">Linux中的veth pair设备</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2020-01-29 21:21:06" itemprop="dateCreated datePublished" datetime="2020-01-29T21:21:06+00:00">2020-01-29</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>veth pair是一对虚拟的网络设备，两个网络设备彼此连接。常用于两个network namespace之间的连接，如果在同一个命名空间下有很多的限制。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">┌──────────────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                                                                              │</span><br><span class="line">│                                                                              │</span><br><span class="line">│                               network protocol                               │</span><br><span class="line">│                                                                              │</span><br><span class="line">│                                                                              │</span><br><span class="line">└────────────────────▲─────────────────────────▲──────────────────────▲────────┘</span><br><span class="line">                     │                         │                      │</span><br><span class="line">                     │                         │                      │</span><br><span class="line">                     │                         │                      │</span><br><span class="line">                     │                         │                      │</span><br><span class="line">                     │                         │                      │</span><br><span class="line">               ┌─────▼────┐              ┌─────▼────┐           ┌─────▼────┐</span><br><span class="line">               │          │              │          │           │          │</span><br><span class="line">               │   eth0   │              │  veth0   ◀───────────▶  veth1   │</span><br><span class="line">               │          │              │          │           │          │</span><br><span class="line">               └─────▲────┘              └──────────┘           └──────────┘</span><br><span class="line">                     │</span><br><span class="line">                     │</span><br><span class="line">                     │</span><br><span class="line">                     │</span><br><span class="line">                     │</span><br><span class="line">                     ▼</span><br><span class="line"></span><br><span class="line">             physical network</span><br></pre></td></tr></table></figure>
-
-<h2 id="实战"><a href="#实战" class="headerlink" title="实战"></a>实战</h2><h3 id="veth设备的ping测试"><a href="#veth设备的ping测试" class="headerlink" title="veth设备的ping测试"></a>veth设备的ping测试</h3><h3 id="1-只给一个veth设备配置ip的情况测试"><a href="#1-只给一个veth设备配置ip的情况测试" class="headerlink" title="1. 只给一个veth设备配置ip的情况测试"></a>1. 只给一个veth设备配置ip的情况测试</h3><p>给veth0配置ip 192.168.100.10，可以看到主机的路由表中增加了目的地为192.168.100.0的记录</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost vagrant]# ip link add veth0 type veth peer name veth1</span><br><span class="line">[root@localhost vagrant]# ip addr add 192.168.100.10/24 dev veth0</span><br><span class="line">[root@localhost vagrant]# ip addr add 192.168.100.11/24 dev veth1</span><br><span class="line">## 因为veth创建完后默认不启用，此时还没有路由</span><br><span class="line">[root@localhost vagrant]# route</span><br><span class="line">Kernel IP routing table</span><br><span class="line">Destination     Gateway         Genmask         Flags Metric Ref    Use Iface</span><br><span class="line">default         gateway         0.0.0.0         UG    100    0        0 eth0</span><br><span class="line">10.0.2.0        0.0.0.0         255.255.255.0   U     100    0        0 eth0</span><br><span class="line">192.168.33.0    0.0.0.0         255.255.255.0   U     101    0        0 eth1</span><br><span class="line"></span><br><span class="line">## 启用veth0后增加路由</span><br><span class="line">[root@localhost vagrant]# ip link set veth0 up</span><br><span class="line">[root@localhost vagrant]# route</span><br><span class="line">Kernel IP routing table</span><br><span class="line">Destination     Gateway         Genmask         Flags Metric Ref    Use Iface</span><br><span class="line">default         gateway         0.0.0.0         UG    100    0        0 eth0</span><br><span class="line">10.0.2.0        0.0.0.0         255.255.255.0   U     100    0        0 eth0</span><br><span class="line">192.168.33.0    0.0.0.0         255.255.255.0   U     101    0        0 eth1</span><br><span class="line">192.168.100.0   0.0.0.0         255.255.255.0   U     0      0        0 veth0</span><br><span class="line"></span><br><span class="line">## 启用veth1后居然又增加了一条路由信息</span><br><span class="line">[root@localhost vagrant]# ip link set veth1 up</span><br><span class="line">[root@localhost vagrant]# ip addr</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">    inet 127.0.0.1/8 scope host lo</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet6 ::1/128 scope host</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP group default qlen 1000</span><br><span class="line">    link/ether 52:54:00:26:10:60 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">    inet 10.0.2.15/24 brd 10.0.2.255 scope global noprefixroute dynamic eth0</span><br><span class="line">       valid_lft 86214sec preferred_lft 86214sec</span><br><span class="line">    inet6 fe80::5054:ff:fe26:1060/64 scope link</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">3: eth1: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:98:06:20 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">    inet 192.168.33.11/24 brd 192.168.33.255 scope global noprefixroute eth1</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet6 fe80::a00:27ff:fe98:620/64 scope link</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">4: veth1@veth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP group default qlen 1000</span><br><span class="line">    link/ether e2:15:95:0a:1f:da brd ff:ff:ff:ff:ff:ff</span><br><span class="line">    inet 192.168.100.11/24 scope global veth1</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet6 fe80::e015:95ff:fe0a:1fda/64 scope link</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">5: veth0@veth1: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP group default qlen 1000</span><br><span class="line">    link/ether b2:2c:f6:e4:74:c5 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">    inet 192.168.100.10/24 scope global veth0</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">    inet6 fe80::b02c:f6ff:fee4:74c5/64 scope link</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">[root@localhost vagrant]# route</span><br><span class="line">Kernel IP routing table</span><br><span class="line">Destination     Gateway         Genmask         Flags Metric Ref    Use Iface</span><br><span class="line">default         gateway         0.0.0.0         UG    100    0        0 eth0</span><br><span class="line">10.0.2.0        0.0.0.0         255.255.255.0   U     100    0        0 eth0</span><br><span class="line">192.168.33.0    0.0.0.0         255.255.255.0   U     101    0        0 eth1</span><br><span class="line">192.168.100.0   0.0.0.0         255.255.255.0   U     0      0        0 veth0</span><br><span class="line">192.168.100.0   0.0.0.0         255.255.255.0   U     0      0        0 veth1</span><br></pre></td></tr></table></figure>
-
-<p>默认情况下arp表如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># arp</span><br><span class="line">Address                  HWtype  HWaddress           Flags Mask            Iface</span><br><span class="line">localhost.localdomain            (incomplete)                              veth0</span><br><span class="line">192.168.33.1             ether   0a:00:27:00:00:00   C                     eth1</span><br><span class="line">gateway                  ether   52:54:00:12:35:02   C                     eth0</span><br><span class="line">10.0.2.3                 ether   52:54:00:12:35:03   C                     eth0</span><br></pre></td></tr></table></figure>
-
-<p>使用ping命令<code>ping -I veth0 192.168.100.11 -c 2</code>，默认情况下veth1和veth0会接收到arp报文，但并没有arp的响应报文。这是因为默认情况下有些arp内核参数的限制。执行如下命令解决arp的限制。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">echo 1 &gt; /proc/sys/net/ipv4/conf/veth1/accept_local</span><br><span class="line">echo 1 &gt; /proc/sys/net/ipv4/conf/veth0/accept_local</span><br><span class="line">echo 0 &gt; /proc/sys/net/ipv4/conf/all/rp_filter</span><br><span class="line">echo 0 &gt; /proc/sys/net/ipv4/conf/veth0/rp_filter</span><br><span class="line">echo 0 &gt; /proc/sys/net/ipv4/conf/veth1/rp_filter</span><br></pre></td></tr></table></figure>
-
-<h2 id="veth-pair设备的删除"><a href="#veth-pair设备的删除" class="headerlink" title="veth pair设备的删除"></a>veth pair设备的删除</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 删除veth0后会自动删除veth1</span><br><span class="line">$ ip link delete veth0</span><br></pre></td></tr></table></figure>
-
-<h2 id="container与host-veth-pair的关系"><a href="#container与host-veth-pair的关系" class="headerlink" title="container与host veth pair的关系"></a>container与host veth pair的关系</h2><p>veth pair的其中一个设备位于container中备位于container中，另外一个设备位于host network namespace中，如何知道container中的eth0和host network namesapce中的veth设备的对应关系呢？</p>
-<p>原理为veth pair设备都有一个ifindex和iflink值，，容器中的eth0设备的ifindex值跟host network namespace中的对应veth pair设备的iflink值相等，反之亦然。</p>
-<h3 id="在容器中找到eth0的iflink"><a href="#在容器中找到eth0的iflink" class="headerlink" title="在容器中找到eth0的iflink"></a>在容器中找到eth0的iflink</h3><p>方法一</p>
-<p>获取iflink值：<code>cat /sys/class/net/eth0/iflink</code> </p>
-<p>也可用此方法获取ifindex值：<code>cat /sys/class/net/eth0/ifindex</code> </p>
-<p>方法二</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ ip link show eth0</span><br><span class="line">3: eth0@if18: &lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt; mtu 1500 qdisc noqueue state UP</span><br><span class="line">    link/ether 96:5f:80:a3:a3:01 brd ff:ff:ff:ff:ff:ff</span><br></pre></td></tr></table></figure>
-
-<p>其中的3为eth0的ifindex。18为eth0的iflink，即对应的veth pair的另外一个设备的ifindex。</p>
-<h3 id="host-network-namespace中找到对应ifindex值的veth-pair设备"><a href="#host-network-namespace中找到对应ifindex值的veth-pair设备" class="headerlink" title="host network namespace中找到对应ifindex值的veth pair设备"></a>host network namespace中找到对应ifindex值的veth pair设备</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ ip addr </span><br><span class="line">18: veth0e09999e@if3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master br0 state UP group default</span><br><span class="line">    link/ether de:b0:74:89:e8:3e brd ff:ff:ff:ff:ff:ff link-netnsid 4</span><br><span class="line">    inet6 fe80::dcb0:74ff:fe89:e83e/64 scope link</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br></pre></td></tr></table></figure>
-
-<p>其中的18为ifindex，3为对应的veth pair的ifindex。</p>
-<h2 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/bakari/p/10613710.html">Linux 虚拟网络设备 veth-pair 详解，看这一篇就够了</a></li>
-<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000009251098">Linux虚拟网络设备之veth</a></li>
-</ul>
 
       
     </div>

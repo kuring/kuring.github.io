@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">242</span>
+          <span class="site-state-item-count">243</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,131 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/certificate/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/certificate/" class="post-title-link" itemprop="url">证书技术</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-01-07 10:34:15" itemprop="dateCreated datePublished" datetime="2022-01-07T10:34:15+00:00">2022-01-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="使用openssl创建自签名证书"><a href="#使用openssl创建自签名证书" class="headerlink" title="使用openssl创建自签名证书"></a>使用openssl创建自签名证书</h1><p>创建CA</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">openssl genrsa <span class="literal">-out</span> root.key <span class="number">4096</span></span><br><span class="line">openssl req <span class="literal">-new</span> <span class="literal">-x509</span> <span class="literal">-days</span> <span class="number">1000</span> <span class="literal">-key</span> root.key <span class="literal">-out</span> root.crt</span><br><span class="line">openssl x509 <span class="literal">-text</span> <span class="operator">-in</span> root.crt <span class="literal">-noout</span></span><br></pre></td></tr></table></figure>
+<p>创建私钥和公钥文件</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 用来产生私钥文件server.key</span></span><br><span class="line">openssl genrsa <span class="literal">-out</span> server.key <span class="number">2048</span></span><br><span class="line"><span class="comment"># 产生公钥文件</span></span><br><span class="line">openssl rsa <span class="operator">-in</span> server.key <span class="literal">-pubout</span> <span class="literal">-out</span> server.pem</span><br></pre></td></tr></table></figure>
+<p>创建签名请求</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">openssl req <span class="literal">-new</span> <span class="literal">-key</span> server.key <span class="literal">-out</span> server.csr</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看创建的签名请求</span></span><br><span class="line">openssl req <span class="literal">-noout</span> <span class="literal">-text</span> <span class="operator">-in</span> server.csr</span><br></pre></td></tr></table></figure>
+<p>创建自签名证书<br>新建自签名证书的附加信息server.ext，内容如下</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">authorityKeyIdentifier=keyid,issuer</span><br><span class="line">basicConstraints=CA:FALSE</span><br><span class="line">keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment</span><br><span class="line">subjectAltName = @alt_names</span><br><span class="line"></span><br><span class="line">[<span class="type">alt_names</span>]</span><br><span class="line">DNS.<span class="number">1</span> = localhost</span><br><span class="line">IP.<span class="number">2</span> = <span class="number">127.0</span>.<span class="number">0.1</span></span><br><span class="line">IP.<span class="number">3</span> = <span class="number">10.66</span>.<span class="number">3.6</span></span><br></pre></td></tr></table></figure>
+
+<p>使用ca签发ssl证书，此时会产生server.crt文件，即为证书文件</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">openssl x509 <span class="literal">-req</span> <span class="operator">-in</span> server.csr <span class="literal">-out</span> server.crt <span class="literal">-days</span> <span class="number">3650</span> \</span><br><span class="line">  <span class="literal">-CAcreateserial</span> <span class="literal">-CA</span> root.crt <span class="literal">-CAkey</span> root.key \</span><br><span class="line">  <span class="literal">-CAserial</span> serial <span class="literal">-extfile</span> server.ext</span><br></pre></td></tr></table></figure>
+
+<p>查看证书文件内容</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl x509 <span class="operator">-in</span> server.crt   <span class="literal">-noout</span> <span class="literal">-text</span></span><br></pre></td></tr></table></figure>
+
+<p>使用ca校验证书是否通过</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl verify <span class="literal">-CAfile</span> root.crt server.crt</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用cfssl签发证书"><a href="#使用cfssl签发证书" class="headerlink" title="使用cfssl签发证书"></a>使用cfssl签发证书</h1><p>cfssl是CloudFlare开源的一款tls工具，使用go语言编写，地址：<a target="_blank" rel="noopener" href="https://github.com/cloudflare/cfssl%E3%80%82">https://github.com/cloudflare/cfssl。</a></p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>mac用户：brew install cfssl</p>
+<p>linux用户可以直接下载二进制文件：<a target="_blank" rel="noopener" href="https://github.com/cloudflare/cfssl/releases">https://github.com/cloudflare/cfssl/releases</a></p>
+<h2 id="签发证书"><a href="#签发证书" class="headerlink" title="签发证书"></a>签发证书</h2><p>待补充</p>
+<h1 id="证书格式"><a href="#证书格式" class="headerlink" title="证书格式"></a>证书格式</h1><p>证书按照格式可以分为二进制和文本文件两种格式。</p>
+<p>二进制格式分为：</p>
+<ol>
+<li><em>.der或者</em>.cer：用来存放证书信息，不包含私钥。</li>
+</ol>
+<p>文本格式分为：</p>
+<ol>
+<li><em>.pem：存放证书或者私钥。一般是</em>.key文件存放私钥信息。对于pem或者key文件，如果存在<strong>——BEGIN CERTIFICATE——</strong>，则说明这是一个证书文件。如果存在<strong>—–BEGIN RSA PRIVATE KEY—–</strong>，则说明这是一个私钥文件。</li>
+<li>*.key：用来存放私钥文件。</li>
+<li>*.crt：证书请求文件，格式的开头为：—–BEGIN CERTIFICATE REQUEST—–</li>
+</ol>
+<h2 id="证书格式的转换"><a href="#证书格式的转换" class="headerlink" title="证书格式的转换"></a>证书格式的转换</h2><p>将cert证书转换为pem格式</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">openssl rsa <span class="operator">-in</span> server.key <span class="literal">-text</span> &gt; server<span class="literal">-key</span>.pem</span><br><span class="line">openssl x509 <span class="operator">-in</span> server.crt <span class="literal">-out</span> server.pem</span><br></pre></td></tr></table></figure>
+<p>将pem格式转换为cert格式</p>
+<h1 id="证书查看"><a href="#证书查看" class="headerlink" title="证书查看"></a>证书查看</h1><p>查看特定域名的证书内容：<code>echo | openssl s_client  -connect www.baidu.com:443 -servername www.baidu.com 2&gt;/dev/null | openssl x509 -noout -text</code></p>
+<p>获取特定域名的证书内容：<code>openssl s_client -servername www.baidu.com -connect www.baidu.com:443 &lt;/dev/null | sed -ne &#39;/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p&#39;</code></p>
+<p>在 k8s 中，证书通常存放在 secret 中，可以使用 kubeclt + openssl 命令查看证书内容：<code>kubectl get secret -n test-cluster sharer -o jsonpath=&#39;&#123;.data.tls\.crt&#125;&#39; | base64 --decode | openssl x509 -text -noout</code></p>
+<h1 id="证书的使用"><a href="#证书的使用" class="headerlink" title="证书的使用"></a>证书的使用</h1><p>curl命令关于证书的用法：</p>
+<ul>
+<li>–cacert：指定ca来校验server端的证书合法性</li>
+<li>–cert：指定客户端的证书文件，用在双向认证mTLS中</li>
+<li>–key：私钥文件名，用在双向认证mTLS中</li>
+</ul>
+<h1 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://gist.github.com/liuguangw/4d4b87b750be8edb700ff94c783b1dd4">https://gist.github.com/liuguangw/4d4b87b750be8edb700ff94c783b1dd4</a></li>
+<li><a target="_blank" rel="noopener" href="https://coolshell.cn/articles/21708.html">https://coolshell.cn/articles/21708.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/160093.html">https://help.aliyun.com/document_detail&#x2F;160093.html</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +344,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -350,7 +475,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -451,7 +576,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -598,7 +723,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -694,7 +819,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -786,7 +911,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -981,7 +1106,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -1073,7 +1198,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -1175,7 +1300,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -1232,100 +1357,6 @@
 <p>2.<a target="_blank" rel="noopener" href="http://product.china-pub.com/8064178">Kubernetes 网络权威指南：基础、原理与实践</a></p>
 <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/k8s-network.jpg"></p>
 <p>该书可以作为全面了解k8s相关的容器网络的相关技术，如果对k8s周边的虚拟网络知识有所全面了解，该书籍还是比较适合的。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/update-cr-status/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/update-cr-status/" class="post-title-link" itemprop="url">手动更新Custom Resource中的status部分</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2020-06-21 21:27:09" itemprop="dateCreated datePublished" datetime="2020-06-21T21:27:09+00:00">2020-06-21</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>在k8s中的内置资源很多都有status部分，比如deployment，用来标识当前资源的状态信息。同样在CRD的体系中，也都有status部分。这些status部分信息，是由operator来负责维护的。</p>
-<p>如果直接采用kubectl edit的方式来修改status部分信息，会发现是无法直接修改status部分的，因为status是无法修改成功的，因为status部分是CR的一个子资源。</p>
-<p>可以通过如下的方式来完成修改</p>
-<ol>
-<li>首先要准备一个完整的yaml文件，包含了status部分信息</li>
-</ol>
-<p>这个的格式必须为json</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;apiVersion&quot;: &quot;kuring.me/v1alpha1&quot;,</span><br><span class="line">  &quot;kind&quot;: &quot;Certificate&quot;,</span><br><span class="line">  &quot;metadata&quot;: &#123;</span><br><span class="line">    &quot;name&quot;: &quot;test&quot;,</span><br><span class="line">    &quot;namespace&quot;: &quot;default&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;spec&quot;: &#123;</span><br><span class="line">    &quot;secretName&quot;: &quot;test&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;status&quot;: &#123;</span><br><span class="line">    &quot;phase&quot;: &quot;pending&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>获取系统的TOKEN信息</li>
-</ol>
-<p>通常在kube-system下会有admin的ServiceAccount，会有一个对应的Secret来存放该ServiceAccount的token信息。执行<code>kubectl get secret -n kube-system admin-token-r2bvt   -o yaml</code>获取到token信息，并其中的token部分进行base64解码。</p>
-<ol start="3">
-<li>执行如下的脚本</li>
-</ol>
-<p>需要将其中的变量信息修改一下</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/bash</span><br><span class="line"></span><br><span class="line">obj_file=$1</span><br><span class="line">kind=certificates</span><br><span class="line">APISERVER=https://10.0.0.100:6443</span><br><span class="line">namespace=default</span><br><span class="line">TOKEN=eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi10b2tlbi1yMmJ2dCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJhZG1pbiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImRiY2IyNzUzLWE5OGMtMTFlYS04NGVjLTAwMTYzZTAwOGU3MCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlLXN5c3RlbTphZG1pbiJ9.tX3jyNh-GEuZQg-hmy7igqh9vpTAz8Jh9uEv-diZ5XWjX9JYhxwD9nxTQvCcvzY7iPIbvxQfW2GHDZISPoopX0vQy9mQ7npVitrOvFovk06plefI5Gxjdft6vdpt-ArsGTpm7-s9G-3aBg5x41h3Cdgyv-W-ypFlCr9dKu9K7BcRIXSq_GQlq5TBmd-LKFXoer4QGwkn7geq5-ziMk_lY21jIGVdIkq9IRiH8NWuCl7l8i6nQESQDUUpMyKDCqkJqUFV8UkrQL7TfqurFP36_TUAQTh2ZAE8nFnrKRoa09BnjT-FoPO6Jnq6COQjk3PGDHV8LKNDAjCCrs0A53IYGw</span><br><span class="line">obj=nginx-test</span><br><span class="line"></span><br><span class="line">echo &quot;begin to patch $obj the file &quot;$&#123;obj_file&#125;</span><br><span class="line">curl -XPATCH -H &quot;Accept: application/json&quot; -H  &quot;Content-Type: application/merge-patch+json&quot; --header &quot;Authorization: Bearer $TOKEN&quot; --insecure -d  @$&#123;obj_file&#125; $APISERVER/apis/kuring.me/v1alpha1/namespaces/$&#123;namespace&#125;/$&#123;kind&#125;/$obj/status</span><br></pre></td></tr></table></figure>
-
 
       
     </div>

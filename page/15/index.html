@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">242</span>
+          <span class="site-state-item-count">243</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,97 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/elk_nginx/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/elk_nginx/" class="post-title-link" itemprop="url">ELK解析nginx日志</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2016-02-18 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-18T00:00:00+00:00">2016-02-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>ELK解析nginx日志</p>
+<p>最近使用ELK搭建了一个nginx的日志解析环境，中间遇到一些挫折，好不容易搭建完毕，有必要记录一下。</p>
+<h1 id="nginx"><a href="#nginx" class="headerlink" title="nginx"></a>nginx</h1><p>nginx配置文件中的日志配置如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">error_log /var/log/nginx/error.log;</span><br><span class="line">log_format  main  &#x27;$remote_addr [$time_local] &quot;$request&quot; &#x27;</span><br><span class="line">                      &#x27;$status $body_bytes_sent &quot;$http_referer&quot; &#x27;</span><br><span class="line">                      &#x27;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&#x27;;</span><br><span class="line"></span><br><span class="line">access_log /var/log/nginx/access.log  main;</span><br></pre></td></tr></table></figure>
+
+<h1 id="logstash"><a href="#logstash" class="headerlink" title="logstash"></a>logstash</h1><p>由于是测试环境，我这里使用logstash读取nginx日志文件的方式来获取nginx的日志，并且仅读取了nginx的access log，对于error log没有关心。</p>
+<p>使用的logstash版本为2.2.0，在log stash程序目录下创建conf文件夹，用于存放解析日志的配置文件，并在其中创建文件test.conf，文件内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">input &#123;</span><br><span class="line">    file &#123;</span><br><span class="line">        path =&gt; [&quot;/var/log/nginx/access.log&quot;]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">filter &#123;</span><br><span class="line">    grok &#123;</span><br><span class="line">        match =&gt; &#123;</span><br><span class="line">            &quot;message&quot; =&gt; &quot;%&#123;IPORHOST:clientip&#125; \[%&#123;HTTPDATE:time&#125;\] \&quot;%&#123;WORD:verb&#125; %&#123;URIPATHPARAM:request&#125; HTTP/%&#123;NUMBER:httpversion&#125;\&quot; %&#123;NUMBER:http_status_code&#125; %&#123;NUMBER:bytes&#125; \&quot;(?&lt;http_referer&gt;\S+)\&quot; \&quot;(?&lt;http_user_agent&gt;\S+)\&quot; \&quot;(?&lt;http_x_forwarded_for&gt;\S+)\&quot;&quot;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;   </span><br><span class="line">&#125;</span><br><span class="line">output &#123;</span><br><span class="line">    elasticsearch &#123;</span><br><span class="line">        hosts =&gt; [&quot;10.103.17.4:9200&quot;]</span><br><span class="line">        index =&gt; &quot;logstash-nginx-test-%&#123;+YYYY.MM.dd&#125;&quot;</span><br><span class="line">        workers =&gt; 1</span><br><span class="line">        flush_size =&gt; 1</span><br><span class="line">        idle_flush_time =&gt; 1</span><br><span class="line">        template_overwrite =&gt; true</span><br><span class="line">    &#125;</span><br><span class="line">    stdout&#123;codec =&gt; rubydebug&#125;</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+
+<p>需要说明的是，filter字段中的grok部分，由于nginx的日志是格式化的，logstash解析日志的思路为通过正则表达式来匹配日志，并将字段保存到相应的变量中。logstash中使用grok插件来解析日志，grok中message部分为对应的grok语法，并不完全等价于正则表达式的语法，在其中增加了变量信息。</p>
+<p>具体grok语法不作过多介绍，可以通过logstash的官方文档中来了解。但grok语法中的变量类型如IPORHOST并未找到具体的文档，只能通过在logstash的安装目录下通过<code>grep -nr &quot;IPORHOST&quot; .</code>来搜索具体的含义。</p>
+<p>配置文件中的stdout部分用于打印grok解析结果的信息，在调试阶段一定要打开。</p>
+<p>可以通过<a target="_blank" rel="noopener" href="http://grokconstructor.appspot.com/do/match">这里</a>来验证grok表达式的语法是否正确，编写grok表达式的时候可以在这里编写和测试。</p>
+<p>对于elasticsearch部分不做过多介绍，网上容易找到资料。</p>
+<h1 id="kibana"><a href="#kibana" class="headerlink" title="kibana"></a>kibana</h1><p>kibana不做过多介绍，使用可以查看官方文档和自己摸索。</p>
+<h1 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h1><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/logstash/current/plugins-filters-grok.html">logstash中的grok插件介绍</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +310,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -324,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -446,7 +537,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -550,7 +641,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -641,7 +732,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -730,7 +821,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -819,7 +910,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -928,7 +1019,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -1021,7 +1112,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
+      <time title="Modified: 2024-06-19 15:13:35" itemprop="dateModified" datetime="2024-06-19T15:13:35+00:00">2024-06-19</time>
     </span>
 
   
@@ -1061,176 +1152,6 @@
 <li><p><a target="_blank" rel="noopener" href="http://www.akkadia.org/drepper/no_static_linking.html">Static Linking Considered Harmful</a></p>
 </li>
 </ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/build_lnmp/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/build_lnmp/" class="post-title-link" itemprop="url">LNMP开发环境搭建</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-07-16 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-16T00:00:00+00:00">2015-07-16</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-12 16:32:04" itemprop="dateModified" datetime="2024-06-12T16:32:04+00:00">2024-06-12</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>这是一篇拿来主义的文章，所有的安装步骤仅为互联网上查找，网络上的教程各种凌乱，这里根据我的实践情况进行了更改，本文仅记录了我的安装过程，由于不同环境可能导致安装步骤不甚相同。</p>
-<h1 id="MAC-OS-X-10-10"><a href="#MAC-OS-X-10-10" class="headerlink" title="MAC OS X 10.10"></a>MAC OS X 10.10</h1><h2 id="php"><a href="#php" class="headerlink" title="php"></a>php</h2><p>Mac OSX 10.10的系统自带了php、php-fpm，省去了安装的麻烦，可以执行<code>php -v</code>查看php的版本。这里需要简单地修改下php-fpm的配置，否则运行php-fpm会报错。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo cp /private/etc/php-fpm.conf.default /private/etc/php-fpm.conf</span><br><span class="line">vim /private/etc/php-fpm.conf</span><br></pre></td></tr></table></figure>
-
-<p>修改php-fpm.conf文件中的error_log项，默认该项被注释掉，这里需要去注释并且修改为error_log &#x3D; &#x2F;usr&#x2F;local&#x2F;var&#x2F;log&#x2F;php-fpm.log。如果不修改该值，运行php-fpm的时候会提示log文件输出路径不存在的错误。</p>
-<p>如果系统中存在多个php-fpm.conf，不知道需要编辑哪一个，可以执行<code>php-fpm -t</code>命令查看php-fpm要读取的配置文件。</p>
-<p>通过<code>php-fpm -D</code>来启动php-fpm，可以通过<code>lsof -Pni4 | grep LISTEN | grep php</code>命令来查看php-fpm是否监听在9000端口。</p>
-<h2 id="nginx"><a href="#nginx" class="headerlink" title="nginx"></a>nginx</h2><p>这里为了简单，直接采用了brew的方式安装。执行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install nginx</span><br></pre></td></tr></table></figure>
-
-<p>nginx的配置文件位于&#x2F;usr&#x2F;local&#x2F;etc&#x2F;nginx&#x2F;nginx.conf，默认只能解析html文件，需要配置后才能调用php-fpm解析php文件。下面内容为该修改后的文件全部有效内容：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">worker_processes  1;</span><br><span class="line">events &#123;</span><br><span class="line">    worker_connections  1024;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">http &#123;</span><br><span class="line">    include       mime.types;</span><br><span class="line">    default_type  application/octet-stream;</span><br><span class="line">    sendfile        on;</span><br><span class="line">    keepalive_timeout  65;</span><br><span class="line">    server &#123;</span><br><span class="line">        listen       8080;</span><br><span class="line">        server_name  localhost;</span><br><span class="line">        root           /Users/kuring/www;	// 页面存放路径</span><br><span class="line">        location / &#123;</span><br><span class="line">            index  index.html index.htm index.php;</span><br><span class="line">        &#125;</span><br><span class="line">        error_page   500 502 503 504  /50x.html;</span><br><span class="line">        location = /50x.html &#123;</span><br><span class="line">            root   html;</span><br><span class="line">        &#125;</span><br><span class="line">        location ~ \.php$ &#123;</span><br><span class="line">            fastcgi_pass   127.0.0.1:9000;</span><br><span class="line">            fastcgi_index  index.php;</span><br><span class="line">            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;</span><br><span class="line">            include        fastcgi_params;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">include servers/*;</span><br></pre></td></tr></table></figure>
-
-<p>然后执行<code>nginx</code>命令即可启动，默认监听的端口为8080，在浏览器中输入<code>http://127.0.0.1:8080</code>即可看到nginx的初始界面。nginx要想监听1024以下端口还需要进一步的配置，8080端口既能满足我需求，不再更改。</p>
-<h2 id="mysql"><a href="#mysql" class="headerlink" title="mysql"></a>mysql</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install mysql</span><br></pre></td></tr></table></figure>
-
-<p>在启动mysql之前可对mysql的配置文件进行更改，我这里需要更改mysql的编码方式，将所有的编码方式都更改为utf8，防止乱码问题的发生。mysql的配置文件为my.cnf，我的位于&#x2F;usr&#x2F;local&#x2F;Cellar&#x2F;mysql&#x2F;5.6.25&#x2F;my.cnf，对文件添加如下内容，有些选项不存在，可手动添加。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">character-set-server=utf8</span><br><span class="line"></span><br><span class="line">[client]</span><br><span class="line">default-character-set=utf8</span><br><span class="line"></span><br><span class="line">[mysqld_safe]</span><br><span class="line">default-character-set=utf8</span><br></pre></td></tr></table></figure>
-
-<p>输入<code>mysqld</code>命令即可启动mysql，启动mysql后输入<code>mysql_secure_installation</code>命令对mysql进行配置，可以设置root用户的密码。</p>
-<p>通过<code>mysql -uroot -p</code>命令连接到mysql后，输入<code>status</code>命令可查看刚才更改的编码是否生效。</p>
-<p>由于不需要长期使用mysql，这里不设置mysql自启动命令。</p>
-<h1 id="CentOS6"><a href="#CentOS6" class="headerlink" title="CentOS6"></a>CentOS6</h1><p>我首先采用的方案为完全用普通用户安装，尝试失败后采用root安装依赖库普通用户编译程序的方案。</p>
-<h2 id="普通用户安装依赖库"><a href="#普通用户安装依赖库" class="headerlink" title="普通用户安装依赖库"></a>普通用户安装依赖库</h2><p>我首选选择在普通用户kuring下进行安装和运行整个web环境。因此不能使用yum安装方式，必须采用源码安装的方式。通过普通用户安装，最麻烦的地方就在于需要安装很多的依赖库，而依赖的库的安装可能又有需要的库，且库之间存在版本问题。</p>
-<p>首先普及几个小知识：</p>
-<p>bash查找命令的先后顺序为：</p>
-<ol>
-<li>alias别名</li>
-<li>shell中的关键字，如if等</li>
-<li>shell中的函数</li>
-<li>shell内置命令，如echo等</li>
-<li>$PATH环境变量，PATH中的匹配顺序为从前向后的。</li>
-</ol>
-<p>程序查找lib库的先后顺序为：</p>
-<ol>
-<li>编译程序时指定的链接库路径，g++编译器可以通过<code>-Wl,-rpath,路径</code>来指定链接库的路径。</li>
-<li>环境变量LD_LIBRARY_PATH指定的搜索路径。</li>
-<li>&#x2F;etc&#x2F;ld.so.conf指定的路径。</li>
-<li>默认的系统动态库搜索路径，如&#x2F;usr&#x2F;lib64、&#x2F;usr&#x2F;local&#x2F;lib64等。</li>
-</ol>
-<p>很多程序采用pkg-config程序来检查库的版本号，pkg-config命令依赖于动态链接库对应的.pc文件，这些.pc文件一般位于系统的&#x2F;usr&#x2F;local&#x2F;lib&#x2F;pkgconfig目录下。为了能够将安装完成的库通过pkg-config找到对应的.pc文件，需要将.pc文件所在的路径&#x2F;home&#x2F;kuring&#x2F;local&#x2F;lib&#x2F;pkg-config设置到环境变量PKG_CONFIG_PATH中。</p>
-<p>安装php依赖的libxml2库时提示找不到libtool、autoconf和automake，首先安装libtool。执行<code>./configure --prefix=/home/kuring/local;make; make install</code>将其安装到当前用户的local目录下。</p>
-<p>用同样的步骤安装autoconf，执行<code>./configure --prefix=/home/kuring/local;make; make install</code>。</p>
-<p>为了能够将安装的程序起作用，需要将&#x2F;home&#x2F;kuring&#x2F;local目录添加到PATH环境变量中，在.bash_profile文件中添加PATH&#x3D;$PATH:$HOME&#x2F;local&#x2F;bin语句，并执行<code>source ~/.bash_profile</code>。</p>
-<p>安装之前需要先安装libxml2库，下载地址采用<code>git clone git://git.gnome.org/libxml2</code>的方式下载。在执行<code>sh autogen</code>产生configure配置文件的过程中，发现提示</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./configure: line 13094: syntax error near unexpected token `LZMA,liblzma,&#x27;</span><br><span class="line">./configure: line 13094: `    PKG_CHECK_MODULES(LZMA,liblzma,&#x27;</span><br></pre></td></tr></table></figure>
-
-<p>经过发现是由于找不到PKG_CHECK_MODULES造成的，正常情况下该函数定义在aclocal.m4文件，而该情况下aclocal.m4文件中并不存在该函数。之所以不存在是由于aclocal命令找不到pkg.m4文件造成的，可以通过<code>aclocal --print</code>命令查看查找的pkg.m4文件的路径。我这里的解决思路为直接从其他机器上复制一个pkg.m4文件过来。</p>
-<p>在产生了configure命令后，执行<code>./configure --prefix=/home/kuring/local</code>命令后发现提示找不到Python.h命令的错误。</p>
-<p>鉴于遇到了如此之多的错误，本着不浪费生命的原则还是采用yum来安装依赖库吧。</p>
-<h2 id="php-1"><a href="#php-1" class="headerlink" title="php"></a>php</h2><p>这里的mysql直接采用了yum命令安装的。</p>
-<p>在执行php的<code>./configure</code>命令后提示libxml2找不到错误，直接<code>yum install libxml-devel</code>命令安装libxml-devel即可。然后执行<code>./configure --enable-fpm --prefix=/home/kuring/php5.5 --with-mysqli=/usr/bin/mysql_config;make; make install;</code>。在编译php的时候要加上php-fpm选项来安装php-fpm命令。</p>
-<p>安装后配置~&#x2F;.bash_profile文件的$PATH环境变量的值为：PATH&#x3D;$HOME&#x2F;bin:$HOME&#x2F;php5.5&#x2F;bin:$HOME&#x2F;php5.5&#x2F;sbin:$PATH。</p>
-<p>此时即可通过<code>php-fpm -D</code>命令来启动php-fpm命令了。</p>
-<p>安装完成后通过phpinfo()函数查看里面有MySQLi的选项，但是实际程序运行的时候居然不支持mysqli的一些力函数，说明mysqli的扩展安装不成功。在&#x2F;home&#x2F;kuring&#x2F;php5.5&#x2F;include&#x2F;php&#x2F;ext&#x2F;mysqli目录中找到了对应的.h文件，却没有找到mysqli.so的动态链接库文件。大概是由于在编译php时mysql的路径配置有些问题造成的，因为mysql是通过yum安装的，路径比较乱一些。</p>
-<p>为了能够产生mysqli.so文件，采用单独编译的方式，在php的源码目录中已经包含了mysqli的源码，进入mysqli源码目录下执行<code>phpize;./configure --prefix=/home/kuring/php5.5/mysqli --with-php-config=/home/kuring/php5.5/bin/php-config --with-mysqli=/usr/bin/mysql_config;make;make install；</code>。将mysqli.so文件安装到了&#x2F;home&#x2F;kuring&#x2F;php5.5&#x2F;lib&#x2F;php&#x2F;extensions&#x2F;no-debug-non-zts-20121212目录下，不知道为什么目录末尾还要加个这么长的文件夹名，直接将文件复制到上一级目录下。</p>
-<p>在&#x2F;home&#x2F;kuring&#x2F;php5.5目录下没有找到php.ini文件，通过<code>php --ini</code>命令查看php的配置文件路径为&#x2F;home&#x2F;kuring&#x2F;php5.5&#x2F;lib，直接从php的源码文件中复制一个php.ini文件到该目录下。并将php.ini中的增加如下内容：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">extension_dir = &quot;/home/kuring/php5.5/lib/php/extensions&quot;</span><br><span class="line">extension=mysqli.so</span><br></pre></td></tr></table></figure>
-
-<p>再运行程序，发现mysqli的系列函数已经支持了，好一段折腾。</p>
-<h2 id="php-fpm"><a href="#php-fpm" class="headerlink" title="php-fpm"></a>php-fpm</h2><p>执行<code>cp $HOME/php5.5/etc/php-fpm.conf.default $HOME/php5.5/etc/php-fpm.conf</code>来增加配置文件。</p>
-<h2 id="nginx-1"><a href="#nginx-1" class="headerlink" title="nginx"></a>nginx</h2><p>首先安装pcre库，该库为正则表达式库。下载后通过</p>
-<p>下载源码后执行<code>./configure --prefix /home/kuring/nginx;make;make install;</code>即可安装完成。</p>
-<p>修改nginx的配置文件为如下内容：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">worker_processes  1;</span><br><span class="line">events &#123;</span><br><span class="line">    worker_connections  1024;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">http &#123;</span><br><span class="line">    include       mime.types;</span><br><span class="line">    default_type  application/octet-stream;</span><br><span class="line">    sendfile        on;</span><br><span class="line">    keepalive_timeout  65;</span><br><span class="line">    server &#123;</span><br><span class="line">        listen       8080;</span><br><span class="line">        server_name  localhost;</span><br><span class="line">        root           /home/kuring/www;   </span><br><span class="line">        location / &#123;</span><br><span class="line">            index  index.html index.htm index.php;</span><br><span class="line">        &#125;</span><br><span class="line">        error_page   500 502 503 504  /50x.html;</span><br><span class="line">        location = /50x.html &#123;</span><br><span class="line">            root   html;</span><br><span class="line">        &#125;</span><br><span class="line">        location ~ \.php$ &#123;</span><br><span class="line">            fastcgi_pass   127.0.0.1:9000;</span><br><span class="line">            fastcgi_index  index.php;</span><br><span class="line">            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;</span><br><span class="line">            include        fastcgi_params;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">include servers/*;</span><br></pre></td></tr></table></figure>
-
-
-<h1 id="常见操作"><a href="#常见操作" class="headerlink" title="常见操作"></a>常见操作</h1><h2 id="nginx-2"><a href="#nginx-2" class="headerlink" title="nginx"></a>nginx</h2><ul>
-<li>nginx -s stop：关闭</li>
-<li>nginx -t：检测nginx的配置是否正确</li>
-</ul>
-<h2 id="mysql-1"><a href="#mysql-1" class="headerlink" title="mysql"></a>mysql</h2><ul>
-<li>mysqld_safe：启动mysql</li>
-<li>mysqladmin shutdown -u root -p：关闭mysql</li>
-<li>create user kuring identified by ‘kuring_pass’：mysql创建用户（我尝试过几次，每次创建的用户密码都为空）</li>
-<li>drop user kuring：删除一个用户</li>
-<li>grant all privileges on <em>.</em> to ‘root‘@’%’ identified by ‘root’ with grant option ：允许mysql的root用户通过远程登录</li>
-</ul>
-<h3 id="创建用户的操作"><a href="#创建用户的操作" class="headerlink" title="创建用户的操作"></a>创建用户的操作</h3><p>使用<code>create user kuring identified by &#39;kuring_pass&#39;</code>命令创建用户kuring。默认创建完成的用户在本机无法登陆，但是远程却可以登陆。 这是因为mysql数据库中的user表中存在一条记录造成的。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">use mysql;</span><br><span class="line">select user,host,password from user;</span><br><span class="line"></span><br><span class="line">// 在表中存在一条用户名为空的记录</span><br><span class="line">+---------+-----------+-------------------------------------------+</span><br><span class="line">| User    | host      | password                                  |</span><br><span class="line">+---------+-----------+-------------------------------------------+</span><br><span class="line">| root    | localhost | *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B |</span><br><span class="line">| root    | 127.0.0.1 | *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B |</span><br><span class="line">| root    | ::1       | *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B |</span><br><span class="line">|         | localhost |                                           |</span><br><span class="line">| root    | %         | *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B |</span><br><span class="line">| report1 | %         | *884CAA4D6FA1C3F7E4849C8DAF1B5B37FCB3EC0B |</span><br><span class="line">+---------+-----------+-------------------------------------------+</span><br><span class="line"></span><br><span class="line">// 将mysql中的为空的记录删除掉，这样就可以通过创建的用户连接了</span><br></pre></td></tr></table></figure>
-
-<p>在mysql命令行中执行<code>grant all privileges on kuring_db.* to kuring identified by &#39;kuring_pass&#39;</code>命令可以给刚创建的用户对数据库的权限。</p>
-<h3 id="修改mysql用户密码"><a href="#修改mysql用户密码" class="headerlink" title="修改mysql用户密码"></a>修改mysql用户密码</h3><p>mysql将用户名和密码存放到了mysql数据库的user表中，在mysql命令行中执行<code>use mysql;update user set password=password(&quot;new password&quot;) where user=&quot;username&quot;;flush privileges;</code>即可更新相应用户的密码。</p>
-<h2 id="php-fpm-1"><a href="#php-fpm-1" class="headerlink" title="php-fpm"></a>php-fpm</h2><ul>
-<li>php-fpm -D：启动php-fpm，如果需要指定php.ini文件，可以使用-c参数</li>
-<li>php-fpm -t：检查php-fpm的配置文件</li>
-<li>kill -USR2: 重启php-fpm</li>
-<li>kill -INT: 停止php-fpm</li>
-</ul>
-<h2 id="php-2"><a href="#php-2" class="headerlink" title="php"></a>php</h2><ul>
-<li>php –ini：显示php.ini文件路径</li>
-</ul>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><ol>
-<li><a target="_blank" rel="noopener" href="http://www.cnblogs.com/hnrainll/archive/2013/01/06/2847069.html">运用Autoconf和Automake生成Makefile的学习之路</a></li>
-</ol>
 
       
     </div>
