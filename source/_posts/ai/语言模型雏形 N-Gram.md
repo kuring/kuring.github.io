@@ -3,7 +3,7 @@ title: 语言模型雏形 N-Gram
 tags:
   - ai
 date: 2024-08-19
-url: n-gram
+permalink: /ai/n-gram/
 ---
 > 本文为对《GPT 图解 - 大模型是怎样构建的》一书的学习笔记，所有的例子和代码均来源于本书。
 

@@ -129,6 +129,14 @@ split [-bl] file [prefix]
 - 强制更新远程分支：`git push --force-with-lease origin feature/statefulset`
 - 删除本地分支：`git branch -D local-branch`
 - 拉取远程分支并切换分支：`git checkout -b develop origin/remote-branch` develop为本地分支，origin/remote-branch为远程分支
+- 给 Github 设置代理
+```
+# 设置代理
+git config --global http.https://github.com.proxy socks5://127.0.0.1:13659
+
+# 取消代理
+git config --global --unset http.https://github.com.proxy
+```
 
 ## rpm
 
