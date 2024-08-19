@@ -1,96 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>12要素应用</title>
-    <url>/post/12-factors-app/</url>
-    <content><![CDATA[<p>2012 年，Heroku 创始人 Adam Wiggins 发布十二要素应用宣言，又被称为微服务十二要素。</p>
-<h2 id="内容"><a href="#内容" class="headerlink" title="内容"></a>内容</h2><h3 id="基准代码"><a href="#基准代码" class="headerlink" title="基准代码"></a>基准代码</h3><ol>
-<li>一个应用一个代码仓库，不要出现一个代码仓库对应多个应用的情况</li>
-<li>如果多个应用共享一份代码，那么需要将该代码拆分为独立的类库</li>
-</ol>
-<h3 id="依赖"><a href="#依赖" class="headerlink" title="依赖"></a>依赖</h3><p>规范：</p>
-<ol>
-<li>应用必须通过配置显式声明出所有的依赖项，即使依赖的工具在所有的操作系统上都存在。比如 python 可以使用 pip 的 requirements.txt 文件声明出所有的依赖包及其版本信息。</li>
-<li>在运行时需要通过隔离手段确保应用不会调用未显式声明的依赖项。比如 python 应用可以通过virtualenv 技术来确保隔离性。</li>
-</ol>
-<p>优点：</p>
-<ol>
-<li>简化开发者的环境配置，通过构建命令即可安装所有的依赖项。</li>
-</ol>
-<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>规范：</p>
-<ol>
-<li>代码和配置单独管理，不要将配置放到代码仓库中管理。</li>
-<li>配置传递给应用的方式之一为配置文件，另外一种为环境变量。</li>
-</ol>
-<h3 id="后端服务"><a href="#后端服务" class="headerlink" title="后端服务"></a>后端服务</h3><p>规范：</p>
-<ol>
-<li>后端服务分为本地服务和第三方服务，对应用而言都是后端服务，不应该区别对待。</li>
-</ol>
-<h3 id="构建、发布和运行"><a href="#构建、发布和运行" class="headerlink" title="构建、发布和运行"></a>构建、发布和运行</h3><p>规范：</p>
-<ol>
-<li>严格区分从代码到部署的三个阶段：构建编译打包代码；将构建结果和部署需要的配置放到环境中；指定发布版本，在环境中启动应用。</li>
-<li>每个发布版本必须对应一个唯一的 id 标识。</li>
-</ol>
-<p>反模式：</p>
-<ol>
-<li>不可以直接修改环境中的代码，可能会导致非常难同步会构建步骤。</li>
-</ol>
-<h3 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h3><p>规范：</p>
-<ol>
-<li>应用的进程需要持久化的数据一定要保存到后端服务中，保持应用进程的无状态。</li>
-<li>本地的内存和磁盘可以作为应用的缓存数据。</li>
-<li>反对使用基于 session 的粘滞技术（某一个用户的请求通过一致性 hash 等技术请求到同一个后端服务，而后端服务将用户数据缓存在内存中），推荐将用户数据缓存到Redis 等分布式缓存中。很多互联网公司都会采用 session 粘滞技术，都违背了这一原则。</li>
-</ol>
-<h3 id="端口绑定"><a href="#端口绑定" class="headerlink" title="端口绑定"></a>端口绑定</h3><p>要求应用自己通过监听端口的方式来对外提供服务。</p>
-<h3 id="并发"><a href="#并发" class="headerlink" title="并发"></a>并发</h3><p>规范：</p>
-<ol>
-<li>允许通过多进程或者多线程的方式来处理高并发</li>
-<li>应用不需要守护进程或者写入 PID 文件，可以借助如 systemd 等工具来实现。</li>
-</ol>
-<h3 id="易处理"><a href="#易处理" class="headerlink" title="易处理"></a>易处理</h3><p>规范：</p>
-<ol>
-<li>进程启动速度尽可能快，以便于更好的支持弹性伸缩、部署应用。</li>
-<li>进程在接收到SIGTERM 信号后需要优雅停止。比如对于 nginx 而言，要等到处理完所有的连接后才可以退出。</li>
-<li>进程要能够处理各种异常情况。</li>
-</ol>
-<h3 id="开发环境与生产环境等价"><a href="#开发环境与生产环境等价" class="headerlink" title="开发环境与生产环境等价"></a>开发环境与生产环境等价</h3><p>核心就只有一点，尽可能保证开发环境与生产环境的一致性。</p>
-<h3 id="日志"><a href="#日志" class="headerlink" title="日志"></a>日志</h3><p>规范：</p>
-<ol>
-<li>应用程序将日志直接输出到标准输出，标准输出的内容由日志收集程序消费。</li>
-</ol>
-<p>反模式：</p>
-<ol>
-<li>现实中应用程序将日志直接写到了日志文件，并且自己来管理日志文件。</li>
-</ol>
-<h3 id="管理进程"><a href="#管理进程" class="headerlink" title="管理进程"></a>管理进程</h3><p>规范：</p>
-<ol>
-<li>仅需要执行一次的进程，跟普通的进程一样的管理思路，比如版本、执行环境等。</li>
-</ol>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
-<li><a href="https://12factor.net/zh_cn/">12要素应用</a></li>
-</ul>
-]]></content>
-  </entry>
-  <entry>
-    <title>记2015年十一假期的一件小事</title>
-    <url>/post/2015_10_01/</url>
-    <content><![CDATA[<p>十一回农村老家，有件小事有些感悟。</p>
-<p>只要家里有人，家里的大门白天一直都是敞着的，外面的人都可以直接走进来，这在农村是很正常的一件事情，门敞着才说明家里是有人的，农村的人没有城里人这么多的隔阂。</p>
-<p>正巧地里的活都干得差不多了，母亲在院子里晒着太阳，我在屋子里收拾东西。从门口走到院里一个人来，只见一身道姑打扮，还带一顶帽子，嘴里振振有辞，说是泰山娘娘庙里的保佑家里平安之类的。母亲见到来者第一反应就是骗子，立马上前说是地里有活要干，马上要出去了。来者压根不理会母亲的话，依旧是保佑平安之类的，像极了大街上迎上前去得乞讨者。来者说道，要捐款之类的，并有个小本子，上面写着捐款者的名字。母亲看了眼捐款者的名单，很多都是邻居家的，说明来者刚从家里过来，迟疑了一会便签上了名字，回屋里去取钱。</p>
-<p>这时还在屋子里的我才看到并明白过来是这么一回事，我一看母亲名字都签上了，钱肯定是要给的了，想逃掉避免少不了一番纠结。我便回屋子去取钱，在城市待习惯了，知道乞讨者五毛一块就能打发的很高兴，我便从钱包里去了两张一块的，其中一张还是备用的，我先给一块，要是嫌少再给两块。我先于母亲出了屋子，给到了来者一块钱，岂知来者说道别人都是给三十五十的，这些太少了我不要。靠！这年头乞讨还嫌钱少啊，还是我太out了？我直接说那你走吧，我没钱，并转头回屋子，可最烦的是她也跟着往屋里走。</p>
-<p>就在这时母亲从屋子里走出来并拿着10块钱，迎上前去给了她。又是嫌少之类的话，最后也不情愿的收下了，并留下了一根红丝带，说些全家平安之类的话就走了，当然了骗子的目的已经完成了，只需匆匆收场就行了。</p>
-<p>此事的经过到此结束，但却有个问题挺令我深思的，这也是为什么写下本文的原因。</p>
-<p>父母并不富裕，家里一直也是过得比较平淡的生活，在我看来勤奋和勤俭节约一直是我们老家那块的美德。平常家里买个菜什么的都要为了几毛钱掂量半天，但却在面对乞讨施舍这种事情上扔掉了10块钱的巨款，而且母亲对于骗钱这件事从始至终都是知情的。</p>
-<p>事后，我的同样上当受骗的邻居也来到了我家，通过邻居和我母亲的谈话我大体理解了他们在经历此事时的心理活动。由于每年都会有多次来到家里进行骗钱的，骗钱的方式是多种多样的，无非是找不到孩子，回不了家之类的，母亲一开始见到骗子就知道是个骗子，这第一印象的判断是过关的。</p>
-<p>母亲对骗子的第二个行为是阻拦，母亲用了要去地里干活的信息来阻拦，但是阻拦不彻底，见阻拦不成功就放弃了。这一点上就显现出了的缺点，不知道用合理的手段来保护自己，并完全从主动状态变为了被动状态。之所以意志这么不坚定，其中有一个很大的因素就是母亲知道强加阻拦的后果就是骗子可能会爆粗口，完全不想听骗子絮絮叨叨个没完没了，撵都撵不走，还不如给点钱省事。另外得罪的骗子的后果可能会更麻烦，毕竟骗子往往都是一个团伙，且知道家庭住址，怕有什么报复行为。所以之所有给钱的原因就是花钱买个安宁，免得带来一身的麻烦，当然从这个出发点上给钱是对的。骗子也正是利用了这一点才在农村屡试不爽。</p>
-<p>但给钱的数目跟平时的生活水平是完全不相符的，要知道在农村买上10块钱的菜可以吃上好几顿。我觉得之所以出现这个问题，根源在于对自己的不够重视。在中国这种权力的社会中，母亲一直觉得处于权力的最底层，事实也确实如此。即使在自己的家中也很容易变主动为被动，让骗子得手。</p>
-<p>可能有人会说农村的法律意识淡薄，不知道合理的维权，完全可以打110来解决。我曾经打110处理过店铺扰民这种鸡毛小事，110给的处理时间为5天，这还是在城市里。我估计换做农村的派出所，这种小事估计110是请不动的。</p>
-<p>我在此次事件中并没有第一时间作出应有的反应，这点我需要反省。首先，我见到母亲签字后没有跟骗子要一下工作证明，这样子至少让骗子没这么容易得逞，给我的反驳增加大大的筹码。其次，没有阻拦母亲给骗子送钱，按照我的意思是跟骗子死缠到底的，毕竟是在我家，给不给钱也是我的自由。但我怕在家里生活时间不长，骗子的规矩我不懂，还是顺从了母亲的行为。</p>
-<p>之所以写这篇文章是想梳理下农民身上的共同缺点及我身上的缺点。我不是歧视农民，我是农村出来的，我知道农村人的辛苦，忙起来的时候他们的辛苦程度是我等码农不能企及的。</p>
-<p>在这里为广大奋斗在田地里的农民致敬！</p>
-]]></content>
-  </entry>
-  <entry>
     <title>2015年找工作的一段经历</title>
     <url>/post/2015_interview/</url>
     <content><![CDATA[<p>前段时间我的工作有了一个比较大的变动，我的工作地点从济南到了北京，离开了待了9年的济南，离开了温馨的家，离开了我的亲人，独自一人开启了北漂模式。</p>
@@ -1318,6 +1228,96 @@
 <p>安装软件需要通过命令<code>yum --disablerepo=\* --enablerepo=c6-media [command]</code>，执行<code>yum [command]</code>命令时还是联网执行。</p>
 <h1 id="设置开启启动自动挂载iso文件"><a href="#设置开启启动自动挂载iso文件" class="headerlink" title="设置开启启动自动挂载iso文件"></a>设置开启启动自动挂载iso文件</h1><p>在&#x2F;etc&#x2F;fstab文件中的末尾增加如下内容：</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">/mnt/hgfs/iso/CentOS-6.5-x86_64-bin-DVD1.iso /media/cdrom/ iso9660 loop 0 0</span><br><span class="line">/mnt/hgfs/iso/CentOS-6.5-x86_64-bin-DVD2.iso /media/CentOS/ iso9660 loop 0 0</span><br></pre></td></tr></table></figure>]]></content>
+  </entry>
+  <entry>
+    <title>12要素应用</title>
+    <url>/post/12-factors-app/</url>
+    <content><![CDATA[<p>2012 年，Heroku 创始人 Adam Wiggins 发布十二要素应用宣言，又被称为微服务十二要素。</p>
+<h2 id="内容"><a href="#内容" class="headerlink" title="内容"></a>内容</h2><h3 id="基准代码"><a href="#基准代码" class="headerlink" title="基准代码"></a>基准代码</h3><ol>
+<li>一个应用一个代码仓库，不要出现一个代码仓库对应多个应用的情况</li>
+<li>如果多个应用共享一份代码，那么需要将该代码拆分为独立的类库</li>
+</ol>
+<h3 id="依赖"><a href="#依赖" class="headerlink" title="依赖"></a>依赖</h3><p>规范：</p>
+<ol>
+<li>应用必须通过配置显式声明出所有的依赖项，即使依赖的工具在所有的操作系统上都存在。比如 python 可以使用 pip 的 requirements.txt 文件声明出所有的依赖包及其版本信息。</li>
+<li>在运行时需要通过隔离手段确保应用不会调用未显式声明的依赖项。比如 python 应用可以通过virtualenv 技术来确保隔离性。</li>
+</ol>
+<p>优点：</p>
+<ol>
+<li>简化开发者的环境配置，通过构建命令即可安装所有的依赖项。</li>
+</ol>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>规范：</p>
+<ol>
+<li>代码和配置单独管理，不要将配置放到代码仓库中管理。</li>
+<li>配置传递给应用的方式之一为配置文件，另外一种为环境变量。</li>
+</ol>
+<h3 id="后端服务"><a href="#后端服务" class="headerlink" title="后端服务"></a>后端服务</h3><p>规范：</p>
+<ol>
+<li>后端服务分为本地服务和第三方服务，对应用而言都是后端服务，不应该区别对待。</li>
+</ol>
+<h3 id="构建、发布和运行"><a href="#构建、发布和运行" class="headerlink" title="构建、发布和运行"></a>构建、发布和运行</h3><p>规范：</p>
+<ol>
+<li>严格区分从代码到部署的三个阶段：构建编译打包代码；将构建结果和部署需要的配置放到环境中；指定发布版本，在环境中启动应用。</li>
+<li>每个发布版本必须对应一个唯一的 id 标识。</li>
+</ol>
+<p>反模式：</p>
+<ol>
+<li>不可以直接修改环境中的代码，可能会导致非常难同步会构建步骤。</li>
+</ol>
+<h3 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h3><p>规范：</p>
+<ol>
+<li>应用的进程需要持久化的数据一定要保存到后端服务中，保持应用进程的无状态。</li>
+<li>本地的内存和磁盘可以作为应用的缓存数据。</li>
+<li>反对使用基于 session 的粘滞技术（某一个用户的请求通过一致性 hash 等技术请求到同一个后端服务，而后端服务将用户数据缓存在内存中），推荐将用户数据缓存到Redis 等分布式缓存中。很多互联网公司都会采用 session 粘滞技术，都违背了这一原则。</li>
+</ol>
+<h3 id="端口绑定"><a href="#端口绑定" class="headerlink" title="端口绑定"></a>端口绑定</h3><p>要求应用自己通过监听端口的方式来对外提供服务。</p>
+<h3 id="并发"><a href="#并发" class="headerlink" title="并发"></a>并发</h3><p>规范：</p>
+<ol>
+<li>允许通过多进程或者多线程的方式来处理高并发</li>
+<li>应用不需要守护进程或者写入 PID 文件，可以借助如 systemd 等工具来实现。</li>
+</ol>
+<h3 id="易处理"><a href="#易处理" class="headerlink" title="易处理"></a>易处理</h3><p>规范：</p>
+<ol>
+<li>进程启动速度尽可能快，以便于更好的支持弹性伸缩、部署应用。</li>
+<li>进程在接收到SIGTERM 信号后需要优雅停止。比如对于 nginx 而言，要等到处理完所有的连接后才可以退出。</li>
+<li>进程要能够处理各种异常情况。</li>
+</ol>
+<h3 id="开发环境与生产环境等价"><a href="#开发环境与生产环境等价" class="headerlink" title="开发环境与生产环境等价"></a>开发环境与生产环境等价</h3><p>核心就只有一点，尽可能保证开发环境与生产环境的一致性。</p>
+<h3 id="日志"><a href="#日志" class="headerlink" title="日志"></a>日志</h3><p>规范：</p>
+<ol>
+<li>应用程序将日志直接输出到标准输出，标准输出的内容由日志收集程序消费。</li>
+</ol>
+<p>反模式：</p>
+<ol>
+<li>现实中应用程序将日志直接写到了日志文件，并且自己来管理日志文件。</li>
+</ol>
+<h3 id="管理进程"><a href="#管理进程" class="headerlink" title="管理进程"></a>管理进程</h3><p>规范：</p>
+<ol>
+<li>仅需要执行一次的进程，跟普通的进程一样的管理思路，比如版本、执行环境等。</li>
+</ol>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://12factor.net/zh_cn/">12要素应用</a></li>
+</ul>
+]]></content>
+  </entry>
+  <entry>
+    <title>记2015年十一假期的一件小事</title>
+    <url>/post/2015_10_01/</url>
+    <content><![CDATA[<p>十一回农村老家，有件小事有些感悟。</p>
+<p>只要家里有人，家里的大门白天一直都是敞着的，外面的人都可以直接走进来，这在农村是很正常的一件事情，门敞着才说明家里是有人的，农村的人没有城里人这么多的隔阂。</p>
+<p>正巧地里的活都干得差不多了，母亲在院子里晒着太阳，我在屋子里收拾东西。从门口走到院里一个人来，只见一身道姑打扮，还带一顶帽子，嘴里振振有辞，说是泰山娘娘庙里的保佑家里平安之类的。母亲见到来者第一反应就是骗子，立马上前说是地里有活要干，马上要出去了。来者压根不理会母亲的话，依旧是保佑平安之类的，像极了大街上迎上前去得乞讨者。来者说道，要捐款之类的，并有个小本子，上面写着捐款者的名字。母亲看了眼捐款者的名单，很多都是邻居家的，说明来者刚从家里过来，迟疑了一会便签上了名字，回屋里去取钱。</p>
+<p>这时还在屋子里的我才看到并明白过来是这么一回事，我一看母亲名字都签上了，钱肯定是要给的了，想逃掉避免少不了一番纠结。我便回屋子去取钱，在城市待习惯了，知道乞讨者五毛一块就能打发的很高兴，我便从钱包里去了两张一块的，其中一张还是备用的，我先给一块，要是嫌少再给两块。我先于母亲出了屋子，给到了来者一块钱，岂知来者说道别人都是给三十五十的，这些太少了我不要。靠！这年头乞讨还嫌钱少啊，还是我太out了？我直接说那你走吧，我没钱，并转头回屋子，可最烦的是她也跟着往屋里走。</p>
+<p>就在这时母亲从屋子里走出来并拿着10块钱，迎上前去给了她。又是嫌少之类的话，最后也不情愿的收下了，并留下了一根红丝带，说些全家平安之类的话就走了，当然了骗子的目的已经完成了，只需匆匆收场就行了。</p>
+<p>此事的经过到此结束，但却有个问题挺令我深思的，这也是为什么写下本文的原因。</p>
+<p>父母并不富裕，家里一直也是过得比较平淡的生活，在我看来勤奋和勤俭节约一直是我们老家那块的美德。平常家里买个菜什么的都要为了几毛钱掂量半天，但却在面对乞讨施舍这种事情上扔掉了10块钱的巨款，而且母亲对于骗钱这件事从始至终都是知情的。</p>
+<p>事后，我的同样上当受骗的邻居也来到了我家，通过邻居和我母亲的谈话我大体理解了他们在经历此事时的心理活动。由于每年都会有多次来到家里进行骗钱的，骗钱的方式是多种多样的，无非是找不到孩子，回不了家之类的，母亲一开始见到骗子就知道是个骗子，这第一印象的判断是过关的。</p>
+<p>母亲对骗子的第二个行为是阻拦，母亲用了要去地里干活的信息来阻拦，但是阻拦不彻底，见阻拦不成功就放弃了。这一点上就显现出了的缺点，不知道用合理的手段来保护自己，并完全从主动状态变为了被动状态。之所以意志这么不坚定，其中有一个很大的因素就是母亲知道强加阻拦的后果就是骗子可能会爆粗口，完全不想听骗子絮絮叨叨个没完没了，撵都撵不走，还不如给点钱省事。另外得罪的骗子的后果可能会更麻烦，毕竟骗子往往都是一个团伙，且知道家庭住址，怕有什么报复行为。所以之所有给钱的原因就是花钱买个安宁，免得带来一身的麻烦，当然从这个出发点上给钱是对的。骗子也正是利用了这一点才在农村屡试不爽。</p>
+<p>但给钱的数目跟平时的生活水平是完全不相符的，要知道在农村买上10块钱的菜可以吃上好几顿。我觉得之所以出现这个问题，根源在于对自己的不够重视。在中国这种权力的社会中，母亲一直觉得处于权力的最底层，事实也确实如此。即使在自己的家中也很容易变主动为被动，让骗子得手。</p>
+<p>可能有人会说农村的法律意识淡薄，不知道合理的维权，完全可以打110来解决。我曾经打110处理过店铺扰民这种鸡毛小事，110给的处理时间为5天，这还是在城市里。我估计换做农村的派出所，这种小事估计110是请不动的。</p>
+<p>我在此次事件中并没有第一时间作出应有的反应，这点我需要反省。首先，我见到母亲签字后没有跟骗子要一下工作证明，这样子至少让骗子没这么容易得逞，给我的反驳增加大大的筹码。其次，没有阻拦母亲给骗子送钱，按照我的意思是跟骗子死缠到底的，毕竟是在我家，给不给钱也是我的自由。但我怕在家里生活时间不长，骗子的规矩我不懂，还是顺从了母亲的行为。</p>
+<p>之所以写这篇文章是想梳理下农民身上的共同缺点及我身上的缺点。我不是歧视农民，我是农村出来的，我知道农村人的辛苦，忙起来的时候他们的辛苦程度是我等码农不能企及的。</p>
+<p>在这里为广大奋斗在田地里的农民致敬！</p>
+]]></content>
   </entry>
   <entry>
     <title>证书技术</title>
@@ -4297,6 +4297,22 @@
       </tags>
   </entry>
   <entry>
+    <title>linux iowait</title>
+    <url>/post/iowait/</url>
+    <content><![CDATA[<p>iowait和load一样，都是非常容易让人产生误解的系统指标。</p>
+<p>iowait表示cpu空闲且有未完成的io请求的时间，iowait高并不能反映出磁盘是系统的性能瓶颈。iowait高的时候cpu正处于空闲状态，没有任务可以执行。此时存在已经发出的磁盘io，此时的cpu空闲状态称之为iowait。本质上，iowait是一种特殊的cpu空闲状态。</p>
+<p>iowait状态的cpu是运行在pid为0的idle线程上。</p>
+<p>cpu此时之所以进入睡眠状态，是因为进程处于睡眠状态，在等待某个特定的事件（比如网络数据，io操作完成等）。</p>
+<p>iowait仅能反应磁盘io的指标，并不能反应其他io设备的指标，比如网络丢包。</p>
+<p>在io wait的进程处于不可中断状态，通过top命令可以看到进程状态为</p>
+<p>由此可见，iowait包含的信息量非常少，仅凭iowait升高不能判断出系统io有问题。要想判断系统io有问题，还需要使用iostat等命令来查看系统的svctm、util、avgqu-sz等指标。</p>
+<h2 id="case-1"><a href="#case-1" class="headerlink" title="case 1"></a>case 1</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/iowait1.png" alt="http://linuxperf.com/wp-content/uploads/2015/02/iowait1.png"></p>
+<p>仅cpu的繁忙程度变化的情况下，会影响到iowait的值。</p>
+<h2 id="case-2"><a href="#case-2" class="headerlink" title="case 2"></a>case 2</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/iowait2.png" alt="http://linuxperf.com/wp-content/uploads/2015/02/iowait.png"></p>
+<p>在cpu繁忙程序不变的情况下，发起io请求的时间不同也会影响到iowait的值。</p>
+]]></content>
+  </entry>
+  <entry>
     <title>Linux IPIP隧道协议</title>
     <url>/post/ipip/</url>
     <content><![CDATA[<p>ipip协议为在ip协议报文的基础上继续封装ip报文，基于tun设备实现，是一种点对点的通讯技术。</p>
@@ -4325,99 +4341,6 @@
 <h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
 <li><a href="https://www.bbsmax.com/A/ke5jRmjV5r/">什么是 IP 隧道，Linux 怎么实现隧道通信？</a></li>
 </ul>
-]]></content>
-  </entry>
-  <entry>
-    <title>linux iowait</title>
-    <url>/post/iowait/</url>
-    <content><![CDATA[<p>iowait和load一样，都是非常容易让人产生误解的系统指标。</p>
-<p>iowait表示cpu空闲且有未完成的io请求的时间，iowait高并不能反映出磁盘是系统的性能瓶颈。iowait高的时候cpu正处于空闲状态，没有任务可以执行。此时存在已经发出的磁盘io，此时的cpu空闲状态称之为iowait。本质上，iowait是一种特殊的cpu空闲状态。</p>
-<p>iowait状态的cpu是运行在pid为0的idle线程上。</p>
-<p>cpu此时之所以进入睡眠状态，是因为进程处于睡眠状态，在等待某个特定的事件（比如网络数据，io操作完成等）。</p>
-<p>iowait仅能反应磁盘io的指标，并不能反应其他io设备的指标，比如网络丢包。</p>
-<p>在io wait的进程处于不可中断状态，通过top命令可以看到进程状态为</p>
-<p>由此可见，iowait包含的信息量非常少，仅凭iowait升高不能判断出系统io有问题。要想判断系统io有问题，还需要使用iostat等命令来查看系统的svctm、util、avgqu-sz等指标。</p>
-<h2 id="case-1"><a href="#case-1" class="headerlink" title="case 1"></a>case 1</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/iowait1.png" alt="http://linuxperf.com/wp-content/uploads/2015/02/iowait1.png"></p>
-<p>仅cpu的繁忙程度变化的情况下，会影响到iowait的值。</p>
-<h2 id="case-2"><a href="#case-2" class="headerlink" title="case 2"></a>case 2</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/iowait2.png" alt="http://linuxperf.com/wp-content/uploads/2015/02/iowait.png"></p>
-<p>在cpu繁忙程序不变的情况下，发起io请求的时间不同也会影响到iowait的值。</p>
-]]></content>
-  </entry>
-  <entry>
-    <title>ipv6</title>
-    <url>/post/ipv6/</url>
-    <content><![CDATA[<h2 id="ipv6的优势"><a href="#ipv6的优势" class="headerlink" title="ipv6的优势"></a>ipv6的优势</h2><ol>
-<li>拥有更大的地址空间。</li>
-<li>点对点通讯更方便。由于ipv6地址足够多，可以不再使用NAT功能，避免NAT场景下的各种坑。</li>
-<li>ip配置方便。每台机器都有一个唯一48位的mac地址，如果再增加一个80位的网段前缀即可组成ipv6地址。因此，在分配ip地址的时候，只需要获取到网段前缀即可获取到完整的ipv6地址了。</li>
-<li>局域网内更安全。去掉了arp协议，而是采用Neighbor Discovery协议。</li>
-</ol>
-<h2 id="ipv6的数据包格式"><a href="#ipv6的数据包格式" class="headerlink" title="ipv6的数据包格式"></a>ipv6的数据包格式</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipv6-header.png"></p>
-<p>分为报头、扩展报头和上层协议数据单元（PDU）三部分组成。</p>
-<h3 id="报头"><a href="#报头" class="headerlink" title="报头"></a>报头</h3><p>固定为40个字节，相比于 ipv4 的可变长度报文更简洁。</p>
-<ul>
-<li><p>版本：固定为4bit，固定值6。</p>
-</li>
-<li><p>业务流类别：8bit，用来表明数据流的通讯类别或者优先级。</p>
-</li>
-<li><p>流标签：20bit，标记ipv6路由器需要特殊处理的数据流，目的是为了让路由器对于同一批数据报文能够按照同样的逻辑来处理。目前该字段的应用场景较少。</p>
-</li>
-<li><p>净荷长度：16bit，扩展头和上次协议数据单元的字节数，不包含报头的固定 40 字节。</p>
-</li>
-<li><p>下一个头：8bit，每个字段值有固定含义，用来表示上层协议。如果上层协议为 tcp，那么该字段的值为 4。</p>
-</li>
-<li><p>跳限制：8bit，即跳数限制，等同于ipv4中的ttl值。</p>
-</li>
-<li><p>源ip地址：128bit</p>
-</li>
-<li><p>目的ip地址：128bit</p>
-</li>
-</ul>
-<h3 id="扩展报头"><a href="#扩展报头" class="headerlink" title="扩展报头"></a>扩展报头</h3><p>扩展报头的长度任意</p>
-<h2 id="ipv6地址"><a href="#ipv6地址" class="headerlink" title="ipv6地址"></a>ipv6地址</h2><h3 id="地址表示方法"><a href="#地址表示方法" class="headerlink" title="地址表示方法"></a>地址表示方法</h3><ol>
-<li>采用16进制表示法，共128位，分为8组，每组16位，每组用4个16进制表示。各组之间使用<code>:</code>分割。例如：1080:0:0:0:8:800:200C:417A。</li>
-<li>地址中出现连续的0，可以使用<code>::</code>来代替连续的0，一个地址中只能出现一次连续的0。例如上述地址可以表示为：1080::8:800:200C:417A。本地的回环地址可使用 <code>::1</code> 表示。</li>
-<li>如果ipv6的前面地址全部为0，可能存在包含ipv4地址的场景，可以使用ipv4的十进制表示方法。例如：0:0:0:0:0:0:61.1.133.1或者::61.1.133.1。</li>
-</ol>
-<p>ip地址结构包含了64位的网络地址和64位的主机地址，其中64位的网络地址又分为了48位的全球网络标识符和16位的本地子网标识符。</p>
-<h3 id="网段表示方法"><a href="#网段表示方法" class="headerlink" title="网段表示方法"></a>网段表示方法</h3><p>在ipv6中同样有网段的概念，如 2001:0:0:CD30::&#x2F;60 ，其中前60位为前缀长度，后面的所有位表示接口 ID，使用 <code>::</code> 表示，但前面的两个0不能使用 <code>::</code> 表示。</p>
-<h3 id="地址分类"><a href="#地址分类" class="headerlink" title="地址分类"></a>地址分类</h3><p>包括了如下地址类型，但跟 ipv4 不同的地方在于没有广播地址。</p>
-<h4 id="单播地址"><a href="#单播地址" class="headerlink" title="单播地址"></a>单播地址</h4><p>单播地址又可以分为如下类型：</p>
-<h5 id="链路本地地址（LLA）"><a href="#链路本地地址（LLA）" class="headerlink" title="链路本地地址（LLA）"></a>链路本地地址（LLA）</h5><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipv6-lla.jpg"></p>
-<p>类似于 ipv4 的私网地址段，但比 ipv4 的私网地址段范围更小，仅可以用于本地子网内通讯，不可被路由。以<code>fe80::/10</code>开头的地址段。设备要想支持 ipv6，必须要有链路本地地址，且只能设置一个。</p>
-<p>在设备启动时，通常该地址会自动设置，也可以手动设置。自动生成的地址通常会根据 mac 地址有关，因为每个设备的 mac 地址都是唯一的。</p>
-<h5 id="公网单播地址（GUA）"><a href="#公网单播地址（GUA）" class="headerlink" title="公网单播地址（GUA）"></a>公网单播地址（GUA）</h5><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipv6-uga.jpg"></p>
-<p>类似于 ipv4 的公网地址。</p>
-<p>地址范围：<code>2000::3</code> - <code>3fff::/16</code>，即以 2 或者 3 开头，用总 ipv6 地址空间的1&#x2F;8。</p>
-<p>通常情况下，公网路由前缀为 48 位，子网 id 为 16 位，接口 id 为 64 位。</p>
-<h5 id="本地唯一单播地址（ULA）"><a href="#本地唯一单播地址（ULA）" class="headerlink" title="本地唯一单播地址（ULA）"></a>本地唯一单播地址（ULA）</h5><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipv6-ula.jpg"></p>
-<p>范围：<code>fc00::/7</code>，当前唯一有效的前缀为<code>fd00::/8</code>。只能在私网内部使用，不能在公网上路由。</p>
-<p>其全网 id 的部分采用伪随机算法，可以尽最大可可能确保全局的唯一性，从而在两个网络进行并网的时候减少地址冲突的概率。</p>
-<h5 id="loopback地址"><a href="#loopback地址" class="headerlink" title="loopback地址"></a>loopback地址</h5><p>即 <code>::1</code>，等同于 ipv4 的 <code>127.0.0.1/8</code></p>
-<h5 id="未指定单播地址"><a href="#未指定单播地址" class="headerlink" title="未指定单播地址"></a>未指定单播地址</h5><p>即 <code>::</code>。</p>
-<h4 id="多播地址（Multicast）"><a href="#多播地址（Multicast）" class="headerlink" title="多播地址（Multicast）"></a>多播地址（Multicast）</h4><p>又叫组播地址，标识一组节点，目的为组播地址的流量会转发到组内的所有节点，类似于 ipv4 的广播地址。地址范围：<code>FF00::/8</code>。</p>
-<h4 id="任意播地址（Anycast）"><a href="#任意播地址（Anycast）" class="headerlink" title="任意播地址（Anycast）"></a>任意播地址（Anycast）</h4><p>标识一组节点，所有节点的接口分配相同的 ip 地址，目的为组播地址的流量会转发到组内的就近节点。任意播地址没有固定的前缀。</p>
-<h2 id="DNS服务和ipv6"><a href="#DNS服务和ipv6" class="headerlink" title="DNS服务和ipv6"></a>DNS服务和ipv6</h2><h3 id="双栈请求域名请求顺序"><a href="#双栈请求域名请求顺序" class="headerlink" title="双栈请求域名请求顺序"></a>双栈请求域名请求顺序</h3><p>在开启ipv4&#x2F;ipv6双栈的情况下，域名解析会同时发出A&#x2F;AAAA请求，发出请求的先后顺序由&#x2F;etc&#x2F;resolv.conf的option中的inet6选项决定。</p>
-<h3 id="ipv6与-x2F-etc-x2F-hosts文件"><a href="#ipv6与-x2F-etc-x2F-hosts文件" class="headerlink" title="ipv6与  &#x2F;etc&#x2F;hosts文件"></a>ipv6与  &#x2F;etc&#x2F;hosts文件</h3><p>通常在&#x2F;etc&#x2F;hosts文件中包含了如下的回环地址</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">::1             localhost6.localdomain6 localhost6</span><br></pre></td></tr></table></figure>
-
-
-
-<h3 id="检测域名是否支持ipv6"><a href="#检测域名是否支持ipv6" class="headerlink" title="检测域名是否支持ipv6"></a>检测域名是否支持ipv6</h3><h4 id="dig-aaaa方法"><a href="#dig-aaaa方法" class="headerlink" title="dig aaaa方法"></a>dig aaaa方法</h4><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">dig</span> <span class="string">aaaa</span>  <span class="string">ipv6.google.com.hk</span></span><br><span class="line"></span><br><span class="line"><span class="string">;</span> <span class="string">&lt;&lt;&gt;&gt;</span> <span class="string">DiG</span> <span class="number">9.10</span><span class="number">.6</span> <span class="string">&lt;&lt;&gt;&gt;</span> <span class="string">aaaa</span> <span class="string">ipv6.google.com.hk</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">global options:</span> <span class="string">+cmd</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">Got answer:</span></span><br><span class="line"><span class="string">;;</span> <span class="string">-&gt;&gt;HEADER&lt;&lt;-</span> <span class="attr">opcode:</span> <span class="string">QUERY,</span> <span class="attr">status:</span> <span class="string">NOERROR,</span> <span class="attr">id:</span> <span class="number">50248</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">flags:</span> <span class="string">qr</span> <span class="string">rd</span> <span class="string">ra;</span> <span class="attr">QUERY:</span> <span class="number">1</span><span class="string">,</span> <span class="attr">ANSWER:</span> <span class="number">6</span><span class="string">,</span> <span class="attr">AUTHORITY:</span> <span class="number">0</span><span class="string">,</span> <span class="attr">ADDITIONAL:</span> <span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="string">;;</span> <span class="attr">OPT PSEUDOSECTION:</span></span><br><span class="line"><span class="string">;</span> <span class="attr">EDNS: version:</span> <span class="number">0</span><span class="string">,</span> <span class="string">flags:;</span> <span class="attr">udp:</span> <span class="number">4000</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">QUESTION SECTION:</span></span><br><span class="line"><span class="string">;ipv6.google.com.hk.</span>		<span class="string">IN</span>	<span class="string">AAAA</span></span><br><span class="line"></span><br><span class="line"><span class="string">;;</span> <span class="attr">ANSWER SECTION:</span></span><br><span class="line"><span class="string">ipv6.google.com.hk.</span>	<span class="number">21600</span>	<span class="string">IN</span>	<span class="string">CNAME</span>	<span class="string">ipv6.google.com.</span></span><br><span class="line"><span class="string">ipv6.google.com.</span>	<span class="number">21600</span>	<span class="string">IN</span>	<span class="string">CNAME</span>	<span class="string">ipv6.l.google.com.</span></span><br><span class="line"><span class="string">ipv6.l.google.com.</span>	<span class="number">300</span>	<span class="string">IN</span>	<span class="string">AAAA</span>	<span class="number">2607</span><span class="string">:f8b0:4003:c0b::71</span></span><br><span class="line"><span class="string">ipv6.l.google.com.</span>	<span class="number">300</span>	<span class="string">IN</span>	<span class="string">AAAA</span>	<span class="number">2607</span><span class="string">:f8b0:4003:c0b::64</span></span><br><span class="line"><span class="string">ipv6.l.google.com.</span>	<span class="number">300</span>	<span class="string">IN</span>	<span class="string">AAAA</span>	<span class="number">2607</span><span class="string">:f8b0:4003:c0b::65</span></span><br><span class="line"><span class="string">ipv6.l.google.com.</span>	<span class="number">300</span>	<span class="string">IN</span>	<span class="string">AAAA</span>	<span class="number">2607</span><span class="string">:f8b0:4003:c0b::8b</span></span><br><span class="line"></span><br><span class="line"><span class="string">;;</span> <span class="attr">Query time:</span> <span class="number">83</span> <span class="string">msec</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">SERVER:</span> <span class="number">30.30</span><span class="number">.30</span><span class="number">.30</span><span class="comment">#53(30.30.30.30)</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">WHEN:</span> <span class="string">Mon</span> <span class="string">Jun</span> <span class="number">20</span> <span class="number">10</span><span class="string">:45:37</span> <span class="string">CST</span> <span class="number">2022</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">MSG SIZE  rcvd:</span> <span class="number">209</span></span><br></pre></td></tr></table></figure>
-
-<h4 id="使用网站测试"><a href="#使用网站测试" class="headerlink" title="使用网站测试"></a>使用网站测试</h4><p>使用该网址，将域名更换为对应的域名：<a href="http://ipv6-test.com/validate.php?url=http://www.microsoft.com">http://ipv6-test.com/validate.php?url=http://www.microsoft.com</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipv6-check.png"></p>
-<h2 id="启用ipv6"><a href="#启用ipv6" class="headerlink" title="启用ipv6"></a>启用ipv6</h2><p>ipv6特性可以设置在整个系统级别或者单个网卡上，默认启用。</p>
-<h3 id="系统级别"><a href="#系统级别" class="headerlink" title="系统级别"></a>系统级别</h3><p>系统级别可以通过内核参数 net.ipv6.conf.all.disable_ipv6 来查看是否启用，如果输出结果为0，说明启用。可以修改该内核参数的值来开启或者关闭系统级别的ipv6特性。</p>
-<p>也可以通过修改grub的内核参数来选择开启或者关闭，在  &#x2F;etc&#x2F;default&#x2F;grub 中GRUB_CMDLINE_LINUX追加如下内容，其中xxxxx代表当前已经有的参数：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">GRUB_CMDLINE_LINUX=&quot;xxxxx</span> <span class="string">ipv6.disable=1&quot;</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="网卡级别"><a href="#网卡级别" class="headerlink" title="网卡级别"></a>网卡级别</h3><p>可以通过 <code>ifconfig ethx</code> 命令来查看网卡信息，如果其中包含了inet6，则说明该网卡启用了ipv6特性。</p>
-<p>也可以通过 <code>sysctl net.ipv6.conf.ethx.disable_ipv6</code> 来查看网卡是否启用。其中ethx为对应的网卡名称。</p>
-<h3 id="nginx支持ipv6"><a href="#nginx支持ipv6" class="headerlink" title="nginx支持ipv6"></a>nginx支持ipv6</h3><p>默认情况下，nginx不支持ipv6，要支持ipv6，需要在编译的时候指定 –with-ipv6 选项。</p>
-<p>在编译完成后，通过nginx -V 查看需要包含 –with-ipv6 选项。</p>
-<h2 id="配置-ipv6"><a href="#配置-ipv6" class="headerlink" title="配置 ipv6"></a>配置 ipv6</h2><p>ifconfig  eth0  inet6 add 2607:f8b0:4003:c0b::71</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://developer.aliyun.com/article/87556?spm=a2c6h.13813017.content3.1.7de919b7VnWCcD">Linux有问必答：如何在Linux下禁用IPv6</a></p>
 ]]></content>
   </entry>
   <entry>
@@ -4559,6 +4482,98 @@
 <li><a href="https://www.frozentux.net/iptables-tutorial/iptables-tutorial.html#ACCEPTTARGET">Iptables Tutorial 1.2.2</a></li>
 </ul>
 ]]></content>
+  </entry>
+  <entry>
+    <title>ipv6</title>
+    <url>/post/ipv6/</url>
+    <content><![CDATA[<h2 id="ipv6的优势"><a href="#ipv6的优势" class="headerlink" title="ipv6的优势"></a>ipv6的优势</h2><ol>
+<li>拥有更大的地址空间。</li>
+<li>点对点通讯更方便。由于ipv6地址足够多，可以不再使用NAT功能，避免NAT场景下的各种坑。</li>
+<li>ip配置方便。每台机器都有一个唯一48位的mac地址，如果再增加一个80位的网段前缀即可组成ipv6地址。因此，在分配ip地址的时候，只需要获取到网段前缀即可获取到完整的ipv6地址了。</li>
+<li>局域网内更安全。去掉了arp协议，而是采用Neighbor Discovery协议。</li>
+</ol>
+<h2 id="ipv6的数据包格式"><a href="#ipv6的数据包格式" class="headerlink" title="ipv6的数据包格式"></a>ipv6的数据包格式</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipv6-header.png"></p>
+<p>分为报头、扩展报头和上层协议数据单元（PDU）三部分组成。</p>
+<h3 id="报头"><a href="#报头" class="headerlink" title="报头"></a>报头</h3><p>固定为40个字节，相比于 ipv4 的可变长度报文更简洁。</p>
+<ul>
+<li><p>版本：固定为4bit，固定值6。</p>
+</li>
+<li><p>业务流类别：8bit，用来表明数据流的通讯类别或者优先级。</p>
+</li>
+<li><p>流标签：20bit，标记ipv6路由器需要特殊处理的数据流，目的是为了让路由器对于同一批数据报文能够按照同样的逻辑来处理。目前该字段的应用场景较少。</p>
+</li>
+<li><p>净荷长度：16bit，扩展头和上次协议数据单元的字节数，不包含报头的固定 40 字节。</p>
+</li>
+<li><p>下一个头：8bit，每个字段值有固定含义，用来表示上层协议。如果上层协议为 tcp，那么该字段的值为 4。</p>
+</li>
+<li><p>跳限制：8bit，即跳数限制，等同于ipv4中的ttl值。</p>
+</li>
+<li><p>源ip地址：128bit</p>
+</li>
+<li><p>目的ip地址：128bit</p>
+</li>
+</ul>
+<h3 id="扩展报头"><a href="#扩展报头" class="headerlink" title="扩展报头"></a>扩展报头</h3><p>扩展报头的长度任意</p>
+<h2 id="ipv6地址"><a href="#ipv6地址" class="headerlink" title="ipv6地址"></a>ipv6地址</h2><h3 id="地址表示方法"><a href="#地址表示方法" class="headerlink" title="地址表示方法"></a>地址表示方法</h3><ol>
+<li>采用16进制表示法，共128位，分为8组，每组16位，每组用4个16进制表示。各组之间使用<code>:</code>分割。例如：1080:0:0:0:8:800:200C:417A。</li>
+<li>地址中出现连续的0，可以使用<code>::</code>来代替连续的0，一个地址中只能出现一次连续的0。例如上述地址可以表示为：1080::8:800:200C:417A。本地的回环地址可使用 <code>::1</code> 表示。</li>
+<li>如果ipv6的前面地址全部为0，可能存在包含ipv4地址的场景，可以使用ipv4的十进制表示方法。例如：0:0:0:0:0:0:61.1.133.1或者::61.1.133.1。</li>
+</ol>
+<p>ip地址结构包含了64位的网络地址和64位的主机地址，其中64位的网络地址又分为了48位的全球网络标识符和16位的本地子网标识符。</p>
+<h3 id="网段表示方法"><a href="#网段表示方法" class="headerlink" title="网段表示方法"></a>网段表示方法</h3><p>在ipv6中同样有网段的概念，如 2001:0:0:CD30::&#x2F;60 ，其中前60位为前缀长度，后面的所有位表示接口 ID，使用 <code>::</code> 表示，但前面的两个0不能使用 <code>::</code> 表示。</p>
+<h3 id="地址分类"><a href="#地址分类" class="headerlink" title="地址分类"></a>地址分类</h3><p>包括了如下地址类型，但跟 ipv4 不同的地方在于没有广播地址。</p>
+<h4 id="单播地址"><a href="#单播地址" class="headerlink" title="单播地址"></a>单播地址</h4><p>单播地址又可以分为如下类型：</p>
+<h5 id="链路本地地址（LLA）"><a href="#链路本地地址（LLA）" class="headerlink" title="链路本地地址（LLA）"></a>链路本地地址（LLA）</h5><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipv6-lla.jpg"></p>
+<p>类似于 ipv4 的私网地址段，但比 ipv4 的私网地址段范围更小，仅可以用于本地子网内通讯，不可被路由。以<code>fe80::/10</code>开头的地址段。设备要想支持 ipv6，必须要有链路本地地址，且只能设置一个。</p>
+<p>在设备启动时，通常该地址会自动设置，也可以手动设置。自动生成的地址通常会根据 mac 地址有关，因为每个设备的 mac 地址都是唯一的。</p>
+<h5 id="公网单播地址（GUA）"><a href="#公网单播地址（GUA）" class="headerlink" title="公网单播地址（GUA）"></a>公网单播地址（GUA）</h5><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipv6-uga.jpg"></p>
+<p>类似于 ipv4 的公网地址。</p>
+<p>地址范围：<code>2000::3</code> - <code>3fff::/16</code>，即以 2 或者 3 开头，用总 ipv6 地址空间的1&#x2F;8。</p>
+<p>通常情况下，公网路由前缀为 48 位，子网 id 为 16 位，接口 id 为 64 位。</p>
+<h5 id="本地唯一单播地址（ULA）"><a href="#本地唯一单播地址（ULA）" class="headerlink" title="本地唯一单播地址（ULA）"></a>本地唯一单播地址（ULA）</h5><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipv6-ula.jpg"></p>
+<p>范围：<code>fc00::/7</code>，当前唯一有效的前缀为<code>fd00::/8</code>。只能在私网内部使用，不能在公网上路由。</p>
+<p>其全网 id 的部分采用伪随机算法，可以尽最大可可能确保全局的唯一性，从而在两个网络进行并网的时候减少地址冲突的概率。</p>
+<h5 id="loopback地址"><a href="#loopback地址" class="headerlink" title="loopback地址"></a>loopback地址</h5><p>即 <code>::1</code>，等同于 ipv4 的 <code>127.0.0.1/8</code></p>
+<h5 id="未指定单播地址"><a href="#未指定单播地址" class="headerlink" title="未指定单播地址"></a>未指定单播地址</h5><p>即 <code>::</code>。</p>
+<h4 id="多播地址（Multicast）"><a href="#多播地址（Multicast）" class="headerlink" title="多播地址（Multicast）"></a>多播地址（Multicast）</h4><p>又叫组播地址，标识一组节点，目的为组播地址的流量会转发到组内的所有节点，类似于 ipv4 的广播地址。地址范围：<code>FF00::/8</code>。</p>
+<h4 id="任意播地址（Anycast）"><a href="#任意播地址（Anycast）" class="headerlink" title="任意播地址（Anycast）"></a>任意播地址（Anycast）</h4><p>标识一组节点，所有节点的接口分配相同的 ip 地址，目的为组播地址的流量会转发到组内的就近节点。任意播地址没有固定的前缀。</p>
+<h2 id="DNS服务和ipv6"><a href="#DNS服务和ipv6" class="headerlink" title="DNS服务和ipv6"></a>DNS服务和ipv6</h2><h3 id="双栈请求域名请求顺序"><a href="#双栈请求域名请求顺序" class="headerlink" title="双栈请求域名请求顺序"></a>双栈请求域名请求顺序</h3><p>在开启ipv4&#x2F;ipv6双栈的情况下，域名解析会同时发出A&#x2F;AAAA请求，发出请求的先后顺序由&#x2F;etc&#x2F;resolv.conf的option中的inet6选项决定。</p>
+<h3 id="ipv6与-x2F-etc-x2F-hosts文件"><a href="#ipv6与-x2F-etc-x2F-hosts文件" class="headerlink" title="ipv6与  &#x2F;etc&#x2F;hosts文件"></a>ipv6与  &#x2F;etc&#x2F;hosts文件</h3><p>通常在&#x2F;etc&#x2F;hosts文件中包含了如下的回环地址</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">::1             localhost6.localdomain6 localhost6</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="检测域名是否支持ipv6"><a href="#检测域名是否支持ipv6" class="headerlink" title="检测域名是否支持ipv6"></a>检测域名是否支持ipv6</h3><h4 id="dig-aaaa方法"><a href="#dig-aaaa方法" class="headerlink" title="dig aaaa方法"></a>dig aaaa方法</h4><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">dig</span> <span class="string">aaaa</span>  <span class="string">ipv6.google.com.hk</span></span><br><span class="line"></span><br><span class="line"><span class="string">;</span> <span class="string">&lt;&lt;&gt;&gt;</span> <span class="string">DiG</span> <span class="number">9.10</span><span class="number">.6</span> <span class="string">&lt;&lt;&gt;&gt;</span> <span class="string">aaaa</span> <span class="string">ipv6.google.com.hk</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">global options:</span> <span class="string">+cmd</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">Got answer:</span></span><br><span class="line"><span class="string">;;</span> <span class="string">-&gt;&gt;HEADER&lt;&lt;-</span> <span class="attr">opcode:</span> <span class="string">QUERY,</span> <span class="attr">status:</span> <span class="string">NOERROR,</span> <span class="attr">id:</span> <span class="number">50248</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">flags:</span> <span class="string">qr</span> <span class="string">rd</span> <span class="string">ra;</span> <span class="attr">QUERY:</span> <span class="number">1</span><span class="string">,</span> <span class="attr">ANSWER:</span> <span class="number">6</span><span class="string">,</span> <span class="attr">AUTHORITY:</span> <span class="number">0</span><span class="string">,</span> <span class="attr">ADDITIONAL:</span> <span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="string">;;</span> <span class="attr">OPT PSEUDOSECTION:</span></span><br><span class="line"><span class="string">;</span> <span class="attr">EDNS: version:</span> <span class="number">0</span><span class="string">,</span> <span class="string">flags:;</span> <span class="attr">udp:</span> <span class="number">4000</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">QUESTION SECTION:</span></span><br><span class="line"><span class="string">;ipv6.google.com.hk.</span>		<span class="string">IN</span>	<span class="string">AAAA</span></span><br><span class="line"></span><br><span class="line"><span class="string">;;</span> <span class="attr">ANSWER SECTION:</span></span><br><span class="line"><span class="string">ipv6.google.com.hk.</span>	<span class="number">21600</span>	<span class="string">IN</span>	<span class="string">CNAME</span>	<span class="string">ipv6.google.com.</span></span><br><span class="line"><span class="string">ipv6.google.com.</span>	<span class="number">21600</span>	<span class="string">IN</span>	<span class="string">CNAME</span>	<span class="string">ipv6.l.google.com.</span></span><br><span class="line"><span class="string">ipv6.l.google.com.</span>	<span class="number">300</span>	<span class="string">IN</span>	<span class="string">AAAA</span>	<span class="number">2607</span><span class="string">:f8b0:4003:c0b::71</span></span><br><span class="line"><span class="string">ipv6.l.google.com.</span>	<span class="number">300</span>	<span class="string">IN</span>	<span class="string">AAAA</span>	<span class="number">2607</span><span class="string">:f8b0:4003:c0b::64</span></span><br><span class="line"><span class="string">ipv6.l.google.com.</span>	<span class="number">300</span>	<span class="string">IN</span>	<span class="string">AAAA</span>	<span class="number">2607</span><span class="string">:f8b0:4003:c0b::65</span></span><br><span class="line"><span class="string">ipv6.l.google.com.</span>	<span class="number">300</span>	<span class="string">IN</span>	<span class="string">AAAA</span>	<span class="number">2607</span><span class="string">:f8b0:4003:c0b::8b</span></span><br><span class="line"></span><br><span class="line"><span class="string">;;</span> <span class="attr">Query time:</span> <span class="number">83</span> <span class="string">msec</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">SERVER:</span> <span class="number">30.30</span><span class="number">.30</span><span class="number">.30</span><span class="comment">#53(30.30.30.30)</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">WHEN:</span> <span class="string">Mon</span> <span class="string">Jun</span> <span class="number">20</span> <span class="number">10</span><span class="string">:45:37</span> <span class="string">CST</span> <span class="number">2022</span></span><br><span class="line"><span class="string">;;</span> <span class="attr">MSG SIZE  rcvd:</span> <span class="number">209</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="使用网站测试"><a href="#使用网站测试" class="headerlink" title="使用网站测试"></a>使用网站测试</h4><p>使用该网址，将域名更换为对应的域名：<a href="http://ipv6-test.com/validate.php?url=http://www.microsoft.com">http://ipv6-test.com/validate.php?url=http://www.microsoft.com</a></p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/ipv6-check.png"></p>
+<h2 id="启用ipv6"><a href="#启用ipv6" class="headerlink" title="启用ipv6"></a>启用ipv6</h2><p>ipv6特性可以设置在整个系统级别或者单个网卡上，默认启用。</p>
+<h3 id="系统级别"><a href="#系统级别" class="headerlink" title="系统级别"></a>系统级别</h3><p>系统级别可以通过内核参数 net.ipv6.conf.all.disable_ipv6 来查看是否启用，如果输出结果为0，说明启用。可以修改该内核参数的值来开启或者关闭系统级别的ipv6特性。</p>
+<p>也可以通过修改grub的内核参数来选择开启或者关闭，在  &#x2F;etc&#x2F;default&#x2F;grub 中GRUB_CMDLINE_LINUX追加如下内容，其中xxxxx代表当前已经有的参数：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">GRUB_CMDLINE_LINUX=&quot;xxxxx</span> <span class="string">ipv6.disable=1&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="网卡级别"><a href="#网卡级别" class="headerlink" title="网卡级别"></a>网卡级别</h3><p>可以通过 <code>ifconfig ethx</code> 命令来查看网卡信息，如果其中包含了inet6，则说明该网卡启用了ipv6特性。</p>
+<p>也可以通过 <code>sysctl net.ipv6.conf.ethx.disable_ipv6</code> 来查看网卡是否启用。其中ethx为对应的网卡名称。</p>
+<h3 id="nginx支持ipv6"><a href="#nginx支持ipv6" class="headerlink" title="nginx支持ipv6"></a>nginx支持ipv6</h3><p>默认情况下，nginx不支持ipv6，要支持ipv6，需要在编译的时候指定 –with-ipv6 选项。</p>
+<p>在编译完成后，通过nginx -V 查看需要包含 –with-ipv6 选项。</p>
+<h2 id="配置-ipv6"><a href="#配置-ipv6" class="headerlink" title="配置 ipv6"></a>配置 ipv6</h2><p>ifconfig  eth0  inet6 add 2607:f8b0:4003:c0b::71</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://developer.aliyun.com/article/87556?spm=a2c6h.13813017.content3.1.7de919b7VnWCcD">Linux有问必答：如何在Linux下禁用IPv6</a></p>
+]]></content>
+  </entry>
+  <entry>
+    <title>Java读取C语言写的二进制文件</title>
+    <url>/post/java_call_c_bit_file/</url>
+    <content><![CDATA[<p>本程序将讲解java调用C语言写的二进制文件，并将二进制文件中的内容利用Java读出。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line">#include &lt;string.h&gt;</span><br><span class="line"></span><br><span class="line">union data  </span><br><span class="line">&#123;  </span><br><span class="line">    int inter;  </span><br><span class="line">    char ch;    </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">struct Test</span><br><span class="line">&#123;</span><br><span class="line">    int length;</span><br><span class="line">    char arr[20];</span><br><span class="line"></span><br><span class="line">    void toBigEndian()</span><br><span class="line">    &#123;   </span><br><span class="line">        union data c;</span><br><span class="line">        c.inter = 1;</span><br><span class="line">        if(c.ch == 1)</span><br><span class="line">        &#123;   </span><br><span class="line">            // 小端</span><br><span class="line">            unsigned char temp;</span><br><span class="line">            unsigned char *tempData = (unsigned char *)&amp;length;</span><br><span class="line">            for (int i=0; i &lt; sizeof(int) / 2; i++)</span><br><span class="line">            &#123;   </span><br><span class="line">                temp = tempData[i];</span><br><span class="line">                tempData[i] = tempData[sizeof(int) - i - 1]; </span><br><span class="line">                tempData[sizeof(int) - i - 1] = temp;</span><br><span class="line">            &#125;   </span><br><span class="line">        &#125;   </span><br><span class="line">    &#125;   </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">    Test test;</span><br><span class="line">    memset(&amp;test, 0, sizeof(Test));</span><br><span class="line">    test.length = 0x12345678;</span><br><span class="line">    strcpy(test.arr, &quot;hello world&quot;);</span><br><span class="line">    test.toBigEndian();</span><br><span class="line">    FILE *file = fopen(&quot;test.txt&quot;, &quot;w+&quot;);</span><br><span class="line">    fwrite(&amp;test, sizeof(Test), 1, file);</span><br><span class="line">    fclose(file);</span><br><span class="line">    return 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>本例子中的C程序将一个包含int变量和char数组的结构体写入文件中。</p>
+<p>其中需要考虑到机器的大小端问题，java程序采用的大端字节序，因此这里将C的结构体在写入文件时转换成大端字节序。在将结构体写入到文件时，将其中的int类型变量转换成大端字节序，如果机器本身即为大端字节序则不需要转换字节序。</p>
+<p>java端读取的文件代码如下：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.File;</span><br><span class="line"><span class="keyword">import</span> java.io.FileInputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.FileNotFoundException;</span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="type">int</span> <span class="title function_">byte2int</span><span class="params">(<span class="type">byte</span>[] res)</span> &#123;</span><br><span class="line">		<span class="type">int</span> <span class="variable">targets</span> <span class="operator">=</span> (res[<span class="number">3</span>] &amp; <span class="number">0xff</span>) | (res[<span class="number">2</span>] &lt;&lt; <span class="number">8</span>) | (res[<span class="number">1</span>] &lt;&lt; <span class="number">16</span>) | (res[<span class="number">0</span>] &lt;&lt; <span class="number">24</span>);</span><br><span class="line">		<span class="keyword">return</span> targets; </span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> args</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">		<span class="type">File</span> <span class="variable">file</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">File</span>(<span class="string">&quot;test.txt&quot;</span>);</span><br><span class="line">		<span class="keyword">if</span> (!file.exists()) &#123;</span><br><span class="line">			System.out.println(<span class="string">&quot;文件不存在&quot;</span>);</span><br><span class="line">			<span class="keyword">return</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		<span class="type">byte</span>[] data = <span class="keyword">new</span> <span class="title class_">byte</span>[<span class="number">50</span>];</span><br><span class="line">		</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="type">FileInputStream</span> <span class="variable">fis</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FileInputStream</span>(file);</span><br><span class="line">			<span class="type">int</span> <span class="variable">size</span> <span class="operator">=</span> fis.read(data);</span><br><span class="line">			System.out.println(<span class="string">&quot;读取到&quot;</span> + size + <span class="string">&quot;个字节的数据&quot;</span>);</span><br><span class="line">		&#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		<span class="comment">// 转换完成的int值</span></span><br><span class="line">		<span class="type">int</span> <span class="variable">value</span> <span class="operator">=</span> byte2int(data);</span><br><span class="line">		System.out.printf(<span class="string">&quot;%x\n&quot;</span>, value);</span><br><span class="line">		</span><br><span class="line">		</span><br><span class="line">		<span class="type">StringBuffer</span> <span class="variable">sb</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuffer</span>();</span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">4</span>; i&lt;<span class="number">24</span>; i++) &#123;</span><br><span class="line">			System.out.print((<span class="type">char</span>)data[i]);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <tags>
+        <tag>Java C语言</tag>
+      </tags>
   </entry>
   <entry>
     <title>json patch</title>
@@ -4742,21 +4757,6 @@
 ]]></content>
   </entry>
   <entry>
-    <title>Java读取C语言写的二进制文件</title>
-    <url>/post/java_call_c_bit_file/</url>
-    <content><![CDATA[<p>本程序将讲解java调用C语言写的二进制文件，并将二进制文件中的内容利用Java读出。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line">#include &lt;string.h&gt;</span><br><span class="line"></span><br><span class="line">union data  </span><br><span class="line">&#123;  </span><br><span class="line">    int inter;  </span><br><span class="line">    char ch;    </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">struct Test</span><br><span class="line">&#123;</span><br><span class="line">    int length;</span><br><span class="line">    char arr[20];</span><br><span class="line"></span><br><span class="line">    void toBigEndian()</span><br><span class="line">    &#123;   </span><br><span class="line">        union data c;</span><br><span class="line">        c.inter = 1;</span><br><span class="line">        if(c.ch == 1)</span><br><span class="line">        &#123;   </span><br><span class="line">            // 小端</span><br><span class="line">            unsigned char temp;</span><br><span class="line">            unsigned char *tempData = (unsigned char *)&amp;length;</span><br><span class="line">            for (int i=0; i &lt; sizeof(int) / 2; i++)</span><br><span class="line">            &#123;   </span><br><span class="line">                temp = tempData[i];</span><br><span class="line">                tempData[i] = tempData[sizeof(int) - i - 1]; </span><br><span class="line">                tempData[sizeof(int) - i - 1] = temp;</span><br><span class="line">            &#125;   </span><br><span class="line">        &#125;   </span><br><span class="line">    &#125;   </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">    Test test;</span><br><span class="line">    memset(&amp;test, 0, sizeof(Test));</span><br><span class="line">    test.length = 0x12345678;</span><br><span class="line">    strcpy(test.arr, &quot;hello world&quot;);</span><br><span class="line">    test.toBigEndian();</span><br><span class="line">    FILE *file = fopen(&quot;test.txt&quot;, &quot;w+&quot;);</span><br><span class="line">    fwrite(&amp;test, sizeof(Test), 1, file);</span><br><span class="line">    fclose(file);</span><br><span class="line">    return 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>本例子中的C程序将一个包含int变量和char数组的结构体写入文件中。</p>
-<p>其中需要考虑到机器的大小端问题，java程序采用的大端字节序，因此这里将C的结构体在写入文件时转换成大端字节序。在将结构体写入到文件时，将其中的int类型变量转换成大端字节序，如果机器本身即为大端字节序则不需要转换字节序。</p>
-<p>java端读取的文件代码如下：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.File;</span><br><span class="line"><span class="keyword">import</span> java.io.FileInputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.FileNotFoundException;</span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="type">int</span> <span class="title function_">byte2int</span><span class="params">(<span class="type">byte</span>[] res)</span> &#123;</span><br><span class="line">		<span class="type">int</span> <span class="variable">targets</span> <span class="operator">=</span> (res[<span class="number">3</span>] &amp; <span class="number">0xff</span>) | (res[<span class="number">2</span>] &lt;&lt; <span class="number">8</span>) | (res[<span class="number">1</span>] &lt;&lt; <span class="number">16</span>) | (res[<span class="number">0</span>] &lt;&lt; <span class="number">24</span>);</span><br><span class="line">		<span class="keyword">return</span> targets; </span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> args</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">		<span class="type">File</span> <span class="variable">file</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">File</span>(<span class="string">&quot;test.txt&quot;</span>);</span><br><span class="line">		<span class="keyword">if</span> (!file.exists()) &#123;</span><br><span class="line">			System.out.println(<span class="string">&quot;文件不存在&quot;</span>);</span><br><span class="line">			<span class="keyword">return</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		<span class="type">byte</span>[] data = <span class="keyword">new</span> <span class="title class_">byte</span>[<span class="number">50</span>];</span><br><span class="line">		</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="type">FileInputStream</span> <span class="variable">fis</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FileInputStream</span>(file);</span><br><span class="line">			<span class="type">int</span> <span class="variable">size</span> <span class="operator">=</span> fis.read(data);</span><br><span class="line">			System.out.println(<span class="string">&quot;读取到&quot;</span> + size + <span class="string">&quot;个字节的数据&quot;</span>);</span><br><span class="line">		&#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		<span class="comment">// 转换完成的int值</span></span><br><span class="line">		<span class="type">int</span> <span class="variable">value</span> <span class="operator">=</span> byte2int(data);</span><br><span class="line">		System.out.printf(<span class="string">&quot;%x\n&quot;</span>, value);</span><br><span class="line">		</span><br><span class="line">		</span><br><span class="line">		<span class="type">StringBuffer</span> <span class="variable">sb</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuffer</span>();</span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">4</span>; i&lt;<span class="number">24</span>; i++) &#123;</span><br><span class="line">			System.out.print((<span class="type">char</span>)data[i]);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <tags>
-        <tag>Java C语言</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>k8s CSI</title>
     <url>/post/k8s-CSI/</url>
     <content><![CDATA[<p><a href="https://github.com/container-storage-interface/spec/blob/master/spec.md">CSI</a>：Container Storage Interface (CSI)</p>
@@ -4784,6 +4784,31 @@
 <figure class="highlight protobuf"><table><tr><td class="code"><pre><span class="line"><span class="keyword">service </span><span class="title class_">Node</span> &#123;</span><br><span class="line">  <span class="comment">// 针对块存储类型，将块设备格式化后先挂载到一个临时全局目录</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeStageVolume (NodeStageVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeStageVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeUnstageVolume (NodeUnstageVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeUnstageVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果是块存储设备，在执行完 NodeStageVolume 后，使用 linux 的 bind mount 技术将全局目录挂载到pod 中的对应目录</span></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodePublishVolume (NodePublishVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodePublishVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeUnpublishVolume (NodeUnpublishVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeUnpublishVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeGetVolumeStats (NodeGetVolumeStatsRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeGetVolumeStatsResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeExpandVolume(NodeExpandVolumeRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeExpandVolumeResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeGetCapabilities (NodeGetCapabilitiesRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeGetCapabilitiesResponse) </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">rpc</span> NodeGetInfo (NodeGetInfoRequest)</span></span><br><span class="line"><span class="function">    <span class="keyword">returns</span> (NodeGetInfoResponse) </span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><p>协议：<a href="https://github.com/container-storage-interface/spec/blob/master/spec.md">https://github.com/container-storage-interface/spec/blob/master/spec.md</a></p>
+]]></content>
+  </entry>
+  <entry>
+    <title>k8s apiserver 的限流</title>
+    <url>/post/k8s-apiserver-request-limit/</url>
+    <content><![CDATA[<h1 id="client-端限流"><a href="#client-端限流" class="headerlink" title="client 端限流"></a>client 端限流</h1><p>在 client-go 中会默认对客户端进行限流，并发度为 5。可以通过修改 rest.Conifg 来修改并发度。</p>
+<h1 id="MaxInFlightLimit-限流"><a href="#MaxInFlightLimit-限流" class="headerlink" title="MaxInFlightLimit 限流"></a>MaxInFlightLimit 限流</h1><p>通过如下参数来控制：</p>
+<ul>
+<li>–max-requests-inflight：代表只读请求的最大并发量</li>
+<li>–max-mutating-requests-inflight：代表写请求的最大并发量</li>
+</ul>
+<p>该实现为单个 kube-apiserver 层面的，可以针对所有的请求。</p>
+<h1 id="EventRateLimit"><a href="#EventRateLimit" class="headerlink" title="EventRateLimit"></a>EventRateLimit</h1><p>用来对 Event 类型的对象进行限制，可以通过 kube-apiserver 的参数 –admission-control-config-file 来指定配置文件，文件格式如下：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apiserver.config.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">AdmissionConfiguration</span></span><br><span class="line"><span class="attr">plugins:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">EventRateLimit</span></span><br><span class="line">    <span class="attr">path:</span> <span class="string">eventconfig.yaml</span></span><br><span class="line"><span class="string">...</span></span><br></pre></td></tr></table></figure>
+<p>其中 EventRateLimit 为对 Event 的限制，eventconfig.yaml 文件为详细的对 Event 的限流策略，可以精确到 Namespace 和 User 信息。</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">eventratelimit.admission.k8s.io/v1alpha1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Configuration</span></span><br><span class="line"><span class="attr">limits:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">Namespace</span></span><br><span class="line">    <span class="attr">qps:</span> <span class="number">50</span></span><br><span class="line">    <span class="attr">burst:</span> <span class="number">100</span></span><br><span class="line">    <span class="attr">cacheSize:</span> <span class="number">2000</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">User</span></span><br><span class="line">    <span class="attr">qps:</span> <span class="number">10</span></span><br><span class="line">    <span class="attr">burst:</span> <span class="number">50</span></span><br></pre></td></tr></table></figure>
+<h1 id="API-优先级和公平性"><a href="#API-优先级和公平性" class="headerlink" title="API 优先级和公平性"></a>API 优先级和公平性</h1><p>版本状态：</p>
+<ol>
+<li>alpha：1.18</li>
+</ol>
+<p>通过 kube-apiserver 的参数 <code>--enable-priority-fairness</code> 来控制是否开启 APF 特性。</p>
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
+<li><a href="https://qingwave.github.io/k8s-rate-limit/">kubernetes apiserver限流方案</a></li>
+<li><a href="https://kubernetes.io/zh-cn/docs/concepts/cluster-administration/flow-control/">API 优先级和公平性</a></li>
+</ul>
 ]]></content>
   </entry>
   <entry>
@@ -4880,31 +4905,6 @@
 <li><a href="https://kind.sigs.k8s.io/docs/user/configuration/">https://kind.sigs.k8s.io/docs/user/configuration/</a></li>
 </ul>
 <br />
-]]></content>
-  </entry>
-  <entry>
-    <title>k8s apiserver 的限流</title>
-    <url>/post/k8s-apiserver-request-limit/</url>
-    <content><![CDATA[<h1 id="client-端限流"><a href="#client-端限流" class="headerlink" title="client 端限流"></a>client 端限流</h1><p>在 client-go 中会默认对客户端进行限流，并发度为 5。可以通过修改 rest.Conifg 来修改并发度。</p>
-<h1 id="MaxInFlightLimit-限流"><a href="#MaxInFlightLimit-限流" class="headerlink" title="MaxInFlightLimit 限流"></a>MaxInFlightLimit 限流</h1><p>通过如下参数来控制：</p>
-<ul>
-<li>–max-requests-inflight：代表只读请求的最大并发量</li>
-<li>–max-mutating-requests-inflight：代表写请求的最大并发量</li>
-</ul>
-<p>该实现为单个 kube-apiserver 层面的，可以针对所有的请求。</p>
-<h1 id="EventRateLimit"><a href="#EventRateLimit" class="headerlink" title="EventRateLimit"></a>EventRateLimit</h1><p>用来对 Event 类型的对象进行限制，可以通过 kube-apiserver 的参数 –admission-control-config-file 来指定配置文件，文件格式如下：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apiserver.config.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">AdmissionConfiguration</span></span><br><span class="line"><span class="attr">plugins:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">EventRateLimit</span></span><br><span class="line">    <span class="attr">path:</span> <span class="string">eventconfig.yaml</span></span><br><span class="line"><span class="string">...</span></span><br></pre></td></tr></table></figure>
-<p>其中 EventRateLimit 为对 Event 的限制，eventconfig.yaml 文件为详细的对 Event 的限流策略，可以精确到 Namespace 和 User 信息。</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">eventratelimit.admission.k8s.io/v1alpha1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Configuration</span></span><br><span class="line"><span class="attr">limits:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">Namespace</span></span><br><span class="line">    <span class="attr">qps:</span> <span class="number">50</span></span><br><span class="line">    <span class="attr">burst:</span> <span class="number">100</span></span><br><span class="line">    <span class="attr">cacheSize:</span> <span class="number">2000</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">type:</span> <span class="string">User</span></span><br><span class="line">    <span class="attr">qps:</span> <span class="number">10</span></span><br><span class="line">    <span class="attr">burst:</span> <span class="number">50</span></span><br></pre></td></tr></table></figure>
-<h1 id="API-优先级和公平性"><a href="#API-优先级和公平性" class="headerlink" title="API 优先级和公平性"></a>API 优先级和公平性</h1><p>版本状态：</p>
-<ol>
-<li>alpha：1.18</li>
-</ol>
-<p>通过 kube-apiserver 的参数 <code>--enable-priority-fairness</code> 来控制是否开启 APF 特性。</p>
-<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
-<li><a href="https://qingwave.github.io/k8s-rate-limit/">kubernetes apiserver限流方案</a></li>
-<li><a href="https://kubernetes.io/zh-cn/docs/concepts/cluster-administration/flow-control/">API 优先级和公平性</a></li>
-</ul>
 ]]></content>
   </entry>
   <entry>
@@ -6390,24 +6390,6 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 ]]></content>
   </entry>
   <entry>
-    <title>linux中获取错误信息的方式</title>
-    <url>/post/linux_get_error_of_function/</url>
-    <content><![CDATA[<p>当linux中的函数内部出错时通常函数会返回-1，并且将错误码保存到全局变量errno中，用来表示错误代码。errno全局变量包含在头文件errno.h文件中。下面给出三种打印错误信息的方法。</p>
-<h1 id="perror函数"><a href="#perror函数" class="headerlink" title="perror函数"></a>perror函数</h1><p>应用举例如下：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        perror(<span class="string">&quot;error : &quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>输出如下：<br>Permission denied</p>
-<h1 id="strerror函数"><a href="#strerror函数" class="headerlink" title="strerror函数"></a>strerror函数</h1><p>strerror函数原型为：char *strerror(int errnum);将参数errnum转换为对应的错误码。<br>应用举例如下：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, strerror(errno));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>输出如下：<br>Permission denied</p>
-<h1 id="printf中的-m打印"><a href="#printf中的-m打印" class="headerlink" title="printf中的%m打印"></a>printf中的%m打印</h1><p>应用举例如下：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%m\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>输出如下：<br>Permission denied</p>
-]]></content>
-      <tags>
-        <tag>Linux</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>在linux程序中获取和设置环境变量</title>
     <url>/post/linux_get_and_set_env_variable/</url>
     <content><![CDATA[<h1 id="shell中的环境变量"><a href="#shell中的环境变量" class="headerlink" title="shell中的环境变量"></a>shell中的环境变量</h1><h3 id="查看环境变量"><a href="#查看环境变量" class="headerlink" title="查看环境变量"></a>查看环境变量</h3><ol>
@@ -6425,6 +6407,24 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 <h1 id="通过系统函数"><a href="#通过系统函数" class="headerlink" title="通过系统函数"></a>通过系统函数</h1><p>在C语言的头文件“stdlib.h”中定义了三个和环境变量相关的函数：</p>
 <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">char</span> *<span class="title function_">getenv</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *name)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">setenv</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *name, <span class="type">const</span> <span class="type">char</span> *value, <span class="type">int</span> overwrite)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">unsetenv</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *name)</span>;</span><br></pre></td></tr></table></figure>
 <p>比较简单，不再举例。</p>
+]]></content>
+      <tags>
+        <tag>Linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>linux中获取错误信息的方式</title>
+    <url>/post/linux_get_error_of_function/</url>
+    <content><![CDATA[<p>当linux中的函数内部出错时通常函数会返回-1，并且将错误码保存到全局变量errno中，用来表示错误代码。errno全局变量包含在头文件errno.h文件中。下面给出三种打印错误信息的方法。</p>
+<h1 id="perror函数"><a href="#perror函数" class="headerlink" title="perror函数"></a>perror函数</h1><p>应用举例如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        perror(<span class="string">&quot;error : &quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出如下：<br>Permission denied</p>
+<h1 id="strerror函数"><a href="#strerror函数" class="headerlink" title="strerror函数"></a>strerror函数</h1><p>strerror函数原型为：char *strerror(int errnum);将参数errnum转换为对应的错误码。<br>应用举例如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, strerror(errno));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出如下：<br>Permission denied</p>
+<h1 id="printf中的-m打印"><a href="#printf中的-m打印" class="headerlink" title="printf中的%m打印"></a>printf中的%m打印</h1><p>应用举例如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE *fp ;</span><br><span class="line">    fp = fopen( <span class="string">&quot;/root/noexitfile&quot;</span>, <span class="string">&quot;r+&quot;</span> );</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == fp )</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%m\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出如下：<br>Permission denied</p>
 ]]></content>
       <tags>
         <tag>Linux</tag>
@@ -8561,6 +8561,22 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
       </tags>
   </entry>
   <entry>
+    <title>自动通过跳板机登录到其他服务器</title>
+    <url>/post/relay-auto-login/</url>
+    <content><![CDATA[<p>最近公司需要首先登录跳板机relay，然后通过跳板机才能登录服务器，操作上略显麻烦。为了节省登录服务器的时间，我编写了一个简单的脚本来简化登录操作。</p>
+<p>实现效果为在本地terminal下，执行<code>wrelay $host</code>，即可自动登录到相应的主机。</p>
+<h1 id="在relay服务器上增加对其他服务器的免登录命令"><a href="#在relay服务器上增加对其他服务器的免登录命令" class="headerlink" title="在relay服务器上增加对其他服务器的免登录命令"></a>在relay服务器上增加对其他服务器的免登录命令</h1><p>在relay服务器上ssh到其他主机时需要输入密码，使用expect命令来登录到其他主机时通过expect脚本来实现自动输入密码并登录的功能。</p>
+<p>在&#x2F;home&#x2F;$user目录下新建mybin文件夹，并将mybin文件夹添加到$PATH环境变量中，具体修改方法不展开。</p>
+<p>在mybin目录下增加gw脚本，内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/usr/bin/expect</span><br><span class="line"></span><br><span class="line">if &#123;$argc &lt; 1&#125; &#123;</span><br><span class="line">    puts &quot;Usage:cmd &lt;host&gt;&quot;</span><br><span class="line">    exit 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">set host [lindex $argv 0]</span><br><span class="line"># 在这里填写要登录的用户</span><br><span class="line">set username &quot;worker&quot;</span><br><span class="line"># 在这里填写要登录的密码</span><br><span class="line">set password &quot;worker&quot;</span><br><span class="line"></span><br><span class="line">spawn ssh $username@$host</span><br><span class="line">set timeout 2</span><br><span class="line">expect &#123;</span><br><span class="line">    &quot;*password:&quot; &#123;</span><br><span class="line">        send &quot;$password\n&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &quot;Are you sure you want to continue connecting (yes/no)?&quot; &#123;</span><br><span class="line">        send &quot;yes\r&quot;</span><br><span class="line">        exp_continue</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">expect &quot;*#&quot;</span><br><span class="line">interact</span><br></pre></td></tr></table></figure>
+
+<p>执行<code>gw 10.1.1.8</code>，即可登录到对应的主机上。</p>
+<h1 id="本地主机免登录relay服务器，并自动登录到对应的服务器"><a href="#本地主机免登录relay服务器，并自动登录到对应的服务器" class="headerlink" title="本地主机免登录relay服务器，并自动登录到对应的服务器"></a>本地主机免登录relay服务器，并自动登录到对应的服务器</h1><p>在本地自动登录relay主机同样使用expect的方式，脚本名称为wrelay，内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/usr/bin/expect</span><br><span class="line"></span><br><span class="line">if &#123;$argc &lt; 1&#125; &#123;</span><br><span class="line">    puts &quot;Usage:cmd &lt;remote_host&gt;&quot;</span><br><span class="line">    exit 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># 下面指定relay主机</span><br><span class="line">set host &quot;relay.name&quot;</span><br><span class="line"># 这里输入relay的用户名</span><br><span class="line">set username &quot;&quot;</span><br><span class="line"># 这里输入relay的密码</span><br><span class="line">set password &quot;&quot;</span><br><span class="line">set remote_host [lindex $argv 0]</span><br><span class="line"></span><br><span class="line">spawn ssh $username@$host</span><br><span class="line">set timeout 2</span><br><span class="line">expect &#123;</span><br><span class="line">    &quot;*password:&quot; &#123;</span><br><span class="line">        send &quot;$password\n&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &quot;Are you sure you want to continue connecting (yes/no)?&quot; &#123;</span><br><span class="line">        send &quot;yes\r&quot;</span><br><span class="line">        exp_continue</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">expect &quot;*#&quot;</span><br><span class="line"></span><br><span class="line">sleep 0.1</span><br><span class="line"># 在relay上自动登录到其他服务器主机</span><br><span class="line">send &quot;gw $remote_host\n&quot;</span><br><span class="line">interact</span><br></pre></td></tr></table></figure>
+
+]]></content>
+  </entry>
+  <entry>
     <title>药物过度依赖</title>
     <url>/post/rely_on_drug_over/</url>
     <content><![CDATA[<p><img src="/ref/life/rely_on_drug_over.jpg" alt="Image Title"></p>
@@ -8577,22 +8593,6 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
       <tags>
         <tag>生活</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>自动通过跳板机登录到其他服务器</title>
-    <url>/post/relay-auto-login/</url>
-    <content><![CDATA[<p>最近公司需要首先登录跳板机relay，然后通过跳板机才能登录服务器，操作上略显麻烦。为了节省登录服务器的时间，我编写了一个简单的脚本来简化登录操作。</p>
-<p>实现效果为在本地terminal下，执行<code>wrelay $host</code>，即可自动登录到相应的主机。</p>
-<h1 id="在relay服务器上增加对其他服务器的免登录命令"><a href="#在relay服务器上增加对其他服务器的免登录命令" class="headerlink" title="在relay服务器上增加对其他服务器的免登录命令"></a>在relay服务器上增加对其他服务器的免登录命令</h1><p>在relay服务器上ssh到其他主机时需要输入密码，使用expect命令来登录到其他主机时通过expect脚本来实现自动输入密码并登录的功能。</p>
-<p>在&#x2F;home&#x2F;$user目录下新建mybin文件夹，并将mybin文件夹添加到$PATH环境变量中，具体修改方法不展开。</p>
-<p>在mybin目录下增加gw脚本，内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/usr/bin/expect</span><br><span class="line"></span><br><span class="line">if &#123;$argc &lt; 1&#125; &#123;</span><br><span class="line">    puts &quot;Usage:cmd &lt;host&gt;&quot;</span><br><span class="line">    exit 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">set host [lindex $argv 0]</span><br><span class="line"># 在这里填写要登录的用户</span><br><span class="line">set username &quot;worker&quot;</span><br><span class="line"># 在这里填写要登录的密码</span><br><span class="line">set password &quot;worker&quot;</span><br><span class="line"></span><br><span class="line">spawn ssh $username@$host</span><br><span class="line">set timeout 2</span><br><span class="line">expect &#123;</span><br><span class="line">    &quot;*password:&quot; &#123;</span><br><span class="line">        send &quot;$password\n&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &quot;Are you sure you want to continue connecting (yes/no)?&quot; &#123;</span><br><span class="line">        send &quot;yes\r&quot;</span><br><span class="line">        exp_continue</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">expect &quot;*#&quot;</span><br><span class="line">interact</span><br></pre></td></tr></table></figure>
-
-<p>执行<code>gw 10.1.1.8</code>，即可登录到对应的主机上。</p>
-<h1 id="本地主机免登录relay服务器，并自动登录到对应的服务器"><a href="#本地主机免登录relay服务器，并自动登录到对应的服务器" class="headerlink" title="本地主机免登录relay服务器，并自动登录到对应的服务器"></a>本地主机免登录relay服务器，并自动登录到对应的服务器</h1><p>在本地自动登录relay主机同样使用expect的方式，脚本名称为wrelay，内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#!/usr/bin/expect</span><br><span class="line"></span><br><span class="line">if &#123;$argc &lt; 1&#125; &#123;</span><br><span class="line">    puts &quot;Usage:cmd &lt;remote_host&gt;&quot;</span><br><span class="line">    exit 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># 下面指定relay主机</span><br><span class="line">set host &quot;relay.name&quot;</span><br><span class="line"># 这里输入relay的用户名</span><br><span class="line">set username &quot;&quot;</span><br><span class="line"># 这里输入relay的密码</span><br><span class="line">set password &quot;&quot;</span><br><span class="line">set remote_host [lindex $argv 0]</span><br><span class="line"></span><br><span class="line">spawn ssh $username@$host</span><br><span class="line">set timeout 2</span><br><span class="line">expect &#123;</span><br><span class="line">    &quot;*password:&quot; &#123;</span><br><span class="line">        send &quot;$password\n&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &quot;Are you sure you want to continue connecting (yes/no)?&quot; &#123;</span><br><span class="line">        send &quot;yes\r&quot;</span><br><span class="line">        exp_continue</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">expect &quot;*#&quot;</span><br><span class="line"></span><br><span class="line">sleep 0.1</span><br><span class="line"># 在relay上自动登录到其他服务器主机</span><br><span class="line">send &quot;gw $remote_host\n&quot;</span><br><span class="line">interact</span><br></pre></td></tr></table></figure>
-
-]]></content>
   </entry>
   <entry>
     <title>/etc/resolv.conf文件</title>
@@ -8926,19 +8926,6 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
       </tags>
   </entry>
   <entry>
-    <title>在tomcat7.0.41上搭建solr4.3.1</title>
-    <url>/post/solr4.3.1_setup/</url>
-    <content><![CDATA[<p>前几天写了篇《<a href="/post/solr_setup">在Linux上搭建solr环境</a>》的博文，是基于solr3.6.2的安装。本文仅记录在tomcat7.0.41上搭建solr4.3.1搭建过程中需要注意的地方，其他地方可以参考上一篇博文。</p>
-<p>配置完成之后发现<a href="http://192.168.20.38:8090/solr%E6%97%A0%E6%B3%95%E8%AE%BF%E9%97%AE%EF%BC%8C%E4%BD%86%E6%98%AFhttp://192.168.20.38:8090/%E5%8D%B4%E5%8F%AF%E4%BB%A5%E8%AE%BF%E9%97%AE%EF%BC%8C%E9%80%9A%E8%BF%87%E6%9F%A5%E7%9C%8Btomcat%E7%9A%84%E6%97%A5%E5%BF%97%E6%96%87%E4%BB%B6localhost.2013-07-03.log%EF%BC%8C%E5%8F%91%E7%8E%B0%E9%87%8C%E9%9D%A2%E6%9C%89%E5%A6%82%E4%B8%8B%E9%94%99%E8%AF%AF%E6%8F%90%E7%A4%BA%E3%80%82">http://192.168.20.38:8090/solr无法访问，但是http://192.168.20.38:8090/却可以访问，通过查看tomcat的日志文件localhost.2013-07-03.log，发现里面有如下错误提示。</a></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">严重: Exception starting filter SolrRequestFilter</span><br><span class="line">org.apache.solr.common.SolrException: Could not find necessary SLF4j logging jars. If using Jetty, the SLF4j logging jars need to go in the jetty lib/ext directory. For other containers, the corresponding directory should be used. For more information, see: http://wiki.apache.org/solr/SolrLogging</span><br></pre></td></tr></table></figure>
-<p>解决办法：将<del>&#x2F;solr-4.3.1&#x2F;example&#x2F;lib&#x2F;ext目录下的所有jar文件复制到</del>&#x2F;apache-tomcat-7.0.41&#x2F;lib目录下，然后重启tomcat即可。</p>
-<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a href="http://pan.baidu.com/share/link?shareid=1811860312&uk=3506813023">用到的文件</a></p>
-]]></content>
-      <tags>
-        <tag>Solr</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>奴隶的心态</title>
     <url>/post/slave_mind/</url>
     <content><![CDATA[<p><img src="http://www.baidupcs.com/thumbnail/1d02bdb0543f902057e8d05d7aee6f69?fid=3506813023-250528-2907673101&time=1373525806&sign=FDTAR-DCb740ccc5511e5e8fedcff06b081203-EpZzqe5BS+hUIxjvOCgdmRFt+t4=&rt=sh&expires=8h&size=c850_u580&quality=100" alt="Image Title"></p>
@@ -8956,17 +8943,13 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
       </tags>
   </entry>
   <entry>
-    <title>搭建分布式的solr环境</title>
-    <url>/post/solr_setup_distribute/</url>
-    <content><![CDATA[<p>本文以《<a href="/post/solr_setup">在Linux上搭建solr环境</a>》为基础，假设已经在192.168.20.6和192.168.20.38上搭建了单机版solr环境。</p>
-<h1 id="主服务器配置"><a href="#主服务器配置" class="headerlink" title="主服务器配置"></a>主服务器配置</h1><p>找到solr的环境目录下的conf文件夹下的solrconfig.xml文件，我的是在<code>/hadoop/solr/conf/solrconfig.xml</code>目录下，打开后找到如下行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br></pre></td></tr></table></figure>
-<p>默认是被注释的，将其修改为</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br><span class="line">       &lt;lst name=&quot;master&quot;&gt;</span><br><span class="line">         &lt;str name=&quot;replicateAfter&quot;&gt;commit&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;replicateAfter&quot;&gt;startup&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;confFiles&quot;&gt;schema.xml,stopwords.txt&lt;/str&gt;</span><br><span class="line">       &lt;/lst&gt;</span><br><span class="line">&lt;/requestHandler&gt;</span><br></pre></td></tr></table></figure>
-<p>replicateAfter表示solr会在什么情况下复制，可选项包括：commit、startup、optimize，这里保持默认。<br>confFiles表示要分发的配置文件。</p>
-<h1 id="从服务器配置"><a href="#从服务器配置" class="headerlink" title="从服务器配置"></a>从服务器配置</h1><p>在从服务器上，将<code>/hadoop/solr/conf/solrconfig.xml</code>文件相应的修改为</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br><span class="line">       &lt;lst name=&quot;slave&quot;&gt;</span><br><span class="line">         &lt;str name=&quot;masterUrl&quot;&gt;http://192.168.20.6:8080/solr/replication&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;pollInterval&quot;&gt;00:00:60&lt;/str&gt;</span><br><span class="line">       &lt;/lst&gt;</span><br><span class="line">&lt;/requestHandler&gt;</span><br></pre></td></tr></table></figure>
-<p>masterUrl为服务器的url地址。<br>pollInterval为从服务器的同步时间间隔。</p>
+    <title>在tomcat7.0.41上搭建solr4.3.1</title>
+    <url>/post/solr4.3.1_setup/</url>
+    <content><![CDATA[<p>前几天写了篇《<a href="/post/solr_setup">在Linux上搭建solr环境</a>》的博文，是基于solr3.6.2的安装。本文仅记录在tomcat7.0.41上搭建solr4.3.1搭建过程中需要注意的地方，其他地方可以参考上一篇博文。</p>
+<p>配置完成之后发现<a href="http://192.168.20.38:8090/solr%E6%97%A0%E6%B3%95%E8%AE%BF%E9%97%AE%EF%BC%8C%E4%BD%86%E6%98%AFhttp://192.168.20.38:8090/%E5%8D%B4%E5%8F%AF%E4%BB%A5%E8%AE%BF%E9%97%AE%EF%BC%8C%E9%80%9A%E8%BF%87%E6%9F%A5%E7%9C%8Btomcat%E7%9A%84%E6%97%A5%E5%BF%97%E6%96%87%E4%BB%B6localhost.2013-07-03.log%EF%BC%8C%E5%8F%91%E7%8E%B0%E9%87%8C%E9%9D%A2%E6%9C%89%E5%A6%82%E4%B8%8B%E9%94%99%E8%AF%AF%E6%8F%90%E7%A4%BA%E3%80%82">http://192.168.20.38:8090/solr无法访问，但是http://192.168.20.38:8090/却可以访问，通过查看tomcat的日志文件localhost.2013-07-03.log，发现里面有如下错误提示。</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">严重: Exception starting filter SolrRequestFilter</span><br><span class="line">org.apache.solr.common.SolrException: Could not find necessary SLF4j logging jars. If using Jetty, the SLF4j logging jars need to go in the jetty lib/ext directory. For other containers, the corresponding directory should be used. For more information, see: http://wiki.apache.org/solr/SolrLogging</span><br></pre></td></tr></table></figure>
+<p>解决办法：将<del>&#x2F;solr-4.3.1&#x2F;example&#x2F;lib&#x2F;ext目录下的所有jar文件复制到</del>&#x2F;apache-tomcat-7.0.41&#x2F;lib目录下，然后重启tomcat即可。</p>
+<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a href="http://pan.baidu.com/share/link?shareid=1811860312&uk=3506813023">用到的文件</a></p>
 ]]></content>
       <tags>
         <tag>Solr</tag>
@@ -9040,6 +9023,23 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
 <p>4. 运行jar文件。通过<code>java -jar solrtest.jar</code>来执行。</p>
 <h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a href="http://pan.baidu.com/share/link?shareid=2915568646&uk=3506813023">本文中用到的安装包</a></p>
 <h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p><a href="http://demi-panda.com/2013/03/13/install-solr/">简单的Solr安装配置</a><br><a href="https://lucene.apache.org/solr/3_6_2/doc-files/tutorial.html">官方安装教程</a><br><a href="http://cxshun.iteye.com/blog/1039445">Solr初体验系列</a>讲的非常详细，适合初学者<br><a href="http://www.cnblogs.com/hoojo/archive/2011/10/21/2220431.html">Solr开发文档</a></p>
+]]></content>
+      <tags>
+        <tag>Solr</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>搭建分布式的solr环境</title>
+    <url>/post/solr_setup_distribute/</url>
+    <content><![CDATA[<p>本文以《<a href="/post/solr_setup">在Linux上搭建solr环境</a>》为基础，假设已经在192.168.20.6和192.168.20.38上搭建了单机版solr环境。</p>
+<h1 id="主服务器配置"><a href="#主服务器配置" class="headerlink" title="主服务器配置"></a>主服务器配置</h1><p>找到solr的环境目录下的conf文件夹下的solrconfig.xml文件，我的是在<code>/hadoop/solr/conf/solrconfig.xml</code>目录下，打开后找到如下行</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br></pre></td></tr></table></figure>
+<p>默认是被注释的，将其修改为</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br><span class="line">       &lt;lst name=&quot;master&quot;&gt;</span><br><span class="line">         &lt;str name=&quot;replicateAfter&quot;&gt;commit&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;replicateAfter&quot;&gt;startup&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;confFiles&quot;&gt;schema.xml,stopwords.txt&lt;/str&gt;</span><br><span class="line">       &lt;/lst&gt;</span><br><span class="line">&lt;/requestHandler&gt;</span><br></pre></td></tr></table></figure>
+<p>replicateAfter表示solr会在什么情况下复制，可选项包括：commit、startup、optimize，这里保持默认。<br>confFiles表示要分发的配置文件。</p>
+<h1 id="从服务器配置"><a href="#从服务器配置" class="headerlink" title="从服务器配置"></a>从服务器配置</h1><p>在从服务器上，将<code>/hadoop/solr/conf/solrconfig.xml</code>文件相应的修改为</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br><span class="line">       &lt;lst name=&quot;slave&quot;&gt;</span><br><span class="line">         &lt;str name=&quot;masterUrl&quot;&gt;http://192.168.20.6:8080/solr/replication&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;pollInterval&quot;&gt;00:00:60&lt;/str&gt;</span><br><span class="line">       &lt;/lst&gt;</span><br><span class="line">&lt;/requestHandler&gt;</span><br></pre></td></tr></table></figure>
+<p>masterUrl为服务器的url地址。<br>pollInterval为从服务器的同步时间间隔。</p>
 ]]></content>
       <tags>
         <tag>Solr</tag>
@@ -9790,6 +9790,19 @@ helm fetch lofts/vcluster
 ]]></content>
   </entry>
   <entry>
+    <title>再谈Windows和Linux之间的中文编码问题</title>
+    <url>/post/windows_linux_code_2/</url>
+    <content><![CDATA[<p>上次文章《<a href="http://kuring.me/post/windows_linux_code">Windows和Linux之间的中文编码问题</a>》中提到的在Windows下的源代码程序放到Linux下出现中文编码问题，解决方法为通过iconv工具转换源代码文件的编码为UTF8格式。最近多学习了些字符编码的知识，发现了解决此问题的另外一种办法。</p>
+<h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><p>我们在编译程序的时候会涉及到几个编码问题，包括C++源文件的编码、C++程序的内码和运行环境编码，其中C++程序的内码较难理解。</p>
+<p>C++程序的内码是指在可执行文件中字符串常量是以什么编码形式存放的，其中字符串常量为窄字符形式。在Windows系统中C++的内码通常为GB18030，在Linux下的gcc&#x2F;g++使用的内码默认为utf8，可以通过fexec-charset参数来修改。</p>
+<p>运行环境编码即为操作系统的编码，通常情况下，简体中文Windows操作系统编码为GB18030，而Linux下默认为UTF8。</p>
+<h1 id="gcc命令的参数"><a href="#gcc命令的参数" class="headerlink" title="gcc命令的参数"></a>gcc命令的参数</h1><p>gcc有两个参数可以用来解决编码问题。<br>-finput-charset：用来指定源文件的编码。<br>-fexec-charset：用来指定生成的可执行文件的编码。</p>
+<p>如果这两个参数均未指定，则GCC不会对编码进行转换。<br>以上这两个参数就可以用来在不修改源文件编码的基础上来达到正确的效果，达到和上篇文章中解决问题同样的效果。</p>
+<h1 id="关于Unicode编码"><a href="#关于Unicode编码" class="headerlink" title="关于Unicode编码"></a>关于Unicode编码</h1><p>一直对Unicode编码比较糊涂，Unicode只是编码方法规范，而不是具体的存储方法。<br>常用的Unicode又分为UCS-2和UCS-两种编码，其中UCS-2采用固定的2个字节存储，UCS-4采用固定的4个字节存储。<br>通常情况下提到的Unicode编码即为UCS-2编码，比如Windows记事本中的保存为Unicode编码，其实就是保存为了UCS-2编码，由于每个字符均为2个字节，所以下次读取的时候仍然可以通过存储格式还原出来。</p>
+<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a href="http://www.ruanyifeng.com/blog/2007/10/ascii_unicode_and_utf-8.html">字符编码笔记：ASCII，Unicode和UTF-8</a><br><a href="http://www.crifan.com/files/doc/docbook/char_encoding/release/html/char_encoding.html">字符编码详解</a><br><a href="http://www.vip-tarena.com/C__peixun/876.html">关于c++的一些编码问题</a></p>
+]]></content>
+  </entry>
+  <entry>
     <title>工作中经常用到的理论或法则</title>
     <url>/post/work-theory/</url>
     <content><![CDATA[<h1 id="软件工程"><a href="#软件工程" class="headerlink" title="软件工程"></a>软件工程</h1><h2 id="康威定律"><a href="#康威定律" class="headerlink" title="康威定律"></a>康威定律</h2><p>任何一个组织在设计一个系统的时候，这个系统的结构与这个组织的沟通结构是一致的。<br>工作了这么些年对此深有感触，即“组织架构决定软件架构”。</p>
@@ -9843,34 +9856,6 @@ helm fetch lofts/vcluster
 ]]></content>
   </entry>
   <entry>
-    <title>再谈Windows和Linux之间的中文编码问题</title>
-    <url>/post/windows_linux_code_2/</url>
-    <content><![CDATA[<p>上次文章《<a href="http://kuring.me/post/windows_linux_code">Windows和Linux之间的中文编码问题</a>》中提到的在Windows下的源代码程序放到Linux下出现中文编码问题，解决方法为通过iconv工具转换源代码文件的编码为UTF8格式。最近多学习了些字符编码的知识，发现了解决此问题的另外一种办法。</p>
-<h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><p>我们在编译程序的时候会涉及到几个编码问题，包括C++源文件的编码、C++程序的内码和运行环境编码，其中C++程序的内码较难理解。</p>
-<p>C++程序的内码是指在可执行文件中字符串常量是以什么编码形式存放的，其中字符串常量为窄字符形式。在Windows系统中C++的内码通常为GB18030，在Linux下的gcc&#x2F;g++使用的内码默认为utf8，可以通过fexec-charset参数来修改。</p>
-<p>运行环境编码即为操作系统的编码，通常情况下，简体中文Windows操作系统编码为GB18030，而Linux下默认为UTF8。</p>
-<h1 id="gcc命令的参数"><a href="#gcc命令的参数" class="headerlink" title="gcc命令的参数"></a>gcc命令的参数</h1><p>gcc有两个参数可以用来解决编码问题。<br>-finput-charset：用来指定源文件的编码。<br>-fexec-charset：用来指定生成的可执行文件的编码。</p>
-<p>如果这两个参数均未指定，则GCC不会对编码进行转换。<br>以上这两个参数就可以用来在不修改源文件编码的基础上来达到正确的效果，达到和上篇文章中解决问题同样的效果。</p>
-<h1 id="关于Unicode编码"><a href="#关于Unicode编码" class="headerlink" title="关于Unicode编码"></a>关于Unicode编码</h1><p>一直对Unicode编码比较糊涂，Unicode只是编码方法规范，而不是具体的存储方法。<br>常用的Unicode又分为UCS-2和UCS-两种编码，其中UCS-2采用固定的2个字节存储，UCS-4采用固定的4个字节存储。<br>通常情况下提到的Unicode编码即为UCS-2编码，比如Windows记事本中的保存为Unicode编码，其实就是保存为了UCS-2编码，由于每个字符均为2个字节，所以下次读取的时候仍然可以通过存储格式还原出来。</p>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a href="http://www.ruanyifeng.com/blog/2007/10/ascii_unicode_and_utf-8.html">字符编码笔记：ASCII，Unicode和UTF-8</a><br><a href="http://www.crifan.com/files/doc/docbook/char_encoding/release/html/char_encoding.html">字符编码详解</a><br><a href="http://www.vip-tarena.com/C__peixun/876.html">关于c++的一些编码问题</a></p>
-]]></content>
-  </entry>
-  <entry>
-    <title>Linux下更改屏幕分辨率</title>
-    <url>/post/xrandr/</url>
-    <content><![CDATA[<p>在Virbutal Box下安装CentOS虚拟机，在安装完Virtual Box增强功能后在分辨率列表中，仍然没有适合屏幕的分辨率1600*900。本文将通过xrandr命令来修改当前屏幕的分辨率。</p>
-<p>一. 执行<code>xrand -q</code>列出当前系统中已有的分辨率。显示内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Screen 0: minimum 64 x 64, current 1024 x 768, maximum 32000 x 32000</span><br><span class="line">VBOX0 connected 1024x768+0+0 0mm x 0mm</span><br><span class="line">   1024x768       60.0*+   60.0* </span><br><span class="line">   1600x1200      60.0  </span><br><span class="line">   1440x1050      60.0  </span><br><span class="line">   1280x960       60.0  </span><br><span class="line">   800x600        60.0  </span><br><span class="line">   640x480        60.0</span><br></pre></td></tr></table></figure>
-<p>需要特别注意的是VBOX0，代表显示器的名字，下面会用到。</p>
-<p>二. 执行<code>cvt 1600 900</code>命令列出分辨率1600*900需要的参数，后面会用到。显示内容如下:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 1600x900 59.95 Hz (CVT 1.44M9) hsync: 55.99 kHz; pclk: 118.25 MHz</span><br><span class="line">Modeline &quot;1600x900_60.00&quot;  118.25  1600 1696 1856 2112  900 903 908 934 -hsync +vsync</span><br></pre></td></tr></table></figure>
-<p>该命令列出的内容下文会用到。</p>
-<p>三. 执行<code>xrandr --newmode &quot;1600x900_60.00&quot;  118.25  1600 1696 1856 2112  900 903 908 934 -hsync +vsync</code>命令，该命令中的参数是参考步骤2中的输出信息。</p>
-<p>四. 执行<code>xrandr --addmode VBOX0 1600x900_60.00</code>来向系统分辨率组中添加分辨率1600*900。其中VBOX0为步骤1获取的显示器名字，1600x900_60.00为步骤3添加的分辨率模式。</p>
-<p>五. 执行<code>xrandr --output VBOX0 1600x900_60.00</code>来应用刚才添加的分辨率。这样屏幕就可以更改为正确的分辨率了。</p>
-]]></content>
-  </entry>
-  <entry>
     <title>X Window学习</title>
     <url>/post/x_window/</url>
     <content><![CDATA[<p>X Window的实现机制还是比较难以理解的，尤其是跟软件开发中的客户端-服务器模式不太一样。涉及到概念也比较多，甚至很对教程对概念的理解不一。最近深入学习了下X Window的原理，在此做一下整理。先上一个摘自维基百科的图：<br><img src="/ref/x_window/X_client_server_example.svg.png" alt="X Window架构"></p>
@@ -9893,6 +9878,21 @@ helm fetch lofts/vcluster
 </ol>
 <p>实战<br>Windows主机连接Linux的教程参见我的另外一篇文章《Redhat安装完成之后的设置》中的相关部分。<br>两台Linux机器之间通过XWindow实现连接的用法比较少见，通常情况下可以通过vnc代替。<br>Linux主机连接Windows的工具为rdesktop。</p>
 <p>参考文章<br>《鸟哥的Linux私房菜》<br>《Linux操作系统之奥秘》<br>视频：<a href="http://edu.51cto.com/lesson/id-12709.html">RH033-ULE112-16-linux下X图形显示体系</a><br>视频：<a href="http://www.rhce.cc/?p=1117">Xwindow详解</a></p>
+]]></content>
+  </entry>
+  <entry>
+    <title>Linux下更改屏幕分辨率</title>
+    <url>/post/xrandr/</url>
+    <content><![CDATA[<p>在Virbutal Box下安装CentOS虚拟机，在安装完Virtual Box增强功能后在分辨率列表中，仍然没有适合屏幕的分辨率1600*900。本文将通过xrandr命令来修改当前屏幕的分辨率。</p>
+<p>一. 执行<code>xrand -q</code>列出当前系统中已有的分辨率。显示内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Screen 0: minimum 64 x 64, current 1024 x 768, maximum 32000 x 32000</span><br><span class="line">VBOX0 connected 1024x768+0+0 0mm x 0mm</span><br><span class="line">   1024x768       60.0*+   60.0* </span><br><span class="line">   1600x1200      60.0  </span><br><span class="line">   1440x1050      60.0  </span><br><span class="line">   1280x960       60.0  </span><br><span class="line">   800x600        60.0  </span><br><span class="line">   640x480        60.0</span><br></pre></td></tr></table></figure>
+<p>需要特别注意的是VBOX0，代表显示器的名字，下面会用到。</p>
+<p>二. 执行<code>cvt 1600 900</code>命令列出分辨率1600*900需要的参数，后面会用到。显示内容如下:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># 1600x900 59.95 Hz (CVT 1.44M9) hsync: 55.99 kHz; pclk: 118.25 MHz</span><br><span class="line">Modeline &quot;1600x900_60.00&quot;  118.25  1600 1696 1856 2112  900 903 908 934 -hsync +vsync</span><br></pre></td></tr></table></figure>
+<p>该命令列出的内容下文会用到。</p>
+<p>三. 执行<code>xrandr --newmode &quot;1600x900_60.00&quot;  118.25  1600 1696 1856 2112  900 903 908 934 -hsync +vsync</code>命令，该命令中的参数是参考步骤2中的输出信息。</p>
+<p>四. 执行<code>xrandr --addmode VBOX0 1600x900_60.00</code>来向系统分辨率组中添加分辨率1600*900。其中VBOX0为步骤1获取的显示器名字，1600x900_60.00为步骤3添加的分辨率模式。</p>
+<p>五. 执行<code>xrandr --output VBOX0 1600x900_60.00</code>来应用刚才添加的分辨率。这样屏幕就可以更改为正确的分辨率了。</p>
 ]]></content>
   </entry>
   <entry>
@@ -10004,6 +10004,56 @@ helm fetch lofts/vcluster
 ]]></content>
   </entry>
   <entry>
+    <title>语言模型雏形 N-Gram</title>
+    <url>/post/ai/N-Gram/</url>
+    <content><![CDATA[<blockquote>
+<p>本文为对《GPT 图解 - 大模型是怎样构建的》一书的学习笔记，所有的例子和代码均来源于本书。</p>
+</blockquote>
+<h2 id="基本介绍"><a href="#基本介绍" class="headerlink" title="基本介绍"></a>基本介绍</h2><p> N-Gram 模型为语言模型的雏形。</p>
+<p>基本思想为：一个词出现的概率仅依赖其前面的 N-1 个词。即通过有限的 N-1 个词来预测第 N 个词。</p>
+<p>以 “我爱吃肉” 举例，分词为 [”我“, “爱”, “吃”, “肉”]。</p>
+<ul>
+<li>当 N&#x3D;1 时，对应的序列为[”我“, “爱”, “吃”, “肉”]，又成为 Unigram。</li>
+<li>当 N&#x3D;2 时，对应的序列为[”我爱“, “爱吃”, “吃肉”]，又成为 Bigram。</li>
+<li>当 N&#x3D;3 时，对应的序列为[”我爱吃“, “爱吃肉”]，又成为 Trigram。</li>
+</ul>
+<h2 id="2-Gram-的构建过程"><a href="#2-Gram-的构建过程" class="headerlink" title="2-Gram 的构建过程"></a>2-Gram 的构建过程</h2><h3 id="将语料拆分为分词"><a href="#将语料拆分为分词" class="headerlink" title="将语料拆分为分词"></a>将语料拆分为分词</h3><p>将给定的语料库，拆分为以一个的分词。在真实的场景中需要使用分词函数，这里简单起见，使用了一个汉字一个分词的方式。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">corpus = [ <span class="string">&quot;我喜欢吃苹果&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;我喜欢吃香蕉&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;她喜欢吃葡萄&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;他不喜欢吃香蕉&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;他喜欢吃苹果&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;她喜欢吃草莓&quot;</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个分词函数，将文本转换为单个字符的列表  </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">tokenize</span>(<span class="params">text</span>):  </span><br><span class="line"> <span class="keyword">return</span> [char <span class="keyword">for</span> char <span class="keyword">in</span> text] <span class="comment"># 将文本拆分为字符列表  </span></span><br><span class="line"><span class="comment"># 对每个文本进行分词，并打印出对应的单字列表  </span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;单字列表:&quot;</span>)   </span><br><span class="line"><span class="keyword">for</span> text <span class="keyword">in</span> corpus:  </span><br><span class="line">    tokens = tokenize(text)  </span><br><span class="line">    <span class="built_in">print</span>(tokens)</span><br></pre></td></tr></table></figure>
+
+<p>得到如下的结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">单字列表:</span><br><span class="line">[&#x27;我&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;苹&#x27;, &#x27;果&#x27;]</span><br><span class="line">[&#x27;我&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;香&#x27;, &#x27;蕉&#x27;]</span><br><span class="line">[&#x27;她&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;葡&#x27;, &#x27;萄&#x27;]</span><br><span class="line">[&#x27;他&#x27;, &#x27;不&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;香&#x27;, &#x27;蕉&#x27;]</span><br><span class="line">[&#x27;他&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;苹&#x27;, &#x27;果&#x27;]</span><br><span class="line">[&#x27;她&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;草&#x27;, &#x27;莓&#x27;]</span><br></pre></td></tr></table></figure>
+
+<h3 id="计算每个-2-Gram（BiGram）-在语料库中的词频"><a href="#计算每个-2-Gram（BiGram）-在语料库中的词频" class="headerlink" title="计算每个 2-Gram（BiGram） 在语料库中的词频"></a>计算每个 2-Gram（BiGram） 在语料库中的词频</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 定义计算 N-Gram 词频的函数  </span></span><br><span class="line"><span class="keyword">from</span> collections <span class="keyword">import</span> defaultdict, Counter <span class="comment"># 导入所需库  </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">count_ngrams</span>(<span class="params">corpus, n</span>):  </span><br><span class="line">    ngrams_count = defaultdict(Counter)  <span class="comment"># 创建一个字典，存储 N-Gram 计数  </span></span><br><span class="line">    <span class="keyword">for</span> text <span class="keyword">in</span> corpus:  <span class="comment"># 遍历语料库中的每个文本  </span></span><br><span class="line">        tokens = tokenize(text)  <span class="comment"># 对文本进行分词  </span></span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(tokens) - n + <span class="number">1</span>):  <span class="comment"># 遍历分词结果，生成 N-Gram            ngram = tuple(tokens[i:i+n])  # 创建一个 N-Gram 元组  </span></span><br><span class="line">            prefix = ngram[:-<span class="number">1</span>]  <span class="comment"># 获取 N-Gram 的前缀  </span></span><br><span class="line">            token = ngram[-<span class="number">1</span>]  <span class="comment"># 获取 N-Gram 的目标单字  </span></span><br><span class="line">            ngrams_count[prefix][token] += <span class="number">1</span>  <span class="comment"># 更新 N-Gram 计数  </span></span><br><span class="line">    <span class="keyword">return</span> ngrams_count  </span><br><span class="line">bigram_counts = count_ngrams(corpus, <span class="number">2</span>) <span class="comment"># 计算 bigram 词频  </span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;bigram 词频：&quot;</span>) <span class="comment"># 打印 bigram 词频  </span></span><br><span class="line"><span class="keyword">for</span> prefix, counts <span class="keyword">in</span> bigram_counts.items():  </span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;&#123;&#125;: &#123;&#125;&quot;</span>.<span class="built_in">format</span>(<span class="string">&quot;&quot;</span>.join(prefix), <span class="built_in">dict</span>(counts)))</span><br></pre></td></tr></table></figure>
+
+<p>计算获取到如下的结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bigram 词频：</span><br><span class="line">我: &#123;&#x27;喜&#x27;: 2&#125;</span><br><span class="line">喜: &#123;&#x27;欢&#x27;: 6&#125;</span><br><span class="line">欢: &#123;&#x27;吃&#x27;: 6&#125;</span><br><span class="line">吃: &#123;&#x27;苹&#x27;: 2, &#x27;香&#x27;: 2, &#x27;葡&#x27;: 1, &#x27;草&#x27;: 1&#125;</span><br><span class="line">苹: &#123;&#x27;果&#x27;: 2&#125;</span><br><span class="line">香: &#123;&#x27;蕉&#x27;: 2&#125;</span><br><span class="line">她: &#123;&#x27;喜&#x27;: 2&#125;</span><br><span class="line">葡: &#123;&#x27;萄&#x27;: 1&#125;</span><br><span class="line">他: &#123;&#x27;不&#x27;: 1, &#x27;喜&#x27;: 1&#125;</span><br><span class="line">不: &#123;&#x27;喜&#x27;: 1&#125;</span><br><span class="line">草: &#123;&#x27;莓&#x27;: 1&#125;</span><br></pre></td></tr></table></figure>
+<p>即当第一个词为 ”我“，第二个词为”喜“在整个语料库中出现了 2 次。</p>
+<p>如果为 3-Gram（TriGram），此时输出结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bigram 词频：</span><br><span class="line">我喜: &#123;&#x27;欢&#x27;: 2&#125;</span><br><span class="line">喜欢: &#123;&#x27;吃&#x27;: 6&#125;</span><br><span class="line">欢吃: &#123;&#x27;苹&#x27;: 2, &#x27;香&#x27;: 2, &#x27;葡&#x27;: 1, &#x27;草&#x27;: 1&#125;</span><br><span class="line">吃苹: &#123;&#x27;果&#x27;: 2&#125;</span><br><span class="line">吃香: &#123;&#x27;蕉&#x27;: 2&#125;</span><br><span class="line">她喜: &#123;&#x27;欢&#x27;: 2&#125;</span><br><span class="line">吃葡: &#123;&#x27;萄&#x27;: 1&#125;</span><br><span class="line">他不: &#123;&#x27;喜&#x27;: 1&#125;</span><br><span class="line">不喜: &#123;&#x27;欢&#x27;: 1&#125;</span><br><span class="line">他喜: &#123;&#x27;欢&#x27;: 1&#125;</span><br><span class="line">吃草: &#123;&#x27;莓&#x27;: 1&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果为 1-Gram（UniGram），此时输出结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bigram 词频：</span><br><span class="line">: &#123;&#x27;我&#x27;: 2, &#x27;喜&#x27;: 6, &#x27;欢&#x27;: 6, &#x27;吃&#x27;: 6, &#x27;苹&#x27;: 2, &#x27;果&#x27;: 2, &#x27;香&#x27;: 2, &#x27;蕉&#x27;: 2, &#x27;她&#x27;: 2, &#x27;葡&#x27;: 1, &#x27;萄&#x27;: 1, &#x27;他&#x27;: 2, &#x27;不&#x27;: 1, &#x27;草&#x27;: 1, &#x27;莓&#x27;: 1&#125;</span><br></pre></td></tr></table></figure>
+<p> 可以看到已经退化为了每个单词在整个语料库中出现的次数。</p>
+<h4 id="计算每个-2-Gram-出现的概率"><a href="#计算每个-2-Gram-出现的概率" class="headerlink" title="计算每个 2-Gram 出现的概率"></a>计算每个 2-Gram 出现的概率</h4><p>即给定前一个词，计算下一个词出现的概率。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 定义计算 N-Gram 出现概率的函数  </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">ngram_probabilities</span>(<span class="params">ngram_counts</span>):  </span><br><span class="line"> ngram_probs = defaultdict(Counter) <span class="comment"># 创建一个字典，存储 N-Gram 出现的概率  </span></span><br><span class="line"> <span class="keyword">for</span> prefix, tokens_count <span class="keyword">in</span> ngram_counts.items(): <span class="comment"># 遍历 N-Gram 前缀  </span></span><br><span class="line">     total_count = <span class="built_in">sum</span>(tokens_count.values()) <span class="comment"># 计算当前前缀的 N-Gram 计数  </span></span><br><span class="line">     <span class="keyword">for</span> token, count <span class="keyword">in</span> tokens_count.items(): <span class="comment"># 遍历每个前缀的 N-Gram         ngram_probs[prefix][token] = count / total_count # 计算每个 N-Gram 出现的概率  </span></span><br><span class="line"> <span class="keyword">return</span> ngram_probs  </span><br><span class="line">bigram_probs = ngram_probabilities(bigram_counts) <span class="comment"># 计算 bigram 出现的概率  </span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\nbigram 出现的概率 :&quot;</span>) <span class="comment"># 打印 bigram 概率  </span></span><br><span class="line"><span class="keyword">for</span> prefix, probs <span class="keyword">in</span> bigram_probs.items():  </span><br><span class="line"> <span class="built_in">print</span>(<span class="string">&quot;&#123;&#125;: &#123;&#125;&quot;</span>.<span class="built_in">format</span>(<span class="string">&quot;&quot;</span>.join(prefix), <span class="built_in">dict</span>(probs)))</span><br></pre></td></tr></table></figure>
+
+<p>输出结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">bigram 出现的概率 :</span><br><span class="line">我: &#123;&#x27;喜&#x27;: 1.0&#125;</span><br><span class="line">喜: &#123;&#x27;欢&#x27;: 1.0&#125;</span><br><span class="line">欢: &#123;&#x27;吃&#x27;: 1.0&#125;</span><br><span class="line">吃: &#123;&#x27;苹&#x27;: 0.3333333333333333, &#x27;香&#x27;: 0.3333333333333333, &#x27;葡&#x27;: 0.16666666666666666, &#x27;草&#x27;: 0.16666666666666666&#125;</span><br><span class="line">苹: &#123;&#x27;果&#x27;: 1.0&#125;</span><br><span class="line">香: &#123;&#x27;蕉&#x27;: 1.0&#125;</span><br><span class="line">她: &#123;&#x27;喜&#x27;: 1.0&#125;</span><br><span class="line">葡: &#123;&#x27;萄&#x27;: 1.0&#125;</span><br><span class="line">他: &#123;&#x27;不&#x27;: 0.5, &#x27;喜&#x27;: 0.5&#125;</span><br><span class="line">不: &#123;&#x27;喜&#x27;: 1.0&#125;</span><br><span class="line">草: &#123;&#x27;莓&#x27;: 1.0&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="给定一个前缀，输出连续的文本"><a href="#给定一个前缀，输出连续的文本" class="headerlink" title="给定一个前缀，输出连续的文本"></a>给定一个前缀，输出连续的文本</h3><p>根据前面学习的语料信息，给定一个前缀，即可生成对应的文本内容。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 定义生成下一个词的函数  </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_next_token</span>(<span class="params">prefix, ngram_probs</span>):  </span><br><span class="line"> <span class="keyword">if</span> <span class="keyword">not</span> prefix <span class="keyword">in</span> ngram_probs: <span class="comment"># 如果前缀不在 N-Gram 中，返回 None    return None  </span></span><br><span class="line"> next_token_probs = ngram_probs[prefix] <span class="comment"># 获取当前前缀的下一个词的概率  </span></span><br><span class="line"> next_token = <span class="built_in">max</span>(next_token_probs,   </span><br><span class="line">                    key=next_token_probs.get) <span class="comment"># 选择概率最大的词作为下一个词  </span></span><br><span class="line"> <span class="keyword">return</span> next_token</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义生成连续文本的函数  </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_text</span>(<span class="params">prefix, ngram_probs, n, length=<span class="number">6</span></span>):  </span><br><span class="line"> tokens = <span class="built_in">list</span>(prefix) <span class="comment"># 将前缀转换为字符列表  </span></span><br><span class="line"> <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(length - <span class="built_in">len</span>(prefix)): <span class="comment"># 根据指定长度生成文本   </span></span><br><span class="line"><span class="comment"># 获取当前前缀的下一个词  </span></span><br><span class="line">     next_token = generate_next_token(<span class="built_in">tuple</span>(tokens[-(n-<span class="number">1</span>):]), ngram_probs)   </span><br><span class="line">     <span class="keyword">if</span> <span class="keyword">not</span> next_token: <span class="comment"># 如果下一个词为 None，跳出循环  </span></span><br><span class="line">         <span class="keyword">break</span>  </span><br><span class="line">     tokens.append(next_token) <span class="comment"># 将下一个词添加到生成的文本中  </span></span><br><span class="line"> <span class="keyword">return</span> <span class="string">&quot;&quot;</span>.join(tokens) <span class="comment"># 将字符列表连接成字符串</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 输入一个前缀，生成文本  </span></span><br><span class="line">generated_text = generate_text(<span class="string">&quot;我&quot;</span>, bigram_probs, <span class="number">2</span>)  </span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n 生成的文本：&quot;</span>, generated_text) <span class="comment"># 打印生成的文本</span></span><br></pre></td></tr></table></figure>
+
+<p>给定了文本”我“，可以生成出如下结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">生成的文本： 我喜欢吃苹果</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>N-Gram 为非常简单的语言模型，可以根据给定的词来生成句子。</p>
+<p>缺点：无法捕捉到距离较远的词之间的关系。</p>
+]]></content>
+      <tags>
+        <tag>ai</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>k8s 中的用户认证方式</title>
     <url>/post/k8s/k8s-authenticate/</url>
     <content><![CDATA[<p>在 k8s 中包含两类用户：</p>
@@ -10105,6 +10155,43 @@ helm fetch lofts/vcluster
       <tags>
         <tag>知识分享</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>知识分享第10期</title>
+    <url>/post/knowledge-share/knowledge-share-10/</url>
+    <content><![CDATA[<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/beixiaohe.jpeg"></p>
+<p>春回大地，题图为即将融化的河面以及还在冰面上行走的路人。</p>
+<h2 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h2><p>1.<a href="https://fastthread.io/">fastThread</a></p>
+<p>在线的JVM线程栈分析工具，通过上传JVM Dump文件，在线查看线程分析结果。</p>
+<p>2.<a href="https://www.purpleair.com/map">全球空气质量地图</a></p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/purpleair.png"></p>
+<p>可以在线查看全球的PM2.5情况，很多国家的PM2.5都超过了200，但并不包含中国的数据，不知道是不是怕数据把其他国家吓死的缘故。</p>
+<p>3.<a href="https://github.com/meolu/walle-web">Walle</a></p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/walle-deploy-console.png" alt="http://www.walle-web.io/docs/2/zh-cn/static/deploy-console.png"></p>
+<p>使用Python3开发的CI&#x2F;CD平台，有相对友好的界面，目前Github Star数在6000+。</p>
+<p>4.<a href="https://traefik.io/">Træfɪk</a></p>
+<p>为微服务而生的HTTP协议反向代理，自带API接口、dashboard，并支持Kubernetes Ingress、Mesos等，可动态加载配置文件等诸多nginx不具备的特性。</p>
+<p>5.<a href="https://github.com/xtaci/kcptun">kcptun</a></p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/kcptun.png" alt="https://github.com/xtaci/kcptun/blob/master/kcptun.png"></p>
+<p>基于KCP协议的UDP隧道，<a href="https://github.com/skywind3000/kcp">KCP</a>协议能以比 TCP浪费10%-20%的带宽的代价，换取平均延迟降低 30%-40%。</p>
+<p>6.<a href="https://github.com/ibuildthecloud/k3s">k3s - 5 less than k8s</a></p>
+<p>有人搞了个k3s项目，作为轻量级的k8s，整个二进制包只有40M大小。项目定位为边缘计算、IoT、CI等，支持多种硬件平台，裁剪了k8s的很多功能，比如云依赖，存储插件等，甚至连k8s依赖的etcd存储都默认更换为了sqlite3。</p>
+<p>7.<a href="https://drone.io/">Drone</a></p>
+<p>基于Golang的Container Native的CD平台，Github上star 17000+，插件的安装也是基于容器的。</p>
+<p>8.<a href="https://github.com/GoogleContainerTools/kaniko#how-does-kaniko-work">kaniko</a></p>
+<p>通过Dockerfile来构建docker镜像，需要dockerd进程的支持，这在物理机上操作没有任何问题。而如果要想在容器中通过Dockerfile构建docker镜像却变得困难起来，因为dockerd的运行需要root权限，而容器为了安全是不建议开启root权限的。</p>
+<p>该工具可以在容器中不运行dockerd的情况下通过Dockerfile构建出docker镜像。</p>
+<p>9.<a href="https://nacos.io/en-us/">Nacos</a></p>
+<p>阿里巴巴开源的微服务框架，支持配置中心、动态服务发现、动态DNS。</p>
+<p>10.<a href="https://www.powerdns.com/">PowerDNS</a></p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/powerdns-admin.png" alt="https://user-images.githubusercontent.com/6447444/44068603-0d2d81f6-9fa5-11e8-83af-14e2ad79e370.png"></p>
+<p>Linux下除了bind外的另一个可选择的DNS服务器，数据存储在mysql中，还有一个可选择的漂亮UI。</p>
+<h2 id="精彩书籍"><a href="#精彩书籍" class="headerlink" title="精彩书籍"></a>精彩书籍</h2><ul>
+<li><a href="http://product.dangdang.com/25180345.html#ddclick_reco_reco_relate">《激荡十年，水大鱼大》</a></li>
+</ul>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/jidang10.jpeg"></p>
+<p>要想回顾一下过去的十年中都发生了哪些大事，中国发生了哪些变化，经济领域里有哪些大起大落，本书可以拿来一读。</p>
+]]></content>
   </entry>
   <entry>
     <title>知识分享第11期</title>
@@ -10313,43 +10400,6 @@ helm fetch lofts/vcluster
 ]]></content>
   </entry>
   <entry>
-    <title>知识分享第10期</title>
-    <url>/post/knowledge-share/knowledge-share-10/</url>
-    <content><![CDATA[<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/beixiaohe.jpeg"></p>
-<p>春回大地，题图为即将融化的河面以及还在冰面上行走的路人。</p>
-<h2 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h2><p>1.<a href="https://fastthread.io/">fastThread</a></p>
-<p>在线的JVM线程栈分析工具，通过上传JVM Dump文件，在线查看线程分析结果。</p>
-<p>2.<a href="https://www.purpleair.com/map">全球空气质量地图</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/purpleair.png"></p>
-<p>可以在线查看全球的PM2.5情况，很多国家的PM2.5都超过了200，但并不包含中国的数据，不知道是不是怕数据把其他国家吓死的缘故。</p>
-<p>3.<a href="https://github.com/meolu/walle-web">Walle</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/walle-deploy-console.png" alt="http://www.walle-web.io/docs/2/zh-cn/static/deploy-console.png"></p>
-<p>使用Python3开发的CI&#x2F;CD平台，有相对友好的界面，目前Github Star数在6000+。</p>
-<p>4.<a href="https://traefik.io/">Træfɪk</a></p>
-<p>为微服务而生的HTTP协议反向代理，自带API接口、dashboard，并支持Kubernetes Ingress、Mesos等，可动态加载配置文件等诸多nginx不具备的特性。</p>
-<p>5.<a href="https://github.com/xtaci/kcptun">kcptun</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/kcptun.png" alt="https://github.com/xtaci/kcptun/blob/master/kcptun.png"></p>
-<p>基于KCP协议的UDP隧道，<a href="https://github.com/skywind3000/kcp">KCP</a>协议能以比 TCP浪费10%-20%的带宽的代价，换取平均延迟降低 30%-40%。</p>
-<p>6.<a href="https://github.com/ibuildthecloud/k3s">k3s - 5 less than k8s</a></p>
-<p>有人搞了个k3s项目，作为轻量级的k8s，整个二进制包只有40M大小。项目定位为边缘计算、IoT、CI等，支持多种硬件平台，裁剪了k8s的很多功能，比如云依赖，存储插件等，甚至连k8s依赖的etcd存储都默认更换为了sqlite3。</p>
-<p>7.<a href="https://drone.io/">Drone</a></p>
-<p>基于Golang的Container Native的CD平台，Github上star 17000+，插件的安装也是基于容器的。</p>
-<p>8.<a href="https://github.com/GoogleContainerTools/kaniko#how-does-kaniko-work">kaniko</a></p>
-<p>通过Dockerfile来构建docker镜像，需要dockerd进程的支持，这在物理机上操作没有任何问题。而如果要想在容器中通过Dockerfile构建docker镜像却变得困难起来，因为dockerd的运行需要root权限，而容器为了安全是不建议开启root权限的。</p>
-<p>该工具可以在容器中不运行dockerd的情况下通过Dockerfile构建出docker镜像。</p>
-<p>9.<a href="https://nacos.io/en-us/">Nacos</a></p>
-<p>阿里巴巴开源的微服务框架，支持配置中心、动态服务发现、动态DNS。</p>
-<p>10.<a href="https://www.powerdns.com/">PowerDNS</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/powerdns-admin.png" alt="https://user-images.githubusercontent.com/6447444/44068603-0d2d81f6-9fa5-11e8-83af-14e2ad79e370.png"></p>
-<p>Linux下除了bind外的另一个可选择的DNS服务器，数据存储在mysql中，还有一个可选择的漂亮UI。</p>
-<h2 id="精彩书籍"><a href="#精彩书籍" class="headerlink" title="精彩书籍"></a>精彩书籍</h2><ul>
-<li><a href="http://product.dangdang.com/25180345.html#ddclick_reco_reco_relate">《激荡十年，水大鱼大》</a></li>
-</ul>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/jidang10.jpeg"></p>
-<p>要想回顾一下过去的十年中都发生了哪些大事，中国发生了哪些变化，经济领域里有哪些大起大落，本书可以拿来一读。</p>
-]]></content>
-  </entry>
-  <entry>
     <title>技术分享第16期</title>
     <url>/post/knowledge-share/knowledge-share-16/</url>
     <content><![CDATA[<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/header-16.jpg"></p>
@@ -10397,6 +10447,70 @@ helm fetch lofts/vcluster
 <p>通过书名中的“程序员”来看有点初级，但实际上书中的内容适合所有软件行业的从业者，甚至同样适合于其他行业的从业者，因为底层思维本来就是共性的东西，万变不离其宗。作者曾在阿里巴巴有过很长一段工作经历，书中结合着工作中的实践经验介绍了16种思维能力，讲解浅显易懂，部分内容上升到了哲学的角度来讲解。</p>
 <p>作为软件行业从业者的我，实际上书中的大部分思维能力在工作中都有应用，但却没有形成理论来总结。阅读本书，有助于对工作的内容进行总结，找到工作的理论基础。另一方面，有了书中的理论总结，也可以更好的指导工作。</p>
 ]]></content>
+  </entry>
+  <entry>
+    <title>知识分享第2期</title>
+    <url>/post/knowledge-share/knowledge-share-2/</url>
+    <content><![CDATA[<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/lingshan.jpeg" alt="北京灵山"></p>
+<p>题图为北京灵山主峰，海拔2303米，北京最高峰。登上主峰的时候，恰巧一头牛就在山顶悠闲，拍照的时候，牛哥把我带上去的枣、葡萄、花生米全部吃光了，甚至连橘子皮都没剩下，吃完后牛哥又悠闲的去吃草了，让我见识了啥叫吃葡萄不吐葡萄皮。</p>
+<h2 id="教程"><a href="#教程" class="headerlink" title="教程"></a>教程</h2><ol>
+<li>《Kubernetes权威指南 企业级容器云实战》</li>
+</ol>
+<p>kubernetes的书籍并不多，该书八月份刚初版，内容较新，并不是一本kubernetes的入门书籍，而是讲解kubernetes在企业落地为PASS平台时需要做的工作，建议对kubernetes有一定了解后再看。</p>
+<p>书的内容为HPE的多名工程师拼凑而成，有些部分的内容明显是没有经过实践验证的理论派想法，但总体来看值得一读。</p>
+<p>书中提到了很多kubernetes较新版本才有的特性、微服务、service mesh、lstio，对于补充自己已经掌握的知识点有一定帮助。</p>
+<p>书的后半部分反而显的干货少了非常多，我仅草草的过了一遍。</p>
+<ol start="2">
+<li><a href="https://chai2010.gitbooks.io/advanced-go-programming-book/content/">《Go语言高级编程》</a></li>
+</ol>
+<p>Golang中相对进阶的中文教程，我还没来得及看。</p>
+<ol start="3">
+<li><a href="https://www.vldb.org/pvldb/vol8/p1816-teller.pdf">Gorilla</a></li>
+</ol>
+<p>facebook发表的分布式的时序数据库论文，如果英文看起来吃力，可以看一下小米运维公众号中的<a href="https://mp.weixin.qq.com/s/-1jpuCm20LSTrVU7nTw5_Q">翻译版本</a>。facebook并未提供开源的实现，但在github上能找到一些开源的实现。</p>
+<ol start="4">
+<li>《深入剖析Kubernetes》</li>
+</ol>
+<p>极客时间app的专栏，本来购买之前没有报特别大的预期，但读完头几篇文章后被作者的文字功底折服，将PASS、容器的来龙去脉、docker的发展讲解的很到位，超出了我的预期。期待后面更新的专栏能够保持搞水准。</p>
+<ol start="5">
+<li><a href="https://tonydeng.github.io/sdn-handbook">SDN手册</a></li>
+</ol>
+<p>一本介绍SDN相关知识的开源电子书。</p>
+<h2 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h2><ol>
+<li><a href="https://github.com/m3db">M3DB</a></li>
+</ol>
+<p>监控领域还是比较缺少特别好用的分布式时间序列存储数据库，性能特别优异的数据库往往都是单机版的，缺少高可用的方案，比如rrdtool、influxdb、graphite等。OpenTSDB、KairosDB、Druid等虽为分布式的时序数据库，但使用或者运维起来总有各种不方便的地方。uber开源的m3在分布式时序数据库领域又多了一个方案，并可作为prometheus的远程存储。</p>
+<ol start="2">
+<li><a href="https://cilium.io/">cilium</a></li>
+</ol>
+<p>使用BPF(Berkeley Packet Filter)和XDP(eXpress Data Path)内核技术来提供网络安全控制的高性能开源网络方案。</p>
+<ol start="3">
+<li><a href="https://github.com/kubeless/kubeless">kubeless</a></li>
+</ol>
+<p>kubernetes平台上的Serverless项目，Faas（功能即服务）一定是云计算发展的一个趋势。目前CNCF中还没有Serverless项目，期待CNCF下能够孵化一个Serverless项目。</p>
+<h2 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h2><ol>
+<li>vagrant</li>
+</ol>
+<p>还在使用virturalbox的你，是时候使用vagrant了。vagrant作为对虚拟机的管理，虽然引入了一些概念带来了更大的复杂性。但同时功能上也更强大，比如对box的管理，可以将box理解为docker image，便于将虚拟机的环境在不同的主机上分发。</p>
+<h2 id="公众账号推荐"><a href="#公众账号推荐" class="headerlink" title="公众账号推荐"></a>公众账号推荐</h2><ol>
+<li>小米运维</li>
+</ol>
+<p>开通时间不算特别长，但文章的质量不错，都是比较接地气的干货，看得出确实是在工作中遇到的问题或者是总结经验，值的一读。</p>
+<p><img src="https://open.weixin.qq.com/qr/code?username=MI-SRE"></p>
+<ol start="2">
+<li>开柒</li>
+</ol>
+<p>曾经公众号的名字为开八，江湖人称八姐，忘记为何更改为开柒了，曾经的搜狐记者。总能非常及时的爆料很多互联网的内幕，消息来源往往非常准确，可见八姐在圈内的人脉非同一般。</p>
+<p><img src="https://open.weixin.qq.com/qr/code?username=hlkaiba"></p>
+<ol start="3">
+<li>毕导</li>
+</ol>
+<p>打发时间非常好的公众号，用理科男的思维方式进行恶搞，是不是拿出冗长的数学公式来证明日常生活中的小尝试，语言诙谐幽默，绝对是公众号中的一股清流。可惜每篇文章都很长，我没有太多时间把每一篇文章都看一遍。</p>
+<p><img src="https://open.weixin.qq.com/qr/code?username=bxt_thu"></p>
+]]></content>
+      <tags>
+        <tag>知识分享</tag>
+      </tags>
   </entry>
   <entry>
     <title>知识分享第3期</title>
@@ -10532,70 +10646,6 @@ helm fetch lofts/vcluster
 </blockquote>
 <p>– <a href="https://mp.weixin.qq.com/s?__biz=MzUxMDAwOTE4OQ==&mid=2247483881&idx=2&sn=1226590dd47dd171e833fee97e43d30d&chksm=f908cbe3ce7f42f57d07e6c060a7f607b2c11d7f0542a3215800e1610b65c5f1ad0ddfded56d&mpshare=1&scene=1&srcid=10197m4srqox3aXZOybWcQgm%23rd">八年之后 房价多少？</a></p>
 ]]></content>
-  </entry>
-  <entry>
-    <title>知识分享第2期</title>
-    <url>/post/knowledge-share/knowledge-share-2/</url>
-    <content><![CDATA[<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/lingshan.jpeg" alt="北京灵山"></p>
-<p>题图为北京灵山主峰，海拔2303米，北京最高峰。登上主峰的时候，恰巧一头牛就在山顶悠闲，拍照的时候，牛哥把我带上去的枣、葡萄、花生米全部吃光了，甚至连橘子皮都没剩下，吃完后牛哥又悠闲的去吃草了，让我见识了啥叫吃葡萄不吐葡萄皮。</p>
-<h2 id="教程"><a href="#教程" class="headerlink" title="教程"></a>教程</h2><ol>
-<li>《Kubernetes权威指南 企业级容器云实战》</li>
-</ol>
-<p>kubernetes的书籍并不多，该书八月份刚初版，内容较新，并不是一本kubernetes的入门书籍，而是讲解kubernetes在企业落地为PASS平台时需要做的工作，建议对kubernetes有一定了解后再看。</p>
-<p>书的内容为HPE的多名工程师拼凑而成，有些部分的内容明显是没有经过实践验证的理论派想法，但总体来看值得一读。</p>
-<p>书中提到了很多kubernetes较新版本才有的特性、微服务、service mesh、lstio，对于补充自己已经掌握的知识点有一定帮助。</p>
-<p>书的后半部分反而显的干货少了非常多，我仅草草的过了一遍。</p>
-<ol start="2">
-<li><a href="https://chai2010.gitbooks.io/advanced-go-programming-book/content/">《Go语言高级编程》</a></li>
-</ol>
-<p>Golang中相对进阶的中文教程，我还没来得及看。</p>
-<ol start="3">
-<li><a href="https://www.vldb.org/pvldb/vol8/p1816-teller.pdf">Gorilla</a></li>
-</ol>
-<p>facebook发表的分布式的时序数据库论文，如果英文看起来吃力，可以看一下小米运维公众号中的<a href="https://mp.weixin.qq.com/s/-1jpuCm20LSTrVU7nTw5_Q">翻译版本</a>。facebook并未提供开源的实现，但在github上能找到一些开源的实现。</p>
-<ol start="4">
-<li>《深入剖析Kubernetes》</li>
-</ol>
-<p>极客时间app的专栏，本来购买之前没有报特别大的预期，但读完头几篇文章后被作者的文字功底折服，将PASS、容器的来龙去脉、docker的发展讲解的很到位，超出了我的预期。期待后面更新的专栏能够保持搞水准。</p>
-<ol start="5">
-<li><a href="https://tonydeng.github.io/sdn-handbook">SDN手册</a></li>
-</ol>
-<p>一本介绍SDN相关知识的开源电子书。</p>
-<h2 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h2><ol>
-<li><a href="https://github.com/m3db">M3DB</a></li>
-</ol>
-<p>监控领域还是比较缺少特别好用的分布式时间序列存储数据库，性能特别优异的数据库往往都是单机版的，缺少高可用的方案，比如rrdtool、influxdb、graphite等。OpenTSDB、KairosDB、Druid等虽为分布式的时序数据库，但使用或者运维起来总有各种不方便的地方。uber开源的m3在分布式时序数据库领域又多了一个方案，并可作为prometheus的远程存储。</p>
-<ol start="2">
-<li><a href="https://cilium.io/">cilium</a></li>
-</ol>
-<p>使用BPF(Berkeley Packet Filter)和XDP(eXpress Data Path)内核技术来提供网络安全控制的高性能开源网络方案。</p>
-<ol start="3">
-<li><a href="https://github.com/kubeless/kubeless">kubeless</a></li>
-</ol>
-<p>kubernetes平台上的Serverless项目，Faas（功能即服务）一定是云计算发展的一个趋势。目前CNCF中还没有Serverless项目，期待CNCF下能够孵化一个Serverless项目。</p>
-<h2 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h2><ol>
-<li>vagrant</li>
-</ol>
-<p>还在使用virturalbox的你，是时候使用vagrant了。vagrant作为对虚拟机的管理，虽然引入了一些概念带来了更大的复杂性。但同时功能上也更强大，比如对box的管理，可以将box理解为docker image，便于将虚拟机的环境在不同的主机上分发。</p>
-<h2 id="公众账号推荐"><a href="#公众账号推荐" class="headerlink" title="公众账号推荐"></a>公众账号推荐</h2><ol>
-<li>小米运维</li>
-</ol>
-<p>开通时间不算特别长，但文章的质量不错，都是比较接地气的干货，看得出确实是在工作中遇到的问题或者是总结经验，值的一读。</p>
-<p><img src="https://open.weixin.qq.com/qr/code?username=MI-SRE"></p>
-<ol start="2">
-<li>开柒</li>
-</ol>
-<p>曾经公众号的名字为开八，江湖人称八姐，忘记为何更改为开柒了，曾经的搜狐记者。总能非常及时的爆料很多互联网的内幕，消息来源往往非常准确，可见八姐在圈内的人脉非同一般。</p>
-<p><img src="https://open.weixin.qq.com/qr/code?username=hlkaiba"></p>
-<ol start="3">
-<li>毕导</li>
-</ol>
-<p>打发时间非常好的公众号，用理科男的思维方式进行恶搞，是不是拿出冗长的数学公式来证明日常生活中的小尝试，语言诙谐幽默，绝对是公众号中的一股清流。可惜每篇文章都很长，我没有太多时间把每一篇文章都看一遍。</p>
-<p><img src="https://open.weixin.qq.com/qr/code?username=bxt_thu"></p>
-]]></content>
-      <tags>
-        <tag>知识分享</tag>
-      </tags>
   </entry>
   <entry>
     <title>知识分享第6期</title>

@@ -146,13 +146,13 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">243</span>
+          <span class="site-state-item-count">244</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">35</span>
+        <span class="site-state-item-count">36</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -174,6 +174,121 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/flux/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/flux/" class="post-title-link" itemprop="url">Flux（学习笔记）</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-05-06 23:42:46" itemprop="dateCreated datePublished" datetime="2022-05-06T23:42:46+00:00">2022-05-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="核心原理"><a href="#核心原理" class="headerlink" title="核心原理"></a>核心原理</h1><p>Flux为一款GitOPS的发布工具，应用信息全部放到git仓库中，一旦git仓库中应用信息有新的提交，Flux即可在k8s中发布新的部署。支持kustomize和helm chart形式的应用。目前该项目为CNCF的孵化项目。</p>
+<h1 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h1><h2 id="前置条件"><a href="#前置条件" class="headerlink" title="前置条件"></a>前置条件</h2><ol>
+<li>已经存在k8s集群</li>
+<li>可以获取到Github的个人token</li>
+</ol>
+<h2 id="安装flux-cli"><a href="#安装flux-cli" class="headerlink" title="安装flux cli"></a>安装flux cli</h2><p>执行如下命令安装flux cli</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">curl</span> <span class="string">-s</span> <span class="string">https://fluxcd.io/install.sh</span> <span class="string">|</span> <span class="string">sudo</span> <span class="string">bash</span></span><br></pre></td></tr></table></figure>
+<p>将如下内容追到到文件~&#x2F;.bash_profile</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">.</span> <span class="string">&lt;(flux</span> <span class="string">completion</span> <span class="string">bash)</span></span><br></pre></td></tr></table></figure>
+<h2 id="bootstrap"><a href="#bootstrap" class="headerlink" title="bootstrap"></a>bootstrap</h2><p>bootstrap操作会在k8s集群中安装flux到flux-system下，并且会通过git的方式来管理其自身。这里直接采用github，首先要获取到token，并设置为环境变量。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">export</span> <span class="string">GITHUB_TOKEN=xxx</span></span><br></pre></td></tr></table></figure>
+<p>并执行如下命令开始bootstrap</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">flux</span> <span class="string">bootstrap</span> <span class="string">github</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--owner=kuring</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--repository=flux-learn</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--path=clusters/my-cluster</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--personal</span></span><br></pre></td></tr></table></figure>
+<p>会自动创建github repo，并且会在main分支的clusters&#x2F;my-cluster&#x2F;flux-system下创建三个文件：</p>
+<ul>
+<li>gotk-components.yaml：flux的组件yaml</li>
+<li>gotk-sync.yaml</li>
+<li>kustomization.yaml：使用kustomization来个性化flux组件</li>
+</ul>
+<p>会安装如下组件到k8s中</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">k</span> <span class="string">get</span> <span class="string">deployment</span> <span class="string">-n</span> <span class="string">flux-system</span> </span><br><span class="line"><span class="string">NAME</span>                      <span class="string">READY</span>   <span class="string">UP-TO-DATE</span>   <span class="string">AVAILABLE</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">helm-controller</span>           <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br><span class="line"><span class="string">kustomize-controller</span>      <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br><span class="line"><span class="string">notification-controller</span>   <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br><span class="line"><span class="string">source-controller</span>         <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br></pre></td></tr></table></figure>
+<p>也可以使用更简单的方式<code>flux install</code>来安装flux，该命令不会将flux的安装信息存放到git仓库中，而是会直接安装。</p>
+<h2 id="部署应用"><a href="#部署应用" class="headerlink" title="部署应用"></a>部署应用</h2><p>将上述的github项目copy到本地，需要特别注意的是github不允许使用密码来认证，需要在输入密码的地方输入token。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">git</span> <span class="string">clone</span> <span class="string">https://github.com/kuring/flux-learn</span></span><br><span class="line"><span class="string">cd</span> <span class="string">fleet-infra</span></span><br></pre></td></tr></table></figure>
+<p>使用如下命令在git仓库中创建podinfo-source.yaml文件和kustomization文件</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">flux</span> <span class="string">create</span> <span class="string">source</span> <span class="string">git</span> <span class="string">podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--url=https://github.com/stefanprodan/podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--branch=master</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--interval=30s</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--export</span> <span class="string">&gt;</span> <span class="string">./clusters/my-cluster/podinfo-source.yaml</span></span><br><span class="line">  </span><br><span class="line"><span class="string">flux</span> <span class="string">create</span> <span class="string">kustomization</span> <span class="string">podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--target-namespace=default</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--source=podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--path=&quot;./kustomize&quot;</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--prune=true</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--interval=5m</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--export</span> <span class="string">&gt;</span> <span class="string">./clusters/my-cluster/podinfo-kustomization.yaml</span></span><br></pre></td></tr></table></figure>
+<p>podinfo-source.yaml文件内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">source.toolkit.fluxcd.io/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">GitRepository</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">flux-system</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">interval:</span> <span class="string">30s</span></span><br><span class="line">  <span class="attr">ref:</span></span><br><span class="line">    <span class="attr">branch:</span> <span class="string">master</span></span><br><span class="line">  <span class="attr">url:</span> <span class="string">https://github.com/stefanprodan/podinfo</span></span><br></pre></td></tr></table></figure>
+<p>podinfo-kustomization.yaml文件内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">kustomize.toolkit.fluxcd.io/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Kustomization</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">flux-system</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">interval:</span> <span class="string">5m0s</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">./kustomize</span></span><br><span class="line">  <span class="attr">prune:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">sourceRef:</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">GitRepository</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">targetNamespace:</span> <span class="string">default</span></span><br></pre></td></tr></table></figure>
+<p>执行如下命令将文件提供到git仓库</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">git</span> <span class="string">add</span> <span class="string">-A</span> <span class="string">&amp;&amp;</span> <span class="string">git</span> <span class="string">commit</span> <span class="string">-m</span> <span class="string">&quot;Add podinfo GitRepository&quot;</span></span><br><span class="line"><span class="string">git</span> <span class="string">push</span></span><br></pre></td></tr></table></figure>
+<p>查看podinfo的部署状态，说明已经自动部署成功。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">flux</span> <span class="string">get</span> <span class="string">kustomizations</span> <span class="string">--watch</span></span><br><span class="line"><span class="string">NAME</span>    <span class="string">REVISION</span>        <span class="string">SUSPENDED</span>       <span class="string">READY</span>   <span class="string">MESSAGE</span>                          </span><br><span class="line"><span class="attr">podinfo master/bf09377  False           True    Applied revision:</span> <span class="string">master/bf09377</span></span><br><span class="line"><span class="attr">flux-system     main/81f2115    False   True    Applied revision:</span> <span class="string">main/81f2115</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>修改podinfo-kustomization.yaml文件内容如下，并重新提交到git仓库</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">kustomize.toolkit.fluxcd.io/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Kustomization</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">flux-system</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">interval:</span> <span class="string">5m0s</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">./kustomize</span></span><br><span class="line">  <span class="attr">prune:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">sourceRef:</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">GitRepository</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">targetNamespace:</span> <span class="string">default</span></span><br><span class="line">  <span class="attr">patches:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">patch:</span> <span class="string">|-</span></span><br><span class="line"><span class="string">        apiVersion: autoscaling/v2beta2</span></span><br><span class="line"><span class="string">        kind: HorizontalPodAutoscaler</span></span><br><span class="line"><span class="string">        metadata:</span></span><br><span class="line"><span class="string">          name: podinfo</span></span><br><span class="line"><span class="string">        spec:</span></span><br><span class="line"><span class="string">          minReplicas: 3             </span></span><br><span class="line"><span class="string"></span>      <span class="attr">target:</span></span><br><span class="line">        <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">        <span class="attr">kind:</span> <span class="string">HorizontalPodAutoscaler</span></span><br></pre></td></tr></table></figure>
+<p>过会可以看到环境中的hpa最小副本数已经变更为3.</p>
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://fluxcd.io/">https://fluxcd.io/</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +334,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -308,7 +423,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -407,7 +522,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -505,7 +620,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -633,7 +748,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -763,7 +878,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -999,7 +1114,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -1127,7 +1242,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -1234,7 +1349,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -1345,108 +1460,6 @@
 <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;data&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">	  <span class="attr">&quot;a.json&quot;</span><span class="punctuation">:</span> <span class="string">&quot;abc&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
 <p>可以使用 <code>cat data.json | jq &#39;.data.&quot;a.json&quot;&#39;</code> 或者 <code>cat data.json | jq &#39;.data[&quot;a.json&quot;]&#39;</code>  的方式来解析其中的内容。</p>
 <p>-r 参数：<br><code>echo &#39;&quot;&#123;&#125;&quot;&#39; | jq .</code> 输出结果为 <code>&quot;&#123;&#125;&quot;</code> 即对应的格式为字符串。<code>echo -r &#39;&quot;&#123;&#125;&quot;&#39; | jq -r .</code> 输出结果为 <code>&#123;&#125;</code>，已经解析为标准的 json 格式。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/knowledge-share/knowledge-share-15/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/knowledge-share/knowledge-share-15/" class="post-title-link" itemprop="url">技术分享第15期</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-03-19 22:45:32" itemprop="dateCreated datePublished" datetime="2022-03-19T22:45:32+00:00">2022-03-19</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/knowledage-15.jpg"></p>
-<p>题图为周末的公园露营区。一周前曾经下过一场雪，地上覆盖着厚厚的一层雪，而一星期过后，上面却扎满了帐篷。城市里的人们，在捂了一个冬季后，终于迎来了阳光明媚的春天。虽内心充满着诗和远方，疫情之下，能约上三五好友，在草地上吃上一顿野餐，亦或在帐篷里美美的睡上一觉已是一件很奢侈的事情。</p>
-<h1 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h1><h2 id="1-Submariner"><a href="#1-Submariner" class="headerlink" title="1. Submariner"></a>1. <a target="_blank" rel="noopener" href="https://www.rancher.cn/submariner/">Submariner</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/how-it-works-submariner.svg"></p>
-<p>Rancher开源的一款k8s集群之间的容器网络打通的工具。k8s社区的网络插件中以overlay的网络插件居多，因为overlay的网络对底层物理网络几乎很少有依赖，通常会采用vxlan、IPIP等协议来实现。虽然overlay的网络插件用起来比较方便，但是两个k8s集群的容器网络通常是无法直接通讯，在多k8s集群的应用场景下比较受限。Submariner提供了容器网络的互通方案。 </p>
-<h2 id="2-k8e"><a href="#2-k8e" class="headerlink" title="2. k8e"></a>2. <a target="_blank" rel="noopener" href="https://github.com/xiaods/k8e">k8e</a></h2><p>k8e为Kubernetes Easy的简写。社区里有k3s和k0s项目来提供了k8s精简版，本项目在k3s的基础之上又进一步进行了裁剪，移除了一些边缘场景的特性。</p>
-<h2 id="3-Rancher-Desktop"><a href="#3-Rancher-Desktop" class="headerlink" title="3. Rancher Desktop"></a>3. <a target="_blank" rel="noopener" href="https://rancherdesktop.io/">Rancher Desktop</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/rancher-desktop.png"></p>
-<p>k8s的发行版SUSE Rancher提供的k8s的桌面客户端，目前已经发布了1.0.0版本。</p>
-<h2 id="4-nginx-config"><a href="#4-nginx-config" class="headerlink" title="4. nginx config"></a>4. <a target="_blank" rel="noopener" href="https://nginxconfig.io/">nginx config</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/nginx-config.jpg"></p>
-<p>Nginx作为最流行的负载均衡配置软件之一，有自己的一套配置语法。DigitalOcean提供的nginx config工具可以通过UI直接进行配置，并最终可以一键生成nginx的配置文件。</p>
-<h2 id="5-mizu"><a href="#5-mizu" class="headerlink" title="5. mizu"></a>5. <a target="_blank" rel="noopener" href="https://github.com/up9inc/mizu">mizu</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/mizu-ui.png"></p>
-<p>一款部署在k8s上的流量分析工具，可以认为是k8s版的tcpdump + wireshark。底层的实现也是基于libpcap抓包的方式，可以支持解析HTTP、Redis、Kafka等协议。</p>
-<h2 id="6-kube-bench"><a href="#6-kube-bench" class="headerlink" title="6. kube-bench"></a>6. <a target="_blank" rel="noopener" href="https://github.com/aquasecurity/kube-bench">kube-bench</a></h2><p>互联网安全中心（Center for Internet Security）针对k8s版本提供了一套安全检查的规范，<a target="_blank" rel="noopener" href="https://learn.cisecurity.org/benchmarks">约有200多页的pdf文档</a>，本项目为针对该规范的实现。仅需要向k8s环境中提交一个job，即可得到最终的安全结果。很多公有云厂商也有自己的实现，比如<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/207760.html">阿里云ACK的实现</a>。</p>
-<h2 id="7-virtual-kubelet"><a href="#7-virtual-kubelet" class="headerlink" title="7. virtual-kubelet"></a>7. <a target="_blank" rel="noopener" href="https://github.com/virtual-kubelet/virtual-kubelet">virtual-kubelet</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/virtual-kubelet.svg"></p>
-<p>virtual kubelet服务通过在k8s集群上创建虚拟node，当一个pod调度到虚拟node时，virtual kubelet组件以插件的形式提供了不同的实现，可以将pod创建在k8s集群之外。比如，在阿里云的场景下，可以将pod创建到弹性容器实例ECI上面，从而达到弹性的目的。该项目除了用于公有云一些弹性的场景外，还常用于边缘计算的场景。</p>
-<h2 id="8-cloudevents"><a href="#8-cloudevents" class="headerlink" title="8. cloudevents"></a>8. <a target="_blank" rel="noopener" href="https://cloudevents.io/">cloudevents</a></h2><p>CloudEvents定义了一种通用的方式描述事件数据的规范，由CNCF的Serverless工作组提出。阿里云的事件总线EventBridge基于此规范提供了比较好商业化产品。</p>
-<p>相关链接：<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/SdpMLCaRSGsFnm08PjBxEA">EventBridge 事件总线及 EDA 架构解析</a></p>
-<h2 id="9-kubectl-who-can"><a href="#9-kubectl-who-can" class="headerlink" title="9. kubectl-who-can"></a>9. <a target="_blank" rel="noopener" href="https://github.com/aquasecurity/kubectl-who-can">kubectl-who-can</a></h2><p>在k8s系统中，通常会通过RBAC的机制来配置某个账号拥有某种权限，但如果反过来要查询某个权限被哪些账号所拥有，就会麻烦很多。</p>
-<p>该工具是一个k8s的命令行小工具，可以用来解决上述需求。比如查询拥有创建namespace权限的ServiceAccount有哪些，可以直接执行 <code>kubectl-who-can create namespace</code>。</p>
-<h2 id="10-kyverno"><a href="#10-kyverno" class="headerlink" title="10. kyverno"></a>10. <a target="_blank" rel="noopener" href="https://kyverno.io/">kyverno</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/kyverno-architecture.png"></p>
-<p>Kyverno是一款基于k8s的策略引擎工具，通过抽象CRD ClusterPolicy的方式来声明策略，在运行时通过webhook的技术来执行策略。相比于opa &amp; gatekeeper，更加k8s化，但却没有编程语言的灵活性。目前该项目为CNCF的孵化项目。</p>
-<h1 id="文章"><a href="#文章" class="headerlink" title="文章"></a>文章</h1><h2 id="1-进击的Kubernetes调度系统"><a href="#1-进击的Kubernetes调度系统" class="headerlink" title="1. 进击的Kubernetes调度系统"></a>1. <a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/766273">进击的Kubernetes调度系统</a></h2><p>该系列一共三篇文档，分别讲解了如下内容：</p>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/766273">第一篇</a>：k8s 1.16版本引入的Scheduling Framework</li>
-<li><a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/766275">第二篇</a>：阿里云ACK服务基于Scheduling Framework实现的Gang scheduling</li>
-<li><a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/770336">第三篇</a>：阿里云ACK服务基于Scheduling Framework实现的支持批任务的Binpack Scheduling</li>
-</ul>
-<h2 id="2-中国的云计算革命尚未开始"><a href="#2-中国的云计算革命尚未开始" class="headerlink" title="2. 中国的云计算革命尚未开始"></a>2. <a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/TXB5lkRCW6MTUbEkby5R-w">中国的云计算革命尚未开始</a></h2><p>作者通过工业革命时代的电气化道路做类似，认为当前云计算的阶段仍然比较初级，并且首先要解决的是人的问题，而不是技术本身。</p>
 
       
     </div>

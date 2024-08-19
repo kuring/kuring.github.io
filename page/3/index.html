@@ -146,13 +146,13 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">243</span>
+          <span class="site-state-item-count">244</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">35</span>
+        <span class="site-state-item-count">36</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -174,6 +174,147 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/kubeadm/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/kubeadm/" class="post-title-link" itemprop="url">使用 kubeadm 安装 k8s 集群</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-12-07 00:07:20" itemprop="dateCreated datePublished" datetime="2022-12-07T00:07:20+00:00">2022-12-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>本文将通过 kubeadm 实现单 master 节点模式和集群模式两种部署方式。</p>
+<h2 id="所有节点均需初始化操作"><a href="#所有节点均需初始化操作" class="headerlink" title="所有节点均需初始化操作"></a>所有节点均需初始化操作</h2><p>所有节点均需做的操作。</p>
+<h3 id="主机准备"><a href="#主机准备" class="headerlink" title="主机准备"></a>主机准备</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">cat &gt; /etc/sysctl.d/kubernets.conf &lt;&lt;EOF</span><br><span class="line">net.ipv4.ip_forward=1</span><br><span class="line">net.bridge.bridge-nf-call-ip6tables = 1</span><br><span class="line">net.bridge.bridge-nf-call-iptables = 1</span><br><span class="line">vm.swappiness=0</span><br><span class="line">EOF</span><br><span class="line">sysctl --system</span><br><span class="line">modprobe br_netfilter</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="安装containerd"><a href="#安装containerd" class="headerlink" title="安装containerd"></a>安装containerd</h3><p>由于 dockerd 从 k8s 1.24 版本开始不再支持，这里选择 containerd。</p>
+<h4 id="手工安装"><a href="#手工安装" class="headerlink" title="手工安装"></a>手工安装</h4><p>安装 containerd，containerd 的版本可以从这里获取 <a target="_blank" rel="noopener" href="https://github.com/containerd/containerd/releases">https://github.com/containerd/containerd/releases</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/containerd/containerd/releases/download/v1.6.11/containerd-1.6.11-linux-amd64.tar.gz</span><br><span class="line">tar Cxzvf /usr/local containerd-1.6.11-linux-amd64.tar.gz</span><br><span class="line">wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service -P /usr/local/lib/systemd/system/</span><br><span class="line">systemctl daemon-reload</span><br><span class="line">systemctl enable --now containerd</span><br></pre></td></tr></table></figure>
+
+<p>安装 runc</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/opencontainers/runc/releases/download/v1.1.4/runc.amd64</span><br><span class="line">install -m 755 runc.amd64 /usr/local/sbin/runc</span><br></pre></td></tr></table></figure>
+
+<h4 id="yum-源安装"><a href="#yum-源安装" class="headerlink" title="yum 源安装"></a>yum 源安装</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">yum install -y yum-utils</span><br><span class="line">yum-config-manager --add-repo     https://download.docker.com/linux/centos/docker-ce.repo</span><br><span class="line">yum install containerd.io -y</span><br><span class="line">systemctl daemon-reload</span><br><span class="line">systemctl enable --now containerd</span><br></pre></td></tr></table></figure>
+
+<p>通过 yum 安装的containerd 没有启用 cri，在其配置文件 &#x2F;etc&#x2F;containerd&#x2F;config.toml 中包含了 <code>disabled_plugins = [&quot;cri&quot;]</code> 配置，需要将配置信息注释后并重启 containerd。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sed -i &#x27;s/disabled_plugins/#disabled_plugins/&#x27;  /etc/containerd/config.toml</span><br><span class="line">systemctl restart containerd</span><br></pre></td></tr></table></figure>
+
+<h3 id="安装-kubeadm-x2F-kubelet-x2F-kubectl"><a href="#安装-kubeadm-x2F-kubelet-x2F-kubectl" class="headerlink" title="安装 kubeadm&#x2F;kubelet&#x2F;kubectl"></a>安装 kubeadm&#x2F;kubelet&#x2F;kubectl</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">cat &lt;&lt;EOF | sudo tee /etc/yum.repos.d/kubernetes.repo</span><br><span class="line">[kubernetes]</span><br><span class="line">name=Kubernetes</span><br><span class="line">baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=1</span><br><span class="line">gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg</span><br><span class="line">exclude=kubelet kubeadm kubectl</span><br><span class="line">EOF</span><br><span class="line"></span><br><span class="line"># Set SELinux in permissive mode (effectively disabling it)</span><br><span class="line">sudo setenforce 0</span><br><span class="line">sudo sed -i &#x27;s/^SELINUX=enforcing$/SELINUX=permissive/&#x27; /etc/selinux/config</span><br><span class="line"></span><br><span class="line">sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes</span><br><span class="line"></span><br><span class="line">sudo systemctl enable --now kubelet</span><br></pre></td></tr></table></figure>
+
+<h2 id="单-master-节点模式"><a href="#单-master-节点模式" class="headerlink" title="单 master 节点模式"></a>单 master 节点模式</h2><table>
+<thead>
+<tr>
+<th>节点</th>
+<th>角色</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>172.21.115.190<br/></td>
+<td>master 节点</td>
+</tr>
+</tbody></table>
+<h3 id="kubeadm-初始化"><a href="#kubeadm-初始化" class="headerlink" title="kubeadm 初始化"></a>kubeadm 初始化</h3><p>创建文件 kubeadm-config.yaml，文件内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: kubeadm.k8s.io/v1beta3</span><br><span class="line">kind: ClusterConfiguration</span><br><span class="line">kubernetesVersion: v1.25.4</span><br><span class="line">---</span><br><span class="line">kind: KubeletConfiguration</span><br><span class="line">apiVersion: kubelet.config.k8s.io/v1beta1</span><br><span class="line">cgroupDriver: systemd</span><br></pre></td></tr></table></figure>
+
+<p>执行命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">kubeadm init --config kubeadm-config.yaml</span><br><span class="line">kubeadm config print init-defaults --component-configs KubeletConfiguration &gt; cluster.yaml</span><br><span class="line">kubeadm init --config cluster.yaml</span><br></pre></td></tr></table></figure>
+
+<p>接下来初始化 kubeconfig 文件，这样即可通过 kubectl 命令来访问 k8s 了。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p $HOME/.kube</span><br><span class="line">sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span><br><span class="line">sudo chown $(id -u):$(id -g) $HOME/.kube/config</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="安装网络插件"><a href="#安装网络插件" class="headerlink" title="安装网络插件"></a>安装网络插件</h3><p>刚部署完成的节点处于NotReady 的状态，原因是因为还没有安装网络插件。</p>
+<h4 id="cilim-网络插件"><a href="#cilim-网络插件" class="headerlink" title="cilim 网络插件"></a>cilim 网络插件</h4><p>cilim 网络插件比较火爆，下面介绍其安装步骤：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># 安装 cilium 客户端</span><br><span class="line">CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/master/stable.txt)</span><br><span class="line">CLI_ARCH=amd64</span><br><span class="line">if [ &quot;$(uname -m)&quot; = &quot;aarch64&quot; ]; then CLI_ARCH=arm64; fi</span><br><span class="line">curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/$&#123;CILIUM_CLI_VERSION&#125;/cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz&#123;,.sha256sum&#125;</span><br><span class="line">sha256sum --check cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz.sha256sum</span><br><span class="line">sudo tar xzvfC cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz /usr/local/bin</span><br><span class="line">rm cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz&#123;,.sha256sum&#125;</span><br><span class="line"></span><br><span class="line"># 网络插件初始化</span><br><span class="line">cilium install</span><br></pre></td></tr></table></figure>
+
+<p>在安装完网络插件后，node 节点即可变为 ready 状态。</p>
+<p>查看环境中包含如下的 pod:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl  get pod  -A</span><br><span class="line">NAMESPACE     NAME                             READY   STATUS    RESTARTS   AGE</span><br><span class="line">kube-system   cilium-7zj7t                     1/1     Running   0          82s</span><br><span class="line">kube-system   cilium-operator-bc4d5b54-kvqqx   1/1     Running   0          82s</span><br><span class="line">kube-system   coredns-565d847f94-hrm9b         1/1     Running   0          14m</span><br><span class="line">kube-system   coredns-565d847f94-z5kwr         1/1     Running   0          14m</span><br><span class="line">kube-system   etcd-k8s002                      1/1     Running   0          14m</span><br><span class="line">kube-system   kube-apiserver-k8s002            1/1     Running   0          14m</span><br><span class="line">kube-system   kube-controller-manager-k8s002   1/1     Running   0          14m</span><br><span class="line">kube-system   kube-proxy-bhpqr                 1/1     Running   0          14m</span><br><span class="line">kube-system   kube-scheduler-k8s002            1/1     Running   0          14m</span><br></pre></td></tr></table></figure>
+
+<h4 id="k8s-自带的-bridge-插件"><a href="#k8s-自带的-bridge-插件" class="headerlink" title="k8s 自带的 bridge 插件"></a>k8s 自带的 bridge 插件</h4><p>在单节点的场景下，pod 不需要跨节点通讯，k8s 自带的 bridge 插件也可以满足单节点内的 pod 相互通讯，类似于 docker 的 bridge 网络模式。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /etc/cni/net.d</span><br><span class="line">cat &gt; /etc/cni/net.d/10-mynet.conf &lt;&lt;EOF</span><br><span class="line">&#123;</span><br><span class="line">  &quot;cniVersion&quot;: &quot;0.2.0&quot;,</span><br><span class="line">  &quot;name&quot;: &quot;mynet&quot;,</span><br><span class="line">  &quot;type&quot;: &quot;bridge&quot;,</span><br><span class="line">  &quot;bridge&quot;: &quot;cni0&quot;,</span><br><span class="line">  &quot;isGateway&quot;: true,</span><br><span class="line">  &quot;ipMasq&quot;: true,</span><br><span class="line">  &quot;ipam&quot;: &#123;</span><br><span class="line">    &quot;type&quot;: &quot;host-local&quot;,</span><br><span class="line">    &quot;subnet&quot;: &quot;172.19.0.0/24&quot;,</span><br><span class="line">    &quot;routes&quot;: [</span><br><span class="line">      &#123; &quot;dst&quot;: &quot;0.0.0.0/0&quot; &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<p>如果 k8s 节点已经部署完成，需要重启下 kubelet 进程该配置即可生效。</p>
+<h3 id="添加其他节点"><a href="#添加其他节点" class="headerlink" title="添加其他节点"></a>添加其他节点</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">kubeadm join 172.21.115.189:6443 --token abcdef.0123456789abcdef \</span><br><span class="line">        --discovery-token-ca-cert-hash sha256:457fba2c4181a5b02d2a4f202dfe20f9ce5b9f2274bf40b6d25a8a8d4a7ce440 </span><br></pre></td></tr></table></figure>
+
+<p>此时即可以将节点添加到 k8s 集群中</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl  get node </span><br><span class="line">NAME     STATUS   ROLES           AGE   VERSION</span><br><span class="line">k8s002   Ready    control-plane   79m   v1.25.4</span><br><span class="line">k8s003   Ready    &lt;none&gt;          35s   v1.25.4</span><br></pre></td></tr></table></figure>
+
+<h3 id="节点清理"><a href="#节点清理" class="headerlink" title="节点清理"></a>节点清理</h3><h4 id="清理普通节点"><a href="#清理普通节点" class="headerlink" title="清理普通节点"></a>清理普通节点</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">kubectl drain &lt;node name&gt; --delete-emptydir-data --force --ignore-daemonsets</span><br><span class="line">kubeadm reset </span><br><span class="line"># 清理 iptabels 规则</span><br><span class="line">iptables -F &amp;&amp; iptables -t nat -F &amp;&amp; iptables -t mangle -F &amp;&amp; iptables -X</span><br><span class="line">kubectl delete node &lt;node name&gt;</span><br></pre></td></tr></table></figure>
+
+<h4 id="清理-control-plan-节点"><a href="#清理-control-plan-节点" class="headerlink" title="清理 control plan 节点"></a>清理 control plan 节点</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubeadm reset</span><br></pre></td></tr></table></figure>
+
+<h2 id="集群模式部署"><a href="#集群模式部署" class="headerlink" title="集群模式部署"></a>集群模式部署</h2><p>待补充，参考文档：<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/">Creating Highly Available Clusters with kubeadm | Kubernetes</a></p>
+<h2 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/">Bootstrapping clusters with kubeadm</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +360,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -338,7 +479,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -485,7 +626,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -626,7 +767,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -733,7 +874,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -837,7 +978,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -991,7 +1132,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -1090,7 +1231,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -1199,7 +1340,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -2040,121 +2181,6 @@
 <li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/Zkj0jQC1QOXFLkhCc0zlug">云原生全景图详解系列（五）：应用程序定义和开发层</a></li>
 <li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/73AjqjDG7VuFjtYgCBhHDg">云原生全景图详解（六）｜托管 Kubernetes 和 PaaS 解决什么问题</a></li>
 <li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/vJwqf9S8l9KpymmAAWACxw">云原生全景图详解（七）：可观察性是什么，有哪些相关工具</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/flux/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/flux/" class="post-title-link" itemprop="url">Flux（学习笔记）</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-05-06 23:42:46" itemprop="dateCreated datePublished" datetime="2022-05-06T23:42:46+00:00">2022-05-06</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="核心原理"><a href="#核心原理" class="headerlink" title="核心原理"></a>核心原理</h1><p>Flux为一款GitOPS的发布工具，应用信息全部放到git仓库中，一旦git仓库中应用信息有新的提交，Flux即可在k8s中发布新的部署。支持kustomize和helm chart形式的应用。目前该项目为CNCF的孵化项目。</p>
-<h1 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h1><h2 id="前置条件"><a href="#前置条件" class="headerlink" title="前置条件"></a>前置条件</h2><ol>
-<li>已经存在k8s集群</li>
-<li>可以获取到Github的个人token</li>
-</ol>
-<h2 id="安装flux-cli"><a href="#安装flux-cli" class="headerlink" title="安装flux cli"></a>安装flux cli</h2><p>执行如下命令安装flux cli</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">curl</span> <span class="string">-s</span> <span class="string">https://fluxcd.io/install.sh</span> <span class="string">|</span> <span class="string">sudo</span> <span class="string">bash</span></span><br></pre></td></tr></table></figure>
-<p>将如下内容追到到文件~&#x2F;.bash_profile</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">.</span> <span class="string">&lt;(flux</span> <span class="string">completion</span> <span class="string">bash)</span></span><br></pre></td></tr></table></figure>
-<h2 id="bootstrap"><a href="#bootstrap" class="headerlink" title="bootstrap"></a>bootstrap</h2><p>bootstrap操作会在k8s集群中安装flux到flux-system下，并且会通过git的方式来管理其自身。这里直接采用github，首先要获取到token，并设置为环境变量。</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">export</span> <span class="string">GITHUB_TOKEN=xxx</span></span><br></pre></td></tr></table></figure>
-<p>并执行如下命令开始bootstrap</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">flux</span> <span class="string">bootstrap</span> <span class="string">github</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--owner=kuring</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--repository=flux-learn</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--path=clusters/my-cluster</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--personal</span></span><br></pre></td></tr></table></figure>
-<p>会自动创建github repo，并且会在main分支的clusters&#x2F;my-cluster&#x2F;flux-system下创建三个文件：</p>
-<ul>
-<li>gotk-components.yaml：flux的组件yaml</li>
-<li>gotk-sync.yaml</li>
-<li>kustomization.yaml：使用kustomization来个性化flux组件</li>
-</ul>
-<p>会安装如下组件到k8s中</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">k</span> <span class="string">get</span> <span class="string">deployment</span> <span class="string">-n</span> <span class="string">flux-system</span> </span><br><span class="line"><span class="string">NAME</span>                      <span class="string">READY</span>   <span class="string">UP-TO-DATE</span>   <span class="string">AVAILABLE</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">helm-controller</span>           <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br><span class="line"><span class="string">kustomize-controller</span>      <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br><span class="line"><span class="string">notification-controller</span>   <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br><span class="line"><span class="string">source-controller</span>         <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br></pre></td></tr></table></figure>
-<p>也可以使用更简单的方式<code>flux install</code>来安装flux，该命令不会将flux的安装信息存放到git仓库中，而是会直接安装。</p>
-<h2 id="部署应用"><a href="#部署应用" class="headerlink" title="部署应用"></a>部署应用</h2><p>将上述的github项目copy到本地，需要特别注意的是github不允许使用密码来认证，需要在输入密码的地方输入token。</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">git</span> <span class="string">clone</span> <span class="string">https://github.com/kuring/flux-learn</span></span><br><span class="line"><span class="string">cd</span> <span class="string">fleet-infra</span></span><br></pre></td></tr></table></figure>
-<p>使用如下命令在git仓库中创建podinfo-source.yaml文件和kustomization文件</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">flux</span> <span class="string">create</span> <span class="string">source</span> <span class="string">git</span> <span class="string">podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--url=https://github.com/stefanprodan/podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--branch=master</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--interval=30s</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--export</span> <span class="string">&gt;</span> <span class="string">./clusters/my-cluster/podinfo-source.yaml</span></span><br><span class="line">  </span><br><span class="line"><span class="string">flux</span> <span class="string">create</span> <span class="string">kustomization</span> <span class="string">podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--target-namespace=default</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--source=podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--path=&quot;./kustomize&quot;</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--prune=true</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--interval=5m</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--export</span> <span class="string">&gt;</span> <span class="string">./clusters/my-cluster/podinfo-kustomization.yaml</span></span><br></pre></td></tr></table></figure>
-<p>podinfo-source.yaml文件内容如下：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">source.toolkit.fluxcd.io/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">GitRepository</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">flux-system</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">interval:</span> <span class="string">30s</span></span><br><span class="line">  <span class="attr">ref:</span></span><br><span class="line">    <span class="attr">branch:</span> <span class="string">master</span></span><br><span class="line">  <span class="attr">url:</span> <span class="string">https://github.com/stefanprodan/podinfo</span></span><br></pre></td></tr></table></figure>
-<p>podinfo-kustomization.yaml文件内容如下：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">kustomize.toolkit.fluxcd.io/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Kustomization</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">flux-system</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">interval:</span> <span class="string">5m0s</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">./kustomize</span></span><br><span class="line">  <span class="attr">prune:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">sourceRef:</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">GitRepository</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">targetNamespace:</span> <span class="string">default</span></span><br></pre></td></tr></table></figure>
-<p>执行如下命令将文件提供到git仓库</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">git</span> <span class="string">add</span> <span class="string">-A</span> <span class="string">&amp;&amp;</span> <span class="string">git</span> <span class="string">commit</span> <span class="string">-m</span> <span class="string">&quot;Add podinfo GitRepository&quot;</span></span><br><span class="line"><span class="string">git</span> <span class="string">push</span></span><br></pre></td></tr></table></figure>
-<p>查看podinfo的部署状态，说明已经自动部署成功。</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">flux</span> <span class="string">get</span> <span class="string">kustomizations</span> <span class="string">--watch</span></span><br><span class="line"><span class="string">NAME</span>    <span class="string">REVISION</span>        <span class="string">SUSPENDED</span>       <span class="string">READY</span>   <span class="string">MESSAGE</span>                          </span><br><span class="line"><span class="attr">podinfo master/bf09377  False           True    Applied revision:</span> <span class="string">master/bf09377</span></span><br><span class="line"><span class="attr">flux-system     main/81f2115    False   True    Applied revision:</span> <span class="string">main/81f2115</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>修改podinfo-kustomization.yaml文件内容如下，并重新提交到git仓库</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">kustomize.toolkit.fluxcd.io/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Kustomization</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">flux-system</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">interval:</span> <span class="string">5m0s</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">./kustomize</span></span><br><span class="line">  <span class="attr">prune:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">sourceRef:</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">GitRepository</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">targetNamespace:</span> <span class="string">default</span></span><br><span class="line">  <span class="attr">patches:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">patch:</span> <span class="string">|-</span></span><br><span class="line"><span class="string">        apiVersion: autoscaling/v2beta2</span></span><br><span class="line"><span class="string">        kind: HorizontalPodAutoscaler</span></span><br><span class="line"><span class="string">        metadata:</span></span><br><span class="line"><span class="string">          name: podinfo</span></span><br><span class="line"><span class="string">        spec:</span></span><br><span class="line"><span class="string">          minReplicas: 3             </span></span><br><span class="line"><span class="string"></span>      <span class="attr">target:</span></span><br><span class="line">        <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">        <span class="attr">kind:</span> <span class="string">HorizontalPodAutoscaler</span></span><br></pre></td></tr></table></figure>
-<p>过会可以看到环境中的hpa最小副本数已经变更为3.</p>
-<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
-<li><a target="_blank" rel="noopener" href="https://fluxcd.io/">https://fluxcd.io/</a></li>
 </ul>
 
       

@@ -146,13 +146,13 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">243</span>
+          <span class="site-state-item-count">244</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">35</span>
+        <span class="site-state-item-count">36</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -174,6 +174,86 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/logstash-php-fpm/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/logstash-php-fpm/" class="post-title-link" itemprop="url">使用logstash收集php-fpm slow log</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2016-06-10 00:00:00" itemprop="dateCreated datePublished" datetime="2016-06-10T00:00:00+00:00">2016-06-10</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>目前php-fpm的服务部署在了docker中，对php-fpm的log和php error log可以通过syslog协议的形式发送出去，而php-fpm的slow log却不能配置为syslog协议，只能输出到文件中，因为一条slow log的是有多行组成的。</p>
+<p>在docker中使用时发现fpm-slowlog不能正常输出，后经发现是docker默认没有ptrace系统调用的权限，而slow log的产生需要该系统调用。通过在docker启动的时候增加”–cap-add SYS_PTRACE”启动项可修正该问题。</p>
+<p>为了收集slow log，可以通过logstash、flume等工具进行收集，本文采用logstash对slow log进行收集，并将收集的log写入到kafka中，便于后续的处理。logstash的input采用读取文件的方式，即跟tail -f的原理类似。为了能够将多行日志作为一行，采用了filter中的multiline来对多行日志进行合并操作。logstash的配置如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">input &#123;</span><br><span class="line">    file &#123;</span><br><span class="line">        path =&gt; [“/var/log/php-fpm/fpm-slow.log&quot;]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">filter &#123;</span><br><span class="line">    multiline &#123;</span><br><span class="line">        pattern =&gt; &quot;^$&quot;</span><br><span class="line">        negate =&gt; true</span><br><span class="line">        what =&gt; &quot;previous&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">output &#123;</span><br><span class="line">    stdout&#123;codec =&gt; rubydebug&#125;</span><br><span class="line">    kafka &#123;</span><br><span class="line">        codec =&gt; plain &#123;</span><br><span class="line">           format =&gt; “tag|%&#123;host&#125;%&#123;message&#125;&quot;</span><br><span class="line">        &#125;</span><br><span class="line">        topic_id =&gt; &quot;fpm-slowlog&quot;</span><br><span class="line">        bootstrap_servers =&gt; “kafka1.hostname:8082,kafka2.hostname:8082&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +299,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -310,7 +390,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -415,7 +495,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -537,7 +617,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -641,7 +721,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -732,7 +812,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -821,7 +901,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -910,7 +990,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -1019,7 +1099,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -1050,108 +1130,6 @@
 <p>我找同学内推了百度的简历，另外在拉勾网上也投了一些百度的简历。在我入职之前的几天百度的hr妹子给我电话沟通说一周之内会给我面试通知，最终的结果是一周后百度hr妹子给我打电话让我去面试，看来大公司的流程真是复杂，连面试都得排队，而那天是我入职的第一天。没办法，只能委婉的拒绝了，hr倒是很爽快的挂掉了电话。</p>
 <p>目前，我已经入职有三周的时间了，工作已经趋于稳定。我也搬到了公司附近，离公司就几分钟的路程，毕竟就自己一个人，没必要离公司太远，上下班太折腾。晚上一般会在公司待到十点以后，毕竟回去了也没太有什么事情。周末会抽时间回济南跟家人团聚，或者家人来北京，不期望因为工作的原因而对家庭有损伤。工作方面的内容还算满意，能涉及到很多新技术，对个人的成长还不错，只是组内的人员较少，沟通交流的机会不够多，通过招聘慢慢就会解决了。由于用到的很多技术都不够熟悉，自己俨然变成了一个菜鸟，有大量的技术需要学习。同事也还比较给力，大家对工作也很认真负责，团队的凝聚力也符合我的预期。</p>
 <p>总结来看，这段找工作的经历虽有很多失误的地方，错误的对行业的需求进行了估计，以为C++程序员很抢手，事实并不是如此，但结果还算满意。现在自己一个人在北京奋斗，期望通过自己的努力能够有个好的收货。要想写的东西很多，很多都一笔带过了，非技术类的文章写起来还是挺费脑力的。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/question_getaddrinfo/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/question_getaddrinfo/" class="post-title-link" itemprop="url">getaddrinfo函数调用问题</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-07-17 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-17T00:00:00+00:00">2015-07-17</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>最近在开发程序的过程中遇到了一个getaddrinfo函数的问题，令我感到非常奇怪。</p>
-<p>程序中调用了librdkafka库，当程序选择用-static方式链接所有库时程序会在librdkafka库中某个函数core dump，但是选择动态链接系统库（包括libpthread、libdl、libz、libm、libc等）时程序却能正常运行。</p>
-<p>每次程序都回core dump在getaddrinfo函数中，经过搜索发现有人跟我遇到同样的<a target="_blank" rel="noopener" href="https://sourceware.org/bugzilla/show_bug.cgi?id=10652">问题</a>，但是却没有解决方案。</p>
-<p>我这里实验了文中提到了例子，在静态链接的时候确实会报错，动态链接却非常正常，编译选项为<code>g++ -o test_getaddrinfo test_getaddrinfo.cpp -lpthread -Wall -static</code>。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">include &lt;stdio.h&gt;</span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;netdb.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> *<span class="title">test</span><span class="params">(<span class="type">void</span> *)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">addrinfo</span> *res = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="built_in">fprintf</span>(stderr, <span class="string">&quot;x=&quot;</span>);</span><br><span class="line">    <span class="type">int</span> ret = <span class="built_in">getaddrinfo</span>(<span class="string">&quot;localhost&quot;</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, &amp;res);</span><br><span class="line">    <span class="built_in">fprintf</span>(stderr, <span class="string">&quot;%d &quot;</span>, ret);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">512</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">pthread_t</span> thr;</span><br><span class="line">        <span class="built_in">pthread_create</span>(&amp;thr, <span class="literal">NULL</span>, test, <span class="literal">NULL</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">sleep</span>(<span class="number">5</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>发现程序在链接的时候会提示如下警告：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/tmp/cc0WILtn.o: In function `test(void*)&#x27;:</span><br><span class="line">test_getaddrinfo.cpp:(.text+0x49): warning: Using &#x27;getaddrinfo&#x27; in statically linked applications requires at runtime the shared libraries from the glibc version used for linking</span><br><span class="line">/usr/lib/gcc/x86_64-redhat-linux/4.8.3/../../../../lib64/libpthread.a(libpthread.o): In function `sem_open&#x27;:</span><br><span class="line">(.text+0x685b): warning: the use of `mktemp&#x27; is dangerous, better use `mkstemp&#x27;</span><br></pre></td></tr></table></figure>
-
-<p>从网上查看有该警告的人还是非常多的，都是在-static方式链接glibc库时遇到的，但是没有发现很好的解决方案。该问题的原因<br>产生估计是glibc在静态链接时调用libnss库存在问题，因此不提倡静态链接方式。</p>
-<p>我看到了两种解决方案：</p>
-<p>方案一：用newlib或uClibc来代替glibc来静态链接，这种方案我没有去尝试是否可行。</p>
-<p>方案二：用<code>--enable-static-nss</code>重新编译glibc。我试了一下问题仍然存在。</p>
-<p>我之所以采用静态链接的方式，是因为开发机器和运行机器的glibc版本不一致造成的。我尝试将libc.so相关文件复制运行机器上，并让程序链接我复制过去的文件，ldd查看可执行文件没有错误，但是当运行程序时会报如下错误：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./xxx: relocation error: /home/kuring/lib/libc.so.6: symbol _dl_starting_up, version GLIBC_PRIVATE not defined in file ld-linux-x86-64.so.2 with link time reference</span><br></pre></td></tr></table></figure>
-
-<p>最终，我放弃了静态链接的方式，采用了动态链接方式来暂时解决了问题。如果你知道解决方案，请告诉我。</p>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><ul>
-<li><p><a target="_blank" rel="noopener" href="https://sourceware.org/bugzilla/show_bug.cgi?id=10652">getaddrinfo causes segfault if multithreaded and linked statically</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="https://sourceware.org/glibc/wiki/FAQ#Even_statically_linked_programs_need_some_shared_libraries_which_is_not_acceptable_for_me.__What_can_I_do.3F">Even statically linked programs need some shared libraries which is not acceptable for me.</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="http://stackoverflow.com/questions/2725255/create-statically-linked-binary-that-uses-getaddrinfo">Create statically-linked binary that uses getaddrinfo?</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="http://www.akkadia.org/drepper/no_static_linking.html">Static Linking Considered Harmful</a></p>
-</li>
-</ul>
 
       
     </div>

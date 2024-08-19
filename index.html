@@ -146,13 +146,13 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">243</span>
+          <span class="site-state-item-count">244</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">35</span>
+        <span class="site-state-item-count">36</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -174,6 +174,117 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/ai/N-Gram/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/ai/N-Gram/" class="post-title-link" itemprop="url">语言模型雏形 N-Gram</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2024-08-19 00:00:00 / Modified: 13:59:46" itemprop="dateCreated datePublished" datetime="2024-08-19T00:00:00+00:00">2024-08-19</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <blockquote>
+<p>本文为对《GPT 图解 - 大模型是怎样构建的》一书的学习笔记，所有的例子和代码均来源于本书。</p>
+</blockquote>
+<h2 id="基本介绍"><a href="#基本介绍" class="headerlink" title="基本介绍"></a>基本介绍</h2><p> N-Gram 模型为语言模型的雏形。</p>
+<p>基本思想为：一个词出现的概率仅依赖其前面的 N-1 个词。即通过有限的 N-1 个词来预测第 N 个词。</p>
+<p>以 “我爱吃肉” 举例，分词为 [”我“, “爱”, “吃”, “肉”]。</p>
+<ul>
+<li>当 N&#x3D;1 时，对应的序列为[”我“, “爱”, “吃”, “肉”]，又成为 Unigram。</li>
+<li>当 N&#x3D;2 时，对应的序列为[”我爱“, “爱吃”, “吃肉”]，又成为 Bigram。</li>
+<li>当 N&#x3D;3 时，对应的序列为[”我爱吃“, “爱吃肉”]，又成为 Trigram。</li>
+</ul>
+<h2 id="2-Gram-的构建过程"><a href="#2-Gram-的构建过程" class="headerlink" title="2-Gram 的构建过程"></a>2-Gram 的构建过程</h2><h3 id="将语料拆分为分词"><a href="#将语料拆分为分词" class="headerlink" title="将语料拆分为分词"></a>将语料拆分为分词</h3><p>将给定的语料库，拆分为以一个的分词。在真实的场景中需要使用分词函数，这里简单起见，使用了一个汉字一个分词的方式。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">corpus = [ <span class="string">&quot;我喜欢吃苹果&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;我喜欢吃香蕉&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;她喜欢吃葡萄&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;他不喜欢吃香蕉&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;他喜欢吃苹果&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;她喜欢吃草莓&quot;</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个分词函数，将文本转换为单个字符的列表  </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">tokenize</span>(<span class="params">text</span>):  </span><br><span class="line"> <span class="keyword">return</span> [char <span class="keyword">for</span> char <span class="keyword">in</span> text] <span class="comment"># 将文本拆分为字符列表  </span></span><br><span class="line"><span class="comment"># 对每个文本进行分词，并打印出对应的单字列表  </span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;单字列表:&quot;</span>)   </span><br><span class="line"><span class="keyword">for</span> text <span class="keyword">in</span> corpus:  </span><br><span class="line">    tokens = tokenize(text)  </span><br><span class="line">    <span class="built_in">print</span>(tokens)</span><br></pre></td></tr></table></figure>
+
+<p>得到如下的结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">单字列表:</span><br><span class="line">[&#x27;我&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;苹&#x27;, &#x27;果&#x27;]</span><br><span class="line">[&#x27;我&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;香&#x27;, &#x27;蕉&#x27;]</span><br><span class="line">[&#x27;她&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;葡&#x27;, &#x27;萄&#x27;]</span><br><span class="line">[&#x27;他&#x27;, &#x27;不&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;香&#x27;, &#x27;蕉&#x27;]</span><br><span class="line">[&#x27;他&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;苹&#x27;, &#x27;果&#x27;]</span><br><span class="line">[&#x27;她&#x27;, &#x27;喜&#x27;, &#x27;欢&#x27;, &#x27;吃&#x27;, &#x27;草&#x27;, &#x27;莓&#x27;]</span><br></pre></td></tr></table></figure>
+
+<h3 id="计算每个-2-Gram（BiGram）-在语料库中的词频"><a href="#计算每个-2-Gram（BiGram）-在语料库中的词频" class="headerlink" title="计算每个 2-Gram（BiGram） 在语料库中的词频"></a>计算每个 2-Gram（BiGram） 在语料库中的词频</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 定义计算 N-Gram 词频的函数  </span></span><br><span class="line"><span class="keyword">from</span> collections <span class="keyword">import</span> defaultdict, Counter <span class="comment"># 导入所需库  </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">count_ngrams</span>(<span class="params">corpus, n</span>):  </span><br><span class="line">    ngrams_count = defaultdict(Counter)  <span class="comment"># 创建一个字典，存储 N-Gram 计数  </span></span><br><span class="line">    <span class="keyword">for</span> text <span class="keyword">in</span> corpus:  <span class="comment"># 遍历语料库中的每个文本  </span></span><br><span class="line">        tokens = tokenize(text)  <span class="comment"># 对文本进行分词  </span></span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(tokens) - n + <span class="number">1</span>):  <span class="comment"># 遍历分词结果，生成 N-Gram            ngram = tuple(tokens[i:i+n])  # 创建一个 N-Gram 元组  </span></span><br><span class="line">            prefix = ngram[:-<span class="number">1</span>]  <span class="comment"># 获取 N-Gram 的前缀  </span></span><br><span class="line">            token = ngram[-<span class="number">1</span>]  <span class="comment"># 获取 N-Gram 的目标单字  </span></span><br><span class="line">            ngrams_count[prefix][token] += <span class="number">1</span>  <span class="comment"># 更新 N-Gram 计数  </span></span><br><span class="line">    <span class="keyword">return</span> ngrams_count  </span><br><span class="line">bigram_counts = count_ngrams(corpus, <span class="number">2</span>) <span class="comment"># 计算 bigram 词频  </span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;bigram 词频：&quot;</span>) <span class="comment"># 打印 bigram 词频  </span></span><br><span class="line"><span class="keyword">for</span> prefix, counts <span class="keyword">in</span> bigram_counts.items():  </span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;&#123;&#125;: &#123;&#125;&quot;</span>.<span class="built_in">format</span>(<span class="string">&quot;&quot;</span>.join(prefix), <span class="built_in">dict</span>(counts)))</span><br></pre></td></tr></table></figure>
+
+<p>计算获取到如下的结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">bigram 词频：</span><br><span class="line">我: &#123;&#x27;喜&#x27;: 2&#125;</span><br><span class="line">喜: &#123;&#x27;欢&#x27;: 6&#125;</span><br><span class="line">欢: &#123;&#x27;吃&#x27;: 6&#125;</span><br><span class="line">吃: &#123;&#x27;苹&#x27;: 2, &#x27;香&#x27;: 2, &#x27;葡&#x27;: 1, &#x27;草&#x27;: 1&#125;</span><br><span class="line">苹: &#123;&#x27;果&#x27;: 2&#125;</span><br><span class="line">香: &#123;&#x27;蕉&#x27;: 2&#125;</span><br><span class="line">她: &#123;&#x27;喜&#x27;: 2&#125;</span><br><span class="line">葡: &#123;&#x27;萄&#x27;: 1&#125;</span><br><span class="line">他: &#123;&#x27;不&#x27;: 1, &#x27;喜&#x27;: 1&#125;</span><br><span class="line">不: &#123;&#x27;喜&#x27;: 1&#125;</span><br><span class="line">草: &#123;&#x27;莓&#x27;: 1&#125;</span><br></pre></td></tr></table></figure>
+<p>即当第一个词为 ”我“，第二个词为”喜“在整个语料库中出现了 2 次。</p>
+<p>如果为 3-Gram（TriGram），此时输出结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">bigram 词频：</span><br><span class="line">我喜: &#123;&#x27;欢&#x27;: 2&#125;</span><br><span class="line">喜欢: &#123;&#x27;吃&#x27;: 6&#125;</span><br><span class="line">欢吃: &#123;&#x27;苹&#x27;: 2, &#x27;香&#x27;: 2, &#x27;葡&#x27;: 1, &#x27;草&#x27;: 1&#125;</span><br><span class="line">吃苹: &#123;&#x27;果&#x27;: 2&#125;</span><br><span class="line">吃香: &#123;&#x27;蕉&#x27;: 2&#125;</span><br><span class="line">她喜: &#123;&#x27;欢&#x27;: 2&#125;</span><br><span class="line">吃葡: &#123;&#x27;萄&#x27;: 1&#125;</span><br><span class="line">他不: &#123;&#x27;喜&#x27;: 1&#125;</span><br><span class="line">不喜: &#123;&#x27;欢&#x27;: 1&#125;</span><br><span class="line">他喜: &#123;&#x27;欢&#x27;: 1&#125;</span><br><span class="line">吃草: &#123;&#x27;莓&#x27;: 1&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果为 1-Gram（UniGram），此时输出结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bigram 词频：</span><br><span class="line">: &#123;&#x27;我&#x27;: 2, &#x27;喜&#x27;: 6, &#x27;欢&#x27;: 6, &#x27;吃&#x27;: 6, &#x27;苹&#x27;: 2, &#x27;果&#x27;: 2, &#x27;香&#x27;: 2, &#x27;蕉&#x27;: 2, &#x27;她&#x27;: 2, &#x27;葡&#x27;: 1, &#x27;萄&#x27;: 1, &#x27;他&#x27;: 2, &#x27;不&#x27;: 1, &#x27;草&#x27;: 1, &#x27;莓&#x27;: 1&#125;</span><br></pre></td></tr></table></figure>
+<p> 可以看到已经退化为了每个单词在整个语料库中出现的次数。</p>
+<h4 id="计算每个-2-Gram-出现的概率"><a href="#计算每个-2-Gram-出现的概率" class="headerlink" title="计算每个 2-Gram 出现的概率"></a>计算每个 2-Gram 出现的概率</h4><p>即给定前一个词，计算下一个词出现的概率。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 定义计算 N-Gram 出现概率的函数  </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">ngram_probabilities</span>(<span class="params">ngram_counts</span>):  </span><br><span class="line"> ngram_probs = defaultdict(Counter) <span class="comment"># 创建一个字典，存储 N-Gram 出现的概率  </span></span><br><span class="line"> <span class="keyword">for</span> prefix, tokens_count <span class="keyword">in</span> ngram_counts.items(): <span class="comment"># 遍历 N-Gram 前缀  </span></span><br><span class="line">     total_count = <span class="built_in">sum</span>(tokens_count.values()) <span class="comment"># 计算当前前缀的 N-Gram 计数  </span></span><br><span class="line">     <span class="keyword">for</span> token, count <span class="keyword">in</span> tokens_count.items(): <span class="comment"># 遍历每个前缀的 N-Gram         ngram_probs[prefix][token] = count / total_count # 计算每个 N-Gram 出现的概率  </span></span><br><span class="line"> <span class="keyword">return</span> ngram_probs  </span><br><span class="line">bigram_probs = ngram_probabilities(bigram_counts) <span class="comment"># 计算 bigram 出现的概率  </span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\nbigram 出现的概率 :&quot;</span>) <span class="comment"># 打印 bigram 概率  </span></span><br><span class="line"><span class="keyword">for</span> prefix, probs <span class="keyword">in</span> bigram_probs.items():  </span><br><span class="line"> <span class="built_in">print</span>(<span class="string">&quot;&#123;&#125;: &#123;&#125;&quot;</span>.<span class="built_in">format</span>(<span class="string">&quot;&quot;</span>.join(prefix), <span class="built_in">dict</span>(probs)))</span><br></pre></td></tr></table></figure>
+
+<p>输出结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">bigram 出现的概率 :</span><br><span class="line">我: &#123;&#x27;喜&#x27;: 1.0&#125;</span><br><span class="line">喜: &#123;&#x27;欢&#x27;: 1.0&#125;</span><br><span class="line">欢: &#123;&#x27;吃&#x27;: 1.0&#125;</span><br><span class="line">吃: &#123;&#x27;苹&#x27;: 0.3333333333333333, &#x27;香&#x27;: 0.3333333333333333, &#x27;葡&#x27;: 0.16666666666666666, &#x27;草&#x27;: 0.16666666666666666&#125;</span><br><span class="line">苹: &#123;&#x27;果&#x27;: 1.0&#125;</span><br><span class="line">香: &#123;&#x27;蕉&#x27;: 1.0&#125;</span><br><span class="line">她: &#123;&#x27;喜&#x27;: 1.0&#125;</span><br><span class="line">葡: &#123;&#x27;萄&#x27;: 1.0&#125;</span><br><span class="line">他: &#123;&#x27;不&#x27;: 0.5, &#x27;喜&#x27;: 0.5&#125;</span><br><span class="line">不: &#123;&#x27;喜&#x27;: 1.0&#125;</span><br><span class="line">草: &#123;&#x27;莓&#x27;: 1.0&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="给定一个前缀，输出连续的文本"><a href="#给定一个前缀，输出连续的文本" class="headerlink" title="给定一个前缀，输出连续的文本"></a>给定一个前缀，输出连续的文本</h3><p>根据前面学习的语料信息，给定一个前缀，即可生成对应的文本内容。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 定义生成下一个词的函数  </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_next_token</span>(<span class="params">prefix, ngram_probs</span>):  </span><br><span class="line"> <span class="keyword">if</span> <span class="keyword">not</span> prefix <span class="keyword">in</span> ngram_probs: <span class="comment"># 如果前缀不在 N-Gram 中，返回 None    return None  </span></span><br><span class="line"> next_token_probs = ngram_probs[prefix] <span class="comment"># 获取当前前缀的下一个词的概率  </span></span><br><span class="line"> next_token = <span class="built_in">max</span>(next_token_probs,   </span><br><span class="line">                    key=next_token_probs.get) <span class="comment"># 选择概率最大的词作为下一个词  </span></span><br><span class="line"> <span class="keyword">return</span> next_token</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义生成连续文本的函数  </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_text</span>(<span class="params">prefix, ngram_probs, n, length=<span class="number">6</span></span>):  </span><br><span class="line"> tokens = <span class="built_in">list</span>(prefix) <span class="comment"># 将前缀转换为字符列表  </span></span><br><span class="line"> <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(length - <span class="built_in">len</span>(prefix)): <span class="comment"># 根据指定长度生成文本   </span></span><br><span class="line"><span class="comment"># 获取当前前缀的下一个词  </span></span><br><span class="line">     next_token = generate_next_token(<span class="built_in">tuple</span>(tokens[-(n-<span class="number">1</span>):]), ngram_probs)   </span><br><span class="line">     <span class="keyword">if</span> <span class="keyword">not</span> next_token: <span class="comment"># 如果下一个词为 None，跳出循环  </span></span><br><span class="line">         <span class="keyword">break</span>  </span><br><span class="line">     tokens.append(next_token) <span class="comment"># 将下一个词添加到生成的文本中  </span></span><br><span class="line"> <span class="keyword">return</span> <span class="string">&quot;&quot;</span>.join(tokens) <span class="comment"># 将字符列表连接成字符串</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 输入一个前缀，生成文本  </span></span><br><span class="line">generated_text = generate_text(<span class="string">&quot;我&quot;</span>, bigram_probs, <span class="number">2</span>)  </span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n 生成的文本：&quot;</span>, generated_text) <span class="comment"># 打印生成的文本</span></span><br></pre></td></tr></table></figure>
+
+<p>给定了文本”我“，可以生成出如下结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">生成的文本： 我喜欢吃苹果</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>N-Gram 为非常简单的语言模型，可以根据给定的词来生成句子。</p>
+<p>缺点：无法捕捉到距离较远的词之间的关系。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +330,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -301,7 +412,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -411,7 +522,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -550,7 +661,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -645,7 +756,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -824,7 +935,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -920,7 +1031,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -1021,7 +1132,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -1164,7 +1275,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
+      <time title="Modified: 2024-08-19 13:59:46" itemprop="dateModified" datetime="2024-08-19T13:59:46+00:00">2024-08-19</time>
     </span>
 
   
@@ -1196,175 +1307,6 @@
 <figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">numastat</span></span><br><span class="line">                           <span class="string">node0</span>           <span class="string">node1</span>           <span class="string">node2</span>           <span class="string">node3</span></span><br><span class="line"><span class="string">numa_hit</span>              <span class="number">6010986094</span>      <span class="number">3863188690</span>      <span class="number">7861549559</span>      <span class="number">9798877648</span></span><br><span class="line"><span class="string">numa_miss</span>                      <span class="number">0</span>               <span class="number">0</span>       <span class="number">113102530</span>               <span class="number">0</span></span><br><span class="line"><span class="string">numa_foreign</span>                   <span class="number">0</span>               <span class="number">0</span>               <span class="number">0</span>       <span class="number">113102530</span></span><br><span class="line"><span class="string">interleave_hit</span>             <span class="number">17976</span>           <span class="number">17846</span>           <span class="number">17965</span>           <span class="number">17839</span></span><br><span class="line"><span class="string">local_node</span>            <span class="number">6010748681</span>      <span class="number">3862984578</span>      <span class="number">7861301902</span>      <span class="number">9798751537</span></span><br><span class="line"><span class="string">other_node</span>                <span class="number">237411</span>          <span class="number">204112</span>       <span class="number">113350178</span>          <span class="number">126111</span></span><br></pre></td></tr></table></figure>
 <h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
 <li><a target="_blank" rel="noopener" href="https://ctimbai.github.io/2018/05/03/tech/linux/cpu/CPU%E6%8B%93%E6%89%91%E4%BB%8ESMP%E8%B0%88%E5%88%B0NUMA%EF%BC%88%E7%90%86%E8%AE%BA%E7%AF%87%EF%BC%89/">CPU 拓扑：从 SMP 谈到 NUMA （理论篇）</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/pi5-1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/pi5-1/" class="post-title-link" itemprop="url">我要看电视 - 将树莓派 5 打造成 Android TV 电视盒子折腾记（1）</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2024-02-17 11:23:07" itemprop="dateCreated datePublished" datetime="2024-02-17T11:23:07+00:00">2024-02-17</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-06-26 15:59:00" itemprop="dateModified" datetime="2024-06-26T15:59:00+00:00">2024-06-26</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>在上一篇文章 《<a href="/post/watch-tv/">我要看电视 - 投影仪和电视盒子选型</a>》中，提到了用树莓派 5 来作为电视盒子，需要刷 Android TV 系统，本文将详细介绍折腾经历。<br>在这之前我并没有接触过树莓派，Android 系统倒是曾经刷过机，但也了解不深。文中如有不正确的地方，欢迎指正。</p>
-<h1 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h1><p>要想折腾树莓派，还是需要一点点设备，我使用到的设备清单如下：</p>
-<ol>
-<li>一台 Mac 笔记本电脑：用来下载镜像、烧录景象、远程连接电视盒子等。其他操作系统的电脑均可。</li>
-<li>一个 32G SD 卡：用来作为树莓派的存储系统 RAM。</li>
-<li>一个 SD 读卡器：用来读取 SD 卡，供电脑烧录系统使用。</li>
-<li>一个 U 盘：该 U 盘并非树莓派的 SD 卡，而是作为树莓派的额外存储，用来向树莓派中复制文件。</li>
-<li>一台显示器：用来显示树莓派的内容，也可以是电视或者投影仪等设备。</li>
-<li>一个 USB 键盘：用来连接树莓派进行操作。</li>
-<li>一个 USB 鼠标：用来连接树莓派进行操作。</li>
-<li>一个蓝牙遥控器：用来连接树莓派的 Android TV 系统。我直接使用了家里办宽带送的移动电视盒子的遥控器。</li>
-<li>一根 HDMI 数据线：其中一头为 Micro HDMI，用来连接树莓派，另外一头为标准 HDMI 口，用来连接显示器。</li>
-</ol>
-<p>另外：</p>
-<ol>
-<li>网络需要能够访问 Google 等网站。</li>
-</ol>
-<h1 id="寻找-Android-TV-系统"><a href="#寻找-Android-TV-系统" class="headerlink" title="寻找 Android TV 系统"></a>寻找 Android TV 系统</h1><p>找到树莓派对应的 Android TV 镜像是非常重要的前提，找到合适的 ROM 永远是 Android 系统刷机中非常重要的一环，一般每个设备总有那么几个大神在提供各类 ROM。<br>查找一个设备的资源最快的方式就是去 github.com 上查找 awesome，树莓派的项目地址为：<a target="_blank" rel="noopener" href="https://github.com/thibmaek/awesome-raspberry-pi">awesome-raspberry-pi</a>。在 OS Images 章节中包含了支持树莓派的多种 OS，单纯搜索 Android TV 并不能找到对应的 OS，但实际上 <a target="_blank" rel="noopener" href="https://konstakang.com/devices/rpi4/">KonstaKANG</a> 对应就是 Android 镜像，这是文档不好的地方，并没有将简介写清楚。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/konstakang-1.png" alt="image.png"></p>
-<p><a target="_blank" rel="noopener" href="https://konstakang.com/devices/rpi4/">KonstaKANG</a> 并非一个系统，而是一个网站，包含了多种设备的 OS 镜像。对应的 <a target="_blank" rel="noopener" href="https://konstakang.com/devices/rpi5/">Raspberry 5</a> 的页面包含了 AOSP 和 LineageOS 两种 OS 镜像，AOSP 和 LineageOS 均为 android 的发型版。但只提供了 LineageOS 20 一个 Android TV 的版本，剩下的两个为 Android 版本。Android TV 和 Android 并非同一个系统，Android TV 是针对电视使用的系统，而 Android 是针对智能手机和平板使用的系统，用户体验上还是有较大区别。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/konstakang-2.png" alt="image.png"><br>因此，<a target="_blank" rel="noopener" href="https://konstakang.com/devices/rpi5/LineageOS20-ATV/">LineageOS 20 Android TV (Android 13) </a>即变为了目前唯一一个可以在树莓派 5 上使用 Android TV 系统，除此之外，别无他选。无论该系统是否完善，这就是目前的唯一选择了。在文章中介绍了非常多的系统方面的支持，建议精读一遍，包括文章后面的评论。<br>文中的两个镜像，一个是原始镜像，另外一个是 ota 补丁包，两个均需要安装。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/konstakang-3.png" alt="image.png"></p>
-<h1 id="用到的文件"><a href="#用到的文件" class="headerlink" title="用到的文件"></a>用到的文件</h1><p>由于在国内下载非常不稳定，通常需要魔法下载，我将需要用到的文件上传到云盘供下载使用。我对部分软件的用途一知半解，但我知道安装了应该没有坏处，选择全部安装。</p>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://pan.baidu.com/s/1pgGB_h2bUhq9iUXHrosW9w?pwd=rgad">lineage-20.0-20240112-UNOFFICIAL-KonstaKANG-rpi5-atv.zip</a> 提取码：rgad</li>
-<li><a target="_blank" rel="noopener" href="https://pan.baidu.com/s/15RAKHM2q6pOGSt0a8jfJUg?pwd=3t4m">lineage-20.0-20240112-UNOFFICIAL-KonstaKANG-rpi5-atv-ota.zip</a> 提取码: 3t4m</li>
-<li><a target="_blank" rel="noopener" href="https://pan.baidu.com/s/1HWv0P22uAH2eavIycuaf1A?pwd=33wj">MindTheGapps-13.0.0-arm64-ATV-full-20240104_210039.zip</a> 提取码：33wj</li>
-<li><a target="_blank" rel="noopener" href="https://pan.baidu.com/s/1z0NcAlssVKPwav7RZTIUNg?pwd=c6ja">lineage-20.0-rpi-resize.zip</a> 提取码：c6ja</li>
-<li><a target="_blank" rel="noopener" href="https://androidfilehost.com/?fid=14871746926876846664#google_vignette">lineage-20.0-rpi-magisk-v25.2.zip</a></li>
-<li><a target="_blank" rel="noopener" href="https://androidfilehost.com/?fid=11701882489785033173">lineage-20.0-rpi-widevine.zip</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/topjohnwu/Magisk/releases/tag/v25.2">Magisk-v25.2.apk</a></li>
-<li><a target="_blank" rel="noopener" href="https://androidfilehost.com/?fid=11701882489785033172">lineage-20.0-rpi-gsfaid.zip</a></li>
-</ul>
-<h1 id="刷-LineageOS-到树莓派"><a href="#刷-LineageOS-到树莓派" class="headerlink" title="刷 LineageOS 到树莓派"></a>刷 LineageOS 到树莓派</h1><p>树莓派官方提供了镜像烧录工具 <a target="_blank" rel="noopener" href="https://www.raspberrypi.com/software/">Imager</a>，支持 Windows、Ubuntu、Mac，刷机非常方便。<img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/imager.png" alt="image.png"><br>将树莓派的 SD 插入到电脑，在 <code>Raspberry Pi Device</code> 中选择 <code>RASPBERRY PI 5</code>，在<code>请选择需要写入的操作系统</code>中使用 <code>Use custom</code> 选项选择已经下载好的文件 lineage-20.0-20240112-UNOFFICIAL-KonstaKANG-rpi5-atv.zip，选择对应的 SD 卡，再点击 <code>Next</code> 即可开始将镜像写入到SD 卡中。<br>值得一提的是，对于树莓派其他的系统，都不需要事先下载，选择系统后，该工具可以自动下载最新版本，这个功能还是非常值得👍。</p>
-<h1 id="LineageOS-初步体验及初步设置"><a href="#LineageOS-初步体验及初步设置" class="headerlink" title="LineageOS 初步体验及初步设置"></a>LineageOS 初步体验及初步设置</h1><p>在将系统刷入 SD 卡后，即可将 SD 卡放到树莓派 5 中，在树莓派中连接好键盘和鼠标。<br>下面步骤中可能会用到键盘的一些快捷键：F1 &#x3D; Home, F2 &#x3D; Back, F3 &#x3D; Multi-tasking, F4 &#x3D; Menu, F5 &#x3D; Power, F11 &#x3D; Volume down, and F12 &#x3D; Volume up<br>开机后即可看到 LineageOS 的开机动画。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-1.png" alt="image.png"></p>
-<p>接下来就会看到查找蓝牙设备的界面，这里可以选择等待一会后自动跳过。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-2.png" alt="image.png"></p>
-<p>接下来就来到了 Welcome 的界面，点击 <code>Start</code>。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-3.png" alt="image.png"></p>
-<p>接下来会进入到选择语言、连接 WIFI 等操作，完成后即可进入到操作系统界面。操作系统界面可谓简洁到不能再精简，只有一个文件的应用。左上角的语音和搜索功能均不能使用。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-4.png" alt="image.png"></p>
-<p>但设置功能作为 Android 系统的核心，这部分功能一点都不会少。在设置中连接  Wifi 后发现会持续断开，不知道是否为系统的问题。</p>
-<p>打开 Recovery 模式：设置 -&gt; 系统 -&gt; Buttons，打开右侧的 Advanced restart。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-5.png" alt="image.png"></p>
-<p>打开开发者模式：设置 -&gt; 系统 -&gt; 关于 -&gt; Android TV 操作系统版本，连续点击键盘的回车键，会提示开发者模式已打开。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-6.png" alt="image.png"></p>
-<p>打开 Rooted debug：设置 -&gt; 系统 -&gt; 开发者选项 -&gt; 打开 <code>USB 调试</code>、<code>Rooted debugging</code>、<code>ADB over network</code> 三个选项。</p>
-<p>打开树莓派的 SSH 服务：设置 -&gt; 系统 -&gt; Raspberry Pi Settings 中将 SSH 服务打开。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-7.png" alt="image.png"></p>
-<h1 id="刷入-ota-包"><a href="#刷入-ota-包" class="headerlink" title="刷入 ota 包"></a>刷入 ota 包</h1><p>接下来选择刷入 OTA 包 <a target="_blank" rel="noopener" href="https://pan.baidu.com/s/15RAKHM2q6pOGSt0a8jfJUg?pwd=3t4m">lineage-20.0-20240112-UNOFFICIAL-KonstaKANG-rpi5-atv-ota.zip</a>，ota 包不会用到树莓派镜像烧录器，而是要通过Android Recovery 模式刷入。需要事先准备好 OTA 包，并将其复制到 U 盘中，并将 U 盘插入到树莓派中。</p>
-<p>在 Android 系统设置 -&gt; 系统 -&gt; 重新启动中选择 Recovery，此时系统会重启进入到 Recovery 模式。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/ota-1.png" alt="image.png"></p>
-<p>点击 <code>Install</code>，并选择右下角的 <code>Select Storage</code> 按钮，选择 USB 存储，即刚插入的 U 盘。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/ota-2.png" alt="image.png"></p>
-<p>在 U 盘中选择要刷入的 ota 补丁，取消 <code>Zip signature verification</code>。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/ota-3.png" alt="image.png"></p>
-<p>在 <code>Swipe to confirm Flash</code>处向右滑动鼠标，即可进入到安装 ota 补丁的界面。ota 补丁安装完成后，即可自动重启进入到 Android TV 系统中。重新进入系统后，发现系统的界面没有任何变化，不知道该 ota 补丁的具体影响功能。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/ota-4.png" alt="image.png"></p>
-<h1 id="系统存储空间设置"><a href="#系统存储空间设置" class="headerlink" title="系统存储空间设置"></a>系统存储空间设置</h1><p>在默认的情况下，打开设置 -&gt; 存储空间，可以看到内部共享存储空间仅为 4.7 GB，这里的存储空间为 &#x2F;data 目录挂载的设备，并没有将 U 盘的空间全部使用起来，U 盘剩余的磁盘空间处于未分配状态。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-8.png" alt="image.png"></p>
-<p>这里使用 <a target="_blank" rel="noopener" href="https://pan.baidu.com/s/1z0NcAlssVKPwav7RZTIUNg?pwd=c6ja">lineage-20.0-rpi-resize.zip</a> 工具来修改存储空间，按照刷入 ota 包相同的方式，进入 Recovery 模式下刷入该包，重新进入系统后即发现存储空间已经变大。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-9.png" alt="image.png"></p>
-<h1 id="安装-adb-工具"><a href="#安装-adb-工具" class="headerlink" title="安装 adb 工具"></a>安装 adb 工具</h1><p>前置条件：开发者选项中的 ADB over network 必须为开启状态。</p>
-<p>adb 命令需要安装到电脑上，在 mac 下使用 <code>brew install android-platform-tools</code>即可安装完成。</p>
-<p>在 android tv 上查看当前的 ip 地址，我这里为 192.168.31.167。执行 <code>adb connect 192.168.31.167</code> 后即可获取到 USB 调试信息，并选中<code>一律允许使用这台计算机进行调试处</code>后点击允许。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-10.png" alt="image.png"><br>此时在终端中即可显示出连接成功的信息：<code>already connected to 192.168.31.167:5555</code>。</p>
-<p>在安装完 adb 工具后，即可以通过 adb 命令来远程访问 Android TV 系统了。例如：</p>
-<ul>
-<li><code>adb install</code> 可以安装 apk 包。</li>
-<li><code>adb shell settings list global</code> 命令来查看 Android 系统的所有global 配置。</li>
-<li><code>adb logcat</code> 查看 android 的日志。</li>
-</ul>
-<h1 id="远程-ssh-连接"><a href="#远程-ssh-连接" class="headerlink" title="远程 ssh 连接"></a>远程 ssh 连接</h1><p>前置条件：</p>
-<ol>
-<li>ssh 连接需要首先在 <code>Raspberry Pi Settings</code> 中的 <code>Remote access</code> 中打开 SSH。</li>
-<li><code>adb connect</code> 可以连接到 Android TV。</li>
-</ol>
-<p>在开启 SSH 服务后，ssh 连接需要使用对应的私钥信息，而私钥信息需要通过 adb 命令获取。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">adb connect 192.168.31.166</span><br><span class="line">adb root</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">可查看 /data/ssh 目录下的 ssh 秘钥信息</span></span><br><span class="line">adb shell ls /data/ssh</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">将秘钥信息放到本地</span></span><br><span class="line">adb pull /data/ssh/ssh_host_ed25519_key ~/.ssh/android_tv.key</span><br><span class="line">chmod 600 ~/.ssh/android_tv.key</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">成功 ssh 连接</span></span><br><span class="line">ssh -i ~/.ssh/android_tv.key root@192.168.31.166</span><br></pre></td></tr></table></figure>
-
-
-<h1 id="安装-Google-Apps"><a href="#安装-Google-Apps" class="headerlink" title="安装 Google Apps"></a>安装 Google Apps</h1><blockquote>
-<p>注意：此处要求网络具备魔法，可以访问 Google</p>
-</blockquote>
-<h2 id="刷入-Google-Apps-包"><a href="#刷入-Google-Apps-包" class="headerlink" title="刷入 Google Apps 包"></a>刷入 Google Apps 包</h2><p>Google Apps 包为必须用到的包，通过 Recovery 模式刷入包 <code>MindTheGapps-13.0.0-arm64-ATV-full-20240104_210039.zip</code>。包安装完成后，重新进入系统发现界面发生了变化，多出了应用 Google Play Store，左上角的语音和搜索功能虽然不可以用，但是点击后提示信息已经发生了变化。</p>
-<blockquote>
-<p>原来的文件应用在这里消失不见了，实际上在所有应用中还可以找到。</p>
-</blockquote>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-11.png" alt="image.png"><br>在系统中使用 Google 账号登录 Google Play Store，即使在可以访问 Google 的网络下，发现也一直会失败。</p>
-<h2 id="查询并注册-Android-ID"><a href="#查询并注册-Android-ID" class="headerlink" title="查询并注册 Android ID"></a>查询并注册 Android ID</h2><p>因为该 Android TV 设备并不被信任，需要将 Android ID 在 Android 网站注册。如果不注册，那么 Google 账号登录不成功。<br>将树莓派的 SD 卡插入到笔记本，查看 SD 卡中的文件 gsf-android_id.txt，该文件对应的内容即为 Android ID。<br>还有另外一种办法可以获取到 Android ID，在笔记本上通过 adb 命令查询到当前设备的 Android ID。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">adb root</span><br><span class="line"># 找到 google service 的 sqlite3 数据库文件</span><br><span class="line">adb shell &#x27;find /data -name &quot;gservices.db&quot;&#x27;</span><br><span class="line"></span><br><span class="line"># 通过数据库查询到 android id</span><br><span class="line"># 其中 sqlite3 命令后的为上面步骤查询出的文件路径，如果查询出多个，可以任选一个</span><br><span class="line">adb shell &#x27;sqlite3 /data/data/com.google.android.gsf/databases/gservices.db &quot;select * from main where name = \&quot;android_id\&quot;;&quot;&#x27;</span><br></pre></td></tr></table></figure>
-
-<p>将上述 Android ID 在网站进行注册，网址：<a target="_blank" rel="noopener" href="https://www.google.com/android/uncertified/">https://www.google.com/android/uncertified/</a><br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-12.png" alt="image.png"></p>
-<h2 id="使用-Google-账号登录"><a href="#使用-Google-账号登录" class="headerlink" title="使用 Google 账号登录"></a>使用 Google 账号登录</h2><p>重新进入 Recovery 模式，点击 Wipe -&gt; Factory reset，此时机器会进行重启。该操作会清空系统中的 &#x2F;data&#x2F;media 下的内容。(还不太清楚该步骤是否为必须操作)<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-13.png" alt="image.png"></p>
-<p>机器重新后会重新进入一遍系统的初始化，但现在的初始化界面跟最初的 LineageOS 的初始化有所不同，进入到了 GMS 的开机引导，该步骤中必须要登录到 Google 账号，而且无法跳过。如果 Android ID 没有注册，此时登录 Google 账号一直会失败，导致无法进入到系统中。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-14.png" alt="image.png"></p>
-<p>登录完成后在首页可以看到了更多的一些信息：<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-15.png" alt="image.png"></p>
-<h1 id="通过-Recovery-刷入其他包"><a href="#通过-Recovery-刷入其他包" class="headerlink" title="通过 Recovery 刷入其他包"></a>通过 Recovery 刷入其他包</h1><p>widevine 是在 Android 生态下跟数字版权相关的包，通过 Recovery 模式刷入包 lineage-20.0-rpi-widevine.zip。</p>
-<p>通过 Recovery 模式刷入包 lineage-20.0-rpi-magisk-v25.2.zip，进入到 Android TV 系统后通过文件工具安装包 Magisk-v25.2.apk。</p>
-<h1 id="解决网络连接受限"><a href="#解决网络连接受限" class="headerlink" title="解决网络连接受限"></a>解决网络连接受限</h1><p>如果本地的网络无法访问 Google，默认情况下，网络会提示<code>网络连接受限</code>，原因主要还是跟访问不了 Google 的域名有关，以至于 Android TV 系统不能识别出可以连接互联网。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/raspberry/lineage-16.png" alt="image.png"></p>
-<p>网络连接受限状态的 WIFI，经测试机器重启后无法自动连接，需要每次都手工连接 WIFI。</p>
-<p>执行如下的命令来系统进行设置：</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">adb connect <span class="number">192.168</span>.<span class="number">31.166</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置时间服务器</span></span><br><span class="line">adb shell settings put global ntp_server ntp1.aliyun.com</span><br><span class="line"></span><br><span class="line"><span class="comment"># 该值默认为 0</span></span><br><span class="line">adb shell settings put global captive_portal_detection_enabled <span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 默认没有这两个值</span></span><br><span class="line">adb shell settings put global captive_portal_https_url https://connect.rom.miui.com/generate_204</span><br></pre></td></tr></table></figure>
-<p>设置完成后重启系统，即可看到网络的连接受限已经消除，并且 WIFI 已经可以自动连接了。</p>
-<h1 id="常用-apk-软件安装"><a href="#常用-apk-软件安装" class="headerlink" title="常用 apk 软件安装"></a>常用 apk 软件安装</h1><p>我这里使用了 <a target="_blank" rel="noopener" href="https://kxsw.gitbook.io/tv/">https://kxsw.gitbook.io/tv/</a> 中的方法安装了 File Commands 和 Clash 软件。File Commands  可以用来管理本地的文件，甚至可以提供 HTTP Server，供远程来下载或者上传文件。<br>国内的常见应用在 Google Play Store 中并不存在，而且通过 Google Play Store 直接安装应用很可能会失败，跟使用的网络有很大关系。国内的应用我直接使用了当贝市场来安装电视应用即可。</p>
-<h1 id="其他问题"><a href="#其他问题" class="headerlink" title="其他问题"></a>其他问题</h1><h2 id="听不到声音"><a href="#听不到声音" class="headerlink" title="听不到声音"></a>听不到声音</h2><p>在播放视频时发现听不到声音，原因是因为默认情况下使用了 hdmi0 接口来输入声音，通过 hdmi1 只能输出视频信号，没有声音。将 hdmi 线切换到 hdmi0 口后并重启系统后，声音即正常。</p>
-<h1 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h1><p>到目前为止，树莓派已经具备了完整的 Android TV 系统的功能，而且使用起来还比较稳定，这一点超出了我的预期，毕竟树莓派 5 比较新，该系统出来的时间比较短。<br>后面我计划使用新的文章来记录使用体验，以及新的折腾经历，比如：如何通过遥控器实现正常的开关机。<br>敬请期待。。。</p>
-<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
-<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/u013120422/article/details/132107317">https://blog.csdn.net/u013120422/article/details/132107317</a></li>
-<li><a target="_blank" rel="noopener" href="https://konstakang.com/devices/rpi5/LineageOS20-ATV/">https://konstakang.com/devices/rpi5/LineageOS20-ATV/</a></li>
 </ul>
 
       
