@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">244</span>
+          <span class="site-state-item-count">245</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,120 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/overlayfs/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/overlayfs/" class="post-title-link" itemprop="url">理解OverlayFS</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-07-28 21:30:25" itemprop="dateCreated datePublished" datetime="2018-07-28T21:30:25+00:00">2018-07-28</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="docker-image结构"><a href="#docker-image结构" class="headerlink" title="docker image结构"></a>docker image结构</h2><p>docker可以通过命令<code>docker image inspect $&#123;image&#125;</code>来查看image的详细信息，其中包含了所使用的底层文件系统及各层的信息。</p>
+<p>docker container的存储结构分为了只读层、init层和可读写层。</p>
+<p>只读层跟docker image的层次结构恰好对应，主要包含操作系统的文件、配置、目录等信息，不包含操作系统镜像。</p>
+<p>init层在只读层和读写层中间，用来专门存放&#x2F;etc&#x2F;hosts &#x2F;etc&#x2F;resolv.conf等信息，这些文件往往需要在启动的时候写入一些指定值，但不期望<code>docker commit</code>命令对其进行提交。</p>
+<p>可读写层为容器在运行中可以进行写入的层。</p>
+<h2 id="overlay"><a href="#overlay" class="headerlink" title="overlay"></a>overlay</h2><p><img src="https://arkingc.github.io/img/in-post/post-docker-filesystem/overlay_constructs.jpg" alt="image"></p>
+<p>采用了两层结构，lowerdir为镜像层，只读。upperdir为容器层。</p>
+<p>每层都会在&#x2F;var&#x2F;run&#x2F;docker&#x2F;overlay创建一个文件夹，文件夹中为实际层的内容，文件采用硬链接的方式链接到真实层中的文件，每一层都包含该层该拥有的所有文件，而该文件的真实存储可能是采用硬链接的方式链接到上层中的真实文件，因此比较耗费inode。</p>
+<p>创建一个容器时，会新增两个目录，一个为读写层，一个为初始层。初始层中保存了容器初始化时的环境信息，如hostname、hosts文件等。读写层用于记录容器的所有改动。</p>
+<h2 id="overlay2"><a href="#overlay2" class="headerlink" title="overlay2"></a>overlay2</h2><p>为了规避overlay消耗inode节点过多的问题，overlay2采用在每层中增加lower文件的方式来记录所有底层的信息，类似于链表的形式。</p>
+<p><code>docker pull ubuntu</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost runc]# docker pull ubuntu</span><br><span class="line">Using default tag: latest</span><br><span class="line">latest: Pulling from library/ubuntu</span><br><span class="line">c64513b74145: Pull complete</span><br><span class="line">01b8b12bad90: Pull complete</span><br><span class="line">c5d85cf7a05f: Pull complete</span><br><span class="line">b6b268720157: Pull complete</span><br><span class="line">e12192999ff1: Pull complete</span><br><span class="line">Digest: sha256:3f119dc0737f57f704ebecac8a6d8477b0f6ca1ca0332c7ee1395ed2c6a82be7</span><br><span class="line">Status: Downloaded newer image for ubuntu:latest</span><br></pre></td></tr></table></figure>
+
+<p>会在&#x2F;var&#x2F;run&#x2F;docker&#x2F;overlay2目录下创建如下文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 2</span><br><span class="line">.</span><br><span class="line">|-- 664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672    // 第0层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   `-- link    // MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- 783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba    // 第2层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // HXATFASQ4E2JBG434DUEN54EZZ</span><br><span class="line">|   |-- lower   // l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- 89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6    // 第3层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // 5PHT7S3MCZTTQOXVPA4CKJRRFD</span><br><span class="line">|   |-- lower   // l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- backingFsBlockDev</span><br><span class="line">|-- bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68    // 第4层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // QMKHIPSDT4JTPE4FLT7QGJ33ND</span><br><span class="line">|   |-- lower   // l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3    // 第1层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // WUZC5WSTQTPJUJ4KFAYCUT5IPD</span><br><span class="line">|   |-- lower   // l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">`-- l</span><br><span class="line">    |-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff</span><br><span class="line">    |-- HXATFASQ4E2JBG434DUEN54EZZ -&gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff</span><br><span class="line">    |-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff</span><br><span class="line">    |-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff</span><br><span class="line">    `-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff</span><br></pre></td></tr></table></figure>
+
+<p>l目录下为超链接，缩短后的目录，为了避免mount时超出页大小限制。</p>
+<p>每一层中的diff文件夹包含实际内容。</p>
+<p>每一层中都有一个link文件，内容为l目录中的超链接，超链接实际指向当前层目录中的diff文件夹。</p>
+<p>除去最底层的目录外，其余每一层中包含一个lower文件，包含了该层的所有更底层名称和顺序，可以根据该文件构建出整个镜像的层次结构。</p>
+<p>work目录用于OverlayFS内部使用。</p>
+<p>最底层只有link文件，无lower文件，因此664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672为最底层。</p>
+<p>以上五层为lower，只读。</p>
+<p>当使用<code>docker run -it ubuntu:latest /bin/bash</code>启动一个容器后，在overlay2目录下会多出两个文件夹。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 1 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08 l</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">|-- diff</span><br><span class="line">|-- link    // ZJVMGTB2IOJ6QF57TYM5O7EWXW</span><br><span class="line">|-- lower   // l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">|-- diff</span><br><span class="line">|-- link</span><br><span class="line">|-- lower   // l/ZJVMGTB2IOJ6QF57TYM5O7EWXW:l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">l</span><br><span class="line">|-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff</span><br><span class="line">|-- AOLYGFOHIAHWU5CBAJFULNAXI7 -&gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/diff</span><br><span class="line">|-- HXATFASQ4E2JBG434DUEN54EZZ -&gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff</span><br><span class="line">|-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff</span><br><span class="line">|-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff</span><br><span class="line">|-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff</span><br><span class="line">`-- ZJVMGTB2IOJ6QF57TYM5O7EWXW -&gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init/diff</span><br></pre></td></tr></table></figure>
+
+<p><code>0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</code>用于存放容器初始化时的信息，通过下面查看更直观。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">|-- diff</span><br><span class="line">|   |-- dev</span><br><span class="line">|   |   `-- console</span><br><span class="line">|   `-- etc</span><br><span class="line">|       |-- hostname</span><br><span class="line">|       |-- hosts</span><br><span class="line">|       |-- mtab -&gt; /proc/mounts</span><br><span class="line">|       `-- resolv.conf</span><br><span class="line">|-- link</span><br><span class="line">|-- lower</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">    `-- work</span><br></pre></td></tr></table></figure>
+
+<p><code>0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</code>的直接底层为init层，更详细的目录结构如下。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 2  0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">|-- diff</span><br><span class="line">|-- link</span><br><span class="line">|-- lower</span><br><span class="line">|-- merged</span><br><span class="line">|   |-- bin</span><br><span class="line">|   |-- boot</span><br><span class="line">|   |-- dev</span><br><span class="line">|   |-- etc</span><br><span class="line">|   |-- home</span><br><span class="line">|   |-- lib</span><br><span class="line">|   |-- lib64</span><br><span class="line">|   |-- media</span><br><span class="line">|   |-- mnt</span><br><span class="line">|   |-- opt</span><br><span class="line">|   |-- proc</span><br><span class="line">|   |-- root</span><br><span class="line">|   |-- run</span><br><span class="line">|   |-- sbin</span><br><span class="line">|   |-- srv</span><br><span class="line">|   |-- sys</span><br><span class="line">|   |-- tmp</span><br><span class="line">|   |-- usr</span><br><span class="line">|   `-- var</span><br><span class="line">`-- work</span><br><span class="line">    `-- work</span><br></pre></td></tr></table></figure>
+
+<p>merged文件夹中内容较多，为overlay2的直接挂载点，对容器的修改会反应到该目录中。例如在容器中增加&#x2F;root&#x2F;hello.txt文件，在merged目录下会增加root&#x2F;hello.txt文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# mount  | grep overlay2</span><br><span class="line">/dev/mapper/centos-root on /var/lib/docker/overlay2 type xfs (rw,relatime,attr2,inode64,noquota)</span><br><span class="line">overlay on /var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/merged type overlay (rw,relatime,lowerdir=/var/lib/docker/overlay2/l/ZJVMGTB2IOJ6QF57TYM5O7EWXW:/var/lib/docker/overlay2/l/QMKHIPSDT4JTPE4FLT7QGJ33ND:/var/lib/docker/overlay2/l/5PHT7S3MCZTTQOXVPA4CKJRRFD:/var/lib/docker/overlay2/l/HXATFASQ4E2JBG434DUEN54EZZ:/var/lib/docker/overlay2/l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:/var/lib/docker/overlay2/l/MZUEUOFHBNVTRCJYJEG7QY4VWT,upperdir=/var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/diff,workdir=/var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/work)</span><br></pre></td></tr></table></figure>
+
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.docker.com/storage/storagedriver/overlayfs-driver/">Use the OverlayFS storage driver</a></li>
+<li><a target="_blank" rel="noopener" href="https://arkingc.github.io/2017/05/05/docker-filesystem-overlay/">Docker存储驱动—Overlay&#x2F;Overlay2「译」</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +333,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -434,7 +548,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -515,7 +629,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -622,7 +736,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -832,7 +946,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -937,7 +1051,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -1021,7 +1135,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -1110,7 +1224,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -1198,7 +1312,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -1222,101 +1336,6 @@
 <h1 id="本地主机免登录relay服务器，并自动登录到对应的服务器"><a href="#本地主机免登录relay服务器，并自动登录到对应的服务器" class="headerlink" title="本地主机免登录relay服务器，并自动登录到对应的服务器"></a>本地主机免登录relay服务器，并自动登录到对应的服务器</h1><p>在本地自动登录relay主机同样使用expect的方式，脚本名称为wrelay，内容如下：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/expect</span><br><span class="line"></span><br><span class="line">if &#123;$argc &lt; 1&#125; &#123;</span><br><span class="line">    puts &quot;Usage:cmd &lt;remote_host&gt;&quot;</span><br><span class="line">    exit 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># 下面指定relay主机</span><br><span class="line">set host &quot;relay.name&quot;</span><br><span class="line"># 这里输入relay的用户名</span><br><span class="line">set username &quot;&quot;</span><br><span class="line"># 这里输入relay的密码</span><br><span class="line">set password &quot;&quot;</span><br><span class="line">set remote_host [lindex $argv 0]</span><br><span class="line"></span><br><span class="line">spawn ssh $username@$host</span><br><span class="line">set timeout 2</span><br><span class="line">expect &#123;</span><br><span class="line">    &quot;*password:&quot; &#123;</span><br><span class="line">        send &quot;$password\n&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &quot;Are you sure you want to continue connecting (yes/no)?&quot; &#123;</span><br><span class="line">        send &quot;yes\r&quot;</span><br><span class="line">        exp_continue</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">expect &quot;*#&quot;</span><br><span class="line"></span><br><span class="line">sleep 0.1</span><br><span class="line"># 在relay上自动登录到其他服务器主机</span><br><span class="line">send &quot;gw $remote_host\n&quot;</span><br><span class="line">interact</span><br></pre></td></tr></table></figure>
 
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/mv-farbox-to-hexo/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/mv-farbox-to-hexo/" class="post-title-link" itemprop="url">blog从farbox迁移到了hexo</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2017-04-06 23:33:47" itemprop="dateCreated datePublished" datetime="2017-04-06T23:33:47+00:00">2017-04-06</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>清明节假期突然想起了我好久不更的blog，看到Farbox官网上的<a target="_blank" rel="noopener" href="https://blog.farbox.com/post/2017">《2016，终结了几个产品》</a>，说明Farbox已经停止更新了。虽然我挺喜欢Farbox这个项目，也见证了Farbox的成长及作者做产品的思考，在这里也向作者致敬。</p>
-<p>我当时开始准备启用Farbox之前试用过jekyll，翻遍了整个github，也没找到个合我心意的theme。幸好是Farbox的出现，让我眼前一亮，这就是我想好的blog系统了。Farbox的停更使我不得不考虑重新换个blog，虽然2016的文章数量仅为罕见的个位数，但有可能今年有时间会多写一些。</p>
-<p>近几年hexo特别的火，在试看了官方文档了解功能及考虑了blog的迁移成本后，心想，这就是我想要的blog系统了。hexo该有的功能全都有，甚至比Farbox要强大很多。Farbox的很多设计思想跟hexo相仿，但hexo显的更加自由，blog需要自己一手搭建完成。</p>
-<p>当然hexo要想使用的好，做一些全面的了解及折腾是必不可少的，毕竟最终利用的Github pages是个静态的系统。早已没有了想当年翻遍整个github上jekyll theme的精力了，我这次的基调是能少折腾就少折腾，毕竟blog我也不是经常写，访问量也更是少的可怜，就当全面了解下当前最火的hexo就好了。</p>
-<h1 id="theme"><a href="#theme" class="headerlink" title="theme"></a>theme</h1><p>本着不折腾原则，直接启用了很火的hexo-theme-next，文档比较全，维护比较及时。基本上按照文档走一遍，该配置的就都可以配置上了。</p>
-<h1 id="代码同步"><a href="#代码同步" class="headerlink" title="代码同步"></a>代码同步</h1><p>代码通过git同步是必备技能。</p>
-<h2 id="hexo项目代码同步"><a href="#hexo项目代码同步" class="headerlink" title="hexo项目代码同步"></a>hexo项目代码同步</h2><p>hexo采用的是node.js环境，而Github pages是静态的，因此Github pages上仅能存储的是hexo编译后的静态文件，这些静态文件直接通过<code>hexo d</code>部署到kuring.github.com仓库中就可以了。</p>
-<p>而对于项目中的_config.yml、md文件我直接用git同步到Github上另外一个项目hexo_bak中了。网上还有思路是同步到kuring.github.com上的另外一个分支，我感觉太啰嗦，容易出错，还不如直接分开来的简便。</p>
-<h2 id="theme项目的代码同步"><a href="#theme项目的代码同步" class="headerlink" title="theme项目的代码同步"></a>theme项目的代码同步</h2><p>theme项目中也包含了部分自己的配置及修改，我这里选择的同步策略为从github上fork对应的theme项目，然后clone fork下来的项目到本地，然后直接在theme的项目中通过git命令同步到github fork的项目中。</p>
-<p>网上也有思路是通过git subtree的方式来解决，我仍然感觉太啰嗦，不采用。</p>
-<p>但这样一个blog项目需要多个git仓库，git push起来会比较麻烦，好在theme一般不怎么修改。</p>
-<h1 id="评论系统"><a href="#评论系统" class="headerlink" title="评论系统"></a>评论系统</h1><p>之前用多说的时候也没几个评论的，用起来还不错，至少比被墙了的disqus要好很多，可是多说这么好的项目要关闭了。我直接使用了国内的网易云跟帖来满足评论的需求。</p>
-<h1 id="站内搜索"><a href="#站内搜索" class="headerlink" title="站内搜索"></a>站内搜索</h1><p>站内搜索是必不可少的功能，next主题提供了多种选择，我直接使用了hexo-generator-searchdb通过本地搜索来完成，生成的xml文件目前还比较小，效果还可以。</p>
-<h1 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h1><ul>
-<li>启用本地server端：<code>hexo clean &amp;&amp; hexo g &amp;&amp; hexo s</code></li>
-<li>部署到github：<code>hexo d</code></li>
-<li>发布文章：<code>hexo new 文章url</code></li>
-</ul>
-<p>使用<code>hexo new draft test</code>会在source&#x2F;_drafts目录下创建对应文件，此时文件不会生成页面，用于存放未写完的文章。<code>hexo publish draft test</code>命令可将_drafts下的文章移动到_posts目录下，并添加创建时间等信息。</p>
-<h1 id="收个尾"><a href="#收个尾" class="headerlink" title="收个尾"></a>收个尾</h1><p>blog总算迁移完成了，期望今年能多写上几篇。</p>
 
       
     </div>

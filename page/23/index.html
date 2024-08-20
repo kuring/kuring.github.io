@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">244</span>
+          <span class="site-state-item-count">245</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,117 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/inside_the_c++_object_model_chapter_1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/inside_the_c++_object_model_chapter_1/" class="post-title-link" itemprop="url">深度探索C++对象模型读书笔记_第一章：关于对象</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-07-20 00:00:00" itemprop="dateCreated datePublished" datetime="2013-07-20T00:00:00+00:00">2013-07-20</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>C++对象模型是深入了解C++必须掌握知识，而《深度探索C++对象模型》一书基本是理解C++对象模型的必须之作。可惜本书看起来更像是作者Stanley B.Lippman的随笔，语言诙谐，跟作者的另外一本经典之作《C++ Primer》有着天壤之别，侯捷的翻译也是晦涩难懂，跟侯捷翻译的其他作品也有一定差距（这两位大师还真是凑到一块了），所以这本书看起来还是很吃力的。这里挑选文中重点记录笔记，忽略扯淡部分，以备忘。</p>
+<h1 id="C-的额外开销"><a href="#C-的额外开销" class="headerlink" title="C++的额外开销"></a>C++的额外开销</h1><p>C++相比C语言多出了封装、继承和多态等特性，新特性的增加必然会以牺牲一部分性能为代价。额外开销主要是由virtual引起的，包括：</p>
+<ul>
+<li>虚函数机制：需要在运行期间动态绑定。</li>
+<li>虚基类：多次出现在继承中的基类有一个单一且被共享的实体。</li>
+</ul>
+<h1 id="C-对象模型"><a href="#C-对象模型" class="headerlink" title="C++对象模型"></a>C++对象模型</h1><p>C++类成员变量包括：静态成员变量和非静态成员变量。成员函数包括：静态成员函数、非静态成员函数和虚函数。</p>
+<h2 id="单一类的对象模型"><a href="#单一类的对象模型" class="headerlink" title="单一类的对象模型"></a>单一类的对象模型</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Point</span> &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Point</span>(<span class="type">float</span> xval);</span><br><span class="line">        <span class="keyword">virtual</span> ~<span class="built_in">Point</span>();</span><br><span class="line">        <span class="function"><span class="type">float</span> <span class="title">x</span><span class="params">()</span> <span class="type">const</span></span>;            <span class="comment">/* 非静态成员函数 */</span>                                                                                                                         </span><br><span class="line">        <span class="function"><span class="type">static</span> <span class="type">int</span> <span class="title">PointCount</span><span class="params">()</span></span>;    <span class="comment">/* 静态成员函数 */</span>  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span>:</span><br><span class="line">        <span class="function"><span class="keyword">virtual</span> ostream&amp; <span class="title">print</span><span class="params">(ostream &amp;os)</span> <span class="type">const</span></span>;  <span class="comment">/* 虚函数 */</span>  </span><br><span class="line">        <span class="type">float</span> _x;                   <span class="comment">/* 非静态成员变量 */</span>  </span><br><span class="line">        <span class="type">static</span> <span class="type">int</span> _point_count;    <span class="comment">/* 静态成员函数 */</span>  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该类的c++对象模型如下图：<br><img src="/ref/c++/c++_object_model/chapter1_1.PNG" alt="Image Title"></p>
+<p>通过图中可以看出：</p>
+<ul>
+<li>非静态数据成员直接放到了类的对象里面。</li>
+<li>静态数据成员放到所有的类对象的外面，即静态存储区。</li>
+<li>静态和非静态的成员函数放在类对象之外，即代码区。</li>
+<li>如果类中存在虚函数，则会产生一个虚函数表（vtbl），表中的表项存储了指向虚函数的指针。在类对象的开始位置添加一个指向虚函数表的指针（vptr）。vptr的赋值由类的构造函数和赋值运算符自动完成。</li>
+<li>虚函数表的第一项指向用来作为动态类型识别用的type_info对象。</li>
+</ul>
+<h1 id="C-支持的编程范式-programming-paradigms"><a href="#C-支持的编程范式-programming-paradigms" class="headerlink" title="C++支持的编程范式(programming paradigms)"></a>C++支持的编程范式(programming paradigms)</h1><ul>
+<li>程序模型：通俗的理解成C语言的面向过程编程方式。</li>
+<li>抽象数据类型模型：通过类封装成为了一种新的数据类型，该数据类型有别于基本数据类型。</li>
+<li>面向对象模型：利用封装、继承和多态的特性。</li>
+</ul>
+<h1 id="C-支持多态的方式"><a href="#C-支持多态的方式" class="headerlink" title="C++支持多态的方式"></a>C++支持多态的方式</h1><ul>
+<li>隐含的转换操作，例如通过父类的指针指向子类的对象。<code>shape *ps = new circle();</code></li>
+<li>通过虚函数机制。</li>
+<li>通过dynamic_cast强制类型转换。如<code>if (circle *pc = dynamic_cast&lt;circle*&gt;(ps))</code>。</li>
+</ul>
+<h1 id="类对象的内存构成"><a href="#类对象的内存构成" class="headerlink" title="类对象的内存构成"></a>类对象的内存构成</h1><ul>
+<li>非静态数据成员。</li>
+<li>由于内存对齐而添加到非静态数据成员中的空白。</li>
+<li>为了支持虚机制（包括：虚函数和虚继承）而额外占用的内存。</li>
+</ul>
+<h1 id="利用工具查看对象模型"><a href="#利用工具查看对象模型" class="headerlink" title="利用工具查看对象模型"></a>利用工具查看对象模型</h1><p>查看C++类的对象模型有两种比较简便的方式，一种是使用Virtual Studio在调试模式下查看对象的组成，但是往往显示的对象不全;另外一种是通过Virtual Studio中cl命令来静态查看。</p>
+<p>本文选择使用cl工具的方式，cl命令位于C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin目录下，为了方便使用可以将该变量添加到Path环境变量中。在命令行中执行cl命令，提示“计算机中丢失mspdb80.dll”，该文件位于C:\Program Files (x86)\Microsoft Visual Studio 9.0\Common7\IDE目录下，将msobj80.dll,mspdb80.dll,mspdbcore.dll,mspdbsrv.exe四个文件复制到C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin目录下即可。</p>
+<p>通过<code>cl xxx.cpp /d1reportSingleClassLayoutXX</code>命令即可查看文件中类的对象模型，其中该命令最后的XX需要更换为要查看的类名，中间没有空格。</p>
+<p>执行上述命令时提示：无法打开文件“LIBCMT.lib”。该文件位于C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\lib目录下，将该目录添加到环境变量lib中。重新打开命令行执行cl提示：无法打开文件“kernel32.lib”，将C:\Program Files\Microsoft SDKs\Windows\v6.0A\Lib添加lib环境变量中。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +330,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -301,7 +412,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -386,7 +497,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -476,7 +587,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -560,7 +671,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -646,7 +757,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -731,7 +842,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -870,7 +981,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -950,7 +1061,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -972,146 +1083,6 @@
 <h1 id="从服务器配置"><a href="#从服务器配置" class="headerlink" title="从服务器配置"></a>从服务器配置</h1><p>在从服务器上，将<code>/hadoop/solr/conf/solrconfig.xml</code>文件相应的修改为</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br><span class="line">       &lt;lst name=&quot;slave&quot;&gt;</span><br><span class="line">         &lt;str name=&quot;masterUrl&quot;&gt;http://192.168.20.6:8080/solr/replication&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;pollInterval&quot;&gt;00:00:60&lt;/str&gt;</span><br><span class="line">       &lt;/lst&gt;</span><br><span class="line">&lt;/requestHandler&gt;</span><br></pre></td></tr></table></figure>
 <p>masterUrl为服务器的url地址。<br>pollInterval为从服务器的同步时间间隔。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/solr_setup/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/solr_setup/" class="post-title-link" itemprop="url">在Linux上搭建solr环境</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-07-02 00:00:00" itemprop="dateCreated datePublished" datetime="2013-07-02T00:00:00+00:00">2013-07-02</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>本文采用Linux操作系统在hadoop用户下安装，solr采用3.x中的最新版本3.6.2，tomcat采用6.0.37版本，安装包可以从本文下方链接下载。<br>这里有两种安装方式，一种方式为利用solr自带的jetty来启动solr，默认端口为8983。另外一种方式为将solr集成到tomcat中。其中第一种方式较为简单，推荐新手采用。</p>
-<h1 id="独立启动"><a href="#独立启动" class="headerlink" title="独立启动"></a>独立启动</h1><ol>
-<li>将sorl的安装包解压到用户的根目录下，解压后文件夹为apache-solr-3.6.2。</li>
-<li>进入到example目录下，执行<code>java -jar start.jar</code>命令，solr服务启动，端口为8983。</li>
-<li>通过<code>http://IP地址:8983/solr/</code>来访问solr的web页面，进入admin页面后可以通过输入字符串来查找索引。查找索引默认显示的格式为xml格式，可以通过在url的后面加上参数<code>wt=json</code>来显示json格式的结果。</li>
-</ol>
-<h1 id="利用tomcat"><a href="#利用tomcat" class="headerlink" title="利用tomcat"></a>利用tomcat</h1><h2 id="安装tomcat"><a href="#安装tomcat" class="headerlink" title="安装tomcat"></a>安装tomcat</h2><p>1. 将apache-tomcat-6.0.37.tar.gz解压到hadoop的跟目录下。<br>2. 修改hadoop用户的环境变量，执行<code>vi ~/.bash_profile</code>命令，添加如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export CATALINA_HOME=/home/hadoop/apache-tomcat-6.0.37</span><br><span class="line">export CLASSPATH=.:$JAVA_HOME/lib:$CATALINA_HOME/lib</span><br><span class="line">export PATH=$PATH:$CATALINA_HOME/bin</span><br></pre></td></tr></table></figure>
-<p>3. 执行<code>source ~/.bash_profile </code>使修改的环境变量生效。<br>4. 执行tomcat的bin目录下的startup.bat脚本来启动tomcat。<br>5. 通过<code>netstat -anp | grep 8080</code>命令查看tomcat是否启动。</p>
-<h2 id="安装solr"><a href="#安装solr" class="headerlink" title="安装solr"></a>安装solr</h2><p>1. 将solr的dist&#x2F;apache-solr-3.6.2.war文件复制到tomcat的webapps目录下，并将文件命名为solr.war。执行<code>cp ~/apache-solr-3.6.2/dist/apache-solr-3.6.2.war ~/apache-tomcat-6.0.37/webapps/solr.war</code>命令。WAR是一个完整的web应用程序，包括了Solr的jar文件和所有运行Solr所依赖的Jar文件，Jsp和很多的配置文件与资源文件。</p>
-<p>2. 修改<code>~/apache-tomcat-6.0.37/conf/server.xml</code>文件相应行的内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;Connector port=&quot;8080&quot; protocol=&quot;HTTP/1.1&quot; </span><br><span class="line">    connectionTimeout=&quot;20000&quot; </span><br><span class="line">    URIEncoding=&quot;UTF-8&quot;</span><br><span class="line">    redirectPort=&quot;8443&quot; /&gt;</span><br></pre></td></tr></table></figure>
-<p>增加<code>URIEncoding=&quot;UTF-8&quot;</code>来支持中文。这是因为solr基于xml，json，javabin，php，python等多种格式传输请求和返回结果。</p>
-<p>3.复制<code>~/apache-solr-3.6.2/example/solr</code>目录到<code>/home/hadoop/solr</code>位置。该位置为solr的应用环境目录。</p>
-<p>4. 修改<code>/home/hadoop/solr/conf/solrconfig.xml</code>文件中的dataDir一行内容为：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;dataDir&gt;$&#123;solr.data.dir:/home/hadoop/solr/data&#125;&lt;/dataDir&gt;</span><br></pre></td></tr></table></figure>
-<p>目的是为了指定存放索引数据的路径。</p>
-<p>5. 在<code>~/apache-tomcat-6.0.37/conf/Catalina/localhost</code>目录下新建文件<code>solr.xml</code>。增加内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;Context docBase=&quot;/home/hadoop/apache-tomcat-6.0.37/webapps/solr.war&quot; debug=&quot;0&quot; crossContext=&quot;true&quot; &gt;</span><br><span class="line">    &lt;Environment name=&quot;solr/home&quot; type=&quot;java.lang.String&quot; value=&quot;/home/hadoop/solr&quot; override=&quot;true&quot; /&gt;</span><br><span class="line">&lt;/Context&gt;</span><br></pre></td></tr></table></figure>
-<p>其中docBase为tomcat的webapps下的solr.war完整路径。Environment的value属性的值为存放solr索引的文件夹，即第三步中复制的文件夹。<br>需要注意的是：Catalina目录在首次启动tomcat时创建，因此在此步骤前需要启动过tomcat。</p>
-<p>6. 在tomcat的bin目录下通过<code>startup.sh</code>启动tomcat。</p>
-<p>7. 通过<code>http://IP地址:8080/solr/</code>来访问solr的web页面。</p>
-<h1 id="相关命令"><a href="#相关命令" class="headerlink" title="相关命令"></a>相关命令</h1><h2 id="放入数据到solr中"><a href="#放入数据到solr中" class="headerlink" title="放入数据到solr中"></a>放入数据到solr中</h2><p>在apache-solr-3.6.2&#x2F;example&#x2F;exampledocs目录下，执行<code>java -jar post.jar 要存放的文件名</code>。这里自己新建一个文件test.xml放入到solr中，文件内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;add&gt;</span><br><span class="line">    &lt;doc&gt;  </span><br><span class="line">        &lt;field name=&quot;id&quot;&gt;company&lt;/field&gt;  </span><br><span class="line">        &lt;field name=&quot;text&quot;&gt;kaitone&lt;/field&gt;  </span><br><span class="line">    &lt;/doc&gt;</span><br><span class="line">&lt;/add&gt;</span><br></pre></td></tr></table></figure>
-<p>执行<code>java -jar post.jar test.xml</code>将数据放入solr中。</p>
-<h2 id="删除数据"><a href="#删除数据" class="headerlink" title="删除数据"></a>删除数据</h2><p>新建文本文件test_delete.xml，内容如下</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;delete&gt;</span><br><span class="line">    &lt;id&gt;company&lt;/id&gt;</span><br><span class="line">&lt;/delete&gt;</span><br></pre></td></tr></table></figure>
-<p>执行<code>java -jar post.jar test_delete.xml</code>将数据从solr中删除。<br>另外还可以通过命令行的方式来删除，命令为<code>java -Ddate=args -jar post.jar &#39;&lt;delete&gt;&lt;id&gt;company&lt;/id&gt;&lt;/delete&gt;&#39;</code>。</p>
-<h1 id="在Eclipse中搭建环境操作Solr-api"><a href="#在Eclipse中搭建环境操作Solr-api" class="headerlink" title="在Eclipse中搭建环境操作Solr api"></a>在Eclipse中搭建环境操作Solr api</h1><p>1. 新建一个java工程<br>2. 在工程中引入如下包：</p>
-<ul>
-<li>commons-httpclient-3.1.jar</li>
-<li>commons-codec-1.6.jar</li>
-<li>apache-solr-solrj-3.6.2.jar</li>
-<li>slf4j-api-1.6.1.jar</li>
-<li>slf4j-log4j12-1.6.1.jar</li>
-<li>commons-logging-1.1.3.jar</li>
-<li>log4j-1.2.12.jar</li>
-<li>httpclient-4.2.5.jar</li>
-<li>httpcore-4.2.4.jar</li>
-<li>httpmime-4.2.5.jar</li>
-</ul>
-<p>其中<code>commons-httpclient-3.1.jar</code>、<code>commons-codec-1.6.jar</code>、<code>apache-solr-solrj-3.6.2.jar</code>、<code>slf4j-api-1.6.1.jar</code>可以从solr的目录<code>apache-solr-3.6.2</code>中的dist目录下找到。</p>
-<p><code>slf4j-log4j12-1.6.1.jar</code>可以从slf4j的压缩包中<code>slf4j-1.6.1.tar.gz</code>找到。</p>
-<p><code>commons-logging-1.1.3.jar</code>可以从slf4j的压缩包中<code>commons-logging-1.1.3-bin.zip</code>找到。</p>
-<p><code>log4j-1.2.12.jar</code>可以从log4j的压缩包中<code>logging-log4j-1.2.12.tar.gz</code>找到。</p>
-<p><code>httpclient-4.2.5.jar</code>、<code>httpcore-4.2.4.jar</code>、<code>httpmime-4.2.5.jar</code>在<code>httpcomponents-client-4.2.5-bin.tar.gz</code>文件中。</p>
-<p>具体的API编程可以参考<a target="_blank" rel="noopener" href="http://www.cnblogs.com/hoojo/archive/2011/10/21/2220431.html">Solr开发文档</a>。</p>
-<h1 id="在linux上编译并执行程序"><a href="#在linux上编译并执行程序" class="headerlink" title="在linux上编译并执行程序"></a>在linux上编译并执行程序</h1><p>1. 将工程中用到的jar包复制到Linux机器上，这里复制到<code>/home/hadoop/test_solr/lib</code>目录下。</p>
-<p>2. 将测试程序的源码放到Linux机器上，这里复制到<code>/home/hadoop/test_solr</code>目录下。其中源码包括三个文件：SolrTest.java、SolrClient.java、Index.java。该三个文件将会包含在下面相关下载中的Eclipse工程中。</p>
-<p>3. 在<code>/home/hadoop/test_solr</code>目录下执行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javac -cp lib/apache-solr-solrj-3.6.2.jar:lib/commons-httpclient-3.1.jar:lib/log4j-1.2.12.jar:lib/commons-codec-1.6.jar:lib/commons-logging-1.1.3.jar:lib/slf4j-api-1.6.1.jar:lib/httpclient-4.2.5.jar:lib/httpcore-4.2.4.jar:lib/httpmime-4.2.5.jar:. SolrTest.java</span><br></pre></td></tr></table></figure>
-<p>其中-cp等同于-classpath参数，指定编译SolrTest.java文件需要的ClassPath路径，不要忘记路径后面的<code>.</code>表示当前路径，否则找不到当前目录下的其他java文件。<br>命令执行后会在<code>/home/hadoop/test_solr</code>目录下生成Index.class、SolrClient.class、SolrTest.class三个class文件。</p>
-<p>4. 在<code>/home/hadoop/test_solr</code>目录下执行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -cp lib/apache-solr-solrj-3.6.2.jar:lib/commons-httpclient-3.1.jar:lib/log4j-1.2.12.jar:lib/commons-codec-1.6.jar:lib/commons-logging-1.1.3.jar:lib/slf4j-api-1.6.1.jar:lib/httpclient-4.2.5.jar:lib/httpcore-4.2.4.jar:lib/:httpmime-4.2.5.jar:. SolrTest</span><br></pre></td></tr></table></figure>
-<p>来运行程序。</p>
-<h1 id="在Linux上打包并执行"><a href="#在Linux上打包并执行" class="headerlink" title="在Linux上打包并执行"></a>在Linux上打包并执行</h1><p>1. 在上面步骤基础上，为了方便执行，可以将class文件打成jar包来执行，这样在使用java命令执行的时候就不用指定classpath路径了，只需要在jar包的MANIFEST.MF文件中指定classpath。</p>
-<p>2. 在<code>/home/hadoop/test_solr</code>下新建一个文件，文件名可以随便，这里取名为MANIFEST.MF，与生成的jar包中的文件名一致，文件内容为</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Manifest-Version: 1.0</span><br><span class="line">Created-By: 1.6.0_10 (Sun Microsystems Inc.)</span><br><span class="line">Main-Class: SolrTest</span><br><span class="line">Class-Path: /home/hadoop/test_solr/lib/apache-solr-solrj-3.6.2.jar /home/hadoop/test_solr/lib/commons-httpclient-3.1.jar /home/hadoop/test_solr/lib/log4j-1.2.12.jar /home/hadoop/test_solr/lib/commons-codec-1.6.jar /home/hadoop/test_solr/lib/commons-logging-1.1.3.jar /home/hadoop/test_solr/lib/slf4j-api-1.6.1.jar</span><br><span class="line">/home/hadoop/test_solr/lib/httpclient-4.2.5.jar</span><br><span class="line">/home/hadoop/test_solr/lib/httpcore-4.2.4.jar</span><br><span class="line">/home/hadoop/test_solr/lib/httpmime-4.2.5.jar</span><br></pre></td></tr></table></figure>
-<p>其中Main-Class指定main函数所在的类。<br>Class-Path指定用到的jar所在的路径。其中Class-Path的各个jar文件之间通过空格分隔而不是通过<code>:</code>分隔。</p>
-<p>3. 将class文件打包成jar文件。执行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jar -cfm solrtest.jar MANIFEST.MF Index.class SolrClient.class SolrTest.class </span><br></pre></td></tr></table></figure>
-<p>会在此目录下生成solrtest.jar文件。jar命令会根据指定的MANIFEST.MF文件来产生jar包中的META-INF&#x2F;MANIFEST.MF文件。两个文件内容并不完全一致，jar命令会根据格式对内容进行调整。</p>
-<p>4. 运行jar文件。通过<code>java -jar solrtest.jar</code>来执行。</p>
-<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/share/link?shareid=2915568646&uk=3506813023">本文中用到的安装包</a></p>
-<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p><a target="_blank" rel="noopener" href="http://demi-panda.com/2013/03/13/install-solr/">简单的Solr安装配置</a><br><a target="_blank" rel="noopener" href="https://lucene.apache.org/solr/3_6_2/doc-files/tutorial.html">官方安装教程</a><br><a target="_blank" rel="noopener" href="http://cxshun.iteye.com/blog/1039445">Solr初体验系列</a>讲的非常详细，适合初学者<br><a target="_blank" rel="noopener" href="http://www.cnblogs.com/hoojo/archive/2011/10/21/2220431.html">Solr开发文档</a></p>
 
       
     </div>

@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">244</span>
+          <span class="site-state-item-count">245</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,87 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/mmap_and_munmap/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/mmap_and_munmap/" class="post-title-link" itemprop="url">mmap和munmap函数的用法</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-06-03 09:33:16" itemprop="dateCreated datePublished" datetime="2013-06-03T09:33:16+00:00">2013-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>在Linux的头文件sys&#x2F;mman.h中提供了两个用来分配内存的函数：mmap和munmap，函数定义原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> *<span class="title function_">mmap</span><span class="params">(<span class="type">void</span> *start, <span class="type">size_t</span> length, <span class="type">int</span> prot, <span class="type">int</span> flags, <span class="type">int</span> fd, <span class="type">off_t</span> offset)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">munmap</span><span class="params">(<span class="type">void</span> *start, <span class="type">size_t</span> length)</span>;</span><br></pre></td></tr></table></figure>
+<h1 id="mmap说明"><a href="#mmap说明" class="headerlink" title="mmap说明"></a>mmap说明</h1><p>返回值：内存映射后返回虚拟内存的首地址。<br>参数：<br>    start为指定的映射的首地址，该地址应该没有映射过，如果为0则有系统指定位置。<br>    length为映射的空间大小，真正分配空间大小为(length&#x2F;pagesize+1)。<br>    prot为映射的权限，分为四种未指定（PROT_NONE）、读（PROT_READ）、写（PROT_WRITE）、执行（PROT_EXEC）。如果为PROT_WRITE，则直接可以PROT_READ。<br>    flags：映射方式，分为内存映射和文件映射。内存映射：匿名映射。当值为文件映射是后面两个参数才有效。常用的值有：MAP_ANONYMOUS、MAP_SHARED、MAP_PRIVATE。<br>    fd：映射的文件描述符。<br>    offset为从文件的偏移位置开始映射。</p>
+<h1 id="munmap说明"><a href="#munmap说明" class="headerlink" title="munmap说明"></a>munmap说明</h1><p>从start位置开始释放length个字节的内存。</p>
+<h1 id="应用举例"><a href="#应用举例" class="headerlink" title="应用举例"></a>应用举例</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line">main()</span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> *p = mmap(<span class="literal">NULL</span>,</span><br><span class="line">                  getpagesize(),</span><br><span class="line">                  PROT_READ | PROT_WRITE,</span><br><span class="line">                  MAP_ANONYMOUS | MAP_SHARED,</span><br><span class="line">                  <span class="number">0</span>,</span><br><span class="line">                  <span class="number">0</span>);</span><br><span class="line">    munmap(p, getpagesize());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中getpagesize()函数的作用为获取一个页的大小，系统默认为4K。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +300,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -304,7 +385,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -389,7 +470,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -484,7 +565,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   

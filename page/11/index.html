@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">244</span>
+          <span class="site-state-item-count">245</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,104 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-buffer-cache/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux-buffer-cache/" class="post-title-link" itemprop="url">Linux Buffer与Cache的含义</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2019-01-29 00:27:45" itemprop="dateCreated datePublished" datetime="2019-01-29T00:27:45+00:00">2019-01-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>Linux中的Buffer与Cache的含义通常非常容易混淆，两者翻译成中文都可以叫做缓存，都是数据在内存中的临时存储，而且网络上很多文章都是错误的。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ free -h</span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:           125G         12G        347M        9.3M        113G        113G</span><br><span class="line">Swap:            0B          0B          0B</span><br></pre></td></tr></table></figure>
+
+<p>free命令直接将buff和cache写到了一块，说明两者有很多共同点。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ vmstat 1</span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 7  1      0 364076  18664 118624552    0    0   214 11198  106  118  6  4 89  1  0</span><br><span class="line">13  1      0 349096  18664 118638192    0    0     0 1012404 171031 270124 20 13 66  2  0</span><br></pre></td></tr></table></figure>
+
+<p>而通过vmstat命令可以分别看到buffer和cache的大小，单位为KB。</p>
+<p>使用<code>man free</code>命令看到的解释如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">buffers: Memory used by kernel buffers (Buffers in /proc/meminfo)</span><br><span class="line"></span><br><span class="line">cache: Memory used by the page cache and slabs (Cached and Slab in /proc/meminfo)</span><br></pre></td></tr></table></figure>
+
+<p>查看proc的man手册结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Buffers %lu</span><br><span class="line">    Relatively temporary storage for raw disk blocks that shouldn&#x27;t get tremendously large (20MB or so).</span><br><span class="line"></span><br><span class="line">Cached %lu</span><br><span class="line">    In-memory cache for files read from the disk (the pagecache).  Doesn&#x27;t include SwapCached.</span><br><span class="line"></span><br><span class="line">SReclaimable %lu (since Linux 2.6.19)</span><br><span class="line">    Part of Slab, that might be reclaimed, such as caches.</span><br><span class="line"></span><br><span class="line">SUnreclaim %lu (since Linux 2.6.19)</span><br><span class="line">    Part of Slab, that cannot be reclaimed on memory pressure.</span><br></pre></td></tr></table></figure>
+
+<p>上述信息，文档写的并不是非常明确。</p>
+<p>可以看出buffers是磁盘数据的缓存，通常不会特别大，缓存的数据包括磁盘的写请求和读请求。内核用于将分散的写磁盘操作集中起来，批量写入磁盘。</p>
+<p>Cached是文件数据的缓存，同样可以缓存读请求和写请求。</p>
+<p>Slab包括了SReclaimalbe和Sunreclaim两部分信息，其中SReclaimable是可回收部分，SUnreclaim是不可回收部分。</p>
+<p>关于文件和磁盘的区别如下：</p>
+<p>磁盘是一个块设备，可以划分为多个分区，每个分区上可以构建不同的文件系统，文件系统挂载到目录上后，就可以对该文件系统进行读写文件操作了。</p>
+<p>读写普通文件系统中的文件时，会经过文件系统，由文件系统跟磁盘进行交互，而文件系统的缓存为cache。读写磁盘或者分区时，会跳过文件系统，直接对磁盘进行操作，而操作系统对磁盘的缓存称之为buffer。</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a target="_blank" rel="noopener" href="http://man7.org/linux/man-pages/man5/proc.5.html">Linux Programmer’s Manual PROC[5]</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +317,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -332,7 +430,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -452,7 +550,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -564,7 +662,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -687,7 +785,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -788,7 +886,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -874,7 +972,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -975,7 +1073,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -1088,7 +1186,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -1139,126 +1237,6 @@
 <h1 id="如何参看"><a href="#如何参看" class="headerlink" title="如何参看"></a>如何参看</h1><p>查看 tcp 状态为 SYN_RECV 的链接即为半连接状态的请求：<code>netstat -napt | grep SYN_RECV</code>。也可以通过 <code>netstat -s | grep &#39;SYNs to LISTEN&#39;</code> 查看。</p>
 <p>全连接队列可以使用 <code>ss -nlt | grep 8080</code> 的方式查看 Recv-Q 的值。<br>也可通过如下命令来查看全连接队列的溢出情况。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$</span><span class="language-bash">netstat -s | grep overflow</span></span><br><span class="line">    3255 times the listen queue of a socket overflowed</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-interrupt/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux-interrupt/" class="post-title-link" itemprop="url">Linux中断</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-11-30 21:09:20" itemprop="dateCreated datePublished" datetime="2018-11-30T21:09:20+00:00">2018-11-30</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h1><p>中断由硬件产生，并发送到中断控制器，中断控制器再发送中断到CPU，CPU检测到中断信号后，会中断当前的工作，每个中断都有IRQ（中断请求），基于IRQ，CPU将中断请求分发到对应的硬件驱动上通知操作系统，操作系统会对中断进行处理。</p>
-<h2 id="中断控制器"><a href="#中断控制器" class="headerlink" title="中断控制器"></a>中断控制器</h2><p>常见的中断控制器有两种：可编程中断控制器8259A和高级可编程中断控制器（APIC）。传统的8259A只适合单CPU的情况，现在都是多CPU、多核心的SMP体系，所以为了充分利用SMP体系结构，把中断传递给系统上的每个CPU以便更好实现并行和提高性能，Intel引入了高级可编程中断控制器（APIC）。</p>
-<p>光有高级可编程中断控制器的硬件支持还不够，Linux内核还必须能利用这些硬件的特质，所以只有kernel 2.4以后的版本才支持把不同的硬件中断请求（IRQs）分配到特定的CPU核心上，这个绑定技术被称为SMP IRQ Affinity。</p>
-<p>在设置网卡中断的cpu core时，有一个限制就是，IO-APIC 有两种工作模式：logic 和 physical，在 logic 模式下 IO-APIC 可以同时分布同一种 IO 中断到8颗 CPU (core) 上（受到 bitmask 寄存器的限制，因为 bitmask 只有8位长。）；在 physical 模式下不能同时分布同一中断到不同 CPU 上，比如，不能让 eth0 中断同时由 CPU0 和 CPU1 处理，这个时候只能定位 eth0 到 CPU0、eth1 到 CPU1，也就是说 eth0 中断不能像 logic 模式那样可以同时由多个 CPU 处理。</p>
-<h2 id="软中断和硬中断"><a href="#软中断和硬中断" class="headerlink" title="软中断和硬中断"></a>软中断和硬中断</h2><p>为了解决中断处理程序执行时间过长和中断丢失的问题，Linux系统将中断分为上半部和下半部。</p>
-<p>上半部在中断禁止模式下运行，用来快速处理中断，主要用来处理跟硬件密切相关的工作。</p>
-<p>下半部处理上半部未完成的工作，通常以内核线程的方式运行。</p>
-<p>以Linux接收网卡数据包为例进行说明：</p>
-<p>网卡接收到一个数据包后，会通过硬件中断的方式通知内核新的数据到了。内核会调用中断处理程序进行处理。</p>
-<p>上半部将网卡中的数据写入到内存中，并更新一下硬件寄存器的状态，最后发送一个软中断信号，通知下半部进一步的处理。</p>
-<p>下半部被软中断信号唤醒后，从内存中读到数据，按照网络协议栈对数据进行解析和处理，并发送给应用程序。</p>
-<p>上面所说的上半部即硬中断，下半部即软中断，但一些内核自定义的事件也属于软中断，比如内核调度和RCU锁等。</p>
-<p>硬中断：由外设产生，用来通知操作系统外设状态的变化。在处理中断的同时要关闭中断。特点为处理要尽可能的快。</p>
-<p>软中断：为了满足实时性要求，硬中断处理时间都比较短，将时间比较长的中断放到软中断中来完成，称为下半部。int就是软中断指令，中断向量表是中断号和中断处理程序的对应表。每个CPU对应一个软中断内核线程<code>ksoftirqd/cpu编号</code>。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@120-14-29-SH-1037-B07 ~]# ps -ef | grep ksoft</span><br><span class="line">root           3       2  0  2016 ?        01:47:12 [ksoftirqd/0]</span><br><span class="line">root          21       2  0  2016 ?        00:47:51 [ksoftirqd/1]</span><br><span class="line">root          26       2  0  2016 ?        00:47:34 [ksoftirqd/2]</span><br><span class="line">root          31       2  0  2016 ?        00:47:46 [ksoftirqd/3]</span><br></pre></td></tr></table></figure>
-
-<p>中断嵌套：硬中断可以嵌套，即新的硬中断可以打断正在执行的中断，但同种中断不可以。软中断不可嵌套，但相同类型中断可在不同的cpu上执行。</p>
-<h1 id="相关命令"><a href="#相关命令" class="headerlink" title="相关命令"></a>相关命令</h1><h2 id="mpstat"><a href="#mpstat" class="headerlink" title="mpstat"></a>mpstat</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"># 显示cpu处理的中断数量</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# mpstat -I SUM 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:27:59 PM  CPU    intr/s</span><br><span class="line">05:28:00 PM  all  61274.00</span><br><span class="line">05:28:01 PM  all  61712.00</span><br><span class="line">05:28:02 PM  all  62315.00</span><br><span class="line">05:28:03 PM  all  59280.00</span><br><span class="line">^C</span><br><span class="line">Average:     all  61145.25</span><br><span class="line"></span><br><span class="line"># 显示每个核处理的中断数量</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# mpstat -I SUM 1 -P ALL</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:30:30 PM  CPU    intr/s</span><br><span class="line">05:30:31 PM  all  61446.00</span><br><span class="line">05:30:31 PM    0  40489.00</span><br><span class="line">05:30:31 PM    1   6839.00</span><br><span class="line">05:30:31 PM    2   6935.00</span><br><span class="line">05:30:31 PM    3   7185.00</span><br><span class="line"></span><br><span class="line"># 显示更详细的信息</span><br><span class="line">[root@120-14-31-SH-1037-B07 ~]# mpstat -P ALL 1</span><br><span class="line">Linux 3.10.0-327.el7.x86_64 (120-14-31-SH-1037-B07.yidian.com)  09/10/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">01:15:09 AM  CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle</span><br><span class="line">01:15:10 AM  all    6.35    0.00   11.64    0.00    0.00    7.67    0.00    0.00    0.00   74.34</span><br><span class="line">01:15:10 AM    0    5.05    0.00   11.11    0.00    0.00    0.00    0.00    0.00    0.00   83.84</span><br><span class="line">01:15:10 AM    1    6.38    0.00   12.77    0.00    0.00    9.57    0.00    0.00    0.00   71.28</span><br><span class="line">01:15:10 AM    2    8.70    0.00   10.87    0.00    0.00   14.13    0.00    0.00    0.00   66.30</span><br><span class="line">01:15:10 AM    3    6.32    0.00   12.63    0.00    0.00    7.37    0.00    0.00    0.00   73.68</span><br></pre></td></tr></table></figure>
-
-<h2 id="lspci"><a href="#lspci" class="headerlink" title="lspci"></a>lspci</h2><p>可以来查看网卡型号，驱动等信息，内容较多</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">[root@103-17-164-sh-100-k07 ~]# lspci -vvv | more</span><br><span class="line">00:00.0 Host bridge: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DMI2 (rev 04)</span><br><span class="line">        Subsystem: Super Micro Computer Inc Device 0668</span><br><span class="line">        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-</span><br><span class="line">        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast &gt;TAbort- &lt;TAbort- &lt;MAbort- &gt;SERR- &lt;PERR- INTx-</span><br><span class="line">        Interrupt: pin A routed to IRQ 0</span><br><span class="line">        Capabilities: [90] Express (v2) Root Port (Slot-), MSI 00</span><br><span class="line">                DevCap: MaxPayload 128 bytes, PhantFunc 0</span><br><span class="line">                        ExtTag- RBE+</span><br><span class="line">                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-</span><br><span class="line">                        RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-</span><br><span class="line">                        MaxPayload 128 bytes, MaxReadReq 128 bytes</span><br><span class="line">                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-</span><br><span class="line">                LnkCap: Port #0, Speed 5GT/s, Width x4, ASPM not supported, Exit Latency L0s &lt;64ns, L1 &lt;16us</span><br><span class="line">                        ClockPM- Surprise+ LLActRep+ BwNot+</span><br><span class="line">                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- CommClk-</span><br><span class="line">                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-</span><br><span class="line">                LnkSta: Speed unknown, Width x0, TrErr- Train- SlotClk- DLActive- BWMgmt- ABWMgmt-</span><br><span class="line">                RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-</span><br><span class="line">                RootCap: CRSVisible-</span><br><span class="line">                RootSta: PME ReqID 0000, PMEStatus- PMEPending-</span><br><span class="line">                DevCap2: Completion Timeout: Range BCD, TimeoutDis+, LTR-, OBFF Not Supported ARIFwd-</span><br><span class="line">                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-, LTR-, OBFF Disabled ARIFwd-</span><br><span class="line">                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-</span><br><span class="line">                         Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-</span><br><span class="line">                         Compliance De-emphasis: -6dB</span><br><span class="line">                LnkSta2: Current De-emphasis Level: -6dB, EqualizationComplete-, EqualizationPhase1-</span><br><span class="line">                         EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-</span><br><span class="line">        Capabilities: [e0] Power Management version 3</span><br><span class="line">                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)</span><br><span class="line">                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-</span><br><span class="line">        Capabilities: [100 v1] Vendor Specific Information: ID=0002 Rev=0 Len=00c &lt;?&gt;</span><br><span class="line">        Capabilities: [144 v1] Vendor Specific Information: ID=0004 Rev=1 Len=03c &lt;?&gt;</span><br><span class="line">        Capabilities: [1d0 v1] Vendor Specific Information: ID=0003 Rev=1 Len=00a &lt;?&gt;</span><br><span class="line">        Capabilities: [280 v1] Vendor Specific Information: ID=0005 Rev=3 Len=018 &lt;?&gt;</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-
-<h2 id="ethtool"><a href="#ethtool" class="headerlink" title="ethtool"></a>ethtool</h2><p>用来查看网卡信息</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><span class="line">[root@103-17-164-sh-100-k07 ~]# ethtool eth3</span><br><span class="line">Settings for eth3:</span><br><span class="line">        Supported ports: [ FIBRE ]</span><br><span class="line">        Supported link modes:   1000baseT/Full</span><br><span class="line">                                10000baseT/Full</span><br><span class="line">        Supported pause frame use: No</span><br><span class="line">        Supports auto-negotiation: Yes</span><br><span class="line">        Advertised link modes:  1000baseT/Full</span><br><span class="line">                                10000baseT/Full</span><br><span class="line">        Advertised pause frame use: No</span><br><span class="line">        Advertised auto-negotiation: Yes</span><br><span class="line">        Speed: 10000Mb/s</span><br><span class="line">        Duplex: Full</span><br><span class="line">        Port: FIBRE</span><br><span class="line">        PHYAD: 0</span><br><span class="line">        Transceiver: external</span><br><span class="line">        Auto-negotiation: on</span><br><span class="line">        Supports Wake-on: d</span><br><span class="line">        Wake-on: d</span><br><span class="line">        Current message level: 0x00000007 (7)</span><br><span class="line">                               drv probe link</span><br><span class="line">        Link detected: yes</span><br><span class="line"></span><br><span class="line"># 可查看Ring buffer的大小</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# ethtool -g eth3</span><br><span class="line">Ring parameters for eth3:</span><br><span class="line">Pre-set maximums:</span><br><span class="line">RX:             4096</span><br><span class="line">RX Mini:        0</span><br><span class="line">RX Jumbo:       0</span><br><span class="line">TX:             4096</span><br><span class="line">Current hardware settings:</span><br><span class="line">RX:             512</span><br><span class="line">RX Mini:        0</span><br><span class="line">RX Jumbo:       0</span><br><span class="line">TX:             512</span><br><span class="line"></span><br><span class="line"># 列出信息较多，包含网卡的统计信息，包括丢包量信息</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# ethtool -S eth3 | more</span><br><span class="line">NIC statistics:</span><br><span class="line">     rx_packets: 680955795162</span><br><span class="line">     tx_packets: 27260701850</span><br><span class="line">     rx_bytes: 248285654162670</span><br><span class="line">     tx_bytes: 195321924245892</span><br><span class="line">     rx_pkts_nic: 683081802539</span><br><span class="line">     tx_pkts_nic: 27260700665</span><br><span class="line">     rx_bytes_nic: 251132784690871</span><br><span class="line">     tx_bytes_nic: 195447730645152</span><br><span class="line">     lsc_int: 11</span><br><span class="line">     tx_busy: 0</span><br><span class="line">     non_eop_descs: 1811095697</span><br><span class="line">     rx_errors: 67381</span><br><span class="line">     tx_errors: 0</span><br><span class="line">     rx_dropped: 0</span><br><span class="line">     tx_dropped: 0</span><br><span class="line">     multicast: 1025690658</span><br><span class="line">     broadcast: 206937242</span><br><span class="line">     rx_no_buffer_count: 0</span><br><span class="line">     collisions: 0</span><br><span class="line">     rx_over_errors: 0</span><br><span class="line">     rx_crc_errors: 67302</span><br><span class="line">     rx_frame_errors: 0</span><br><span class="line">     hw_rsc_aggregated: 2358414213</span><br><span class="line">     hw_rsc_flushed: 232402327</span><br><span class="line">     fdir_match: 10634169417</span><br><span class="line">     fdir_miss: 669277016191</span><br><span class="line">     fdir_overflow: 3321</span><br><span class="line">     rx_fifo_errors: 0</span><br><span class="line">     rx_missed_errors: 2538</span><br><span class="line">     tx_aborted_errors: 0</span><br><span class="line">     tx_carrier_errors: 0</span><br><span class="line">     tx_fifo_errors: 0</span><br><span class="line">     tx_heartbeat_errors: 0</span><br><span class="line">     tx_timeout_count: 0</span><br><span class="line">     tx_restart_queue: 0</span><br><span class="line">     rx_long_length_errors: 80264</span><br><span class="line">     rx_short_length_errors: 0</span><br><span class="line">     tx_flow_control_xon: 1</span><br><span class="line">     rx_flow_control_xon: 0</span><br><span class="line">     tx_flow_control_xoff: 51</span><br><span class="line">     rx_flow_control_xoff: 0</span><br><span class="line">     rx_csum_offload_errors: 0</span><br><span class="line">     alloc_rx_page_failed: 0</span><br><span class="line">     alloc_rx_buff_failed: 0</span><br><span class="line">     rx_no_dma_resources: 0</span><br><span class="line">     os2bmc_rx_by_bmc: 0</span><br><span class="line">     os2bmc_tx_by_bmc: 0</span><br><span class="line">     os2bmc_tx_by_host: 0</span><br><span class="line">     os2bmc_rx_by_host: 0</span><br><span class="line"></span><br><span class="line"># 查看网卡多队列的支持情况，当前网卡支持8个队列，使用了8个队列</span><br><span class="line">[root@103-17-6-sh-100-j11 ~]# ethtool -l eth0</span><br><span class="line">Channel parameters for eth0:</span><br><span class="line">Pre-set maximums:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       8</span><br><span class="line">Current hardware settings:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       8</span><br><span class="line"></span><br><span class="line"># 设置网卡当前使用的多队列，当前使用的网卡数量不能超过最大值8，该值跟网卡的中断数量一一对应，即/proc/interrupts中看到的eth0的中断数量</span><br><span class="line">[root@103-17-6-sh-100-j11 ~]# ethtool -L eth0 combined 2</span><br><span class="line">[root@103-17-6-sh-100-j11 ~]# ethtool -l eth0</span><br><span class="line">Channel parameters for eth0:</span><br><span class="line">Pre-set maximums:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       8</span><br><span class="line">Current hardware settings:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       2</span><br></pre></td></tr></table></figure>
-
-<h2 id="sar"><a href="#sar" class="headerlink" title="sar"></a>sar</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"># 列出网卡的接收包信息，比iftop更直观</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# sar -n DEV 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:06:12 PM     IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s</span><br><span class="line">05:06:13 PM      eth0      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:06:13 PM      eth1      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:06:13 PM      eth2      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:06:13 PM      eth3  77893.00   4328.00  31413.92  30134.16      0.00      0.00     46.00</span><br><span class="line">05:06:13 PM        lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line"></span><br><span class="line"># 可列出错误包的相关信息</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# sar -n EDEV 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:07:13 PM     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s</span><br><span class="line">05:07:14 PM      eth0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM      eth1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM      eth2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM      eth3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM        lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br></pre></td></tr></table></figure>
-
-<p>通过中断可以看到网卡包含四个中断55-58，均位于cpu0上。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">[root@103-17-164-sh-100-k07 ~]# cat /proc/interrupts</span><br><span class="line">           CPU0       CPU1       CPU2       CPU3</span><br><span class="line">  0:         44          0          0          0  IR-IO-APIC-edge      timer</span><br><span class="line">  1:          3          0          0          0  IR-IO-APIC-edge      i8042</span><br><span class="line">  8:         42          0          0          0  IR-IO-APIC-edge      rtc0</span><br><span class="line">  9:          1          0          0          0  IR-IO-APIC-fasteoi   acpi</span><br><span class="line"> 12:          4          0          0          0  IR-IO-APIC-edge      i8042</span><br><span class="line"> 16:         99          0          0          0  IR-IO-APIC-fasteoi   ehci_hcd:usb1</span><br><span class="line"> 18:          0          0          0          0  IR-IO-APIC-fasteoi   i801_smbus</span><br><span class="line"> 23:         83          0          0          0  IR-IO-APIC-fasteoi   ehci_hcd:usb2</span><br><span class="line"> 37:   12019917          0          0          0  IR-PCI-MSI-edge      0000:00:1f.2</span><br><span class="line"> 48:          0          0          0          0  DMAR_MSI-edge      dmar0</span><br><span class="line"> 55:  746827548          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-0</span><br><span class="line"> 56: 2674693551          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-1</span><br><span class="line"> 57: 2341522223          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-2</span><br><span class="line"> 58: 3587929355          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-3</span><br><span class="line"> 59:       3334          0          0          0  IR-PCI-MSI-edge      eth3</span><br><span class="line"> 61:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 63:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 64:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 65:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 66:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 67:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 68:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 69:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line">NMI:    1100069     693493     635982     615953   Non-maskable interrupts</span><br><span class="line">LOC: 1120358899  146726541 4134846029  168005659   Local timer interrupts</span><br><span class="line">SPU:          0          0          0          0   Spurious interrupts</span><br><span class="line">PMI:    1100069     693493     635982     615953   Performance monitoring interrupts</span><br><span class="line">IWI:   57255892  115292160  113458706  112987848   IRQ work interrupts</span><br><span class="line">RTR:          0          0          0          0   APIC ICR read retries</span><br><span class="line">RES:  525229423 2791640970  427214674 1986396041   Rescheduling interrupts</span><br><span class="line">CAL: 4294536344 4294488238 4294478163 4294552026   Function call interrupts</span><br><span class="line">TLB:   65239533   57937650   55104990   52690662   TLB shootdowns</span><br><span class="line">TRM:          0          0          0          0   Thermal event interrupts</span><br><span class="line">THR:          0          0          0          0   Threshold APIC interrupts</span><br><span class="line">MCE:          0          0          0          0   Machine check exceptions</span><br><span class="line">MCP:     160132     160132     160132     160132   Machine check polls</span><br><span class="line">ERR:          0</span><br><span class="line">MIS:          0</span><br></pre></td></tr></table></figure>
-
-<h2 id="修改中断的cpu分配"><a href="#修改中断的cpu分配" class="headerlink" title="修改中断的cpu分配"></a>修改中断的cpu分配</h2><p>echo “2” &gt; &#x2F;proc&#x2F;irq&#x2F;49&#x2F;smp_affinity</p>
-<p>其中2表示cpu1, 49表示中断号。</p>
-<h2 id="查看软中断"><a href="#查看软中断" class="headerlink" title="查看软中断"></a>查看软中断</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@120-14-31-SH-1037-B07 ~]# cat /proc/softirqs</span><br><span class="line">                    CPU0       CPU1       CPU2       CPU3</span><br><span class="line">          HI:          1          3          0          1</span><br><span class="line">       TIMER: 1795378091 3617740778 2674553229 1524071492</span><br><span class="line">      NET_TX:  202188392   22218135   17427628   17205883</span><br><span class="line">      NET_RX: 3388060179   60871361   68145291   38670323</span><br><span class="line">       BLOCK:    4741950       2422       1309       1489</span><br><span class="line">BLOCK_IOPOLL:          0          0          0          0</span><br><span class="line">     TASKLET: 2102131738    3720214    3104944    1942912</span><br><span class="line">       SCHED:  526046585  612421231  496815061  456047989</span><br><span class="line">     HRTIMER:          0          0          0          0</span><br><span class="line">         RCU: 3147020579 4237695975 3820083676 3267816268</span><br></pre></td></tr></table></figure>
-
-<p>软中断包括10个类别，NET_RX（网络接收中断）、NET_TX（网络发送中断）</p>
-<h2 id="查看数据包统计"><a href="#查看数据包统计" class="headerlink" title="查看数据包统计"></a>查看数据包统计</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br></pre></td><td class="code"><pre><span class="line">[root@c1-g08-120-166-30 ~]# netstat -s</span><br><span class="line">Ip:</span><br><span class="line">    7586513384 total packets received</span><br><span class="line">    0 forwarded</span><br><span class="line">    741 with unknown protocol</span><br><span class="line">    0 incoming packets discarded</span><br><span class="line">    7586512643 incoming packets delivered</span><br><span class="line">    7948370396 requests sent out</span><br><span class="line">Icmp:</span><br><span class="line">    23 ICMP messages received</span><br><span class="line">    0 input ICMP message failed.</span><br><span class="line">    ICMP input histogram:</span><br><span class="line">        destination unreachable: 1</span><br><span class="line">        echo requests: 19</span><br><span class="line">        echo replies: 3</span><br><span class="line">    46 ICMP messages sent</span><br><span class="line">    0 ICMP messages failed</span><br><span class="line">    ICMP output histogram:</span><br><span class="line">        destination unreachable: 9</span><br><span class="line">        echo request: 18</span><br><span class="line">        echo replies: 19</span><br><span class="line">IcmpMsg:</span><br><span class="line">        InType0: 3</span><br><span class="line">        InType3: 1</span><br><span class="line">        InType8: 19</span><br><span class="line">        OutType0: 19</span><br><span class="line">        OutType3: 9</span><br><span class="line">        OutType8: 18</span><br><span class="line">Tcp:</span><br><span class="line">    561299810 active connections openings</span><br><span class="line">    2005002 passive connection openings</span><br><span class="line">    8 failed connection attempts</span><br><span class="line">    282644949 connection resets received</span><br><span class="line">    725 connections established</span><br><span class="line">    7585817181 segments received</span><br><span class="line">    13957880471 segments send out</span><br><span class="line">    1742807 segments retransmited</span><br><span class="line">    136 bad segments received.</span><br><span class="line">    523811266 resets sent</span><br><span class="line">Udp:</span><br><span class="line">    445457 packets received</span><br><span class="line">    3 packets to unknown port received.</span><br><span class="line">    0 packet receive errors</span><br><span class="line">    553840367 packets sent</span><br><span class="line">    0 receive buffer errors</span><br><span class="line">    0 send buffer errors</span><br><span class="line">UdpLite:</span><br><span class="line">    InErrors: 3</span><br><span class="line">TcpExt:</span><br><span class="line">    341304 invalid SYN cookies received</span><br><span class="line">    1 resets received for embryonic SYN_RECV sockets</span><br><span class="line">    1 ICMP packets dropped because they were out-of-window</span><br><span class="line">    1997421 TCP sockets finished time wait in fast timer</span><br><span class="line">    222787 delayed acks sent</span><br><span class="line">    1819 delayed acks further delayed because of locked socket</span><br><span class="line">    Quick ack mode was activated 178186 times</span><br><span class="line">    13 packets directly queued to recvmsg prequeue.</span><br><span class="line">    3280604069 packet headers predicted</span><br><span class="line">    1972740996 acknowledgments not containing data payload received</span><br><span class="line">    798190042 predicted acknowledgments</span><br><span class="line">    642444 times recovered from packet loss by selective acknowledgements</span><br><span class="line">    Detected reordering 23 times using FACK</span><br><span class="line">    Detected reordering 1618 times using SACK</span><br><span class="line">    59 congestion windows fully recovered without slow start</span><br><span class="line">    16 congestion windows partially recovered using Hoe heuristic</span><br><span class="line">    17089 congestion windows recovered without slow start by DSACK</span><br><span class="line">    9594 congestion windows recovered without slow start after partial ack</span><br><span class="line">    TCPLostRetransmit: 2849</span><br><span class="line">    4926 timeouts after SACK recovery</span><br><span class="line">    672451 fast retransmits</span><br><span class="line">    28946 forward retransmits</span><br><span class="line">    680 retransmits in slow start</span><br><span class="line">    5024 other TCP timeouts</span><br><span class="line">    TCPLossProbes: 1390602</span><br><span class="line">    TCPLossProbeRecovery: 997235</span><br><span class="line">    4723 SACK retransmits failed</span><br><span class="line">    178189 DSACKs sent for old packets</span><br><span class="line">    979863 DSACKs received</span><br><span class="line">    62 DSACKs for out of order packets received</span><br><span class="line">    282645553 connections reset due to unexpected data</span><br><span class="line">    9 connections reset due to early user close</span><br><span class="line">    TCPDSACKIgnoredNoUndo: 936061</span><br><span class="line">    TCPSpuriousRTOs: 5150</span><br><span class="line">    TCPSackShifted: 233309</span><br><span class="line">    TCPSackMerged: 733778</span><br><span class="line">    TCPSackShiftFallback: 1768422</span><br><span class="line">    IPReversePathFilter: 1</span><br><span class="line">    TCPRetransFail: 11</span><br><span class="line">    TCPRcvCoalesce: 1290965687</span><br><span class="line">    TCPOFOQueue: 1753072</span><br><span class="line">    TCPChallengeACK: 136</span><br><span class="line">    TCPSYNChallenge: 136</span><br><span class="line">    TCPSpuriousRtxHostQueues: 73</span><br><span class="line">    TCPAutoCorking: 272452106</span><br><span class="line">    TCPSynRetrans: 4538</span><br><span class="line">    TCPOrigDataSent: 9260789170</span><br><span class="line">    TCPHystartTrainDetect: 3721895</span><br><span class="line">    TCPHystartTrainCwnd: 64417412</span><br><span class="line">    TCPHystartDelayDetect: 80</span><br><span class="line">    TCPHystartDelayCwnd: 2579</span><br><span class="line">    TCPACKSkippedSynRecv: 4</span><br><span class="line">IpExt:</span><br><span class="line">    InMcastPkts: 249744</span><br><span class="line">    OutMcastPkts: 83317</span><br><span class="line">    InBcastPkts: 226</span><br><span class="line">    InOctets: 12312144006244</span><br><span class="line">    OutOctets: 12449967070063</span><br><span class="line">    InMcastOctets: 22309104</span><br><span class="line">    OutMcastOctets: 9664620</span><br><span class="line">    InBcastOctets: 104240</span><br><span class="line">    InNoECTPkts: 7586513474</span><br><span class="line">    InECT0Pkts: 47</span><br></pre></td></tr></table></figure>
-
-<h1 id="irqbalance"><a href="#irqbalance" class="headerlink" title="irqbalance"></a>irqbalance</h1><p>查看是否运行：systemctl status irqbalance</p>
-<p>irqbalance根据系统中断负载的情况，自动迁移中断保持中断的平衡，同时会考虑到省电因素等等。 但是在实时系统中会导致中断自动漂移，对性能造成不稳定因素，在高性能的场合建议关闭。</p>
-<p>irqbalance用于优化中断分配，它会自动收集系统数据以分析使用模式，并依据系统负载状况将工作状态置于 Performance mode 或 Power-save mode。处于Performance mode 时，irqbalance 会将中断尽可能均匀地分发给各个 CPU core，以充分利用 CPU 多核，提升性能。<br>处于Power-save mode 时，irqbalance 会将中断集中分配给第一个 CPU，以保证其它空闲 CPU 的睡眠时间，降低能耗。</p>
-<h1 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h1><ul>
-<li><a target="_blank" rel="noopener" href="http://www.vpsee.com/2010/07/load-balancing-with-irq-smp-affinity/">Linux 多核下绑定硬件中断到不同 CPU（IRQ Affinity）</a></li>
-<li><a target="_blank" rel="noopener" href="http://blog.yufeng.info/archives/2422">深度剖析告诉你irqbalance有用吗？</a></li>
-<li><a target="_blank" rel="noopener" href="https://time.geekbang.org/column/article/71868">怎么理解Linux软中断？</a></li>
-</ul>
 
       
     </div>

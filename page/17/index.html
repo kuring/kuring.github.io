@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">244</span>
+          <span class="site-state-item-count">245</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,104 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/aleap_idx/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/aleap_idx/" class="post-title-link" itemprop="url">asleap中的简单文件索引机制</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2015-02-28 00:00:00" itemprop="dateCreated datePublished" datetime="2015-02-28T00:00:00+00:00">2015-02-28</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>asleap是一个开源的vpn破解工具，最近查看了asleap的源码，该项目<a target="_blank" rel="noopener" href="http://sourceforge.net/projects/asleap/">地址</a>。本文的重点是对其中的带索引的字典文件的产生过程进行介绍，产生带索引的字典文件并不复杂，但是要想用简洁易懂的语言将该问题描述明白却不容易。</p>
+<p>asleap破解vpn的机制是通过字典文件暴力破解的方式，该字典文件有dat数据文件和idx索引文件两个文件组成，两个文件均为二进制格式。asleap工程中自带了genkey程序，可以将文本的字典文件转换为asleap程序需要的带索引的字典文件。</p>
+<p>本文以字典文件为以下内容讲解：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">turquoise</span><br><span class="line">da</span><br><span class="line">test</span><br></pre></td></tr></table></figure>
+
+<h1 id="读取字典文件并产生md4值"><a href="#读取字典文件并产生md4值" class="headerlink" title="读取字典文件并产生md4值"></a>读取字典文件并产生md4值</h1><p>md4编码占16个字节，三个字典进行md4编码后的结果分别为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">18 07 33 43 f6 30 b5 f8 2c 38 c0 34 37 f2 81 6b</span><br><span class="line">01 19 a3 80 94 40 60 3c 57 39 5e 73 f3 60 95 98</span><br><span class="line">0c b6 94 88 05 f7 97 bf 2a 82 80 79 73 b8 95 37</span><br></pre></td></tr></table></figure>
+
+<h1 id="将字典信息写入到临时文件"><a href="#将字典信息写入到临时文件" class="headerlink" title="将字典信息写入到临时文件"></a>将字典信息写入到临时文件</h1><p>为了能够对最终生成的dat文件中的内容进行排序和便于索引，程序生成了256个临时文件，文件名格式为从genk-bucket-00.tmp到genk-bucket-ff.tmp。程序根据md4编码中的第14位将字典对应的信息分别写入到临时文件中，一个字典写入到临时文件的内容如下，如果一个临时文件中存在多个字典则依次存放：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">hashpass_rec</span> &#123;</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> rec_size;		<span class="comment">// 一个字典占用文件的大小，包括该变量+字典+字典对应的md4值共占用的字节数</span></span><br><span class="line">    <span class="type">char</span>          *password;	<span class="comment">// 字典</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> hash[<span class="number">16</span>];		<span class="comment">// 字典对应的md4值</span></span><br><span class="line">&#125; __attribute__ ((packed));</span><br></pre></td></tr></table></figure>
+
+<p>本例子中turquoise对应结构体会写入到genk-bucket-81.tmp中，da和test对应结构体会依次写入到genk-bucket-95.tmp中。</p>
+<h1 id="读取临时文件并写入到dat数据文件中"><a href="#读取临时文件并写入到dat数据文件中" class="headerlink" title="读取临时文件并写入到dat数据文件中"></a>读取临时文件并写入到dat数据文件中</h1><p>最终dat文件中的数据内容为hashpass_rec的有序集合，排序的原则是按照md4的第14和15两个字节。依次读取256个临时文件中的hashpass_rec可以保证dat文件中的数据内容是按照第14字节排序的，但是不能够保证是按照第15个字节排序的。为了保证最终dat文件中的数据内容是按照第14和15字节有序的，在将一个临时文件中的内容写入到dat文件中前需要对该临时文件中的hashpass_rec结果按照hash变量的第15字节进行排序，直接使用C语言中的qsort进行排序。</p>
+<p>该例子中da和test位于同一个临时文件中，需要根据hash变量的第15字节排序的结果为test、da，最终写入到dat文件中的排序结果为turquoise、test、da。</p>
+<h1 id="根据dat数据文件产生idx索引文件"><a href="#根据dat数据文件产生idx索引文件" class="headerlink" title="根据dat数据文件产生idx索引文件"></a>根据dat数据文件产生idx索引文件</h1><p>idx索引文件中存放的是多个hashpassidx_rec结果，最多有256*256项，其结构定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">hashpassidx_rec</span> &#123;</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span>	        hashkey[<span class="number">2</span>];	<span class="comment">// 对应md4编码的第14和15字节</span></span><br><span class="line">    <span class="type">off_t</span>                   offset;		<span class="comment">// 第一个匹配的hashpass_rec结构在dat文件中的偏移，占用4个字节</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> <span class="type">long</span> <span class="type">int</span> 	numrec;		<span class="comment">// dat文件中共有多少个匹配的hashpass_rec结果</span></span><br><span class="line">&#125; __attribute__ ((packed));	<span class="comment">// 字节对齐，需要填充4个字节</span></span><br></pre></td></tr></table></figure>
+
+<p>最终完成的dat文件和idx文件的指向如下图所示：</p>
+<p><img src="http://kuring.qiniudn.com/aleap_idx.png" alt="最终完成的dat文件和idx文件的指向"></p>
+<h1 id="bug"><a href="#bug" class="headerlink" title="bug"></a>bug</h1><p>genkeys.c文件中在读取字典文件时存在bug，在文件的207行将内容更改为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (!feof(inputfl)) &#123;</span><br><span class="line">		<span class="built_in">memset</span>(password, <span class="number">0</span>, MAX_NT_PASSWORD + <span class="number">1</span>);</span><br><span class="line">        fgets(password, MAX_NT_PASSWORD+<span class="number">1</span>, inputfl);</span><br><span class="line">		<span class="keyword">if</span> (<span class="built_in">strlen</span>(password) == <span class="number">0</span>) &#123;</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/s/1jGmVF06">字典文件等相关文件下载</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +317,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -318,7 +416,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -427,7 +525,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -513,7 +611,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -612,7 +710,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -715,7 +813,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -824,7 +922,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -925,7 +1023,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -1010,7 +1108,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -1095,101 +1193,6 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
 <p>上图中data为要初始化的数组，from和to为辅助数组。如果data[i]已经初始化，则from[i]&lt;top，to[from[i]]&#x3D;i。from是一个简单的标识，to和top确保了from中不会写入内存中的随机内容。</p>
 <h1 id="习题11"><a href="#习题11" class="headerlink" title="习题11"></a>习题11</h1><p>该题的答案太他妈逗了，为了能够解决两地之间的数据传输瓶颈，作者给出的答案居然是用信鸽传输图片的底片后再将底片放大的方式来代替原先的用汽车运输的方式，这就是中国古代的飞鸽传书啊。</p>
 <h1 id="习题12"><a href="#习题12" class="headerlink" title="习题12"></a>习题12</h1><p>该题在《三傻大闹宝莱坞》中见过，这跟编程毛线关系也没有啊。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/http_range/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/http_range/" class="post-title-link" itemprop="url">一个实例讲解HTTP的断点续传</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2014-11-06 00:00:00" itemprop="dateCreated datePublished" datetime="2014-11-06T00:00:00+00:00">2014-11-06</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>本文以从服务器下载一个文件为例，讲解HTTP的断点续传功能。</p>
-<p>客户端IP地址为：192.168.1.2<br>服务器IP地址为：192.168.1.3</p>
-<h1 id="客户端向服务器发送请求"><a href="#客户端向服务器发送请求" class="headerlink" title="客户端向服务器发送请求"></a>客户端向服务器发送请求</h1><p>客户端向服务器发送的请求为：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br></pre></td></tr></table></figure>
-
-<p>从中可以看出请求的文件名为deepc.a文件。</p>
-<h1 id="客户端向服务器发送具体请求"><a href="#客户端向服务器发送具体请求" class="headerlink" title="客户端向服务器发送具体请求"></a>客户端向服务器发送具体请求</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.100.189/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=0-32767</span><br></pre></td></tr></table></figure>
-
-<p>Range字段表示请求文件的范围为0-32767。</p>
-<h1 id="服务器响应"><a href="#服务器响应" class="headerlink" title="服务器响应"></a>服务器响应</h1><p>第一次服务器的HTTP响应报文如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.1.3</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.1.3/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=0-32767</span><br><span class="line"></span><br><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 32768</span><br><span class="line">Content-Range: bytes 0-32767/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=100</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
-
-<p>HTTP的状态为206，表示服务器已经处理了部分HTTP相应。其中Content-Range字段表示服务器已经响应了0-32767个字节的文件内容。8322278表示文件的总长度为8322278字节。</p>
-<h1 id="客户端继续向服务器发送请求"><a href="#客户端继续向服务器发送请求" class="headerlink" title="客户端继续向服务器发送请求"></a>客户端继续向服务器发送请求</h1><p>客户端根据上次HTTP报文中服务器已经返回给的客户端的数据情况继续向服务器发送请求报文，向服务器发送的请求报文内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.100.189/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=32768-8322277</span><br><span class="line">If-Range: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line"></span><br><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 8289510</span><br><span class="line">Content-Range: bytes 32768-8322277/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=98</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
-
-<p>Content-Range的内容表示客户端向服务器请求文件中32768-8322277之间的字节数据。</p>
-<h1 id="第二次服务器的HTTP响应报文如下："><a href="#第二次服务器的HTTP响应报文如下：" class="headerlink" title="第二次服务器的HTTP响应报文如下："></a>第二次服务器的HTTP响应报文如下：</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 8289510</span><br><span class="line">Content-Range: bytes 32768-8322277/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=98</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
-
-<p>表示服务器已经相应完成了32768-8322277之间的数据。</p>
 
       
     </div>

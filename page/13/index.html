@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">244</span>
+          <span class="site-state-item-count">245</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,124 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/capability/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/capability/" class="post-title-link" itemprop="url">linux capability</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-09-23 21:42:36" itemprop="dateCreated datePublished" datetime="2018-09-23T21:42:36+00:00">2018-09-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>传统的unix权限模型将进程分为root用户进程（有效用户id为0）和普通用户进程。普通用户需要root权限的某些功能，通常通过setuid系统调用实现。但普通用户并不需要root的所有权限，可能仅仅需要修改系统时间的权限而已。这种粗放的权限管理方式势必会带来一定的安全隐患。</p>
+<p>linux内核中引入了capability，用于消除需要执行某些操作的程序对root权限的依赖。</p>
+<p>capability用于分割root用户的权限，将root的权限分割为不同的能力，每一种能力代表一定的特权操作。例如，CAP_SYS_MODULE用于表示用户加载内核模块的特权操作。根据进程具有的能力来进行特权操作的访问控制。</p>
+<p>只有进程和可执行文件才有能力，每个进程拥有以下几组能力集(set)。</p>
+<ul>
+<li>cap_effective: 进程当前可用的能力集</li>
+<li>cap_inheritable: 进程可以传递给子进程的能力集</li>
+<li>cap_permitted: 进程可拥有的最大能力集</li>
+<li>cap_ambient: Linux 4.3后引入的能力集，</li>
+<li>cap_bounding: 用于进一步限制能力的获取</li>
+</ul>
+<p>可以通过&#x2F;proc&#x2F;${pid}&#x2F;status文件中的CapInh CapPrm CapEff CapBnd CapAmb来表示，每个字段为8个字节即64bit，每个比特表示一种能力，这几个字段存放在进程的内核数据结构task_struct中，由此可见capability的最小单位为线程，而不是进程。</p>
+<h2 id="example-1-设置进程能力"><a href="#example-1-设置进程能力" class="headerlink" title="example 1 设置进程能力"></a>example 1 设置进程能力</h2><p>在执行下面程序之前需要安装<code>yum install libcap-devel</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">undef</span> _POSIX_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/capability.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="type">int</span> errno;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">whoami</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;uid=%i  euid=%i  gid=%i\n&quot;</span>, getuid(), geteuid(), getgid());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">listCaps</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">cap_t</span> caps = cap_get_proc();</span><br><span class="line">    <span class="type">ssize_t</span> y = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;The process %d was give capabilities %s\n&quot;</span>,(<span class="type">int</span>) getpid(), cap_to_text(caps, &amp;y));</span><br><span class="line">    fflush(<span class="number">0</span>);</span><br><span class="line">    cap_free(caps);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> **argv)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> stat;</span><br><span class="line">    whoami();</span><br><span class="line">    stat = setuid(geteuid());</span><br><span class="line">    <span class="type">pid_t</span> parentPid = getpid();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(!parentPid)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    <span class="type">cap_t</span> caps = cap_init();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 给进程增加5中能力</span></span><br><span class="line">    <span class="type">cap_value_t</span> capList[<span class="number">5</span>] =&#123; CAP_NET_RAW, CAP_NET_BIND_SERVICE , CAP_SETUID, CAP_SETGID,CAP_SETPCAP &#125; ;</span><br><span class="line">    <span class="type">unsigned</span> num_caps = <span class="number">5</span>;</span><br><span class="line">    cap_set_flag(caps, CAP_EFFECTIVE, num_caps, capList, CAP_SET);</span><br><span class="line">    cap_set_flag(caps, CAP_INHERITABLE, num_caps, capList, CAP_SET);</span><br><span class="line">    cap_set_flag(caps, CAP_PERMITTED, num_caps, capList, CAP_SET);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (cap_set_proc(caps)) &#123;</span><br><span class="line">        perror(<span class="string">&quot;capset()&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> EXIT_FAILURE;</span><br><span class="line">    &#125;</span><br><span class="line">    listCaps();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 将进程的能力清除</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;dropping caps\n&quot;</span>);</span><br><span class="line">    cap_clear(caps);  <span class="comment">// resetting caps storage</span></span><br><span class="line">    <span class="keyword">if</span> (cap_set_proc(caps)) &#123;</span><br><span class="line">        perror(<span class="string">&quot;capset()&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> EXIT_FAILURE;</span><br><span class="line">    &#125;</span><br><span class="line">    listCaps();</span><br><span class="line"></span><br><span class="line">    cap_free(caps);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>并执行如下操作：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">gcc capability.c -lcap -o capability</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">需要使用root执行，因为普通用户不能给进程设置能力</span></span><br><span class="line">sudo ./capability</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">输出如下内容</span></span><br><span class="line">uid=0  euid=0  gid=0</span><br><span class="line">The process 5044 was give capabilities = cap_setgid,cap_setuid,cap_setpcap,cap_net_bind_service,cap_net_raw+eip</span><br><span class="line">dropping caps</span><br><span class="line">The process 5044 was give capabilities =</span><br></pre></td></tr></table></figure>
+
+<h2 id="example-2-获取进程能力"><a href="#example-2-获取进程能力" class="headerlink" title="example 2 获取进程能力"></a>example 2 获取进程能力</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">undef</span> _POSIX_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/capability.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;errno.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> __<span class="title">user_cap_header_struct</span> <span class="title">cap_header_data</span>;</span></span><br><span class="line">    <span class="type">cap_user_header_t</span> cap_header = &amp;cap_header_data;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> __<span class="title">user_cap_data_struct</span> <span class="title">cap_data_data</span>;</span></span><br><span class="line">    <span class="type">cap_user_data_t</span> cap_data = &amp;cap_data_data;</span><br><span class="line"></span><br><span class="line">    cap_header-&gt;pid = getpid();</span><br><span class="line">    cap_header-&gt;version = _LINUX_CAPABILITY_VERSION_1;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (capget(cap_header, cap_data) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;Failed capget&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Cap data 0x%x, 0x%x, 0x%x\n&quot;</span>, cap_data-&gt;effective,cap_data-&gt;permitted, cap_data-&gt;inheritable);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以通过capget命令获取进程的能力</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[vagrant@localhost tmp]$ gcc get_capability.c -lcap -o get_capability</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">普通用户默认情况下没有任何能力</span></span><br><span class="line">[vagrant@localhost tmp]$ ./get_capability</span><br><span class="line">Cap data 0x0, 0x0, 0x0</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">root用户默认拥有所有的能力</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo ./get_capability</span><br><span class="line">Cap data 0xffffffff, 0xffffffff, 0x0</span><br></pre></td></tr></table></figure>
+
+<h2 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h2><ol>
+<li>getcap用于获取程序文件所具有的能力。</li>
+<li>getpcaps用于获取进程所具有的能力。</li>
+<li>setcap用于设置程序文件所具有的能力。</li>
+<li>capsh 查看和设置程序的能力</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">将<span class="built_in">chown</span>命令授权给普通用户也具备更改文件owner的能力</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">其中eip分别代表cap_effective(e) cap_inheritable(i) cap_permitted(p)</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo setcap cap_chown=eip /usr/bin/chown</span><br><span class="line">[vagrant@localhost tmp]$ getcap /usr/bin/chown</span><br><span class="line">/usr/bin/chown = cap_chown+eip</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">使用root创建测试文件</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo touch /tmp/aa</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">普通用户也可以修改root用户创建文件的owner了</span></span><br><span class="line">[vagrant@localhost tmp]$ chown vagrant:vagrant /tmp/aa</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">清除<span class="built_in">chown</span>的能力</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo setcap -r /usr/bin/chown</span><br><span class="line">[vagrant@localhost tmp]$ getcap /usr/bin/chown</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">获取到进程的 capability</span></span><br><span class="line">[vagrant@localhost tmp]$ cat /proc/95373/status | grep Cap</span><br><span class="line">CapInh:	0000000000000000</span><br><span class="line">CapPrm:	0000000000000000</span><br><span class="line">CapEff:	0000000000000000</span><br><span class="line">CapBnd:	0000003fffffffff</span><br><span class="line">CapAmb:	0000000000000000</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">对上述 capability 进行解码</span></span><br><span class="line">[vagrant@localhost tmp]$ capsh --decode=0000003fffffffff</span><br><span class="line">0x0000003fffffffff=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,35,36,37</span><br></pre></td></tr></table></figure>
+
+<h2 id="runc项目中的应用"><a href="#runc项目中的应用" class="headerlink" title="runc项目中的应用"></a>runc项目中的应用</h2><p>runc的容器配置文件<code>spec.Process.Capabilities</code>可以定义各个能力集的能力，用来限制容器的能力。</p>
+<h2 id="docker中的应用"><a href="#docker中的应用" class="headerlink" title="docker中的应用"></a>docker中的应用</h2><p>docker默认情况下给容器去掉了一些比较危险的capabilities，比如<code>cap_sys_admin</code>。</p>
+<p>例如在docker中使用gdb命令默认是不允许的，这是因为docker已经将SYS_PTRACE相关的能力给去掉了。</p>
+<p>在docker中使用<code>--cap-add</code>和<code>--cap-drop</code>命令来增加和删除capabilities，</p>
+<p>可以使用<code>--privileged</code>赋予容器所有的capabilities，该操作谨慎使用。</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/wangpengqi/article/details/9821227">Linux的capability深入分析(1)</a></li>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/wangpengqi/article/details/9821231">Linux的capability深入分析(2)</a></li>
+<li><a target="_blank" rel="noopener" href="http://man7.org/linux/man-pages/man7/capabilities.7.html">Linux Programmer’s Manual CAPABILITIES</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzI0NjI4MDg5MQ==&mid=2715292188&idx=1&sn=2b7f26203aa594027550e324460bc901&chksm=cd6d15c8fa1a9cde757868fd34c8336433c4877d3e7689ed0a2bd90eb1ef6271bda97aa3bb03&mpshare=1&scene=1&srcid=12045vIwpmKLu97HvFOssitt%23rd">如何在Docker内部使用gdb调试器</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.docker.com/engine/reference/commandline/run/">docker run</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +337,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -323,7 +441,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -429,7 +547,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -546,7 +664,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -677,7 +795,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -773,7 +891,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -854,7 +972,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -952,7 +1070,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -1050,7 +1168,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
+      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
     </span>
 
   
@@ -1074,120 +1192,6 @@
 <li><code>-n</code> 将目录出栈时，不切换目录</li>
 </ul>
 <h2 id="example"><a href="#example" class="headerlink" title="example"></a>example</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost tmp]# mkdir /tmp/dir&#123;1,2,3,4&#125;</span><br><span class="line">[root@localhost tmp]# pushd /tmp/dir1</span><br><span class="line">/tmp/dir1 /tmp</span><br><span class="line">[root@localhost dir1]# pushd /tmp/dir2</span><br><span class="line">/tmp/dir2 /tmp/dir1 /tmp</span><br><span class="line">[root@localhost dir2]# pushd /tmp/dir3</span><br><span class="line">/tmp/dir3 /tmp/dir2 /tmp/dir1 /tmp</span><br><span class="line">[root@localhost dir3]# pushd /tmp/dir4</span><br><span class="line">/tmp/dir4 /tmp/dir3 /tmp/dir2 /tmp/dir1 /tmp</span><br><span class="line"># dirs的显示内容跟pushd完成后的输出一致</span><br><span class="line">[root@localhost dir4]# dirs</span><br><span class="line">/tmp/dir4 /tmp/dir3 /tmp/dir2 /tmp/dir1 /tmp</span><br><span class="line"></span><br><span class="line">[root@localhost dir4]# popd</span><br><span class="line">/tmp/dir3 /tmp/dir2 /tmp/dir1 /tmp</span><br><span class="line"></span><br><span class="line"># 带有数字比较容易出错</span><br><span class="line">[root@localhost dir3]# popd +1</span><br><span class="line">/tmp/dir3 /tmp/dir1 /tmp</span><br><span class="line"></span><br><span class="line"># 清除目录栈</span><br><span class="line">[root@localhost dir3]# dirs -c</span><br><span class="line">[root@localhost dir3]# dirs</span><br><span class="line">/tmp/dir3</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/overlayfs/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/overlayfs/" class="post-title-link" itemprop="url">理解OverlayFS</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-07-28 21:30:25" itemprop="dateCreated datePublished" datetime="2018-07-28T21:30:25+00:00">2018-07-28</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-19 14:10:42" itemprop="dateModified" datetime="2024-08-19T14:10:42+00:00">2024-08-19</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="docker-image结构"><a href="#docker-image结构" class="headerlink" title="docker image结构"></a>docker image结构</h2><p>docker可以通过命令<code>docker image inspect $&#123;image&#125;</code>来查看image的详细信息，其中包含了所使用的底层文件系统及各层的信息。</p>
-<p>docker container的存储结构分为了只读层、init层和可读写层。</p>
-<p>只读层跟docker image的层次结构恰好对应，主要包含操作系统的文件、配置、目录等信息，不包含操作系统镜像。</p>
-<p>init层在只读层和读写层中间，用来专门存放&#x2F;etc&#x2F;hosts &#x2F;etc&#x2F;resolv.conf等信息，这些文件往往需要在启动的时候写入一些指定值，但不期望<code>docker commit</code>命令对其进行提交。</p>
-<p>可读写层为容器在运行中可以进行写入的层。</p>
-<h2 id="overlay"><a href="#overlay" class="headerlink" title="overlay"></a>overlay</h2><p><img src="https://arkingc.github.io/img/in-post/post-docker-filesystem/overlay_constructs.jpg" alt="image"></p>
-<p>采用了两层结构，lowerdir为镜像层，只读。upperdir为容器层。</p>
-<p>每层都会在&#x2F;var&#x2F;run&#x2F;docker&#x2F;overlay创建一个文件夹，文件夹中为实际层的内容，文件采用硬链接的方式链接到真实层中的文件，每一层都包含该层该拥有的所有文件，而该文件的真实存储可能是采用硬链接的方式链接到上层中的真实文件，因此比较耗费inode。</p>
-<p>创建一个容器时，会新增两个目录，一个为读写层，一个为初始层。初始层中保存了容器初始化时的环境信息，如hostname、hosts文件等。读写层用于记录容器的所有改动。</p>
-<h2 id="overlay2"><a href="#overlay2" class="headerlink" title="overlay2"></a>overlay2</h2><p>为了规避overlay消耗inode节点过多的问题，overlay2采用在每层中增加lower文件的方式来记录所有底层的信息，类似于链表的形式。</p>
-<p><code>docker pull ubuntu</code></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost runc]# docker pull ubuntu</span><br><span class="line">Using default tag: latest</span><br><span class="line">latest: Pulling from library/ubuntu</span><br><span class="line">c64513b74145: Pull complete</span><br><span class="line">01b8b12bad90: Pull complete</span><br><span class="line">c5d85cf7a05f: Pull complete</span><br><span class="line">b6b268720157: Pull complete</span><br><span class="line">e12192999ff1: Pull complete</span><br><span class="line">Digest: sha256:3f119dc0737f57f704ebecac8a6d8477b0f6ca1ca0332c7ee1395ed2c6a82be7</span><br><span class="line">Status: Downloaded newer image for ubuntu:latest</span><br></pre></td></tr></table></figure>
-
-<p>会在&#x2F;var&#x2F;run&#x2F;docker&#x2F;overlay2目录下创建如下文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 2</span><br><span class="line">.</span><br><span class="line">|-- 664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672    // 第0层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   `-- link    // MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- 783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba    // 第2层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // HXATFASQ4E2JBG434DUEN54EZZ</span><br><span class="line">|   |-- lower   // l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- 89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6    // 第3层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // 5PHT7S3MCZTTQOXVPA4CKJRRFD</span><br><span class="line">|   |-- lower   // l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- backingFsBlockDev</span><br><span class="line">|-- bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68    // 第4层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // QMKHIPSDT4JTPE4FLT7QGJ33ND</span><br><span class="line">|   |-- lower   // l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">|-- cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3    // 第1层</span><br><span class="line">|   |-- diff</span><br><span class="line">|   |-- link    // WUZC5WSTQTPJUJ4KFAYCUT5IPD</span><br><span class="line">|   |-- lower   // l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|   |-- merged</span><br><span class="line">|   `-- work</span><br><span class="line">`-- l</span><br><span class="line">    |-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff</span><br><span class="line">    |-- HXATFASQ4E2JBG434DUEN54EZZ -&gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff</span><br><span class="line">    |-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff</span><br><span class="line">    |-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff</span><br><span class="line">    `-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff</span><br></pre></td></tr></table></figure>
-
-<p>l目录下为超链接，缩短后的目录，为了避免mount时超出页大小限制。</p>
-<p>每一层中的diff文件夹包含实际内容。</p>
-<p>每一层中都有一个link文件，内容为l目录中的超链接，超链接实际指向当前层目录中的diff文件夹。</p>
-<p>除去最底层的目录外，其余每一层中包含一个lower文件，包含了该层的所有更底层名称和顺序，可以根据该文件构建出整个镜像的层次结构。</p>
-<p>work目录用于OverlayFS内部使用。</p>
-<p>最底层只有link文件，无lower文件，因此664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672为最底层。</p>
-<p>以上五层为lower，只读。</p>
-<p>当使用<code>docker run -it ubuntu:latest /bin/bash</code>启动一个容器后，在overlay2目录下会多出两个文件夹。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 1 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08 l</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">|-- diff</span><br><span class="line">|-- link    // ZJVMGTB2IOJ6QF57TYM5O7EWXW</span><br><span class="line">|-- lower   // l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">|-- diff</span><br><span class="line">|-- link</span><br><span class="line">|-- lower   // l/ZJVMGTB2IOJ6QF57TYM5O7EWXW:l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">l</span><br><span class="line">|-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff</span><br><span class="line">|-- AOLYGFOHIAHWU5CBAJFULNAXI7 -&gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/diff</span><br><span class="line">|-- HXATFASQ4E2JBG434DUEN54EZZ -&gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff</span><br><span class="line">|-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff</span><br><span class="line">|-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff</span><br><span class="line">|-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff</span><br><span class="line">`-- ZJVMGTB2IOJ6QF57TYM5O7EWXW -&gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init/diff</span><br></pre></td></tr></table></figure>
-
-<p><code>0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</code>用于存放容器初始化时的信息，通过下面查看更直观。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init</span><br><span class="line">|-- diff</span><br><span class="line">|   |-- dev</span><br><span class="line">|   |   `-- console</span><br><span class="line">|   `-- etc</span><br><span class="line">|       |-- hostname</span><br><span class="line">|       |-- hosts</span><br><span class="line">|       |-- mtab -&gt; /proc/mounts</span><br><span class="line">|       `-- resolv.conf</span><br><span class="line">|-- link</span><br><span class="line">|-- lower</span><br><span class="line">|-- merged</span><br><span class="line">`-- work</span><br><span class="line">    `-- work</span><br></pre></td></tr></table></figure>
-
-<p><code>0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</code>的直接底层为init层，更详细的目录结构如下。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# tree -L 2  0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08</span><br><span class="line">|-- diff</span><br><span class="line">|-- link</span><br><span class="line">|-- lower</span><br><span class="line">|-- merged</span><br><span class="line">|   |-- bin</span><br><span class="line">|   |-- boot</span><br><span class="line">|   |-- dev</span><br><span class="line">|   |-- etc</span><br><span class="line">|   |-- home</span><br><span class="line">|   |-- lib</span><br><span class="line">|   |-- lib64</span><br><span class="line">|   |-- media</span><br><span class="line">|   |-- mnt</span><br><span class="line">|   |-- opt</span><br><span class="line">|   |-- proc</span><br><span class="line">|   |-- root</span><br><span class="line">|   |-- run</span><br><span class="line">|   |-- sbin</span><br><span class="line">|   |-- srv</span><br><span class="line">|   |-- sys</span><br><span class="line">|   |-- tmp</span><br><span class="line">|   |-- usr</span><br><span class="line">|   `-- var</span><br><span class="line">`-- work</span><br><span class="line">    `-- work</span><br></pre></td></tr></table></figure>
-
-<p>merged文件夹中内容较多，为overlay2的直接挂载点，对容器的修改会反应到该目录中。例如在容器中增加&#x2F;root&#x2F;hello.txt文件，在merged目录下会增加root&#x2F;hello.txt文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost overlay2]# mount  | grep overlay2</span><br><span class="line">/dev/mapper/centos-root on /var/lib/docker/overlay2 type xfs (rw,relatime,attr2,inode64,noquota)</span><br><span class="line">overlay on /var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/merged type overlay (rw,relatime,lowerdir=/var/lib/docker/overlay2/l/ZJVMGTB2IOJ6QF57TYM5O7EWXW:/var/lib/docker/overlay2/l/QMKHIPSDT4JTPE4FLT7QGJ33ND:/var/lib/docker/overlay2/l/5PHT7S3MCZTTQOXVPA4CKJRRFD:/var/lib/docker/overlay2/l/HXATFASQ4E2JBG434DUEN54EZZ:/var/lib/docker/overlay2/l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:/var/lib/docker/overlay2/l/MZUEUOFHBNVTRCJYJEG7QY4VWT,upperdir=/var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/diff,workdir=/var/lib/docker/overlay2/0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/work)</span><br></pre></td></tr></table></figure>
-
-<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://docs.docker.com/storage/storagedriver/overlayfs-driver/">Use the OverlayFS storage driver</a></li>
-<li><a target="_blank" rel="noopener" href="https://arkingc.github.io/2017/05/05/docker-filesystem-overlay/">Docker存储驱动—Overlay&#x2F;Overlay2「译」</a></li>
-</ul>
 
       
     </div>
