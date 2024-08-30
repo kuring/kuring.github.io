@@ -219,7 +219,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
     </span>
 
   
@@ -337,7 +337,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
     </span>
 
   
@@ -405,7 +405,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/namespace_mount/">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/namespace_mount/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -423,7 +423,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/post/namespace_mount/" class="post-title-link" itemprop="url">docker基础知识之mount namespace</a>
+          <a href="/namespace_mount/" class="post-title-link" itemprop="url">docker基础知识之mount namespace</a>
         </h2>
 
         <div class="post-meta-container">
@@ -441,7 +441,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
     </span>
 
   
@@ -454,14 +454,49 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <p>在使用CLONE_NEWNS来创建新的mount namespace时，子进程会共享父进程的文件系统，如果子进程执行了新的mount操作，仅会影响到子进程自身，不会对父进程造成影响。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">#define _GNU_SOURCE</span><br><span class="line">#include &lt;sys/types.h&gt;</span><br><span class="line">#include &lt;sys/wait.h&gt;</span><br><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;sched.h&gt;</span><br><span class="line">#include &lt;signal.h&gt;</span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line"></span><br><span class="line">/* 定义一个给 clone 用的栈，栈大小1M */</span><br><span class="line">#define STACK_SIZE (1024 * 1024)</span><br><span class="line">static char container_stack[STACK_SIZE];</span><br><span class="line"></span><br><span class="line">char* const container_args[] = &#123;</span><br><span class="line">    &quot;/bin/bash&quot;,</span><br><span class="line">    NULL</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">int container_main(void* arg)</span><br><span class="line">&#123;</span><br><span class="line">    printf(&quot;Container [%5d] - inside the container!\n&quot;, getpid());</span><br><span class="line">    sethostname(&quot;container&quot;,10);</span><br><span class="line">    /* 重新mount proc文件系统到 /proc下 */</span><br><span class="line">    system(&quot;mount -t proc proc /proc&quot;);</span><br><span class="line">    execv(container_args[0], container_args);</span><br><span class="line">    printf(&quot;Something&#x27;s wrong!\n&quot;);</span><br><span class="line">    return 1;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">    printf(&quot;Parent - start a container!\n&quot;);</span><br><span class="line">    int container_pid = clone(container_main, container_stack+STACK_SIZE,</span><br><span class="line">            CLONE_NEWUTS | CLONE_NEWPID | CLONE_NEWNS | SIGCHLD, NULL); /*启用CLONE_NEWUTS Namespace隔离 */</span><br><span class="line">    waitpid(container_pid, NULL, 0);</span><br><span class="line">    printf(&quot;Parent - container stopped!\n&quot;);</span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          <p>Mount Namespace 是 Linux 下的一种挂载隔离机制，可以实现不同的进程拥有独立的挂载视图，各挂载点之间相互不受影响。</p>
+<h1 id="mount-namespace-基本用法"><a href="#mount-namespace-基本用法" class="headerlink" title="mount namespace 基本用法"></a>mount namespace 基本用法</h1><p>Linux 启动时会创建一个默认的 mount namespace，在使用 clone() 或者 unshare() 系统调用通过 CLONE_NEWNS 会创建出新的 mount namespace。因为是第一个加入到 Linux 内核的中的 namespace，CLONE_NEWNS 的取名并不是太合理。</p>
+<p>每个进程的挂载信息保存在了 <code>/proc/&lt;pid&gt;/&#123;mountinfo,mounts,mountstats&#125;</code> 中。</p>
+<p>使用如下命令可以看到一个进程对应的 mount namespace 名称。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#ll /proc/$$/ns/mnt</span><br><span class="line">lrwxrwxrwx 1 root root 0 Aug 30 00:02 /proc/94832/ns/mnt -&gt; mnt:[4026531840]</span><br></pre></td></tr></table></figure>
 
-<p>执行效果：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@centos7 docker_learn]# ./mount</span><br><span class="line">Parent - start a container!</span><br><span class="line">Container [    1] - inside the container!</span><br><span class="line"></span><br><span class="line"># 由于ps是读取的/proc目录下的文件来显示当前系统系统的进程，新进程挂载/proc目录到新的proc文件系统，自然看不到父进程的/proc目录了</span><br><span class="line">[root@container docker_learn]# ps -ef</span><br><span class="line">UID         PID   PPID  C STIME TTY          TIME CMD</span><br><span class="line">root          1      0  0 22:20 pts/3    00:00:00 /bin/bash</span><br><span class="line">root         30      1  0 22:20 pts/3    00:00:00 ps -ef</span><br></pre></td></tr></table></figure>
+<p>可以使用 unshare 命令来创建一个新的命名空间，执行如下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># 创建新的命名空间，此时会继承当前 mount namespace 的挂载点信息</span><br><span class="line">unshare --mount --fork --pid --mount-proc /bin/bash</span><br><span class="line"># 创建新的挂载点并挂载，执行完成后可以看到新的挂载点存在</span><br><span class="line">mkdir /mnt/new_mount</span><br><span class="line">mount -t tmpfs tmpfs /mnt/new_mount</span><br><span class="line"># 查看新的挂载点</span><br><span class="line">df -h | grep new_mount</span><br></pre></td></tr></table></figure>
 
-<p>但是在容器技术中，在容器中不应该看到宿主机上挂载的目录。在Linux中使用chroot技术来实现，在容器中将<code>/</code>挂载到指定目录，这样在容器中就看不到宿主机上的其他挂载项。在容器技术中，chroot所使用的目录即容器镜像的目录。容器镜像中并不包含操作系统的内核。</p>
-<p>mount namespace是Linux中第一个namespace，是基于chroot技术改良而来。</p>
+<p>新打开一个终端，切换回原始的命名空间，可以看到挂载点并不存在。</p>
+<h1 id="mount-namespace-的-shared-subtree"><a href="#mount-namespace-的-shared-subtree" class="headerlink" title="mount namespace 的 shared subtree"></a>mount namespace 的 shared subtree</h1><p>mount namespace 实现了挂载点的隔离，但在很多创建下又希望能够在不同的 namespace 下共享挂载点。<a target="_blank" rel="noopener" href="https://www.kernel.org/doc/Documentation/filesystems/sharedsubtree.txt">shared subtree</a> 机制允许在 mount namespace 之间自动的或者受控的传播  mount 和 umount 事件。</p>
+<blockquote>
+<p>注意：该处理解起来比较绕。在创建 mount namespace 和挂载目录的时候分别可以指定参数。</p>
+</blockquote>
+<p>在做单个目录挂载的时候通过指定传播类型来指定的不同隔离行为，支持如下的值：</p>
+<ul>
+<li>private：挂载点不会传播到其他命名空间，默认类型。</li>
+<li>shared：挂载点会传播到共享这个挂载点的其他命名空间。</li>
+<li>slave：挂载点不会传播到另一个命名空间，但其他命名空间的传播会影响到这个挂载点。</li>
+<li>unbindable：挂载点不能被移动。</li>
+<li>rprivate：递归地将挂载点及其子挂载点设置为 private。</li>
+<li>rshared：递归地将挂载点及其子挂载点设置为 shared。</li>
+<li>rslave：递归地将挂载点及其子挂载点设置为 slave。</li>
+</ul>
+<p>mount 在挂载目录的时候可以指定如下参数：</p>
+<ol>
+<li>–make-rshared：将挂载方式设置为 rshared。</li>
+<li>–make-rslave：将挂载方式设置为 rslave。</li>
+<li>–make-rprivate：将挂载方式设置为 rprivate。</li>
+<li>–make-runbindable：将挂载方式设置为不可移动。</li>
+</ol>
+<p>可以通过 <code>findmnt -o TARGET,PROPAGATION</code> 命令查看到当前 mount namespace 下的挂载点的 shared subtree 属性。但该命令无法区分出 shared 和 rshared 属性。</p>
+<p>unshare 命令在创建新的 mount namespace 时通过选项 <code>--propagation</code>来指定新创建的 mount namespace 中所有挂载点的共享方式。支持如下值：</p>
+<ol>
+<li>private：新创建的 mount namespace 中的所有挂载点的 shared subtrees 属性全部为 private。默认值。</li>
+<li>shared：新创建的 mount namespace 中的挂载点的 shared subtrees 属性全部为 share。</li>
+<li>slave：新创建的 mount namespace 中的挂载点的 shared subtrees 属性全部为 slave。</li>
+<li>unchanged：新创建的 mount namespace 中的挂载点的 shared subtrees 属性保持不变。</li>
+</ol>
+<p>在上面的例子中可以通过指定为 rshared 的模式来查看效果。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># 创建新的命名空间</span><br><span class="line">unshare --mount --fork --pid --mount-proc /bin/bash</span><br><span class="line"></span><br><span class="line"># 创建新的挂载点并挂载，执行完成后可以看到新的挂载点存在</span><br><span class="line">mount --make-rshared /</span><br><span class="line"></span><br><span class="line"># 查看新的挂载点</span><br><span class="line">df -h | grep new_mount</span><br></pre></td></tr></table></figure>
+
+<h1 id="mount-namespace-在容器技术中的应用"><a href="#mount-namespace-在容器技术中的应用" class="headerlink" title="mount namespace 在容器技术中的应用"></a>mount namespace 在容器技术中的应用</h1><p>在容器技术中，在容器中不应该看到宿主机上挂载的目录。在Linux中使用chroot技术来实现，在容器中将<code>/</code>挂载到指定目录，这样在容器中就看不到宿主机上的其他挂载项。在容器技术中，chroot所使用的目录即容器镜像的目录。容器镜像中并不包含操作系统的内核。</p>
 <h2 id="Docker-Volume"><a href="#Docker-Volume" class="headerlink" title="Docker Volume"></a>Docker Volume</h2><p>为了解决容器中能够访问宿主机上文件的问题，docker引入了Volume机制，将宿主机上指定的文件或者目录挂载到容器中。而整个的docker Volume机制跟mount namespace的关系不太大。</p>
 <p>Volume用到的技术为Linux的绑定挂载机制，该机制将一个指定的目录或者文件挂载到一个指定的目录上。</p>
 <p>容器启动顺序如下：</p>
@@ -484,7 +519,10 @@
 <p>rootfs在最下层为docker镜像的只读层。</p>
 <p>rootfs之上为dockerinit进程自己添加的init层，用来存放dockerinit添加或者修改的&#x2F;etc&#x2F;hostname等文件。</p>
 <p>rootfs的最上层为可读写层，以Copy-On-Write的方式存放任何对只读层的修改，容器声明的volume挂载点也出现这一层。</p>
-<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><p>极客时间-深入剖析Kubernetes-08</p>
+<h1 id="mount-namespace-在-k8s-中应用"><a href="#mount-namespace-在-k8s-中应用" class="headerlink" title="mount namespace 在 k8s 中应用"></a>mount namespace 在 k8s 中应用</h1><p>在 k8s 中可以通过 volumeMounts 中的参数 mountPropagation 来指定挂载的参数。</p>
+<h2 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h2><ul>
+<li>极客时间-深入剖析Kubernetes-08</li>
+</ul>
 
       
     </div>
@@ -547,7 +585,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
     </span>
 
   
@@ -664,7 +702,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
     </span>
 
   
@@ -795,7 +833,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
     </span>
 
   
@@ -891,7 +929,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
     </span>
 
   
@@ -972,7 +1010,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
     </span>
 
   
@@ -1070,7 +1108,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
     </span>
 
   
@@ -1168,7 +1206,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-20 16:25:14" itemprop="dateModified" datetime="2024-08-20T16:25:14+00:00">2024-08-20</time>
+      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
     </span>
 
   
