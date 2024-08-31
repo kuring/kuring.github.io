@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">245</span>
+          <span class="site-state-item-count">246</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,92 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/relay-auto-login/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/relay-auto-login/" class="post-title-link" itemprop="url">自动通过跳板机登录到其他服务器</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-05-17 16:04:01" itemprop="dateCreated datePublished" datetime="2017-05-17T16:04:01+00:00">2017-05-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>最近公司需要首先登录跳板机relay，然后通过跳板机才能登录服务器，操作上略显麻烦。为了节省登录服务器的时间，我编写了一个简单的脚本来简化登录操作。</p>
+<p>实现效果为在本地terminal下，执行<code>wrelay $host</code>，即可自动登录到相应的主机。</p>
+<h1 id="在relay服务器上增加对其他服务器的免登录命令"><a href="#在relay服务器上增加对其他服务器的免登录命令" class="headerlink" title="在relay服务器上增加对其他服务器的免登录命令"></a>在relay服务器上增加对其他服务器的免登录命令</h1><p>在relay服务器上ssh到其他主机时需要输入密码，使用expect命令来登录到其他主机时通过expect脚本来实现自动输入密码并登录的功能。</p>
+<p>在&#x2F;home&#x2F;$user目录下新建mybin文件夹，并将mybin文件夹添加到$PATH环境变量中，具体修改方法不展开。</p>
+<p>在mybin目录下增加gw脚本，内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/expect</span><br><span class="line"></span><br><span class="line">if &#123;$argc &lt; 1&#125; &#123;</span><br><span class="line">    puts &quot;Usage:cmd &lt;host&gt;&quot;</span><br><span class="line">    exit 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">set host [lindex $argv 0]</span><br><span class="line"># 在这里填写要登录的用户</span><br><span class="line">set username &quot;worker&quot;</span><br><span class="line"># 在这里填写要登录的密码</span><br><span class="line">set password &quot;worker&quot;</span><br><span class="line"></span><br><span class="line">spawn ssh $username@$host</span><br><span class="line">set timeout 2</span><br><span class="line">expect &#123;</span><br><span class="line">    &quot;*password:&quot; &#123;</span><br><span class="line">        send &quot;$password\n&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &quot;Are you sure you want to continue connecting (yes/no)?&quot; &#123;</span><br><span class="line">        send &quot;yes\r&quot;</span><br><span class="line">        exp_continue</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">expect &quot;*#&quot;</span><br><span class="line">interact</span><br></pre></td></tr></table></figure>
+
+<p>执行<code>gw 10.1.1.8</code>，即可登录到对应的主机上。</p>
+<h1 id="本地主机免登录relay服务器，并自动登录到对应的服务器"><a href="#本地主机免登录relay服务器，并自动登录到对应的服务器" class="headerlink" title="本地主机免登录relay服务器，并自动登录到对应的服务器"></a>本地主机免登录relay服务器，并自动登录到对应的服务器</h1><p>在本地自动登录relay主机同样使用expect的方式，脚本名称为wrelay，内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/expect</span><br><span class="line"></span><br><span class="line">if &#123;$argc &lt; 1&#125; &#123;</span><br><span class="line">    puts &quot;Usage:cmd &lt;remote_host&gt;&quot;</span><br><span class="line">    exit 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># 下面指定relay主机</span><br><span class="line">set host &quot;relay.name&quot;</span><br><span class="line"># 这里输入relay的用户名</span><br><span class="line">set username &quot;&quot;</span><br><span class="line"># 这里输入relay的密码</span><br><span class="line">set password &quot;&quot;</span><br><span class="line">set remote_host [lindex $argv 0]</span><br><span class="line"></span><br><span class="line">spawn ssh $username@$host</span><br><span class="line">set timeout 2</span><br><span class="line">expect &#123;</span><br><span class="line">    &quot;*password:&quot; &#123;</span><br><span class="line">        send &quot;$password\n&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &quot;Are you sure you want to continue connecting (yes/no)?&quot; &#123;</span><br><span class="line">        send &quot;yes\r&quot;</span><br><span class="line">        exp_continue</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">expect &quot;*#&quot;</span><br><span class="line"></span><br><span class="line">sleep 0.1</span><br><span class="line"># 在relay上自动登录到其他服务器主机</span><br><span class="line">send &quot;gw $remote_host\n&quot;</span><br><span class="line">interact</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +305,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -314,7 +400,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -394,7 +480,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -485,7 +571,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -590,7 +676,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -712,7 +798,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -816,7 +902,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -907,7 +993,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -996,7 +1082,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -1023,115 +1109,6 @@
 <p>我在此次事件中并没有第一时间作出应有的反应，这点我需要反省。首先，我见到母亲签字后没有跟骗子要一下工作证明，这样子至少让骗子没这么容易得逞，给我的反驳增加大大的筹码。其次，没有阻拦母亲给骗子送钱，按照我的意思是跟骗子死缠到底的，毕竟是在我家，给不给钱也是我的自由。但我怕在家里生活时间不长，骗子的规矩我不懂，还是顺从了母亲的行为。</p>
 <p>之所以写这篇文章是想梳理下农民身上的共同缺点及我身上的缺点。我不是歧视农民，我是农村出来的，我知道农村人的辛苦，忙起来的时候他们的辛苦程度是我等码农不能企及的。</p>
 <p>在这里为广大奋斗在田地里的农民致敬！</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/saltstack/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/saltstack/" class="post-title-link" itemprop="url">SaltStack使用</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-08-21 00:00:00" itemprop="dateCreated datePublished" datetime="2015-08-21T00:00:00+00:00">2015-08-21</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>本文在学习saltstack的过程中编写，内容比较基础，方便使用时查阅命令。</p>
-<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>为了方便起见，直接采用yum的安装方式，centos源中并没有salt，需要手工添加一下。</p>
-<h2 id="CentOS-7"><a href="#CentOS-7" class="headerlink" title="CentOS 7"></a>CentOS 7</h2><p>安装master</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpm -Uvh http://ftp.jaist.ac.jp/pub/Linux/Fedora/epel/7/x86_64/e/epel-release-7-5.noarch.rpm</span><br><span class="line">yum install salt-master</span><br></pre></td></tr></table></figure>
-
-<p>修改&#x2F;etc&#x2F;salt&#x2F;master配置文件，在其中指定salt文件根目录位置，默认路径为&#x2F;srv&#x2F;salt&#x2F;。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">file_roots:</span><br><span class="line">  base:</span><br><span class="line">    - /svr/salt/</span><br></pre></td></tr></table></figure>
-
-<p>salt在安装的时候已经创建了systemctl命令启动程序需要的service文件，位于&#x2F;usr&#x2F;lib&#x2F;systemd&#x2F;system&#x2F;salt-master.service，重启<code>systemctl restart salt-master.service</code>生效。</p>
-<h2 id="CentOS-6-5"><a href="#CentOS-6-5" class="headerlink" title="CentOS 6.5"></a>CentOS 6.5</h2><p>安装minion</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpm -Uvh http://ftp.linux.ncsu.edu/pub/epel/6/i386/epel-release-6-8.noarch.rpm</span><br><span class="line">yum install salt-minion</span><br></pre></td></tr></table></figure>
-
-<p>修改&#x2F;etc&#x2F;salt&#x2F;minion配置文件，在其中指定master主机的地址</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">master: 192.168.204.128</span><br></pre></td></tr></table></figure>
-
-<p>执行<code>service salt-minion restart</code>对服务进行重启。</p>
-<h2 id="连通性测试"><a href="#连通性测试" class="headerlink" title="连通性测试"></a>连通性测试</h2><p>执行<code>salt-key -L</code>命令可以看到已认证和未认证的minion，执行<code>salt-key -a 192.168.204.149</code>可接收minion。</p>
-<p>在master主机中执行<code>salt &#39;*&#39; test.ping</code>可测试连接的minion主机。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">➜  stats  salt-key -L</span><br><span class="line">Accepted Keys:</span><br><span class="line">Denied Keys:</span><br><span class="line">Unaccepted Keys:</span><br><span class="line">192.168.204.149</span><br><span class="line">Rejected Keys:</span><br><span class="line"></span><br><span class="line">➜  stats  salt-key -a 192.168.204.149</span><br><span class="line">The following keys are going to be accepted:</span><br><span class="line">Unaccepted Keys:</span><br><span class="line">192.168.204.149</span><br><span class="line">Proceed? [n/Y] y</span><br><span class="line">Key for minion 192.168.204.149 accepted.</span><br><span class="line"></span><br><span class="line">➜  stats  salt &#x27;*&#x27; test.ping</span><br><span class="line">192.168.204.149:</span><br><span class="line">    True</span><br></pre></td></tr></table></figure>
-
-<h1 id="state"><a href="#state" class="headerlink" title="state"></a>state</h1><p>可以通过预先定义好的sls文件对被控主机进行管理，这里演示一个简单的文件复制的例子，该例子可以将master主机上的vimrc文件复制到目标主机上。</p>
-<p>在master主机的&#x2F;svr&#x2F;salt&#x2F;edit目录下新建vim.sls文件，文件内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/etc/vimrc:</span><br><span class="line">  file.managed:</span><br><span class="line">    - source: salt://edit/vimrc</span><br><span class="line">    - mode: 644</span><br><span class="line">    - user: root</span><br><span class="line">    - group: root</span><br></pre></td></tr></table></figure>
-
-<p>另外在edit目录下需要存在一个空的init.sls，以确保state.sls可以找到该目录下的sls文件。同时该目录下还需要存在要复制的vimrc文件。</p>
-<p>执行<code>salt &#39;*&#39; state.sls edit.vim</code>即可以执行该命令。</p>
-<p>如果将vim.sls更改为init.sls文件，执行<code>salt &#39;*&#39; state.sls edit</code>命令即可。</p>
-<h1 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h1><p>salt ‘192.168.204.149’ cmd.run ‘free -m’</p>
-<p>salt ‘192.168.204.149’ sys.list_modules  列出minion支持哪些模块，默认已经支持很多模块</p>
-<p>salt ‘192.168.204.149’ cp.get_file salt:&#x2F;&#x2F;test_file &#x2F;root&#x2F;test_file  将master主机file_roots目录下的文件复制到minion任意目录下，该命令不可以将master主机任意目录下的文件进行复制</p>
-<p>salt ‘192.168.204.149’ cp.get_dir salt:&#x2F;&#x2F;test_dir&#x2F; &#x2F;root&#x2F; 实验未成功</p>
-<p>salt ‘*’ file.mkdir dir_path&#x3D;&#x2F;root&#x2F;test_dir user&#x3D;root group&#x3D;root mode&#x3D;700  在minion主机上创建目录s</p>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p>*<a target="_blank" rel="noopener" href="http://docs.saltstack.com/en/latest/topics/index.html">saltstack官方文档</a></p>
-<p>*《python自动化运维技术与最佳实践》</p>
 
       
     </div>

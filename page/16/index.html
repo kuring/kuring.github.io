@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">245</span>
+          <span class="site-state-item-count">246</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,115 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/saltstack/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/saltstack/" class="post-title-link" itemprop="url">SaltStack使用</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2015-08-21 00:00:00" itemprop="dateCreated datePublished" datetime="2015-08-21T00:00:00+00:00">2015-08-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>本文在学习saltstack的过程中编写，内容比较基础，方便使用时查阅命令。</p>
+<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>为了方便起见，直接采用yum的安装方式，centos源中并没有salt，需要手工添加一下。</p>
+<h2 id="CentOS-7"><a href="#CentOS-7" class="headerlink" title="CentOS 7"></a>CentOS 7</h2><p>安装master</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpm -Uvh http://ftp.jaist.ac.jp/pub/Linux/Fedora/epel/7/x86_64/e/epel-release-7-5.noarch.rpm</span><br><span class="line">yum install salt-master</span><br></pre></td></tr></table></figure>
+
+<p>修改&#x2F;etc&#x2F;salt&#x2F;master配置文件，在其中指定salt文件根目录位置，默认路径为&#x2F;srv&#x2F;salt&#x2F;。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">file_roots:</span><br><span class="line">  base:</span><br><span class="line">    - /svr/salt/</span><br></pre></td></tr></table></figure>
+
+<p>salt在安装的时候已经创建了systemctl命令启动程序需要的service文件，位于&#x2F;usr&#x2F;lib&#x2F;systemd&#x2F;system&#x2F;salt-master.service，重启<code>systemctl restart salt-master.service</code>生效。</p>
+<h2 id="CentOS-6-5"><a href="#CentOS-6-5" class="headerlink" title="CentOS 6.5"></a>CentOS 6.5</h2><p>安装minion</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpm -Uvh http://ftp.linux.ncsu.edu/pub/epel/6/i386/epel-release-6-8.noarch.rpm</span><br><span class="line">yum install salt-minion</span><br></pre></td></tr></table></figure>
+
+<p>修改&#x2F;etc&#x2F;salt&#x2F;minion配置文件，在其中指定master主机的地址</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">master: 192.168.204.128</span><br></pre></td></tr></table></figure>
+
+<p>执行<code>service salt-minion restart</code>对服务进行重启。</p>
+<h2 id="连通性测试"><a href="#连通性测试" class="headerlink" title="连通性测试"></a>连通性测试</h2><p>执行<code>salt-key -L</code>命令可以看到已认证和未认证的minion，执行<code>salt-key -a 192.168.204.149</code>可接收minion。</p>
+<p>在master主机中执行<code>salt &#39;*&#39; test.ping</code>可测试连接的minion主机。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">➜  stats  salt-key -L</span><br><span class="line">Accepted Keys:</span><br><span class="line">Denied Keys:</span><br><span class="line">Unaccepted Keys:</span><br><span class="line">192.168.204.149</span><br><span class="line">Rejected Keys:</span><br><span class="line"></span><br><span class="line">➜  stats  salt-key -a 192.168.204.149</span><br><span class="line">The following keys are going to be accepted:</span><br><span class="line">Unaccepted Keys:</span><br><span class="line">192.168.204.149</span><br><span class="line">Proceed? [n/Y] y</span><br><span class="line">Key for minion 192.168.204.149 accepted.</span><br><span class="line"></span><br><span class="line">➜  stats  salt &#x27;*&#x27; test.ping</span><br><span class="line">192.168.204.149:</span><br><span class="line">    True</span><br></pre></td></tr></table></figure>
+
+<h1 id="state"><a href="#state" class="headerlink" title="state"></a>state</h1><p>可以通过预先定义好的sls文件对被控主机进行管理，这里演示一个简单的文件复制的例子，该例子可以将master主机上的vimrc文件复制到目标主机上。</p>
+<p>在master主机的&#x2F;svr&#x2F;salt&#x2F;edit目录下新建vim.sls文件，文件内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/etc/vimrc:</span><br><span class="line">  file.managed:</span><br><span class="line">    - source: salt://edit/vimrc</span><br><span class="line">    - mode: 644</span><br><span class="line">    - user: root</span><br><span class="line">    - group: root</span><br></pre></td></tr></table></figure>
+
+<p>另外在edit目录下需要存在一个空的init.sls，以确保state.sls可以找到该目录下的sls文件。同时该目录下还需要存在要复制的vimrc文件。</p>
+<p>执行<code>salt &#39;*&#39; state.sls edit.vim</code>即可以执行该命令。</p>
+<p>如果将vim.sls更改为init.sls文件，执行<code>salt &#39;*&#39; state.sls edit</code>命令即可。</p>
+<h1 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h1><p>salt ‘192.168.204.149’ cmd.run ‘free -m’</p>
+<p>salt ‘192.168.204.149’ sys.list_modules  列出minion支持哪些模块，默认已经支持很多模块</p>
+<p>salt ‘192.168.204.149’ cp.get_file salt:&#x2F;&#x2F;test_file &#x2F;root&#x2F;test_file  将master主机file_roots目录下的文件复制到minion任意目录下，该命令不可以将master主机任意目录下的文件进行复制</p>
+<p>salt ‘192.168.204.149’ cp.get_dir salt:&#x2F;&#x2F;test_dir&#x2F; &#x2F;root&#x2F; 实验未成功</p>
+<p>salt ‘*’ file.mkdir dir_path&#x3D;&#x2F;root&#x2F;test_dir user&#x3D;root group&#x3D;root mode&#x3D;700  在minion主机上创建目录s</p>
+<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p>*<a target="_blank" rel="noopener" href="http://docs.saltstack.com/en/latest/topics/index.html">saltstack官方文档</a></p>
+<p>*《python自动化运维技术与最佳实践》</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +328,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -312,7 +421,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -414,7 +523,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -584,7 +693,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -672,7 +781,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -890,7 +999,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -968,7 +1077,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -1063,7 +1172,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -1154,7 +1263,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
+      <time title="Modified: 2024-08-31 09:27:11" itemprop="dateModified" datetime="2024-08-31T09:27:11+00:00">2024-08-31</time>
     </span>
 
   
@@ -1187,94 +1296,6 @@
 <p>给定一个单链表的头部节点head，链表长度为N。 如果N为偶数，那么前N&#x2F;2个节点算作左半区，后N&#x2F;2个节点算作右半区； 如果N为奇数，那么前N&#x2F;2个节点算作左半区，后N&#x2F;2+1个节点算作右半区； 左半区从左到右依次记为L1-&gt;L2-&gt;…，右半区从左到右依次记为R1-&gt;R2-&gt;…。请将单链表调整成L1-&gt;R1-&gt;L2-&gt;R2-&gt;…的样子。 例如： 1-&gt;2-&gt;3-&gt;4 调整后：1-&gt;3-&gt;2-&gt;4 1-&gt;2-&gt;3-&gt;4-&gt;5 调整后：1-&gt;3-&gt;2-&gt;4-&gt;5 要求：如果链表长度为N，时间复杂度请达到O(N)，额外空间复杂度请达到O(1)</p>
 </blockquote>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">relocateList</span><span class="params">(<span class="keyword">struct</span> ListNode* head)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (head == <span class="literal">NULL</span> || head-&gt;next == <span class="literal">NULL</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">return</span> ;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// use one loop, find the right head</span></span><br><span class="line">        ListNode *right_head = head;</span><br><span class="line">        ListNode *node = head;</span><br><span class="line">        <span class="keyword">while</span> (node != <span class="literal">NULL</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span> (node-&gt;next == <span class="literal">NULL</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (node-&gt;next-&gt;next == <span class="literal">NULL</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                right_head = right_head-&gt;next;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            right_head = right_head-&gt;next;</span><br><span class="line">            node = node-&gt;next-&gt;next;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        ListNode *left_node = head;</span><br><span class="line">        ListNode *right_node = right_head;</span><br><span class="line">        <span class="keyword">while</span> (left_node-&gt;next != right_head)</span><br><span class="line">        &#123;</span><br><span class="line">            ListNode *tmp = left_node-&gt;next;</span><br><span class="line">            left_node-&gt;next = right_node;</span><br><span class="line">            right_node = right_node-&gt;next;</span><br><span class="line">            left_node-&gt;next-&gt;next = tmp;</span><br><span class="line">            left_node = left_node-&gt;next-&gt;next;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        left_node-&gt;next = right_node;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/majority_element/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/majority_element/" class="post-title-link" itemprop="url">leetcode题目之Majority Element</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-03-11 00:00:00" itemprop="dateCreated datePublished" datetime="2015-03-11T00:00:00+00:00">2015-03-11</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-08-30 03:26:49" itemprop="dateModified" datetime="2024-08-30T03:26:49+00:00">2024-08-30</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h1><blockquote>
-<p>Given an array of size n, find the majority element. The majority element is the element that appears more than ⌊ n&#x2F;2 ⌋ times.<br>You may assume that the array is non-empty and the majority element always exist in the array.</p>
-</blockquote>
-<h1 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h1><p>本题是一道非常简单的题目，但我能想到的思路有限，仅能想到排序法和哈希法两种算法，在Solution中提供了另外几种方法，这是非常值得我学习和思考的。本文仅将网站的思路拿过来，可以直接看该问题的<a target="_blank" rel="noopener" href="https://leetcode.com/problems/majority-element/solution/">Solution</a>。</p>
-<h1 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h1><h2 id="暴力枚举法"><a href="#暴力枚举法" class="headerlink" title="暴力枚举法"></a>暴力枚举法</h2><p>最原始的解决办法，逐个元素比较是否为该数组中的最多元素，只要满足条件即可终止。时间复杂度为O(n^2)。</p>
-<h2 id="哈希表法"><a href="#哈希表法" class="headerlink" title="哈希表法"></a>哈希表法</h2><p>将数组中的元素遍历一遍，并将数组中元素的个数保存到哈希中。然后遍历哈希，从哈希中找到最多元素。时间复杂度O(n)，但需要占用一定的空间。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">majorityElement</span><span class="params">(vector&lt;<span class="type">int</span>&gt; &amp;num)</span> </span>&#123;</span><br><span class="line">        std::map&lt;<span class="type">int</span>, <span class="type">int</span>&gt; result_map;</span><br><span class="line">        <span class="keyword">for</span> (vector&lt;<span class="type">int</span>&gt;::iterator iter = num.<span class="built_in">begin</span>(); iter != num.<span class="built_in">end</span>(); iter++)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span> (result_map.<span class="built_in">find</span>(*iter) == result_map.<span class="built_in">end</span>())</span><br><span class="line">            &#123;</span><br><span class="line">                result_map.<span class="built_in">insert</span>(map&lt;<span class="type">int</span>, <span class="type">int</span>&gt;::<span class="built_in">value_type</span>(*iter, <span class="number">1</span>));</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">            &#123;</span><br><span class="line">                result_map[*iter]++;                                                                                                                                            </span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">int</span> max_count = <span class="number">0</span>;</span><br><span class="line">        <span class="type">int</span> result;</span><br><span class="line">        <span class="keyword">for</span> (std::map&lt;<span class="type">int</span>, <span class="type">int</span>&gt;::iterator iter = result_map.<span class="built_in">begin</span>(); iter != result_map.<span class="built_in">end</span>(); iter++)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span> (iter-&gt;second &gt; max_count)</span><br><span class="line">            &#123;</span><br><span class="line">                result = iter-&gt;first;</span><br><span class="line">                max_count = iter-&gt;second;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="排序法"><a href="#排序法" class="headerlink" title="排序法"></a>排序法</h2><p>直接对元素进行排序，排序后元素的中间元素即为要求的最多元素。时间复杂度为O(nlogn)。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">majorityElementSort</span><span class="params">(vector&lt;<span class="type">int</span>&gt; &amp;num)</span> </span>&#123;</span><br><span class="line">   <span class="built_in">sort</span>(num.<span class="built_in">begin</span>(), num.<span class="built_in">end</span>());</span><br><span class="line">   <span class="keyword">return</span> num[num.<span class="built_in">size</span>() / <span class="number">2</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="随机抽取法"><a href="#随机抽取法" class="headerlink" title="随机抽取法"></a>随机抽取法</h2><p>随机从数组中抽取元素，然后遍历数组判断该元素是否为最多元素。该算法利用了最多元素被随机抽取的概率最大的特点，但该算法效率的随机性较大，最好时间复杂度为O(n)，最坏情况下一直随机不到最多元素。</p>
-<h2 id="二分法"><a href="#二分法" class="headerlink" title="二分法"></a>二分法</h2><p>将数组均分为两份，分别求出两个数组中的最多元素A和B，则整个数组中的最多元素必然在两个子数组的最多元素A和B中，这一点可以通过举例子的方式来证明，但是仅凭感觉不太容易得出该结论。如果A&#x3D;&#x3D;B，则结果就是A。如果A!&#x3D;B，则分别求出A和B在这个数组中的元素个数。时间复杂度接近O(nlogn)。</p>
-<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>还有一些比较不容易想到的算法，这里就不列举了。至少我看过一次之后，下次这些算法仍然是记不住的。</p>
 
       
     </div>
