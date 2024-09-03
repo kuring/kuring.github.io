@@ -20,6 +20,8 @@ kubectl get pod --all-namespaces -o wide -w | grep -vE "Com|NAME|Running|1/1|2/2
 
 ```
 kubectl get pods -A  --sort-by='.status.containerStatuses[0].restartCount' | tail
+
+kubectl get pod -A  --no-headers  | sort -k5 -nr | head
 ```
 
 ## 4. kubectl proxy命令代理k8s apiserver
