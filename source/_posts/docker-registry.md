@@ -6,25 +6,27 @@ tags:
 
 为了其他主机可访问docker registry，必须采用https协议。
 
-```
-mkdir -p ~/docker_registry/certs
-signdomain=103-17-184-lg-201-k08
-openssl req -nodes -subj "/C=CN/ST=BeiJing/L=BeiJing/CN=$signdomain" -newkey rsa:4096 -keyout ~/docker_registry/certs/$signdomain.key -out ~/docker_registry/certs/$signdomain.csr
-openssl x509 -req -days 3650 -in ~/docker_registry/certs/$signdomain.csr -signkey ~/docker_registry/certs/$signdomain.key -out ~/docker_registry/certs/$signdomain.crt
-```
+```shell
+registry_data_dir=~/docker_registry/data
+cert_dir=~/docker_registry/certs
+signdomain=mycert
 
-从docker hub拉取registry镜像，并启动镜像
+# 制作证书
+mkdir -p ${cert_dir}
+openssl req -nodes -subj "/C=CN/ST=BeiJing/L=BeiJing/CN=$signdomain" -newkey rsa:4096 -keyout ${cert_dir}/$signdomain.key -out ${cert_dir}/${signdomain}.csr
+openssl x509 -req -days 3650 -in ${cert_dir}/$signdomain.csr -signkey ${cert_dir}/${signdomain}.key -out ${cert_dir}/$signdomain.crt
 
-```
-docker run -d -p 5000:5000 --restart=always --name registry \
-  -v /data/docker_registry:/var/lib/registry \
-  -v /home/worker/docker_registry/certs:/certs \
-  -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/103-17-184-lg-201-k08.yidian.com.crt \
-  -e REGISTRY_HTTP_TLS_KEY=/certs/103-17-184-lg-201-k08.yidian.com.key \
+# 从docker hub拉取registry镜像，并启动镜像
+mkdir -p ${registry_data_dir}
+docker run -d -p 15000:5000 --restart=always --name registry \
+  -v ${registry_data_dir}:/var/lib/registry \
+  -v ${cert_dir}:/certs \
+  -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/${signdomain}.crt \
+  -e REGISTRY_HTTP_TLS_KEY=/certs/${signdomain}.key \
   registry:2
 ```
 
-停止registry镜像并删除的命令为
+停止registry镜像并删除的命令为：
 
 ```
 docker stop registry && docker rm -v registry
@@ -33,13 +35,13 @@ docker stop registry && docker rm -v registry
 下载最新的centos7镜像
 
 ```
- docker pull centos:7.3.1611
+docker pull centos:7.3.1611
 ```
 
 将centos7镜像增加tag
 
 ```
-docker tag centos:7.3.1611 103-17-184-lg-201-k08.yidian.com:5000/centos:7.3
+docker tag centos:7.3.1611 127.0.0.1:15000/centos:7.3
 
 # 可以看到列表中会多出一个镜像
 [root@103-17-184-lg-201-k08 data]# docker images
