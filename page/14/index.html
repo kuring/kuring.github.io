@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">246</span>
+          <span class="site-state-item-count">247</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,104 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/macvlan/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/macvlan/" class="post-title-link" itemprop="url">Linux macvlan network</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-08-13 23:29:58" itemprop="dateCreated datePublished" datetime="2018-08-13T23:29:58+00:00">2018-08-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>macvlan的原理是在宿主机物理网卡上虚拟出多个子接口，每个子接口有独立的mac地址，通过不同的MAC地址在数据链路层（Data Link Layer）进行网络数据转发的。达到的效果类似，一块物理网卡上有多个IP地址，多个IP地址有自己的mac地址。</p>
+<p>它是比较新的网络虚拟化技术，需要较新的内核支持（Linux kernel v3.9–3.19 and 4.0+）。</p>
+<p>macvlan设备跟物理设备之间并不直接互通。</p>
+<p>macvlan不以交换机端口来划分vlan，一个交换机端口可接收来自多个mac地址的数据。</p>
+<p>一个交换机端口要处理多个vlan的数据，需要开启trunk模式。</p>
+<h2 id="四种模式"><a href="#四种模式" class="headerlink" title="四种模式"></a>四种模式</h2><p>以下四种模式为每个macvlan设备单独配置，而不是一个物理设备就只有一个配置。</p>
+<h3 id="VEPA"><a href="#VEPA" class="headerlink" title="VEPA"></a>VEPA</h3><p>所有发送出去的报文都经过交换机，交换机再发送到对应的目标地址。默认模式。物理网卡接收到macvlan设备的数据后，总是将数据发送出去，即使是发往本设备上其他macvlan设备的数据包。这样在交换机设备上可以看到所有网络的流量。如果是本机的macvlan设备流量仍然是发往本机的macvlan设备，可能会被交换机的生成树协议阻止。需要交换机开启hairpin模式或者reflective relay模式，该模式在目前的交换机上未广泛支持，vepa模式的应用较少。</p>
+<p>linux的网桥支持hairpin模式。</p>
+<h3 id="bridge"><a href="#bridge" class="headerlink" title="bridge"></a>bridge</h3><p>最常用，同一个物理设备上的不同macvlan设备间的通讯可以直接转发，不再需要经过外部的交换机。转发非常快速，macvlan设备相对固定，不需要生成树协议。</p>
+<h3 id="Private"><a href="#Private" class="headerlink" title="Private"></a>Private</h3><p>本质上是VEPA模式，但同一个物理设备上的macvlan设备之间无法直接通讯，不常用。</p>
+<h3 id="Passthru"><a href="#Passthru" class="headerlink" title="Passthru"></a>Passthru</h3><p>后来增加的模式，比较少用</p>
+<p>vepa和passthru都会将不同macvlan接口之间的数据发送到交换机，然后发回，对性能的影响比较明显。</p>
+<p>物理网卡收到包后，根据包的mac地址来判断这个包交给哪个虚拟接口。</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/macvlan-workmode-1.png" alt="image"></p>
+<h2 id="手工创建实践"><a href="#手工创建实践" class="headerlink" title="手工创建实践"></a>手工创建实践</h2><p>以下实验为在virturalbox虚拟机下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"># 创建两个network namespace net1和net2</span><br><span class="line">ip netns add net1</span><br><span class="line">ip netns add net2</span><br><span class="line"></span><br><span class="line"># 创建macvlan接口</span><br><span class="line"># enp0s8相当于物理网卡eth0</span><br><span class="line">ip link add link enp0s8 mac1 type macvlan</span><br><span class="line"></span><br><span class="line"># 可以看到创建了接口mac1@enp0s8</span><br><span class="line">[root@localhost vagrant]# ip link</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">2: enp0s3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000</span><br><span class="line">    link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">3: enp0s8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000</span><br><span class="line">    link/ether 08:00:27:cf:b0:b4 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">4: docker_gwbridge: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc noqueue state DOWN mode DEFAULT</span><br><span class="line">    link/ether 02:42:8e:cf:a9:da brd ff:ff:ff:ff:ff:ff</span><br><span class="line">5: br-b3e83aa45886: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc noqueue state DOWN mode DEFAULT</span><br><span class="line">    link/ether 02:42:bf:b4:e5:36 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">6: docker0: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc noqueue state DOWN mode DEFAULT</span><br><span class="line">    link/ether 02:42:25:e7:40:32 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">19: br-ec6c4e77321d: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc noqueue state DOWN mode DEFAULT</span><br><span class="line">    link/ether 02:42:e0:d8:38:6d brd ff:ff:ff:ff:ff:ff</span><br><span class="line">24: mac1@enp0s8: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT</span><br><span class="line">    link/ether 3e:b8:e9:1d:3b:c8 brd ff:ff:ff:ff:ff:ff</span><br></pre></td></tr></table></figure>
+
+<p>创建macvlan接口的格式为：<code>ip link add link &lt;PARENT&gt; &lt;NAME&gt; type macvlan</code>， <PARENT>是macvlan接口的父接口名称，name是新创建的macvlan接口名称。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"># 将mac1放入到net1 namespace中</span><br><span class="line">[root@localhost vagrant]# ip link set mac1 netns net1</span><br><span class="line">[root@localhost vagrant]# ip netns exec net1 ip link</span><br><span class="line">1: lo: &lt;LOOPBACK&gt; mtu 65536 qdisc noop state DOWN mode DEFAULT</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">24: mac1@if3: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT</span><br><span class="line">    link/ether 3e:b8:e9:1d:3b:c8 brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br><span class="line"></span><br><span class="line"># 在net1中将mac1接口命名为eth0</span><br><span class="line">[root@localhost vagrant]# ip netns exec net1 ip link set mac1 name eth0</span><br><span class="line">[root@localhost vagrant]# ip netns exec net1 ip link</span><br><span class="line">1: lo: &lt;LOOPBACK&gt; mtu 65536 qdisc noop state DOWN mode DEFAULT</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">24: eth0@if3: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT</span><br><span class="line">    link/ether 3e:b8:e9:1d:3b:c8 brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br><span class="line"></span><br><span class="line"># 在net1中分配eth0网卡的ip地址为192.168.8.120</span><br><span class="line">[root@localhost vagrant]# ip netns exec net1 ip addr add 192.168.8.120/24 dev eth0</span><br><span class="line">[root@localhost vagrant]# ip netns exec net1 ip link set eth0 up</span><br><span class="line">[root@localhost vagrant]# ip netns exec net1 ip link</span><br><span class="line">1: lo: &lt;LOOPBACK&gt; mtu 65536 qdisc noop state DOWN mode DEFAULT</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">24: eth0@if3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT</span><br><span class="line">    link/ether 3e:b8:e9:1d:3b:c8 brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br></pre></td></tr></table></figure>
+
+<h2 id="在docker上的实践"><a href="#在docker上的实践" class="headerlink" title="在docker上的实践"></a>在docker上的实践</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost vagrant]# docker network create -d macvlan --subnet=10.0.2.100/24 --gateway=10.0.2.2 -o parent=enp0s3 mcv</span><br><span class="line">5c637798d559471bd8d1036cdd947d3949e1973f724568da066d9c60c00fb5e6</span><br><span class="line"></span><br><span class="line">[root@localhost vagrant]# docker network ls</span><br><span class="line">NETWORK ID          NAME                DRIVER              SCOPE</span><br><span class="line">b6a128f1730e        bridge              bridge              local</span><br><span class="line">a65957cd6c3f        docker_gwbridge     bridge              local</span><br><span class="line">540bb390028a        host                host                local</span><br><span class="line">b3e83aa45886        isolated_nw         bridge              local</span><br><span class="line">ec6c4e77321d        local_alias         bridge              local</span><br><span class="line">5c637798d559        mcv                 macvlan             local</span><br><span class="line">3d247d0414d0        none                null                local</span><br></pre></td></tr></table></figure>
+
+<h2 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h2><p><a target="_blank" rel="noopener" href="https://backreference.org/2014/03/20/some-notes-on-macvlanmacvtap/">Some notes on macvlan&#x2F;macvtap</a><br><a target="_blank" rel="noopener" href="http://backreference.org/2014/03/20/some-notes-on-macvlanmacvtap/"></a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +317,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -305,7 +403,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -419,7 +517,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -634,7 +732,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -715,7 +813,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -822,7 +920,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -1032,7 +1130,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -1134,7 +1232,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -1218,7 +1316,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -1245,94 +1343,6 @@
 <p>然后将grafana.sql导入到新创建的mysql。</p>
 <p>将grafana 3.1.1版本停掉，将grafana 4.4.3版本的配置指向到mysql数据库，启动grafana 4.4.3后，mysql中的表结构会自动变更。</p>
 <p>至此，grafana的升级完成。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/rsync-bypass-ralay/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/rsync-bypass-ralay/" class="post-title-link" itemprop="url">通过rsync来绕过relay同步文件</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2017-06-07 11:58:54" itemprop="dateCreated datePublished" datetime="2017-06-07T11:58:54+00:00">2017-06-07</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>由于不允许通过ssh直接连接服务器，即服务器的22端口是不开放的，但是其他端口号可以访问。这就造成了往服务器上传输文件会特别麻烦，需要通过relay中转一下。</p>
-<p>rsync命令有shell模式和daemon模式，为了解决该问题，可以通过rsync的daemon模式，rysnc的daemon模式会默认使用873端口，不使用ssh协议，以此来绕过ssh的22端口限制。</p>
-<p>最终可以实现在本地通过rsync一条命令直接同步文件或文件夹到服务器的指定目录下。</p>
-<p>首先在服务器上搭建rsync的服务端，rsync的安装不再介绍。</p>
-<p>修改服务器的rsync配置文件&#x2F;etc&#x2F;rsyncd.conf如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[worker]</span><br><span class="line">path = /home/worker</span><br><span class="line">list = true</span><br><span class="line">uid = worker</span><br><span class="line">gid = worker</span><br><span class="line">read only = false</span><br></pre></td></tr></table></figure>
-
-<p>这里为了简便，并未设置rsync的用户名和密码。</p>
-<p>客户端同步文件的命令如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rsync -avz $SRC worker@$HOST::worker --exclude=target --exclude=.git --exclude=.idea --delete</span><br></pre></td></tr></table></figure>
-
-<p>命令中的第一个worker为HOST的登录用户名，第二个worker为rysncd配置文件中配置的组名。–exclude选项可以用来屏蔽需要同步的文件夹。–delete选项用来同步删除的文件或文件夹。</p>
-<p>daemon模式跟ssh模式相比，无法指定服务器的具体某一个路径，使用不够灵活，但也基本可以满足需求。只能通过daemon配置文件中配置的组中的path参数，同步时仅能通过<code>::组名</code>的形式来指定。</p>
 
       
     </div>

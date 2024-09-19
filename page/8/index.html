@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">246</span>
+          <span class="site-state-item-count">247</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,201 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/golang-error/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/golang-error/" class="post-title-link" itemprop="url">Golang中的异常处理机制</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2021-03-17 00:24:44" itemprop="dateCreated datePublished" datetime="2021-03-17T00:24:44+00:00">2021-03-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>异常处理分为error和defer和recover两类，其中error用来处理可预期的异常，recover用来处理意外的异常。</p>
+<h2 id="error"><a href="#error" class="headerlink" title="error"></a>error</h2><p>支持多个返回值，可以将业务的返回值和错误的返回值分开，很多都会返回两个值。如果不使用error返回值，可以用_变量来忽略。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// parseConfig returns a parsed configuration for an Azure cloudprovider config file</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">parseConfig</span><span class="params">(configReader io.Reader)</span></span> (*Config, <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="keyword">var</span> config Config</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> configReader == <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> &amp;config, <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	configContents, err := ioutil.ReadAll(configReader)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	err = yaml.Unmarshal(configContents, &amp;config)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// The resource group name may be in different cases from different Azure APIs, hence it is converted to lower here.</span></span><br><span class="line">	<span class="comment">// See more context at https://github.com/kubernetes/kubernetes/issues/71994.</span></span><br><span class="line">	config.ResourceGroup = strings.ToLower(config.ResourceGroup)</span><br><span class="line">	<span class="keyword">return</span> &amp;config, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><br />error的几种使用方式：</p>
+<table>
+<thead>
+<tr>
+<th>使用error的方式</th>
+<th>说明</th>
+<th>举例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>errors.New</td>
+<td>简单静态字符串的错误，没有额外的信息</td>
+<td>errors.New(“shell not specified”)</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://golang.org/pkg/fmt/#Errorf">fmt.Errorf</a></td>
+<td>用于格式化的错误字符串</td>
+<td>fmt.Errorf(“failed to start kubernetes.io&#x2F;kube-apiserver-client-kubelet certificate controller: %v”, err)</td>
+</tr>
+<tr>
+<td>实现Error()方法的自定义类型</td>
+<td>客户段需要检测并处理该错误时使用该方式</td>
+<td>见下文自定义error</td>
+</tr>
+<tr>
+<td>Error wrapping</td>
+<td>Go 1.13支持的特性</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="errors-New"><a href="#errors-New" class="headerlink" title="errors.New"></a>errors.New</h3><p>原则：</p>
+<ul>
+<li>不要在客户端判断error中的包含字符串信息。</li>
+</ul>
+<table>
+<thead><tr><th>Bad</th><th>Good</th></tr></thead>
+<tbody>
+<tr><td>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package foo</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">()</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> errors.New(<span class="string">&quot;could not open&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// package bar</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">use</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err := foo.Open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> err.Error() == <span class="string">&quot;could not open&quot;</span> &#123;</span><br><span class="line">      <span class="comment">// handle</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="built_in">panic</span>(<span class="string">&quot;unknown error&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td><td>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package foo</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> ErrCouldNotOpen = errors.New(<span class="string">&quot;could not open&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">()</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> ErrCouldNotOpen</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// package bar</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> err := foo.Open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> errors.Is(err, foo.ErrCouldNotOpen) &#123;</span><br><span class="line">    <span class="comment">// handle</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;unknown error&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td></tr>
+</tbody></table>
+
+
+<p>当然也可以使用自定义error类型，但此时由于要实现自定义error类型，代码量会增加。</p>
+<h3 id="自定义error"><a href="#自定义error" class="headerlink" title="自定义error"></a>自定义error</h3><p>error是个接口，可以用来扩展自定义的错误处理。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// file: k8s.io/kubernetes/pkg/volume/util/nestedpendingoperations/nestedpendingoperations.go</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// NewAlreadyExistsError returns a new instance of AlreadyExists error.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewAlreadyExistsError</span><span class="params">(operationName <span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> alreadyExistsError&#123;operationName&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// IsAlreadyExists returns true if an error returned from</span></span><br><span class="line"><span class="comment">// NestedPendingOperations indicates a new operation can not be started because</span></span><br><span class="line"><span class="comment">// an operation with the same operation name is already executing.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">IsAlreadyExists</span><span class="params">(err <span class="type">error</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">	<span class="keyword">switch</span> err.(<span class="keyword">type</span>) &#123;</span><br><span class="line">	<span class="keyword">case</span> alreadyExistsError:</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> alreadyExistsError <span class="keyword">struct</span> &#123;</span><br><span class="line">	operationName <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> _ <span class="type">error</span> = alreadyExistsError&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(err alreadyExistsError)</span></span> Error() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> fmt.Sprintf(</span><br><span class="line">		<span class="string">&quot;Failed to create operation with name %q. An operation with that name is already executing.&quot;</span>,</span><br><span class="line">		err.operationName)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>还可以延伸出更复杂一些的树形error体系：<br /></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package net</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Error <span class="keyword">interface</span> &#123;</span><br><span class="line">    <span class="type">error</span></span><br><span class="line">    Timeout() <span class="type">bool</span>   <span class="comment">// Is the error a timeout?</span></span><br><span class="line">    Temporary() <span class="type">bool</span> <span class="comment">// Is the error temporary?</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> UnknownNetworkError <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Error() <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Temporary() <span class="type">bool</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Timeout() <span class="type">bool</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Error-Wrapping"><a href="#Error-Wrapping" class="headerlink" title="Error Wrapping"></a>Error Wrapping</h3><p>error类型仅包含一个字符串类型的信息，如果函数的调用栈信息为A -&gt; B -&gt; C，如果函数C返回err，在函数A处打印err信息，那么很难判断出err的真正出错位置，不利于快速定位问题。我们期望的效果是在函数A出打印err，能够精确的找到err的源头。<br /><br><br />为了解决上述问题，需要error类型在函数调用栈之间传递，有如下解决方法：</p>
+<ul>
+<li>使用fmt.Errorf()函数来增加额外的信息</li>
+<li>使用Error Wrapping  <ul>
+<li>golang 1.13支持%w</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/pkg/errors">https://github.com/pkg/errors</a></li>
+</ul>
+</li>
+</ul>
+<p><br />使用fmt.Errorf()来封装error信息，基于已经存在的error再产生一个新的error类型，需要避免error中包含冗余信息。<br /></p>
+<table>
+<thead><tr><th>Bad</th><th>Good</th></tr></thead>
+<tbody>
+<tr><td>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// err: failed to call api: connection refused</span></span><br><span class="line">s, err := store.New()</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Errorf(</span><br><span class="line">        <span class="string">&quot;failed to create new store: %s&quot;</span>, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td><td>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// err: call api: connection refused</span></span><br><span class="line">s, err := store.New()</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Errorf(</span><br><span class="line">        <span class="string">&quot;new store: %s&quot;</span>, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<tr><td>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">failed to create new store: failed to call api: connection refused</span><br><span class="line">error中会有很多的冗余信息</span><br></pre></td></tr></table></figure>
+</td><td>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">new store: call api: connection refused</span><br><span class="line">error中没有冗余信息，同时包含了调用栈信息</span><br></pre></td></tr></table></figure>
+</td></tr>
+</tbody></table>
+
+<p>但使用fmt.Errorf()来全新封装的error信息的缺点也非常明显，丢失了最初的err信息，已经在中间转换为了全新的err。</p>
+<h2 id="类型断言"><a href="#类型断言" class="headerlink" title="类型断言"></a>类型断言</h2><p>类型转换如果类型不正确，会导致程序crash，必须使用类型判断来判断类型的正确性。<br /></p>
+<table>
+<thead><tr><th>Bad</th><th>Good</th></tr></thead>
+<tbody>
+<tr><td>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">t := i.(<span class="type">string</span>)</span><br></pre></td></tr></table></figure>
+</td><td>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">t, ok := i.(<span class="type">string</span>)</span><br><span class="line"><span class="keyword">if</span> !ok &#123;</span><br><span class="line">  <span class="comment">// handle the error gracefully</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td></tr>
+</tbody></table>
+
+<h2 id="panic"><a href="#panic" class="headerlink" title="panic"></a>panic</h2><p>用于处理运行时的异常情况。<br /><img src="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/220839/1615386682235-b67733ca-036d-40d3-a895-c6b65a58f9d3.png#align=left&display=inline&height=563&margin=%5Bobject%20Object%5D&name=image.png&originHeight=1060&originWidth=887&size=418096&status=done&style=none&width=471" alt="image.png"><br />使用原则</p>
+<ul>
+<li>不要使用panic，在kubernetes项目中几乎没有使用panic的场景</li>
+<li>即使使用panic后，一定要使用recover会捕获异常</li>
+<li>在测试用例中可以使用panic</li>
+</ul>
+<table>
+<thead><tr><th>Bad</th><th>Good</th></tr></thead>
+<tbody>
+<tr><td>
+
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">run</span><span class="params">(args []<span class="type">string</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(args) == <span class="number">0</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;an argument is required&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  run(os.Args[<span class="number">1</span>:])</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td><td>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">run</span><span class="params">(args []<span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(args) == <span class="number">0</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> errors.New(<span class="string">&quot;an argument is required&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err := run(os.Args[<span class="number">1</span>:]); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Fprintln(os.Stderr, err)</span><br><span class="line">    os.Exit(<span class="number">1</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td></tr>
+</tbody></table>
+
+<h2 id="client-go"><a href="#client-go" class="headerlink" title="client-go"></a>client-go</h2><p>client-go利用队列来进行重试<br /><br><br /><a target="_blank" rel="noopener" href="https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go#L93">https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go#L93</a></p>
+<h2 id="kube-builder"><a href="#kube-builder" class="headerlink" title="kube-builder"></a>kube-builder</h2><p>kube-builder为client-go的更上次封装，本质上跟client-go利用队列来进行重试的机制完全一致。</p>
+<h1 id="发生了错误后该如何处理"><a href="#发生了错误后该如何处理" class="headerlink" title="发生了错误后该如何处理"></a>发生了错误后该如何处理</h1><ul>
+<li>打印错误日志</li>
+<li>根据业务场景选择忽略或者自动重试</li>
+<li>程序自己crash</li>
+</ul>
+<h1 id="如何避免"><a href="#如何避免" class="headerlink" title="如何避免"></a>如何避免</h1><ul>
+<li>在编写代码时增加防御式编程意识，不能靠契约式编程。一个比较简单的判断错误处理情况的方法，看下代码中if语句占用的比例。<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/kubelet_volumes.go">https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/kubelet_volumes.go</a></li>
+<li>需求的评估周期中，不仅要考虑到软件开发完成的时间，同时要考虑到单元测试（单元测试用例的编写需要较长的时间）和集成测试的时间</li>
+<li>单元测试覆盖率提升，测试场景要考虑到各种异常场景</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +414,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -311,7 +506,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -413,7 +608,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -532,7 +727,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -626,7 +821,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -707,7 +902,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -791,7 +986,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -917,7 +1112,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -1058,7 +1253,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -1158,103 +1353,6 @@
 <li>由于iptables规则是串行执行，算法复杂度为O(n)，一旦iptables规则多了后，性能将非常差。</li>
 <li>iptables规则提供的负载均衡功能非常有限，不支持较为复杂的负载均衡算法。</li>
 </ol>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/docker-bridge-network/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/docker-bridge-network/" class="post-title-link" itemprop="url">docker bridge network</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2020-02-01 21:34:53" itemprop="dateCreated datePublished" datetime="2020-02-01T21:34:53+00:00">2020-02-01</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>docker bridge是默认的网络模式</p>
-<h2 id="容器访问外网"><a href="#容器访问外网" class="headerlink" title="容器访问外网"></a>容器访问外网</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/docker_bridge_network.png"></p>
-<p>默认情况下，容器即可访问外网。</p>
-<p>启动一个容器：<code>docker run -d nginx</code></p>
-<p>容器中访问外网的请求如<a target="_blank" rel="noopener" href="http://www.baidu.com,内核协议栈根据路由信息,会选择默认路由,将请求发送到容器中的eth0网卡,目的mac地址为网关172.17.0.1的mac地址./">www.baidu.com，内核协议栈根据路由信息，会选择默认路由，将请求发送到容器中的eth0网卡，目的mac地址为网关172.17.0.1的mac地址。</a></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ route -n</span><br><span class="line">Kernel IP routing table</span><br><span class="line">Destination     Gateway         Genmask         Flags Metric Ref    Use Iface</span><br><span class="line">0.0.0.0         172.17.0.1      0.0.0.0         UG    0      0        0 eth0</span><br><span class="line">172.17.0.0      0.0.0.0         255.255.0.0     U     0      0        0 eth0</span><br></pre></td></tr></table></figure>
-
-<p>eth0网卡接收到数据包后，会将数据包转发到veth pair的另外一端，即宿主机网络中的veth6b173fd设备。</p>
-<p>veth6b173fd设备是挂在网桥上的，会将数据包转发到网桥br0，br0即为网关172.17.0.1。</p>
-<p>br0接收到数据包后，会将数据包转发给内核协议栈。</p>
-<p>宿主机上的&#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;ip_forward为1，表示转发功能开启，即目的ip不是本机的会根据路由规则进行转发，而不是丢弃。</p>
-<p>仅在宿主机上开启了ip_forward后，包即使转发了，还是无法回来的，因为包中的源ip地址为172.17.0.1，是私有网段的ip地址。需要做一次SNAT才可以，docker会在iptabels的nat表中的postrouting链中增加SNAT规则，下面规则的意思是源地址为172.17.0.0&#x2F;16的会做一次地址伪装，即SNAT。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># iptables -nL -t nat</span><br><span class="line"></span><br><span class="line">Chain POSTROUTING (policy ACCEPT)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line">MASQUERADE  all  --  172.17.0.0/16        0.0.0.0/0</span><br></pre></td></tr></table></figure>
-
-<p>在eth0网卡上抓包，可以发现源ip已经是eth0的网卡ip地址。</p>
-<h2 id="端口映射"><a href="#端口映射" class="headerlink" title="端口映射"></a>端口映射</h2><p>命令格式：<code>-p $&#123;host_port&#125;:$&#123;container_port&#125;</code></p>
-<p>启动一个容器：<code>docker run -d -p 8080:80 nginx</code></p>
-<p>查看本地的iptables规则</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">$ iptables -nL -t nat</span><br><span class="line">Chain PREROUTING (policy ACCEPT)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line">DOCKER     all  --  0.0.0.0/0            0.0.0.0/0            ADDRTYPE match dst-type LOCAL</span><br><span class="line"></span><br><span class="line">Chain INPUT (policy ACCEPT)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line"></span><br><span class="line">Chain OUTPUT (policy ACCEPT)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line">DOCKER     all  --  0.0.0.0/0           !127.0.0.0/8          ADDRTYPE match dst-type LOCAL</span><br><span class="line"></span><br><span class="line">Chain POSTROUTING (policy ACCEPT)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line">MASQUERADE  all  --  172.17.0.0/16        0.0.0.0/0</span><br><span class="line">MASQUERADE  tcp  --  172.17.0.2           172.17.0.2           tcp dpt:80</span><br><span class="line"></span><br><span class="line">Chain DOCKER (2 references)</span><br><span class="line">target     prot opt source               destination</span><br><span class="line">RETURN     all  --  0.0.0.0/0            0.0.0.0/0</span><br><span class="line">## prerouting链引用，外面发往本机的8080端口的数据包，会dnat为172.17.0.2:80</span><br><span class="line">DNAT       tcp  --  0.0.0.0/0            0.0.0.0/0            tcp dpt:8080 to:172.17.0.2:80</span><br></pre></td></tr></table></figure>
-
-<h2 id="丢包问题"><a href="#丢包问题" class="headerlink" title="丢包问题"></a>丢包问题</h2><p>SNAT在并发比较高的情况下，会存在少量的丢包现象，具体原因跟conntrack模式的实现有关。conntrack在SNAT端口的分配和插入conntrack表之间有个延时，如果在这中间存在冲突的话会导致插入失败，从而出现丢包的问题。</p>
-<p>该问题没有根治的解决办法，能大大缓解的解决办法为使用iptabels的–random-fully选项，SNAT选择端口为随机，大大降低出现冲突的概率。</p>
 
       
     </div>

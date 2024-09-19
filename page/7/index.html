@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">246</span>
+          <span class="site-state-item-count">247</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,118 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/disk-command/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/disk-command/" class="post-title-link" itemprop="url">Linux下磁盘常用命令</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-01-18 21:27:07" itemprop="dateCreated datePublished" datetime="2022-01-18T21:27:07+00:00">2022-01-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="查看磁盘是否为ssd"><a href="#查看磁盘是否为ssd" class="headerlink" title="查看磁盘是否为ssd"></a>查看磁盘是否为ssd</h1><p>如果其中的rota值为1，说明为hdd磁盘；如果rota值为0，说明为ssd。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># lsblk -o name,size,type,rota,mountpoint</span><br><span class="line">NAME    SIZE TYPE ROTA MOUNTPOINT</span><br><span class="line">vdc      20G disk    1 /var/lib/kubelet/pods/eea3a54c-b211-4ee3-bcbe-70ba3fe84c05/volumes/kubernetes.io~csi/d-t4n36xdqey47v9e0ej8r/mount</span><br><span class="line">vda     120G disk    1</span><br><span class="line">└─vda1  120G part    1 /</span><br></pre></td></tr></table></figure>
+
+<p>但该规则在很多虚拟机的场景下并不成立，即使虚拟机的磁盘为ssd，但rota值仍然为1。可以通过修改rota的值的方式来标记磁盘的类型：echo ‘0’&gt; &#x2F;sys&#x2F;block&#x2F;vdd&#x2F;queue&#x2F;rotational</p>
+<h1 id="iostat"><a href="#iostat" class="headerlink" title="iostat"></a>iostat</h1><p>只能观察磁盘整体性能，不能看到进程级别的</p>
+<ul>
+<li>iops &#x3D; r&#x2F;s+w&#x2F;s</li>
+<li>吞吐量 &#x3D; rkB&#x2F;s + wkB&#x2F;s</li>
+<li>响应时间 &#x3D; r_await + w_await</li>
+</ul>
+<p>iostat -xm $interval: interval为秒</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ iostat -xm 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-52-sh-100-I03.yidian.com)      12/11/2016      _x86_64_        (32 CPU)</span><br><span class="line"></span><br><span class="line">avg-cpu:  %user   %nice %system %iowait  %steal   %idle</span><br><span class="line">           4.99    0.00    1.46    0.01    0.00   93.54</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">sda               0.00     0.26    0.02    1.62     0.00     0.02    29.31     0.00    0.89    3.37    0.87   0.05   0.01</span><br><span class="line">sdb               0.00     0.81   10.23   67.59     1.19    29.07   796.57     0.01    0.10    0.85    2.85   0.19   1.46</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>r&#x2F;s: 每秒发送给磁盘的读请求数</li>
+<li>w&#x2F;s: 每秒发送给磁盘的写请求数</li>
+<li>rMB&#x2F;s: 每秒从磁盘读取的数据量</li>
+<li>wMB&#x2F;s: 每秒向磁盘写入的数据量</li>
+<li>%iowait：cpu等待磁盘时间</li>
+<li>%util：表示磁盘使用率，该值较大说明磁盘性能存在问题，io队列不为空的时间。由于存在并行io，100%不代表磁盘io饱和</li>
+<li>r_await：读请求处理完成时间，包括队列中的等待时间和设备实际处理时间，单位为毫秒</li>
+<li>w_await：写请求处理完成时间，包括队列中的等待时间和设备实际处理时间，单位为毫秒</li>
+<li>svctm: 瓶颈每次io操作的时间，单位为毫秒，可以反映出磁盘的瓶颈</li>
+<li>avgrq-sz：平均每次请求的数据大小</li>
+<li>avgqu-sz：平均请求io队列长度</li>
+<li>svctm：处理io请求所需要的平均时间，不包括等待时间，单位为毫秒</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">$ iostat -d -x 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-42-sh-100-i08.yidian.com)      01/19/2019      _x86_64_        (24 CPU)</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">sda               0.00     7.58    0.31  266.07     9.54   888.01     6.74     0.03    0.12    8.84    0.11   0.03   0.90</span><br><span class="line">sdb               0.00     0.67    4.39   40.68   386.20  9277.38   428.79     0.03    0.64    3.10    0.37   0.30   1.33</span><br><span class="line">sdd               0.00     0.82    5.08   66.78   451.99 15587.89   446.42     0.02    0.30    3.50    0.05   0.28   2.01</span><br><span class="line">sde               0.00     0.67    4.14   53.77   312.74 12121.84   429.43     0.00    0.03    4.00    1.44   0.30   1.72</span><br><span class="line">sdc               0.00     0.50    0.05   27.47     2.74  6098.56   443.28     0.03    0.95   12.42    0.93   0.21   0.58</span><br><span class="line">sdf               0.00     0.47    1.07   34.58    57.05  7504.68   424.24     0.00    0.05    2.60    2.63   0.25   0.88</span><br><span class="line">sdg               0.00     0.72    0.14   63.87    13.79 14876.74   465.22     0.03    0.42   10.57    0.40   0.19   1.24</span><br><span class="line">sdj               0.00     0.79    1.85   37.81   206.01  7881.89   407.90     0.03    0.67    2.27    0.59   0.36   1.42</span><br><span class="line">sdi               0.00     0.65    0.29   59.54    22.01 13501.71   452.05     0.01    0.25    5.27    0.22   0.19   1.14</span><br><span class="line">sdk               0.00     0.50    0.30   29.46    16.74  6330.68   426.57     0.05    1.58    4.03    1.55   0.24   0.70</span><br><span class="line">sdm               0.00     0.63    0.73   55.70    63.73 13008.16   463.34     0.02    0.35    5.98    0.28   0.23   1.29</span><br><span class="line">sdh               0.00     0.47    0.06   15.68     5.16  2970.09   378.01     0.03    1.82    7.22    1.80   0.27   0.42</span><br><span class="line">sdl               0.00     0.56    1.32   38.14    81.04  8945.16   457.50     0.09    2.22    4.30    2.15   0.19   0.76</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>wrqm: 每秒合并的写请求数</li>
+<li>rrqm：每秒合并的读请求数</li>
+</ul>
+<h1 id="pidstat"><a href="#pidstat" class="headerlink" title="pidstat"></a>pidstat</h1><p>如果要想查看进程级别的磁盘 io 使用情况，可以使用 <code>pidstat -d</code> 指令。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ pidstat -d 1</span><br><span class="line">Linux 3.10.0-1160.88.1.el7.x86_64 (izbp1feliilr5yri84y6saz)     05/08/2023      _x86_64_        (16 CPU)</span><br><span class="line"></span><br><span class="line">09:44:24 AM   UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s  Command</span><br><span class="line">09:44:25 AM     0       371      0.00    184.91      0.00  jbd2/vda1-8</span><br><span class="line">09:44:25 AM     0      1395      0.00     22.64      7.55  rsyslogd</span><br><span class="line">09:44:25 AM     0     19053      0.00      3.77      0.00  jbd2/dm-0-8</span><br><span class="line">09:44:25 AM  1000     25479      0.00      3.77      0.00  org_start</span><br><span class="line">09:44:25 AM  1000     25754      0.00      3.77      0.00  org_start</span><br><span class="line">09:44:25 AM     0     38784      0.00    505.66      0.00  systemd-journal</span><br><span class="line">09:44:25 AM     0     40474      0.00    143.40      0.00  jbd2/dm-1-8</span><br><span class="line">09:44:25 AM     0     41130      0.00     11.32      0.00  jbd2/dm-2-8</span><br><span class="line">09:44:25 AM  1000     41675      0.00      3.77      0.00  start</span><br><span class="line">09:44:25 AM     0     41730      0.00      3.77      0.00  org_start</span><br></pre></td></tr></table></figure>
+
+<h1 id="iotop"><a href="#iotop" class="headerlink" title="iotop"></a>iotop</h1><p>该命令可以查看所有进程读写 io 情况，该命令通常 os 不会默认安装。在 CentOS 下可以执行 <code>yum install iotop</code> 命令安装。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +331,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -345,7 +457,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -511,7 +623,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -657,7 +769,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -782,7 +894,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -913,7 +1025,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -1014,7 +1126,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -1161,7 +1273,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -1257,7 +1369,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
+      <time title="Modified: 2024-09-19 16:11:31" itemprop="dateModified" datetime="2024-09-19T16:11:31+00:00">2024-09-19</time>
     </span>
 
   
@@ -1287,201 +1399,6 @@
 </ul>
 <p>文中特意提到了互联网八股文的一段话，这里就不再摘出来，我平时也没少见到类似的话术，看完后的感觉就是真牛逼，打死我都写不出来，但转头就忘记讲啥了，也许就是当时压根就看不懂，因为这些话太抽象了。互联网行业本身是一个特别务实接地气的行业，现在也渐渐在内卷严重，抽象的词汇也越来越多，期望下一个风口的到来，或许会将这股邪气吹走一些。</p>
 <h1 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h1><p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/eDn4rcdB7to-sD9N-NGySw">张一鸣演讲全文：外部波澜起伏，内心平静如常</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/golang-error/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/golang-error/" class="post-title-link" itemprop="url">Golang中的异常处理机制</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2021-03-17 00:24:44" itemprop="dateCreated datePublished" datetime="2021-03-17T00:24:44+00:00">2021-03-17</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-09-10 16:07:53" itemprop="dateModified" datetime="2024-09-10T16:07:53+00:00">2024-09-10</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>异常处理分为error和defer和recover两类，其中error用来处理可预期的异常，recover用来处理意外的异常。</p>
-<h2 id="error"><a href="#error" class="headerlink" title="error"></a>error</h2><p>支持多个返回值，可以将业务的返回值和错误的返回值分开，很多都会返回两个值。如果不使用error返回值，可以用_变量来忽略。</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// parseConfig returns a parsed configuration for an Azure cloudprovider config file</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">parseConfig</span><span class="params">(configReader io.Reader)</span></span> (*Config, <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="keyword">var</span> config Config</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> configReader == <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> &amp;config, <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	configContents, err := ioutil.ReadAll(configReader)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	err = yaml.Unmarshal(configContents, &amp;config)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// The resource group name may be in different cases from different Azure APIs, hence it is converted to lower here.</span></span><br><span class="line">	<span class="comment">// See more context at https://github.com/kubernetes/kubernetes/issues/71994.</span></span><br><span class="line">	config.ResourceGroup = strings.ToLower(config.ResourceGroup)</span><br><span class="line">	<span class="keyword">return</span> &amp;config, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><br />error的几种使用方式：</p>
-<table>
-<thead>
-<tr>
-<th>使用error的方式</th>
-<th>说明</th>
-<th>举例</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>errors.New</td>
-<td>简单静态字符串的错误，没有额外的信息</td>
-<td>errors.New(“shell not specified”)</td>
-</tr>
-<tr>
-<td><a target="_blank" rel="noopener" href="https://golang.org/pkg/fmt/#Errorf">fmt.Errorf</a></td>
-<td>用于格式化的错误字符串</td>
-<td>fmt.Errorf(“failed to start kubernetes.io&#x2F;kube-apiserver-client-kubelet certificate controller: %v”, err)</td>
-</tr>
-<tr>
-<td>实现Error()方法的自定义类型</td>
-<td>客户段需要检测并处理该错误时使用该方式</td>
-<td>见下文自定义error</td>
-</tr>
-<tr>
-<td>Error wrapping</td>
-<td>Go 1.13支持的特性</td>
-<td></td>
-</tr>
-</tbody></table>
-<h3 id="errors-New"><a href="#errors-New" class="headerlink" title="errors.New"></a>errors.New</h3><p>原则：</p>
-<ul>
-<li>不要在客户端判断error中的包含字符串信息。</li>
-</ul>
-<table>
-<thead><tr><th>Bad</th><th>Good</th></tr></thead>
-<tbody>
-<tr><td>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package foo</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">()</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> errors.New(<span class="string">&quot;could not open&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// package bar</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">use</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err := foo.Open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> err.Error() == <span class="string">&quot;could not open&quot;</span> &#123;</span><br><span class="line">      <span class="comment">// handle</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="built_in">panic</span>(<span class="string">&quot;unknown error&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td><td>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package foo</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> ErrCouldNotOpen = errors.New(<span class="string">&quot;could not open&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">()</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> ErrCouldNotOpen</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// package bar</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> err := foo.Open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> errors.Is(err, foo.ErrCouldNotOpen) &#123;</span><br><span class="line">    <span class="comment">// handle</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;unknown error&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td></tr>
-</tbody></table>
-
-
-<p>当然也可以使用自定义error类型，但此时由于要实现自定义error类型，代码量会增加。</p>
-<h3 id="自定义error"><a href="#自定义error" class="headerlink" title="自定义error"></a>自定义error</h3><p>error是个接口，可以用来扩展自定义的错误处理。</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// file: k8s.io/kubernetes/pkg/volume/util/nestedpendingoperations/nestedpendingoperations.go</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// NewAlreadyExistsError returns a new instance of AlreadyExists error.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewAlreadyExistsError</span><span class="params">(operationName <span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> alreadyExistsError&#123;operationName&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// IsAlreadyExists returns true if an error returned from</span></span><br><span class="line"><span class="comment">// NestedPendingOperations indicates a new operation can not be started because</span></span><br><span class="line"><span class="comment">// an operation with the same operation name is already executing.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">IsAlreadyExists</span><span class="params">(err <span class="type">error</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">	<span class="keyword">switch</span> err.(<span class="keyword">type</span>) &#123;</span><br><span class="line">	<span class="keyword">case</span> alreadyExistsError:</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> alreadyExistsError <span class="keyword">struct</span> &#123;</span><br><span class="line">	operationName <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> _ <span class="type">error</span> = alreadyExistsError&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(err alreadyExistsError)</span></span> Error() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> fmt.Sprintf(</span><br><span class="line">		<span class="string">&quot;Failed to create operation with name %q. An operation with that name is already executing.&quot;</span>,</span><br><span class="line">		err.operationName)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>还可以延伸出更复杂一些的树形error体系：<br /></p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// package net</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Error <span class="keyword">interface</span> &#123;</span><br><span class="line">    <span class="type">error</span></span><br><span class="line">    Timeout() <span class="type">bool</span>   <span class="comment">// Is the error a timeout?</span></span><br><span class="line">    Temporary() <span class="type">bool</span> <span class="comment">// Is the error temporary?</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> UnknownNetworkError <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Error() <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Temporary() <span class="type">bool</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Timeout() <span class="type">bool</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="Error-Wrapping"><a href="#Error-Wrapping" class="headerlink" title="Error Wrapping"></a>Error Wrapping</h3><p>error类型仅包含一个字符串类型的信息，如果函数的调用栈信息为A -&gt; B -&gt; C，如果函数C返回err，在函数A处打印err信息，那么很难判断出err的真正出错位置，不利于快速定位问题。我们期望的效果是在函数A出打印err，能够精确的找到err的源头。<br /><br><br />为了解决上述问题，需要error类型在函数调用栈之间传递，有如下解决方法：</p>
-<ul>
-<li>使用fmt.Errorf()函数来增加额外的信息</li>
-<li>使用Error Wrapping  <ul>
-<li>golang 1.13支持%w</li>
-<li><a target="_blank" rel="noopener" href="https://github.com/pkg/errors">https://github.com/pkg/errors</a></li>
-</ul>
-</li>
-</ul>
-<p><br />使用fmt.Errorf()来封装error信息，基于已经存在的error再产生一个新的error类型，需要避免error中包含冗余信息。<br /></p>
-<table>
-<thead><tr><th>Bad</th><th>Good</th></tr></thead>
-<tbody>
-<tr><td>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// err: failed to call api: connection refused</span></span><br><span class="line">s, err := store.New()</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Errorf(</span><br><span class="line">        <span class="string">&quot;failed to create new store: %s&quot;</span>, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td><td>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// err: call api: connection refused</span></span><br><span class="line">s, err := store.New()</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Errorf(</span><br><span class="line">        <span class="string">&quot;new store: %s&quot;</span>, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<tr><td>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">failed to create new store: failed to call api: connection refused</span><br><span class="line">error中会有很多的冗余信息</span><br></pre></td></tr></table></figure>
-</td><td>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">new store: call api: connection refused</span><br><span class="line">error中没有冗余信息，同时包含了调用栈信息</span><br></pre></td></tr></table></figure>
-</td></tr>
-</tbody></table>
-
-<p>但使用fmt.Errorf()来全新封装的error信息的缺点也非常明显，丢失了最初的err信息，已经在中间转换为了全新的err。</p>
-<h2 id="类型断言"><a href="#类型断言" class="headerlink" title="类型断言"></a>类型断言</h2><p>类型转换如果类型不正确，会导致程序crash，必须使用类型判断来判断类型的正确性。<br /></p>
-<table>
-<thead><tr><th>Bad</th><th>Good</th></tr></thead>
-<tbody>
-<tr><td>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">t := i.(<span class="type">string</span>)</span><br></pre></td></tr></table></figure>
-</td><td>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">t, ok := i.(<span class="type">string</span>)</span><br><span class="line"><span class="keyword">if</span> !ok &#123;</span><br><span class="line">  <span class="comment">// handle the error gracefully</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td></tr>
-</tbody></table>
-
-<h2 id="panic"><a href="#panic" class="headerlink" title="panic"></a>panic</h2><p>用于处理运行时的异常情况。<br /><img src="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/220839/1615386682235-b67733ca-036d-40d3-a895-c6b65a58f9d3.png#align=left&display=inline&height=563&margin=%5Bobject%20Object%5D&name=image.png&originHeight=1060&originWidth=887&size=418096&status=done&style=none&width=471" alt="image.png"><br />使用原则</p>
-<ul>
-<li>不要使用panic，在kubernetes项目中几乎没有使用panic的场景</li>
-<li>即使使用panic后，一定要使用recover会捕获异常</li>
-<li>在测试用例中可以使用panic</li>
-</ul>
-<table>
-<thead><tr><th>Bad</th><th>Good</th></tr></thead>
-<tbody>
-<tr><td>
-
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">run</span><span class="params">(args []<span class="type">string</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(args) == <span class="number">0</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;an argument is required&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  run(os.Args[<span class="number">1</span>:])</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td><td>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">run</span><span class="params">(args []<span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(args) == <span class="number">0</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> errors.New(<span class="string">&quot;an argument is required&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err := run(os.Args[<span class="number">1</span>:]); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Fprintln(os.Stderr, err)</span><br><span class="line">    os.Exit(<span class="number">1</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td></tr>
-</tbody></table>
-
-<h2 id="client-go"><a href="#client-go" class="headerlink" title="client-go"></a>client-go</h2><p>client-go利用队列来进行重试<br /><br><br /><a target="_blank" rel="noopener" href="https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go#L93">https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go#L93</a></p>
-<h2 id="kube-builder"><a href="#kube-builder" class="headerlink" title="kube-builder"></a>kube-builder</h2><p>kube-builder为client-go的更上次封装，本质上跟client-go利用队列来进行重试的机制完全一致。</p>
-<h1 id="发生了错误后该如何处理"><a href="#发生了错误后该如何处理" class="headerlink" title="发生了错误后该如何处理"></a>发生了错误后该如何处理</h1><ul>
-<li>打印错误日志</li>
-<li>根据业务场景选择忽略或者自动重试</li>
-<li>程序自己crash</li>
-</ul>
-<h1 id="如何避免"><a href="#如何避免" class="headerlink" title="如何避免"></a>如何避免</h1><ul>
-<li>在编写代码时增加防御式编程意识，不能靠契约式编程。一个比较简单的判断错误处理情况的方法，看下代码中if语句占用的比例。<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/kubelet_volumes.go">https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/kubelet_volumes.go</a></li>
-<li>需求的评估周期中，不仅要考虑到软件开发完成的时间，同时要考虑到单元测试（单元测试用例的编写需要较长的时间）和集成测试的时间</li>
-<li>单元测试覆盖率提升，测试场景要考虑到各种异常场景</li>
-</ul>
 
       
     </div>
