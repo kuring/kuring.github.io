@@ -1,6 +1,249 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>微信公众号通过扣子接入大模型</title>
+    <url>/post/gzh-coze/</url>
+    <content><![CDATA[<p>在字节的 AI 发布平台<a href="https://www.coze.cn/">扣子</a>中提供了创建机器人的功能，并且可以直接对接微信公众号，使用在微信公众号中回复消息，由大模型直接回复的效果。</p>
+<h1 id="操作步骤"><a href="#操作步骤" class="headerlink" title="操作步骤"></a>操作步骤</h1><p>整体操作步骤非常简单，需要申请一个 Coze 的账号和开通微信公众号的开发者功能。</p>
+<p>微信公众号的开发者功能在这里配置：<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240619211112.png" alt="image.png"></p>
+<p>点击<code>创建 Bot</code> 按钮，输入 Bot 名称后点击<code>确认</code>。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240619210355.png" alt="image.png|570"></p>
+<p>在机器人设置页面，可以配置模型、选择自己训练的知识库等操作。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240619210909.png" alt="image.png"></p>
+<p>设置完成后，点击<code>发布</code>，选择<code>微信公众号（订阅号）</code>配置功能，设置对应的微信公众号的 AppID。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240619211019.png" alt="image.png"></p>
+<h1 id="体验"><a href="#体验" class="headerlink" title="体验"></a>体验</h1><p>访问公众号直接输入内容，可以看到自动回复内容。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/IMG_3856.PNG.JPG" alt="IMG_3856.PNG.JPG"></p>
+]]></content>
+  </entry>
+  <entry>
+    <title>在Linux上搭建Hadoop集群环境</title>
+    <url>/post/hadoop_setup/</url>
+    <content><![CDATA[<p>本文选择安装的hadoop版本为网上资料较多的0.20.2，对于不懂的新技术要持保守态度。遇到问题解决问题的痛苦远比体会用不着功能的新版本的快感来的更猛烈。</p>
+<h1 id="安装环境"><a href="#安装环境" class="headerlink" title="安装环境"></a>安装环境</h1><p>本文选择了三台机器来搭建hadoop集群，1个Master和2个Slave。本文中的master主机即namenode所在的机器，slave即datanode所在的机器。节点的机器名和IP地址如下</p>
+<table>
+<tr>
+    <td>机器名</td>
+    <td>IP地址</td>
+    <td>用途</td>
+    <td>运行模块</td>
+</tr>
+<tr>
+    <td>server206</td>
+    <td>192.168.20.6</td>
+    <td>Master</td>
+    <td>NameNode、JobTracker、SecondaryNameNode</td>
+</tr>
+<tr>
+    <td>ap1</td>
+    <td>192.168.20.36</td>
+    <td>Slave</td>
+    <td>DataNode、TaskTracker</td>
+</tr>
+<tr>
+    <td>ap2</td>
+    <td>192.168.20.38</td>
+    <td>Slave</td>
+    <td>DataNode、TaskTracker</td>
+</tr>
+</table>
+
+
+<h1 id="安装Java"><a href="#安装Java" class="headerlink" title="安装Java"></a>安装Java</h1><ol>
+<li>检查本机是否已安装Java<br>在命令行中输入<code>java -version</code>判断是否已经安装。如果已经安装检查Java的版本，某些操作系统在安装的时候会安装Jdk，但可能版本会太低。如果版本过低，需要将旧的版本删除。在Redhat操作系统中可以通过rpm命令来删除系统自带的Jdk。</li>
+<li>安装java<br>本文选择jdk1.6安装，将解压出的文件夹jdk1.6.0_10复制到&#x2F;usr&#x2F;java目录下。</li>
+<li>设置java的环境变量<br>添加系统环境变量，修改&#x2F;etc&#x2F;profile文件，在文件末尾添加如下内容：<blockquote>
+<p>export JAVA_HOME&#x3D;&#x2F;usr&#x2F;java&#x2F;jdk1.6.0_10<br>export CLASSPATH&#x3D;.:$JAVA_HOME&#x2F;lib&#x2F;tools.jar:$JAVA_HOME&#x2F;lib&#x2F;dt.jar<br>export PATH&#x3D;$JAVA_HOME&#x2F;bin:$PATH<br>export JRE_HOME&#x3D;$JAVA_HOME&#x2F;jre</p>
+</blockquote>
+ 修改完profile文件后要执行<code>source /etc/profile</code>命令才能使刚才的修改在该命令行环境下生效。</li>
+<li>检查java是否安装成功<br>在命令行中输入java -version、javac命令来查看是否安装成功及安装版本。</li>
+</ol>
+<h1 id="配置hosts文件"><a href="#配置hosts文件" class="headerlink" title="配置hosts文件"></a>配置hosts文件</h1><p>本步骤必须操作，需要root用户来操作，修改完成之后立即生效。在三台机器的&#x2F;etc&#x2F;hosts文件末尾添加如下内容：</p>
+<blockquote>
+<p>192.168.20.6   server206<br>192.168.20.36   ap1<br>192.168.20.38   ap2</p>
+</blockquote>
+<p>修改完成之后可以通过<code>ping 主机名</code>的方式来测试hosts文件是否正确。</p>
+<h1 id="新建hadoop用户"><a href="#新建hadoop用户" class="headerlink" title="新建hadoop用户"></a>新建hadoop用户</h1><p>在三台机器上分别新建hadoop用户，该用户的目录为&#x2F;home&#x2F;hadoop。利用useradd命令来添加用户，利用passwd命令给用户添加密码。</p>
+<h1 id="配置SSH免登录"><a href="#配置SSH免登录" class="headerlink" title="配置SSH免登录"></a>配置SSH免登录</h1><p>该步骤非必须，推荐配置，否则在Master上执行start-all.sh命令来启动hadoop集群的时候需要手动输入ssh密码，非常麻烦。<br>原理：用户将自己的公钥储存在远程主机上。登录的时候，远程主机会向用户发送一段随机字符串，用户用自己的私钥加密后，再发回来。远程主机用事先储存的公钥进行解密，如果成功，就证明用户是可信的，直接允许登录shell，不再要求输入密码。<br>在本例中，需要实现的是192.168.20.6上的hadoop用户可以无密码登录自己、192.168.20.36和192.168.20.38的hadoop用户。需要将192.168.20.6上的ssh公钥复制到192.168.20.36和192.168.20.38机器上。</p>
+<ol>
+<li>在192.168.20.6上执行<code>ssh-keygen –t rsa</code>命令来生成ssh密钥对。会在&#x2F;home&#x2F;hadoop&#x2F;.ssh目录下生成id_rsa.pub和id_rsa两个文件，其中id_rsa.pub为公钥文件，id_rsa为私钥文件。</li>
+<li>在192.168.20.6上执行<code>cat ~/.ssh/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</code>命令将公钥添加到授权的key里。</li>
+<li>权限设置。在192.168.20.6上执行<code>chmod 600 ~/.ssh/authorized_keys</code>来修改authorized_keys文件的权限，执行<code>chmod 700 ~/.ssh</code>命令将.ssh文件夹的权限设置为700。如果权限不对无密码登录就配置不成功，而且没有错误提示，这一步特别注意。</li>
+<li>在本机上测试是否设置无密码登录成功。在192.168.20.6上执行<code>ssh -p 本机SSH服务端口号 localhost</code>，如果不需要输入密码则登录成功。</li>
+<li>利用scp命令将192.168.20.6上的公钥文件id_rsa.pub追加到192.168.20.36和192.168.20.38机器上的~&#x2F;.ssh&#x2F;authorized_keys文件中。scp命令的格式如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">scp -P ssh端口号 ~/.ssh/id_rsa.pub hadoop@192.168.20.36:~/id_rsa.pub</span><br></pre></td></tr></table></figure>
+在192.168.20.36和192.168.20.38机器上分别执行<code>cat ~/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</code>命令将192.168.20.6机器上的公钥添加到authorized_keys文件的尾部。</li>
+<li>配置无密码登录完成，在Master机器上执行<code>ssh -P 本机SSH服务端口号 要连接的服务器IP地址</code>命令进行测试。</li>
+</ol>
+<h1 id="搭建单机版hadoop"><a href="#搭建单机版hadoop" class="headerlink" title="搭建单机版hadoop"></a>搭建单机版hadoop</h1><p>在192.168.20.6上首先搭建单机版hadoop进行测试。</p>
+<ol>
+<li>将hadoop-0.20.2.tar.gz文件解压到hadoop用户的目录下。</li>
+<li>配置hadoop的环境变量。修改&#x2F;etc&#x2F;profile文件，在文件的下面加入如下：<blockquote>
+<p>HADOOP_HOME&#x3D;&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2<br>export HADOOP_HOME<br>export HADOOP&#x3D;$HADOOP_HOME&#x2F;bin<br>export PATH&#x3D;$HADOOP:$PATH</p>
+</blockquote>
+</li>
+</ol>
+<p>修改完成之后执行<code>source /etc/profile</code>使修改的环境变量生效。<br>3. 配置hadoop用到的java环境变量<br>修改conf&#x2F;hadoop-env.sh文件，添加<code>export JAVA_HOME=/usr/java/jdk1.6.0_10</code>。<br>4. 修改conf&#x2F;core-site.xml的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.default.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://localhost:9000&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.replication&lt;/name&gt; </span><br><span class="line">        &lt;value&gt;1&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<ol start="5">
+<li>修改&#x2F;conf&#x2F;mapred-site.xml的内容如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;   </span><br><span class="line">        &lt;name&gt;mapred.job.tracker&lt;/name&gt;  </span><br><span class="line">        &lt;value&gt;localhost:9001&lt;/value&gt;   </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure></li>
+<li>至此单击版搭建完毕。可以通过hadoop自带的wordcount程序测试是否运行正常。下面为运行wordcount例子的步骤。</li>
+<li>在hadoop目录下新建input文件夹。</li>
+<li>将conf目录下的内容拷贝到input文件夹下，执行<code>cp conf/* input</code>。</li>
+<li>通过start-all.sh脚本来启动单机版hadoop。</li>
+<li>执行wordcount程序：<code>hadoop jar hadoop-0.20.2-examples.jar wordcount input output</code>。</li>
+<li>通过stop-all.sh脚本来停止单机版hadoop。</li>
+</ol>
+<h1 id="搭建分布式hadoop"><a href="#搭建分布式hadoop" class="headerlink" title="搭建分布式hadoop"></a>搭建分布式hadoop</h1><p>在上述基础之上，在192.168.20.6上执行如下操作。<br>1. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的core-site.xml文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.default.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://192.168.20.6:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<p>如没有配置hadoop.tmp.dir参数，此时系统默认的临时目录为：&#x2F;tmp&#x2F;hadoo-hadoop。而这个目录在每次重启后都会被干掉，必须重新执行format才行，否则会出错。<br>2. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的hdfs-site.xml文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;dfs.replication&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;1&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;dfs.support.append&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;true&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<p>3. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的mapred-site.xml文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;mapred.job.tracker&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;http://192.168.20.6:9001&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
+<p>4. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的masters文件。<br>将Master机器的IP地址或主机名添加进文件，如192.168.20.6。<br>5. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的slaves文件。<em>Master主机特有</em><br>在其中将slave节点的Ip地址或主机名添加进文件中，本例中加入</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">192.168.20.36</span><br><span class="line">192.168.20.38</span><br></pre></td></tr></table></figure>
+<p>6. hadoop主机的master主机已经配置完毕，利用scp命令将hadoop-0.20.2目录复制到两台slave机器的hadoop目录下。命令为：<code>scp -r /home/hadoop hadoop@服务器IP:/home/hadoop/</code>。注意slaves文件在master和slave机器上是不同的。</p>
+<h1 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h1><ul>
+<li>hadoop dfsadmin -report 查看集群状态</li>
+<li><a href="http://192.168.20.6:50070/dfshealth.jsp">http://192.168.20.6:50070/dfshealth.jsp</a>  查看NameNode状态</li>
+<li><a href="http://192.168.20.6:50030/jobtracker.jsp">http://192.168.20.6:50030/jobtracker.jsp</a> Map&#x2F;Reduce管理</li>
+<li>hadoop fs -mkdir input 在HDFS上创建文件夹</li>
+<li>hadoop fs -put ~&#x2F;file&#x2F;file*.txt input 将文件放入HDFS文件系统中</li>
+</ul>
+<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><ul>
+<li><a href="http://www.cnblogs.com/xia520pi/archive/2012/05/16/2503949.html">细细品味Hadoop系列</a>。超详细的hadoop教程，作者非常用心。</li>
+</ul>
+<h1 id="下载链接"><a href="#下载链接" class="headerlink" title="下载链接"></a>下载链接</h1><p><a href="http://pan.baidu.com/share/link?shareid=1235031445&uk=3506813023">http://pan.baidu.com/share/link?shareid=1235031445&uk=3506813023</a> 提取码：v8ok</p>
+]]></content>
+      <tags>
+        <tag>Hadoop</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>HBase性能测试</title>
+    <url>/post/hbase_test/</url>
+    <content><![CDATA[<p>本文选择四台机器作为集群环境，hadoop采用0.20.2，HBase采用0.90.2，zookeeper采用独立安装的3.3.2稳定版。本文所采用的数据均为简单的测试数据，如果插入的数据量大可能会对结果产生影响。集群环境部署情况如下：</p>
+<table>
+<tr>
+    <td>机器名</td>
+    <td>IP地址</td>
+    <td>用途</td>
+    <td>Hadoop模块</td>
+    <td>HBase模块</td>
+    <td>ZooKeeper模块</td>
+</tr>
+<tr>
+    <td>server206</td>
+    <td>192.168.20.6</td>
+    <td>Master</td>
+    <td>NameNode、JobTracker、SecondaryNameNode</td>
+    <td>HMaster</td>
+    <td>QuorumPeerMain</td>
+</tr>
+<tr>
+    <td>ap1</td>
+    <td>192.168.20.36</td>
+    <td>Slave</td>
+    <td>DataNode、TaskTracker</td>
+    <td>HRegionServer</td>
+    <td>QuorumPeerMain</td>
+</tr>
+<tr>
+    <td>ap2</td>
+    <td>192.168.20.38</td>
+    <td>Slave</td>
+    <td>DataNode、TaskTracker</td>
+    <td>HRegionServer</td>
+    <td>QuorumPeerMain</td>
+</tr>
+<tr>
+    <td>ap2</td>
+    <td>192.168.20.8</td>
+    <td>Slave</td>
+    <td>DataNode、TaskTracker</td>
+    <td>HRegionServer</td>
+    <td>QuorumPeerMain</td>
+</tr>
+</table>
+
+<h1 id="单线程插入100万行"><a href="#单线程插入100万行" class="headerlink" title="单线程插入100万行"></a>单线程插入100万行</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;1; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 1000000, 1000000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>测试5次的结果分布图如下：<br><img src="/ref/hadoop/hbase_test_1.png" alt="Image Title"><br>其中Y轴单位为毫秒。平均速度在1秒插入3万行记录。</p>
+<h1 id="10个线程每个线程插入10万行"><a href="#10个线程每个线程插入10万行" class="headerlink" title="10个线程每个线程插入10万行"></a>10个线程每个线程插入10万行</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;10; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 100000, 100000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>耗时分布图为：<br><img src="/ref/hadoop/hbase_test_2.png" alt="Image Title"><br>结果比单线程插入有提升。</p>
+<h1 id="20个线程每个线程插入5万行"><a href="#20个线程每个线程插入5万行" class="headerlink" title="20个线程每个线程插入5万行"></a>20个线程每个线程插入5万行</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;20; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 50000, 50000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>结果如下：<br><img src="/ref/hadoop/hbase_test_3.png" alt="Image Title"><br>执行结果跟10个线程效果差不多。</p>
+<h1 id="10个线程每个线程插入100万行"><a href="#10个线程每个线程插入100万行" class="headerlink" title="10个线程每个线程插入100万行"></a>10个线程每个线程插入100万行</h1><p>代码跟前面例子雷同，为节约篇幅未列出。<br>执行结果如下：<br><img src="/ref/hadoop/hbase_test_4.png" alt="Image Title"></p>
+<h1 id="20个线程每个线程插入50万行"><a href="#20个线程每个线程插入50万行" class="headerlink" title="20个线程每个线程插入50万行"></a>20个线程每个线程插入50万行</h1><p>执行结果如下：<br><img src="/ref/hadoop/hbase_test_5.png" alt="Image Title"></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li>多线程比单线程的插入效率有所提高，开10个线程与开20个线程的插入行效率差不多。</li>
+<li>插入效率存在不稳定情况，通过折线图可以看出。</li>
+</ul>
+<h1 id="相关文章"><a href="#相关文章" class="headerlink" title="相关文章"></a>相关文章</h1><p><a href="/post/hadoop_setup">在Linux上搭建Hadoop集群环境</a><br><a href="/post/hbase_setup">在Linux上搭建HBase集群环境</a></p>
+]]></content>
+      <tags>
+        <tag>Hadoop HBase</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hexo 使用 giscus 评论系统</title>
+    <url>/post/hexo-giscus/</url>
+    <content><![CDATA[<h1 id="设置评论系统"><a href="#设置评论系统" class="headerlink" title="设置评论系统"></a>设置评论系统</h1><p>我的博客系统 Hexo 之前使用 Gitment 作为评论：《<a href="/post/gitment">hexo添加gitment评论系统</a>》，后来年久失修，了解了下基于 Github Discussions 的 giscus 用的比较多，我也采用该方案。</p>
+<p>在配置 giscus 之间需要满足如下三个条件：</p>
+<ol>
+<li>该仓库是公开的，否则访客将无法查看 discussion。</li>
+<li>giscus app 已安装，否则访客将无法评论和回应。</li>
+<li>Discussions 功能已在你的仓库中启用。</li>
+</ol>
+<h1 id="在-Github-仓库中安装-gitcus"><a href="#在-Github-仓库中安装-gitcus" class="headerlink" title="在 Github 仓库中安装 gitcus"></a>在 Github 仓库中安装 gitcus</h1><p>我这里直接选择了我的 hexo 仓库 kuring&#x2F;kuring.github.io 作为了 git 仓库，因为该仓库本来的用途本来就是博客相关的内容，权限也是 public 的。</p>
+<p>接下来安装 Github app giscus，访问 <a href="https://github.com/apps/giscus%EF%BC%8C%E5%9C%A8%E5%AE%89%E8%A3%85%E6%97%B6%E4%BB%85%E9%80%89%E6%8B%A9%E9%9C%80%E8%A6%81%E7%9A%84">https://github.com/apps/giscus，在安装时仅选择需要的</a> repo 就可以了，不需要所有的 repo 都放开。</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/giscus-install.png"></p>
+<h1 id="在-Github-仓库中打开-Discussions-功能"><a href="#在-Github-仓库中打开-Discussions-功能" class="headerlink" title="在 Github 仓库中打开 Discussions 功能"></a>在 Github 仓库中打开 Discussions 功能</h1><p>进入到 Github 项目的 Settings -&gt; General -&gt; Features -&gt; Discussions 即可打开该功能。</p>
+<h1 id="获取到-Github-项目相关的-gitcus-配置"><a href="#获取到-Github-项目相关的-gitcus-配置" class="headerlink" title="获取到 Github 项目相关的 gitcus 配置"></a>获取到 Github 项目相关的 gitcus 配置</h1><p>访问页面 <a href="https://giscus.app/zh-CN%EF%BC%8C%E5%9C%A8%60%E9%85%8D%E7%BD%AE%60%E7%AB%A0%E8%8A%82%E4%B8%AD%E8%AE%BE%E7%BD%AE%E7%9B%B8%E5%85%B3%E7%9A%84%E9%85%8D%E7%BD%AE%EF%BC%8C%E5%8F%AF%E4%BB%A5%E8%8E%B7%E5%8F%96%E5%88%B0%E7%B1%BB%E4%BC%BC%E4%B8%8B%E9%9D%A2%E5%86%85%E5%AE%B9%EF%BC%9A">https://giscus.app/zh-CN，在`配置`章节中设置相关的配置，可以获取到类似下面内容：</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script src=&quot;https://giscus.app/client.js&quot;</span><br><span class="line">        data-repo=&quot;kuring/kuring.github.io&quot;</span><br><span class="line">        data-repo-id=&quot;MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=&quot;</span><br><span class="line">        data-category=&quot;Announcements&quot;</span><br><span class="line">        data-category-id=&quot;DIC_kwDOEOr4W84CdeTU&quot;</span><br><span class="line">        data-mapping=&quot;url&quot;</span><br><span class="line">        data-strict=&quot;0&quot;</span><br><span class="line">        data-reactions-enabled=&quot;1&quot;</span><br><span class="line">        data-emit-metadata=&quot;0&quot;</span><br><span class="line">        data-input-position=&quot;bottom&quot;</span><br><span class="line">        data-theme=&quot;preferred_color_scheme&quot;</span><br><span class="line">        data-lang=&quot;zh-CN&quot;</span><br><span class="line">        data-loading=&quot;lazy&quot;</span><br><span class="line">        crossorigin=&quot;anonymous&quot;</span><br><span class="line">        async&gt;</span><br><span class="line">&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<h1 id="在-Hexo-中配置-gitcus"><a href="#在-Hexo-中配置-gitcus" class="headerlink" title="在 Hexo 中配置 gitcus"></a>在 Hexo 中配置 gitcus</h1><p>因为 Hexo 我使用的为 Next 主题，我使用了 Next 的插件 <a href="https://github.com/next-theme/hexo-next-giscus">hexo-next-giscus</a>。</p>
+<p>在 Git 仓库目录下执行 <code>npm install hexo-next-giscus</code> 即可安装 giscus。</p>
+<p>修改 Git 仓库下的 <code>_config.yml</code> 文件，在最后面增加如下的内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">giscus:</span><br><span class="line">  enable: false</span><br><span class="line">  repo: # Github repository name</span><br><span class="line">  repo_id: # Github repository id</span><br><span class="line">  category: # Github discussion category</span><br><span class="line">  category_id: # Github discussion category id</span><br><span class="line">  # Available values: pathname | url | title | og:title</span><br><span class="line">  mapping: pathname</span><br><span class="line">  # Available values: 0 | 1</span><br><span class="line">  reactions_enabled: 1</span><br><span class="line">   # Available values: 0 | 1</span><br><span class="line">  emit_metadata: 1</span><br><span class="line">  # Available values: light | dark | dark_high_contrast | transparent_dark | preferred-color-scheme</span><br><span class="line">  theme: light</span><br><span class="line">  # Available values: en | zh-CN</span><br><span class="line">  lang: en</span><br><span class="line">  # Place the comment box above the comments</span><br><span class="line">  input_position: bottom</span><br><span class="line">  # Load the comments lazily</span><br><span class="line">  loading: lazy</span><br></pre></td></tr></table></figure>
+
+<p>其中很多的字段值来自上个章节获取到的 json 结果。</p>
+<p>至此，即完成了整个 gitcus 的配置。</p>
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
+<li><a href="https://giscus.app/zh-CN">giscus</a></li>
+<li><a href="https://github.com/kuring/kuring.github.io/settings">GitHub Discussions 快速入门</a></li>
+<li><a href="https://github.com/next-theme/hexo-next-giscus">hexo-next-giscus</a></li>
+</ul>
+]]></content>
+  </entry>
+  <entry>
+    <title>一个实例讲解HTTP的断点续传</title>
+    <url>/post/http_range/</url>
+    <content><![CDATA[<p>本文以从服务器下载一个文件为例，讲解HTTP的断点续传功能。</p>
+<p>客户端IP地址为：192.168.1.2<br>服务器IP地址为：192.168.1.3</p>
+<h1 id="客户端向服务器发送请求"><a href="#客户端向服务器发送请求" class="headerlink" title="客户端向服务器发送请求"></a>客户端向服务器发送请求</h1><p>客户端向服务器发送的请求为：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br></pre></td></tr></table></figure>
+
+<p>从中可以看出请求的文件名为deepc.a文件。</p>
+<h1 id="客户端向服务器发送具体请求"><a href="#客户端向服务器发送具体请求" class="headerlink" title="客户端向服务器发送具体请求"></a>客户端向服务器发送具体请求</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.100.189/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=0-32767</span><br></pre></td></tr></table></figure>
+
+<p>Range字段表示请求文件的范围为0-32767。</p>
+<h1 id="服务器响应"><a href="#服务器响应" class="headerlink" title="服务器响应"></a>服务器响应</h1><p>第一次服务器的HTTP响应报文如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.1.3</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.1.3/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=0-32767</span><br><span class="line"></span><br><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 32768</span><br><span class="line">Content-Range: bytes 0-32767/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=100</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
+
+<p>HTTP的状态为206，表示服务器已经处理了部分HTTP相应。其中Content-Range字段表示服务器已经响应了0-32767个字节的文件内容。8322278表示文件的总长度为8322278字节。</p>
+<h1 id="客户端继续向服务器发送请求"><a href="#客户端继续向服务器发送请求" class="headerlink" title="客户端继续向服务器发送请求"></a>客户端继续向服务器发送请求</h1><p>客户端根据上次HTTP报文中服务器已经返回给的客户端的数据情况继续向服务器发送请求报文，向服务器发送的请求报文内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.100.189/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=32768-8322277</span><br><span class="line">If-Range: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line"></span><br><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 8289510</span><br><span class="line">Content-Range: bytes 32768-8322277/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=98</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
+
+<p>Content-Range的内容表示客户端向服务器请求文件中32768-8322277之间的字节数据。</p>
+<h1 id="第二次服务器的HTTP响应报文如下："><a href="#第二次服务器的HTTP响应报文如下：" class="headerlink" title="第二次服务器的HTTP响应报文如下："></a>第二次服务器的HTTP响应报文如下：</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 8289510</span><br><span class="line">Content-Range: bytes 32768-8322277/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=98</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
+
+<p>表示服务器已经相应完成了32768-8322277之间的数据。</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>Linux下网卡混杂模式</title>
+    <url>/post/if-promiscuous/</url>
+    <content><![CDATA[<p>网卡的混杂模式是指网卡将其接收的所有流量都交给cpu。非混杂模式下，网卡仅接收目的mac地址是自己mac地址的单播，以及多播和广播包，可以看出混杂模式是工作在二层的。</p>
+<p>通过ifconfig eth0的方式，如果输出中包含了PROMISC字段，说明网卡处于混杂模式。但是如果ifconfig 命令的输出中未包含PROMISC字段，并不能说明网卡处于非混杂模式下。</p>
+<p>可以通过查看 cat &#x2F;sys&#x2F;class&#x2F;net&#x2F;bond0&#x2F;flags 的输出得知，如果置位了0x100，说明处于混杂模式。</p>
+]]></content>
+  </entry>
+  <entry>
     <title>12要素应用</title>
     <url>/post/12-factors-app/</url>
     <content><![CDATA[<p>2012 年，Heroku 创始人 Adam Wiggins 发布十二要素应用宣言，又被称为微服务十二要素。</p>
@@ -3744,241 +3987,6 @@
 ]]></content>
   </entry>
   <entry>
-    <title>微信公众号通过扣子接入大模型</title>
-    <url>/post/gzh-coze/</url>
-    <content><![CDATA[<p>在字节的 AI 发布平台<a href="https://www.coze.cn/">扣子</a>中提供了创建机器人的功能，并且可以直接对接微信公众号，使用在微信公众号中回复消息，由大模型直接回复的效果。</p>
-<h1 id="操作步骤"><a href="#操作步骤" class="headerlink" title="操作步骤"></a>操作步骤</h1><p>整体操作步骤非常简单，需要申请一个 Coze 的账号和开通微信公众号的开发者功能。</p>
-<p>微信公众号的开发者功能在这里配置：<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240619211112.png" alt="image.png"></p>
-<p>点击<code>创建 Bot</code> 按钮，输入 Bot 名称后点击<code>确认</code>。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240619210355.png" alt="image.png|570"></p>
-<p>在机器人设置页面，可以配置模型、选择自己训练的知识库等操作。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240619210909.png" alt="image.png"></p>
-<p>设置完成后，点击<code>发布</code>，选择<code>微信公众号（订阅号）</code>配置功能，设置对应的微信公众号的 AppID。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/20240619211019.png" alt="image.png"></p>
-<h1 id="体验"><a href="#体验" class="headerlink" title="体验"></a>体验</h1><p>访问公众号直接输入内容，可以看到自动回复内容。<br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/IMG_3856.PNG.JPG" alt="IMG_3856.PNG.JPG"></p>
-]]></content>
-  </entry>
-  <entry>
-    <title>在Linux上搭建Hadoop集群环境</title>
-    <url>/post/hadoop_setup/</url>
-    <content><![CDATA[<p>本文选择安装的hadoop版本为网上资料较多的0.20.2，对于不懂的新技术要持保守态度。遇到问题解决问题的痛苦远比体会用不着功能的新版本的快感来的更猛烈。</p>
-<h1 id="安装环境"><a href="#安装环境" class="headerlink" title="安装环境"></a>安装环境</h1><p>本文选择了三台机器来搭建hadoop集群，1个Master和2个Slave。本文中的master主机即namenode所在的机器，slave即datanode所在的机器。节点的机器名和IP地址如下</p>
-<table>
-<tr>
-    <td>机器名</td>
-    <td>IP地址</td>
-    <td>用途</td>
-    <td>运行模块</td>
-</tr>
-<tr>
-    <td>server206</td>
-    <td>192.168.20.6</td>
-    <td>Master</td>
-    <td>NameNode、JobTracker、SecondaryNameNode</td>
-</tr>
-<tr>
-    <td>ap1</td>
-    <td>192.168.20.36</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-</tr>
-<tr>
-    <td>ap2</td>
-    <td>192.168.20.38</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-</tr>
-</table>
-
-
-<h1 id="安装Java"><a href="#安装Java" class="headerlink" title="安装Java"></a>安装Java</h1><ol>
-<li>检查本机是否已安装Java<br>在命令行中输入<code>java -version</code>判断是否已经安装。如果已经安装检查Java的版本，某些操作系统在安装的时候会安装Jdk，但可能版本会太低。如果版本过低，需要将旧的版本删除。在Redhat操作系统中可以通过rpm命令来删除系统自带的Jdk。</li>
-<li>安装java<br>本文选择jdk1.6安装，将解压出的文件夹jdk1.6.0_10复制到&#x2F;usr&#x2F;java目录下。</li>
-<li>设置java的环境变量<br>添加系统环境变量，修改&#x2F;etc&#x2F;profile文件，在文件末尾添加如下内容：<blockquote>
-<p>export JAVA_HOME&#x3D;&#x2F;usr&#x2F;java&#x2F;jdk1.6.0_10<br>export CLASSPATH&#x3D;.:$JAVA_HOME&#x2F;lib&#x2F;tools.jar:$JAVA_HOME&#x2F;lib&#x2F;dt.jar<br>export PATH&#x3D;$JAVA_HOME&#x2F;bin:$PATH<br>export JRE_HOME&#x3D;$JAVA_HOME&#x2F;jre</p>
-</blockquote>
- 修改完profile文件后要执行<code>source /etc/profile</code>命令才能使刚才的修改在该命令行环境下生效。</li>
-<li>检查java是否安装成功<br>在命令行中输入java -version、javac命令来查看是否安装成功及安装版本。</li>
-</ol>
-<h1 id="配置hosts文件"><a href="#配置hosts文件" class="headerlink" title="配置hosts文件"></a>配置hosts文件</h1><p>本步骤必须操作，需要root用户来操作，修改完成之后立即生效。在三台机器的&#x2F;etc&#x2F;hosts文件末尾添加如下内容：</p>
-<blockquote>
-<p>192.168.20.6   server206<br>192.168.20.36   ap1<br>192.168.20.38   ap2</p>
-</blockquote>
-<p>修改完成之后可以通过<code>ping 主机名</code>的方式来测试hosts文件是否正确。</p>
-<h1 id="新建hadoop用户"><a href="#新建hadoop用户" class="headerlink" title="新建hadoop用户"></a>新建hadoop用户</h1><p>在三台机器上分别新建hadoop用户，该用户的目录为&#x2F;home&#x2F;hadoop。利用useradd命令来添加用户，利用passwd命令给用户添加密码。</p>
-<h1 id="配置SSH免登录"><a href="#配置SSH免登录" class="headerlink" title="配置SSH免登录"></a>配置SSH免登录</h1><p>该步骤非必须，推荐配置，否则在Master上执行start-all.sh命令来启动hadoop集群的时候需要手动输入ssh密码，非常麻烦。<br>原理：用户将自己的公钥储存在远程主机上。登录的时候，远程主机会向用户发送一段随机字符串，用户用自己的私钥加密后，再发回来。远程主机用事先储存的公钥进行解密，如果成功，就证明用户是可信的，直接允许登录shell，不再要求输入密码。<br>在本例中，需要实现的是192.168.20.6上的hadoop用户可以无密码登录自己、192.168.20.36和192.168.20.38的hadoop用户。需要将192.168.20.6上的ssh公钥复制到192.168.20.36和192.168.20.38机器上。</p>
-<ol>
-<li>在192.168.20.6上执行<code>ssh-keygen –t rsa</code>命令来生成ssh密钥对。会在&#x2F;home&#x2F;hadoop&#x2F;.ssh目录下生成id_rsa.pub和id_rsa两个文件，其中id_rsa.pub为公钥文件，id_rsa为私钥文件。</li>
-<li>在192.168.20.6上执行<code>cat ~/.ssh/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</code>命令将公钥添加到授权的key里。</li>
-<li>权限设置。在192.168.20.6上执行<code>chmod 600 ~/.ssh/authorized_keys</code>来修改authorized_keys文件的权限，执行<code>chmod 700 ~/.ssh</code>命令将.ssh文件夹的权限设置为700。如果权限不对无密码登录就配置不成功，而且没有错误提示，这一步特别注意。</li>
-<li>在本机上测试是否设置无密码登录成功。在192.168.20.6上执行<code>ssh -p 本机SSH服务端口号 localhost</code>，如果不需要输入密码则登录成功。</li>
-<li>利用scp命令将192.168.20.6上的公钥文件id_rsa.pub追加到192.168.20.36和192.168.20.38机器上的~&#x2F;.ssh&#x2F;authorized_keys文件中。scp命令的格式如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">scp -P ssh端口号 ~/.ssh/id_rsa.pub hadoop@192.168.20.36:~/id_rsa.pub</span><br></pre></td></tr></table></figure>
-在192.168.20.36和192.168.20.38机器上分别执行<code>cat ~/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</code>命令将192.168.20.6机器上的公钥添加到authorized_keys文件的尾部。</li>
-<li>配置无密码登录完成，在Master机器上执行<code>ssh -P 本机SSH服务端口号 要连接的服务器IP地址</code>命令进行测试。</li>
-</ol>
-<h1 id="搭建单机版hadoop"><a href="#搭建单机版hadoop" class="headerlink" title="搭建单机版hadoop"></a>搭建单机版hadoop</h1><p>在192.168.20.6上首先搭建单机版hadoop进行测试。</p>
-<ol>
-<li>将hadoop-0.20.2.tar.gz文件解压到hadoop用户的目录下。</li>
-<li>配置hadoop的环境变量。修改&#x2F;etc&#x2F;profile文件，在文件的下面加入如下：<blockquote>
-<p>HADOOP_HOME&#x3D;&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2<br>export HADOOP_HOME<br>export HADOOP&#x3D;$HADOOP_HOME&#x2F;bin<br>export PATH&#x3D;$HADOOP:$PATH</p>
-</blockquote>
-</li>
-</ol>
-<p>修改完成之后执行<code>source /etc/profile</code>使修改的环境变量生效。<br>3. 配置hadoop用到的java环境变量<br>修改conf&#x2F;hadoop-env.sh文件，添加<code>export JAVA_HOME=/usr/java/jdk1.6.0_10</code>。<br>4. 修改conf&#x2F;core-site.xml的内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.default.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://localhost:9000&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.replication&lt;/name&gt; </span><br><span class="line">        &lt;value&gt;1&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<ol start="5">
-<li>修改&#x2F;conf&#x2F;mapred-site.xml的内容如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;   </span><br><span class="line">        &lt;name&gt;mapred.job.tracker&lt;/name&gt;  </span><br><span class="line">        &lt;value&gt;localhost:9001&lt;/value&gt;   </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure></li>
-<li>至此单击版搭建完毕。可以通过hadoop自带的wordcount程序测试是否运行正常。下面为运行wordcount例子的步骤。</li>
-<li>在hadoop目录下新建input文件夹。</li>
-<li>将conf目录下的内容拷贝到input文件夹下，执行<code>cp conf/* input</code>。</li>
-<li>通过start-all.sh脚本来启动单机版hadoop。</li>
-<li>执行wordcount程序：<code>hadoop jar hadoop-0.20.2-examples.jar wordcount input output</code>。</li>
-<li>通过stop-all.sh脚本来停止单机版hadoop。</li>
-</ol>
-<h1 id="搭建分布式hadoop"><a href="#搭建分布式hadoop" class="headerlink" title="搭建分布式hadoop"></a>搭建分布式hadoop</h1><p>在上述基础之上，在192.168.20.6上执行如下操作。<br>1. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的core-site.xml文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.default.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://192.168.20.6:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<p>如没有配置hadoop.tmp.dir参数，此时系统默认的临时目录为：&#x2F;tmp&#x2F;hadoo-hadoop。而这个目录在每次重启后都会被干掉，必须重新执行format才行，否则会出错。<br>2. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的hdfs-site.xml文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;dfs.replication&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;1&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;dfs.support.append&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;true&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<p>3. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的mapred-site.xml文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;mapred.job.tracker&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;http://192.168.20.6:9001&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<p>4. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的masters文件。<br>将Master机器的IP地址或主机名添加进文件，如192.168.20.6。<br>5. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的slaves文件。<em>Master主机特有</em><br>在其中将slave节点的Ip地址或主机名添加进文件中，本例中加入</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">192.168.20.36</span><br><span class="line">192.168.20.38</span><br></pre></td></tr></table></figure>
-<p>6. hadoop主机的master主机已经配置完毕，利用scp命令将hadoop-0.20.2目录复制到两台slave机器的hadoop目录下。命令为：<code>scp -r /home/hadoop hadoop@服务器IP:/home/hadoop/</code>。注意slaves文件在master和slave机器上是不同的。</p>
-<h1 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h1><ul>
-<li>hadoop dfsadmin -report 查看集群状态</li>
-<li><a href="http://192.168.20.6:50070/dfshealth.jsp">http://192.168.20.6:50070/dfshealth.jsp</a>  查看NameNode状态</li>
-<li><a href="http://192.168.20.6:50030/jobtracker.jsp">http://192.168.20.6:50030/jobtracker.jsp</a> Map&#x2F;Reduce管理</li>
-<li>hadoop fs -mkdir input 在HDFS上创建文件夹</li>
-<li>hadoop fs -put ~&#x2F;file&#x2F;file*.txt input 将文件放入HDFS文件系统中</li>
-</ul>
-<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><ul>
-<li><a href="http://www.cnblogs.com/xia520pi/archive/2012/05/16/2503949.html">细细品味Hadoop系列</a>。超详细的hadoop教程，作者非常用心。</li>
-</ul>
-<h1 id="下载链接"><a href="#下载链接" class="headerlink" title="下载链接"></a>下载链接</h1><p><a href="http://pan.baidu.com/share/link?shareid=1235031445&uk=3506813023">http://pan.baidu.com/share/link?shareid=1235031445&uk=3506813023</a> 提取码：v8ok</p>
-]]></content>
-      <tags>
-        <tag>Hadoop</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>HBase性能测试</title>
-    <url>/post/hbase_test/</url>
-    <content><![CDATA[<p>本文选择四台机器作为集群环境，hadoop采用0.20.2，HBase采用0.90.2，zookeeper采用独立安装的3.3.2稳定版。本文所采用的数据均为简单的测试数据，如果插入的数据量大可能会对结果产生影响。集群环境部署情况如下：</p>
-<table>
-<tr>
-    <td>机器名</td>
-    <td>IP地址</td>
-    <td>用途</td>
-    <td>Hadoop模块</td>
-    <td>HBase模块</td>
-    <td>ZooKeeper模块</td>
-</tr>
-<tr>
-    <td>server206</td>
-    <td>192.168.20.6</td>
-    <td>Master</td>
-    <td>NameNode、JobTracker、SecondaryNameNode</td>
-    <td>HMaster</td>
-    <td>QuorumPeerMain</td>
-</tr>
-<tr>
-    <td>ap1</td>
-    <td>192.168.20.36</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-    <td>HRegionServer</td>
-    <td>QuorumPeerMain</td>
-</tr>
-<tr>
-    <td>ap2</td>
-    <td>192.168.20.38</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-    <td>HRegionServer</td>
-    <td>QuorumPeerMain</td>
-</tr>
-<tr>
-    <td>ap2</td>
-    <td>192.168.20.8</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-    <td>HRegionServer</td>
-    <td>QuorumPeerMain</td>
-</tr>
-</table>
-
-<h1 id="单线程插入100万行"><a href="#单线程插入100万行" class="headerlink" title="单线程插入100万行"></a>单线程插入100万行</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;1; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 1000000, 1000000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>测试5次的结果分布图如下：<br><img src="/ref/hadoop/hbase_test_1.png" alt="Image Title"><br>其中Y轴单位为毫秒。平均速度在1秒插入3万行记录。</p>
-<h1 id="10个线程每个线程插入10万行"><a href="#10个线程每个线程插入10万行" class="headerlink" title="10个线程每个线程插入10万行"></a>10个线程每个线程插入10万行</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;10; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 100000, 100000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>耗时分布图为：<br><img src="/ref/hadoop/hbase_test_2.png" alt="Image Title"><br>结果比单线程插入有提升。</p>
-<h1 id="20个线程每个线程插入5万行"><a href="#20个线程每个线程插入5万行" class="headerlink" title="20个线程每个线程插入5万行"></a>20个线程每个线程插入5万行</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;20; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 50000, 50000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>结果如下：<br><img src="/ref/hadoop/hbase_test_3.png" alt="Image Title"><br>执行结果跟10个线程效果差不多。</p>
-<h1 id="10个线程每个线程插入100万行"><a href="#10个线程每个线程插入100万行" class="headerlink" title="10个线程每个线程插入100万行"></a>10个线程每个线程插入100万行</h1><p>代码跟前面例子雷同，为节约篇幅未列出。<br>执行结果如下：<br><img src="/ref/hadoop/hbase_test_4.png" alt="Image Title"></p>
-<h1 id="20个线程每个线程插入50万行"><a href="#20个线程每个线程插入50万行" class="headerlink" title="20个线程每个线程插入50万行"></a>20个线程每个线程插入50万行</h1><p>执行结果如下：<br><img src="/ref/hadoop/hbase_test_5.png" alt="Image Title"></p>
-<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
-<li>多线程比单线程的插入效率有所提高，开10个线程与开20个线程的插入行效率差不多。</li>
-<li>插入效率存在不稳定情况，通过折线图可以看出。</li>
-</ul>
-<h1 id="相关文章"><a href="#相关文章" class="headerlink" title="相关文章"></a>相关文章</h1><p><a href="/post/hadoop_setup">在Linux上搭建Hadoop集群环境</a><br><a href="/post/hbase_setup">在Linux上搭建HBase集群环境</a></p>
-]]></content>
-      <tags>
-        <tag>Hadoop HBase</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Hexo 使用 giscus 评论系统</title>
-    <url>/post/hexo-giscus/</url>
-    <content><![CDATA[<h1 id="设置评论系统"><a href="#设置评论系统" class="headerlink" title="设置评论系统"></a>设置评论系统</h1><p>我的博客系统 Hexo 之前使用 Gitment 作为评论：《<a href="/post/gitment">hexo添加gitment评论系统</a>》，后来年久失修，了解了下基于 Github Discussions 的 giscus 用的比较多，我也采用该方案。</p>
-<p>在配置 giscus 之间需要满足如下三个条件：</p>
-<ol>
-<li>该仓库是公开的，否则访客将无法查看 discussion。</li>
-<li>giscus app 已安装，否则访客将无法评论和回应。</li>
-<li>Discussions 功能已在你的仓库中启用。</li>
-</ol>
-<h1 id="在-Github-仓库中安装-gitcus"><a href="#在-Github-仓库中安装-gitcus" class="headerlink" title="在 Github 仓库中安装 gitcus"></a>在 Github 仓库中安装 gitcus</h1><p>我这里直接选择了我的 hexo 仓库 kuring&#x2F;kuring.github.io 作为了 git 仓库，因为该仓库本来的用途本来就是博客相关的内容，权限也是 public 的。</p>
-<p>接下来安装 Github app giscus，访问 <a href="https://github.com/apps/giscus%EF%BC%8C%E5%9C%A8%E5%AE%89%E8%A3%85%E6%97%B6%E4%BB%85%E9%80%89%E6%8B%A9%E9%9C%80%E8%A6%81%E7%9A%84">https://github.com/apps/giscus，在安装时仅选择需要的</a> repo 就可以了，不需要所有的 repo 都放开。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/giscus-install.png"></p>
-<h1 id="在-Github-仓库中打开-Discussions-功能"><a href="#在-Github-仓库中打开-Discussions-功能" class="headerlink" title="在 Github 仓库中打开 Discussions 功能"></a>在 Github 仓库中打开 Discussions 功能</h1><p>进入到 Github 项目的 Settings -&gt; General -&gt; Features -&gt; Discussions 即可打开该功能。</p>
-<h1 id="获取到-Github-项目相关的-gitcus-配置"><a href="#获取到-Github-项目相关的-gitcus-配置" class="headerlink" title="获取到 Github 项目相关的 gitcus 配置"></a>获取到 Github 项目相关的 gitcus 配置</h1><p>访问页面 <a href="https://giscus.app/zh-CN%EF%BC%8C%E5%9C%A8%60%E9%85%8D%E7%BD%AE%60%E7%AB%A0%E8%8A%82%E4%B8%AD%E8%AE%BE%E7%BD%AE%E7%9B%B8%E5%85%B3%E7%9A%84%E9%85%8D%E7%BD%AE%EF%BC%8C%E5%8F%AF%E4%BB%A5%E8%8E%B7%E5%8F%96%E5%88%B0%E7%B1%BB%E4%BC%BC%E4%B8%8B%E9%9D%A2%E5%86%85%E5%AE%B9%EF%BC%9A">https://giscus.app/zh-CN，在`配置`章节中设置相关的配置，可以获取到类似下面内容：</a></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;script src=&quot;https://giscus.app/client.js&quot;</span><br><span class="line">        data-repo=&quot;kuring/kuring.github.io&quot;</span><br><span class="line">        data-repo-id=&quot;MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=&quot;</span><br><span class="line">        data-category=&quot;Announcements&quot;</span><br><span class="line">        data-category-id=&quot;DIC_kwDOEOr4W84CdeTU&quot;</span><br><span class="line">        data-mapping=&quot;url&quot;</span><br><span class="line">        data-strict=&quot;0&quot;</span><br><span class="line">        data-reactions-enabled=&quot;1&quot;</span><br><span class="line">        data-emit-metadata=&quot;0&quot;</span><br><span class="line">        data-input-position=&quot;bottom&quot;</span><br><span class="line">        data-theme=&quot;preferred_color_scheme&quot;</span><br><span class="line">        data-lang=&quot;zh-CN&quot;</span><br><span class="line">        data-loading=&quot;lazy&quot;</span><br><span class="line">        crossorigin=&quot;anonymous&quot;</span><br><span class="line">        async&gt;</span><br><span class="line">&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<h1 id="在-Hexo-中配置-gitcus"><a href="#在-Hexo-中配置-gitcus" class="headerlink" title="在 Hexo 中配置 gitcus"></a>在 Hexo 中配置 gitcus</h1><p>因为 Hexo 我使用的为 Next 主题，我使用了 Next 的插件 <a href="https://github.com/next-theme/hexo-next-giscus">hexo-next-giscus</a>。</p>
-<p>在 Git 仓库目录下执行 <code>npm install hexo-next-giscus</code> 即可安装 giscus。</p>
-<p>修改 Git 仓库下的 <code>_config.yml</code> 文件，在最后面增加如下的内容：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">giscus:</span><br><span class="line">  enable: false</span><br><span class="line">  repo: # Github repository name</span><br><span class="line">  repo_id: # Github repository id</span><br><span class="line">  category: # Github discussion category</span><br><span class="line">  category_id: # Github discussion category id</span><br><span class="line">  # Available values: pathname | url | title | og:title</span><br><span class="line">  mapping: pathname</span><br><span class="line">  # Available values: 0 | 1</span><br><span class="line">  reactions_enabled: 1</span><br><span class="line">   # Available values: 0 | 1</span><br><span class="line">  emit_metadata: 1</span><br><span class="line">  # Available values: light | dark | dark_high_contrast | transparent_dark | preferred-color-scheme</span><br><span class="line">  theme: light</span><br><span class="line">  # Available values: en | zh-CN</span><br><span class="line">  lang: en</span><br><span class="line">  # Place the comment box above the comments</span><br><span class="line">  input_position: bottom</span><br><span class="line">  # Load the comments lazily</span><br><span class="line">  loading: lazy</span><br></pre></td></tr></table></figure>
-
-<p>其中很多的字段值来自上个章节获取到的 json 结果。</p>
-<p>至此，即完成了整个 gitcus 的配置。</p>
-<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
-<li><a href="https://giscus.app/zh-CN">giscus</a></li>
-<li><a href="https://github.com/kuring/kuring.github.io/settings">GitHub Discussions 快速入门</a></li>
-<li><a href="https://github.com/next-theme/hexo-next-giscus">hexo-next-giscus</a></li>
-</ul>
-]]></content>
-  </entry>
-  <entry>
-    <title>一个实例讲解HTTP的断点续传</title>
-    <url>/post/http_range/</url>
-    <content><![CDATA[<p>本文以从服务器下载一个文件为例，讲解HTTP的断点续传功能。</p>
-<p>客户端IP地址为：192.168.1.2<br>服务器IP地址为：192.168.1.3</p>
-<h1 id="客户端向服务器发送请求"><a href="#客户端向服务器发送请求" class="headerlink" title="客户端向服务器发送请求"></a>客户端向服务器发送请求</h1><p>客户端向服务器发送的请求为：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br></pre></td></tr></table></figure>
-
-<p>从中可以看出请求的文件名为deepc.a文件。</p>
-<h1 id="客户端向服务器发送具体请求"><a href="#客户端向服务器发送具体请求" class="headerlink" title="客户端向服务器发送具体请求"></a>客户端向服务器发送具体请求</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.100.189/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=0-32767</span><br></pre></td></tr></table></figure>
-
-<p>Range字段表示请求文件的范围为0-32767。</p>
-<h1 id="服务器响应"><a href="#服务器响应" class="headerlink" title="服务器响应"></a>服务器响应</h1><p>第一次服务器的HTTP响应报文如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.1.3</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.1.3/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=0-32767</span><br><span class="line"></span><br><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 32768</span><br><span class="line">Content-Range: bytes 0-32767/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=100</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
-
-<p>HTTP的状态为206，表示服务器已经处理了部分HTTP相应。其中Content-Range字段表示服务器已经响应了0-32767个字节的文件内容。8322278表示文件的总长度为8322278字节。</p>
-<h1 id="客户端继续向服务器发送请求"><a href="#客户端继续向服务器发送请求" class="headerlink" title="客户端继续向服务器发送请求"></a>客户端继续向服务器发送请求</h1><p>客户端根据上次HTTP报文中服务器已经返回给的客户端的数据情况继续向服务器发送请求报文，向服务器发送的请求报文内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /deepc.a HTTP/1.1</span><br><span class="line">Host: 192.168.100.189</span><br><span class="line">Connection: keep-alive</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.14 Safari/537.36</span><br><span class="line">Accept: */*</span><br><span class="line">Referer: http://192.168.100.189/deepc.a</span><br><span class="line">Accept-Encoding: gzip,deflate,sdch</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</span><br><span class="line">Range: bytes=32768-8322277</span><br><span class="line">If-Range: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line"></span><br><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 8289510</span><br><span class="line">Content-Range: bytes 32768-8322277/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=98</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
-
-<p>Content-Range的内容表示客户端向服务器请求文件中32768-8322277之间的字节数据。</p>
-<h1 id="第二次服务器的HTTP响应报文如下："><a href="#第二次服务器的HTTP响应报文如下：" class="headerlink" title="第二次服务器的HTTP响应报文如下："></a>第二次服务器的HTTP响应报文如下：</h1><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">HTTP/1.1 206 Partial Content</span><br><span class="line">Date: Sun, 04 May 2014 05:14:54 GMT</span><br><span class="line">Server: Apache/2.4.4 (Win32) PHP/5.4.16</span><br><span class="line">Last-Modified: Sat, 03 May 2014 00:43:22 GMT</span><br><span class="line">ETag: &quot;7efce6-4f8742f6ed9b2&quot;</span><br><span class="line">Accept-Ranges: bytes</span><br><span class="line">Content-Length: 8289510</span><br><span class="line">Content-Range: bytes 32768-8322277/8322278</span><br><span class="line">Keep-Alive: timeout=5, max=98</span><br><span class="line">Connection: Keep-Alive</span><br></pre></td></tr></table></figure>
-
-<p>表示服务器已经相应完成了32768-8322277之间的数据。</p>
-]]></content>
-  </entry>
-  <entry>
     <title>大页内存</title>
     <url>/post/huge-page/</url>
     <content><![CDATA[<h2 id="大页内存介绍"><a href="#大页内存介绍" class="headerlink" title="大页内存介绍"></a>大页内存介绍</h2><p>一个操作系统上一台机器的物理内存是有限的，而操作系统上却运行着大量的进程，为了对进程屏蔽物理内存的差异，操作系统引入了虚拟内存的概念。Linux系统中虚拟内存是按照页的方式来进行管理的，每个页的默认大小为4K。如果物理内存非常大，就会导致虚拟内存和物理内存映射的页表（TLB）非常大。为了减少页表，一个可行的方法为增加页的大小。<br>​</p>
@@ -4004,14 +4012,6 @@
 <p>在节点上配置了大页内存后，kubelet会自动感知到大页内存的配置，会修改node配置。会在hugepages-2Mi中有对应的大页内存容量，memory字段会去掉对应的大页内存量。</p>
 <figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">allocatable:</span></span><br><span class="line">  <span class="attr">cpu:</span> <span class="string">&quot;15&quot;</span></span><br><span class="line">  <span class="attr">ephemeral-storage:</span> <span class="string">41152812Ki</span></span><br><span class="line">  <span class="attr">hugepages-1Gi:</span> <span class="string">&quot;0&quot;</span></span><br><span class="line">  <span class="attr">hugepages-2Mi:</span> <span class="string">40Mi</span></span><br><span class="line">  <span class="attr">memory:</span> <span class="string">63998924Ki</span></span><br><span class="line">  <span class="attr">pods:</span> <span class="string">&quot;110&quot;</span></span><br><span class="line"><span class="attr">capacity:</span></span><br><span class="line">  <span class="attr">cpu:</span> <span class="string">&quot;16&quot;</span></span><br><span class="line">  <span class="attr">ephemeral-storage:</span> <span class="string">41152812Ki</span></span><br><span class="line">  <span class="attr">hugepages-1Gi:</span> <span class="string">&quot;0&quot;</span></span><br><span class="line">  <span class="attr">hugepages-2Mi:</span> <span class="string">40Mi</span></span><br><span class="line">  <span class="attr">memory:</span> <span class="string">64756684Ki</span></span><br><span class="line">  <span class="attr">pods:</span> <span class="string">&quot;110&quot;</span></span><br></pre></td></tr></table></figure>
 <p>pod在使用大页内存的时候，需要以volume的方式挂载到pod中，pod对大页内存的使用跟普通文件系统相同。</p>
-]]></content>
-  </entry>
-  <entry>
-    <title>Linux下网卡混杂模式</title>
-    <url>/post/if-promiscuous/</url>
-    <content><![CDATA[<p>网卡的混杂模式是指网卡将其接收的所有流量都交给cpu。非混杂模式下，网卡仅接收目的mac地址是自己mac地址的单播，以及多播和广播包，可以看出混杂模式是工作在二层的。</p>
-<p>通过ifconfig eth0的方式，如果输出中包含了PROMISC字段，说明网卡处于混杂模式。但是如果ifconfig 命令的输出中未包含PROMISC字段，并不能说明网卡处于非混杂模式下。</p>
-<p>可以通过查看 cat &#x2F;sys&#x2F;class&#x2F;net&#x2F;bond0&#x2F;flags 的输出得知，如果置位了0x100，说明处于混杂模式。</p>
 ]]></content>
   </entry>
   <entry>
@@ -8206,6 +8206,43 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
       </tags>
   </entry>
   <entry>
+    <title>北京自驾青海甘肃大环线系列 - 3</title>
+    <url>/post/qinghai-3/</url>
+    <content><![CDATA[<h2 id="第三天"><a href="#第三天" class="headerlink" title="第三天"></a>第三天</h2><p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-1.png"></p>
+<p>行程：宁夏回族自治区中卫市中宁县 -&gt; 青海省西宁市</p>
+<p>路程：500公里</p>
+<p>日期：2019.4.20</p>
+<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-2.jpeg"></p>
+<p>昨晚到酒店比较晚，早上拉开窗帘，一所学校的操场映入眼帘，令我眼前一亮。离开校园已经太久了，看到同学们身穿运动装在操场上洋溢着青春即亲切又陌生。</p>
+<h3 id="第一站-黄河畔"><a href="#第一站-黄河畔" class="headerlink" title="第一站 黄河畔"></a>第一站 黄河畔</h3><p>从地图上看中宁县城离黄河比较近，自然要去黄河边上走一走。但与保德县和府谷县不同的是，中宁县并不傍黄河而建，主城区而是离黄河有一公里的距离。我猜测保德县和府谷县边的黄河在地势低洼处，即使河水泛滥也不会殃及县城。但中宁县地势却是非常平坦，不能依靠地势优势阻止泛滥的河水，因此县城的选址离黄河稍有距离。</p>
+<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-3.jpeg"></p>
+<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-4.jpeg"></p>
+<p>远处的黄河边上有一个多层的塔，是中宁县枸杞博物馆，中宁县有“天下枸杞出宁夏,中宁枸杞甲天下”的说法，因此建个枸杞博物馆还是比较合适的。由于到枸杞博物馆的路并不好走，而且不能判断此刻博物馆是对外开放，并未前往参观。</p>
+<p>黄河水比其下游的府谷县的黄河水要变黄了很多，这也是我一直比较奇怪的地方。河道非常宽，目测有至少1公里的样子，现在是枯水期，河水并不太多。河床上有各式各样的鹅卵石，不知经过了多少次的河水冲刷才形成了现在的形状，我们个体的生命相对鹅卵石的生命实在是太短，挑选了几个像模像样的留作纪念。</p>
+<h3 id="在路上"><a href="#在路上" class="headerlink" title="在路上"></a>在路上</h3><p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-5.jpeg"></p>
+<p>宁夏境内，一路上偶尔会看到种植了一些铺着地膜的农作物，我猜测是土豆的可能性比较大，原因是山东的种植土豆方法就是类似思路。但看下田地中的土质，大部分都是小石块，哪有多少土壤成分呀，倒是拿着石块压着地膜来防止大风非常的方便。</p>
+<p>在甘肃和青海接壤地方，道路两侧多了很多树木，，山上的草有很多都绿了起来，生机勃勃的。两天之内满眼都是枯黄色的画面，突然出现鲜绿色还有点不适应。</p>
+<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-6.png"></p>
+<p>查看青海省的地图会发现，有好几个地级市都是围绕着青海湖命名的，海东市、海南藏族自治州、海西蒙古族藏族自治州、海北藏族自治州。提到海南，不熟悉的人还以为是海南岛呢。</p>
+<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-7.png"></p>
+<p>地图中还有一个比较有意思的地方，海西蒙古族藏族自治州居然有两块区域，中间被玉树给分割开了，完全不接壤。让我立马想到的是在中国版图中另外比较有意思的是河北省的三河市，三河市被北京市和天津市包围，像是河北省的一个孤岛。</p>
+<p>青海省有藏族和回族比较容易理解，居然还有蒙古族？要不也就不会叫海西蒙古族藏族自治州了。实际上内蒙古的最西端跟青海省仅隔了甘肃省一段狭长的河西走廊，直线距离上还是特别近的。蒙古族迁徙到青海要从元朝说起，整个中国的版图都是元朝的天下，自然青海省有就了蒙古族，后续又陆陆续续的有蒙古族迁徙都青海省。但青海省的蒙古族还吸收了部分当地藏族的习俗，很难说是蒙古族入侵藏族，还是藏族同化了蒙古族。</p>
+<p>青海境内的青藏高速施工，走了很长一段的非高速，跟青海的村庄和县城有了第一次近距离接触的机会。青海省的海东市相对于甘肃而言，植被还是比较茂盛的，树木挺多的，沿路很多梨树，开着洁白的梨花。经过村庄的房屋看起来也不差，很多都是二层的小楼，而且村庄还是比较密集的，大概青海人口都聚集在了东部地区。总体给我外观感受，海东地区要比甘肃东部地区富裕很多。</p>
+<h3 id="第二站-西宁市"><a href="#第二站-西宁市" class="headerlink" title="第二站 西宁市"></a>第二站 西宁市</h3><p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-10.png"></p>
+<p>西宁市属于中国的西部地区，如果放眼到中国的地图中，相同纬度上，西宁算是比较靠中间的城市了，如果不是西部人烟稀少，更像是个中部城市。</p>
+<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-9.jpeg"></p>
+<p>晚上八点钟到达西宁市，事先知道青海省的人口只有区区600万，省会应该不咋地，结果还挺另我刮目相看的，城区面积感官上还是挺大的，颇具省会城市的规模，各种品牌应有尽有，夜景也还不错。</p>
+<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-8.jpeg"></p>
+<p>晚上吃了一碗当地特色羊肠面，面相不咋地，吃起来味道还不错。</p>
+<h3 id="收个尾"><a href="#收个尾" class="headerlink" title="收个尾"></a>收个尾</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">人人都说宁夏美</span><br><span class="line">砂石大漠看到尾</span><br><span class="line">甘东地区很荒凉</span><br><span class="line">似乎水源很紧张</span><br><span class="line">夏都街头走一走</span><br><span class="line">车水马龙大高楼</span><br></pre></td></tr></table></figure>
+
+<p>未完待续…</p>
+]]></content>
+      <tags>
+        <tag>青海甘肃大环线</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>北京自驾青海甘肃大环线系列 - 4</title>
     <url>/post/qinghai-4/</url>
     <content><![CDATA[<h2 id="第四天"><a href="#第四天" class="headerlink" title="第四天"></a>第四天</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day4-1.png"></p>
@@ -8246,43 +8283,6 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
 <p>到达黑马河已经是晚上八点多了，温度较低，索性换上羽绒服，一点也不觉得热。住宿条件比较一般，但价格却不便宜，是整个行程住的性价比最低的宾馆了。找了一家餐馆就餐，全都是组团的游客，非常不错的食材却做的难吃的不行，上等的牦牛肉放到餐桌上后却嚼也嚼不烂，看着放弃的牦牛肉甚是可惜。这大概就是国内很多因旅游而起的餐馆的真实写照，反正能坑一个是一个，不要回头客，回回都是新客人。做的烂对自己的生意影响不大，但游客在心中对于当地的评价确实难以磨灭的。</p>
 <p>未完待续…</p>
 ]]></content>
-  </entry>
-  <entry>
-    <title>北京自驾青海甘肃大环线系列 - 3</title>
-    <url>/post/qinghai-3/</url>
-    <content><![CDATA[<h2 id="第三天"><a href="#第三天" class="headerlink" title="第三天"></a>第三天</h2><p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-1.png"></p>
-<p>行程：宁夏回族自治区中卫市中宁县 -&gt; 青海省西宁市</p>
-<p>路程：500公里</p>
-<p>日期：2019.4.20</p>
-<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-2.jpeg"></p>
-<p>昨晚到酒店比较晚，早上拉开窗帘，一所学校的操场映入眼帘，令我眼前一亮。离开校园已经太久了，看到同学们身穿运动装在操场上洋溢着青春即亲切又陌生。</p>
-<h3 id="第一站-黄河畔"><a href="#第一站-黄河畔" class="headerlink" title="第一站 黄河畔"></a>第一站 黄河畔</h3><p>从地图上看中宁县城离黄河比较近，自然要去黄河边上走一走。但与保德县和府谷县不同的是，中宁县并不傍黄河而建，主城区而是离黄河有一公里的距离。我猜测保德县和府谷县边的黄河在地势低洼处，即使河水泛滥也不会殃及县城。但中宁县地势却是非常平坦，不能依靠地势优势阻止泛滥的河水，因此县城的选址离黄河稍有距离。</p>
-<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-3.jpeg"></p>
-<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-4.jpeg"></p>
-<p>远处的黄河边上有一个多层的塔，是中宁县枸杞博物馆，中宁县有“天下枸杞出宁夏,中宁枸杞甲天下”的说法，因此建个枸杞博物馆还是比较合适的。由于到枸杞博物馆的路并不好走，而且不能判断此刻博物馆是对外开放，并未前往参观。</p>
-<p>黄河水比其下游的府谷县的黄河水要变黄了很多，这也是我一直比较奇怪的地方。河道非常宽，目测有至少1公里的样子，现在是枯水期，河水并不太多。河床上有各式各样的鹅卵石，不知经过了多少次的河水冲刷才形成了现在的形状，我们个体的生命相对鹅卵石的生命实在是太短，挑选了几个像模像样的留作纪念。</p>
-<h3 id="在路上"><a href="#在路上" class="headerlink" title="在路上"></a>在路上</h3><p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-5.jpeg"></p>
-<p>宁夏境内，一路上偶尔会看到种植了一些铺着地膜的农作物，我猜测是土豆的可能性比较大，原因是山东的种植土豆方法就是类似思路。但看下田地中的土质，大部分都是小石块，哪有多少土壤成分呀，倒是拿着石块压着地膜来防止大风非常的方便。</p>
-<p>在甘肃和青海接壤地方，道路两侧多了很多树木，，山上的草有很多都绿了起来，生机勃勃的。两天之内满眼都是枯黄色的画面，突然出现鲜绿色还有点不适应。</p>
-<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-6.png"></p>
-<p>查看青海省的地图会发现，有好几个地级市都是围绕着青海湖命名的，海东市、海南藏族自治州、海西蒙古族藏族自治州、海北藏族自治州。提到海南，不熟悉的人还以为是海南岛呢。</p>
-<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-7.png"></p>
-<p>地图中还有一个比较有意思的地方，海西蒙古族藏族自治州居然有两块区域，中间被玉树给分割开了，完全不接壤。让我立马想到的是在中国版图中另外比较有意思的是河北省的三河市，三河市被北京市和天津市包围，像是河北省的一个孤岛。</p>
-<p>青海省有藏族和回族比较容易理解，居然还有蒙古族？要不也就不会叫海西蒙古族藏族自治州了。实际上内蒙古的最西端跟青海省仅隔了甘肃省一段狭长的河西走廊，直线距离上还是特别近的。蒙古族迁徙到青海要从元朝说起，整个中国的版图都是元朝的天下，自然青海省有就了蒙古族，后续又陆陆续续的有蒙古族迁徙都青海省。但青海省的蒙古族还吸收了部分当地藏族的习俗，很难说是蒙古族入侵藏族，还是藏族同化了蒙古族。</p>
-<p>青海境内的青藏高速施工，走了很长一段的非高速，跟青海的村庄和县城有了第一次近距离接触的机会。青海省的海东市相对于甘肃而言，植被还是比较茂盛的，树木挺多的，沿路很多梨树，开着洁白的梨花。经过村庄的房屋看起来也不差，很多都是二层的小楼，而且村庄还是比较密集的，大概青海人口都聚集在了东部地区。总体给我外观感受，海东地区要比甘肃东部地区富裕很多。</p>
-<h3 id="第二站-西宁市"><a href="#第二站-西宁市" class="headerlink" title="第二站 西宁市"></a>第二站 西宁市</h3><p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-10.png"></p>
-<p>西宁市属于中国的西部地区，如果放眼到中国的地图中，相同纬度上，西宁算是比较靠中间的城市了，如果不是西部人烟稀少，更像是个中部城市。</p>
-<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-9.jpeg"></p>
-<p>晚上八点钟到达西宁市，事先知道青海省的人口只有区区600万，省会应该不咋地，结果还挺另我刮目相看的，城区面积感官上还是挺大的，颇具省会城市的规模，各种品牌应有尽有，夜景也还不错。</p>
-<p><img src="http://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day3-8.jpeg"></p>
-<p>晚上吃了一碗当地特色羊肠面，面相不咋地，吃起来味道还不错。</p>
-<h3 id="收个尾"><a href="#收个尾" class="headerlink" title="收个尾"></a>收个尾</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">人人都说宁夏美</span><br><span class="line">砂石大漠看到尾</span><br><span class="line">甘东地区很荒凉</span><br><span class="line">似乎水源很紧张</span><br><span class="line">夏都街头走一走</span><br><span class="line">车水马龙大高楼</span><br></pre></td></tr></table></figure>
-
-<p>未完待续…</p>
-]]></content>
-      <tags>
-        <tag>青海甘肃大环线</tag>
-      </tags>
   </entry>
   <entry>
     <title>北京自驾青海甘肃大环线系列 - 5</title>
@@ -8671,6 +8671,21 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
 ]]></content>
   </entry>
   <entry>
+    <title>sbrk和brk函数</title>
+    <url>/post/sbrk_and_brk/</url>
+    <content><![CDATA[<p>Linux系统中提供了两个在堆中分配空间的底层函数，函数原型如下：</p>
+<p>void *sbrk(intptr_t increment);<br>int brk(void *end_data_segment);</p>
+<p>两个函数的作用均为从堆中分配空间，并且在内部维护一个指针，指针的值默认为NULL。如果内部指针为NULL，则得到一页的空闲地址，系统默认为4K字节。指针向后移动即为分配空间，指针向前移动为释放空间。当内部指针的位置移动到一个页的开始位置时，整个页会被操作系统回收。brk为绝对改变位置，sbrk为相对改变位置。</p>
+<h1 id="sbrk函数"><a href="#sbrk函数" class="headerlink" title="sbrk函数"></a>sbrk函数</h1><p>在sbrk函数中，参数increment为要增加的字节数，increment可以为负数。当increment为负数时表示释放空间。当increment&#x3D;&#x3D;0时，内部指针位置不动。函数调用成功返回内部指针改变前的值，失败返回(void *)-1。<br>函数使用举例如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> *p0 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 打印堆地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p0 is : %d\n&quot;</span>, p0);    </span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> *p1 = sbrk(<span class="number">1000</span>);</span><br><span class="line">    <span class="comment">// 这里仍然打印的是第一次的堆地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p1 is : %d\n&quot;</span>, p1);    </span><br><span class="line">    </span><br><span class="line">    <span class="type">int</span> *p2 = sbrk(<span class="number">1</span>);</span><br><span class="line">    <span class="comment">// 打印第一次堆地址+1000后的地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p2 is : %d\n&quot;</span>, p2);    </span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 回到初始堆地址，释放空间</span></span><br><span class="line">    sbrk(<span class="number">-1001</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="type">int</span> *p3 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 检查是否回到初始地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p3 is : %d\n&quot;</span>, p3);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出如下内容：<br>this site of p0 is : 264622080<br>this site of p1 is : 264622080<br>this site of p2 is : 264623080<br>this site of p3 is : 264622080</p>
+<h1 id="brk函数"><a href="#brk函数" class="headerlink" title="brk函数"></a>brk函数</h1><p>在brk函数中，函数作用为将当前的内部指针移动到end_data_segment位置。成功返回0，失败返回-1。<br>函数使用举例如下：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> *p0 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p0 is : %d\n&quot;</span>, p0);</span><br><span class="line">    </span><br><span class="line">    brk(p0 + <span class="number">1000</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">    </span><br><span class="line">    brk(p0 + <span class="number">1001</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">    </span><br><span class="line">    brk(p0);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>函数输出如下：<br>this site of p0 is : 206979072<br>this site is : 206983072<br>this site is : 206983076<br>this site is : 206979072</p>
+<h1 id="适用场景："><a href="#适用场景：" class="headerlink" title="适用场景："></a>适用场景：</h1><p>内存的管理方式比malloc和free更加灵活，适合申请不确定的内存空间的情况，特别适合同类型的大块数据。如果用malloc则可能存在申请内存空间过多浪费的情况，过少时需要重新调用realloc来重新申请内存的情况。速度比malloc快。</p>
+]]></content>
+  </entry>
+  <entry>
     <title>在Linux上搭建HBase集群环境</title>
     <url>/post/setup_hbase/</url>
     <content><![CDATA[<p>本文是在安装完成Hadoop的基础之上进行的，Hadoop的安装戳<a href="/post/hadoop_setup">这里</a>。<br>本文采用的Hadoop版本为0.20.2，HBase版本为0.90.6，ZooKeeper的版本为3.3.2（stable版）。<br>本文仍然采用了Hadoop安装的环境，机器如下：</p>
@@ -8740,21 +8755,6 @@ to    | 1 | 5 | 3 |   |   |   |   |    |
       <tags>
         <tag>HBase</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>sbrk和brk函数</title>
-    <url>/post/sbrk_and_brk/</url>
-    <content><![CDATA[<p>Linux系统中提供了两个在堆中分配空间的底层函数，函数原型如下：</p>
-<p>void *sbrk(intptr_t increment);<br>int brk(void *end_data_segment);</p>
-<p>两个函数的作用均为从堆中分配空间，并且在内部维护一个指针，指针的值默认为NULL。如果内部指针为NULL，则得到一页的空闲地址，系统默认为4K字节。指针向后移动即为分配空间，指针向前移动为释放空间。当内部指针的位置移动到一个页的开始位置时，整个页会被操作系统回收。brk为绝对改变位置，sbrk为相对改变位置。</p>
-<h1 id="sbrk函数"><a href="#sbrk函数" class="headerlink" title="sbrk函数"></a>sbrk函数</h1><p>在sbrk函数中，参数increment为要增加的字节数，increment可以为负数。当increment为负数时表示释放空间。当increment&#x3D;&#x3D;0时，内部指针位置不动。函数调用成功返回内部指针改变前的值，失败返回(void *)-1。<br>函数使用举例如下：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> *p0 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 打印堆地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p0 is : %d\n&quot;</span>, p0);    </span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> *p1 = sbrk(<span class="number">1000</span>);</span><br><span class="line">    <span class="comment">// 这里仍然打印的是第一次的堆地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p1 is : %d\n&quot;</span>, p1);    </span><br><span class="line">    </span><br><span class="line">    <span class="type">int</span> *p2 = sbrk(<span class="number">1</span>);</span><br><span class="line">    <span class="comment">// 打印第一次堆地址+1000后的地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p2 is : %d\n&quot;</span>, p2);    </span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 回到初始堆地址，释放空间</span></span><br><span class="line">    sbrk(<span class="number">-1001</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="type">int</span> *p3 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 检查是否回到初始地址</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p3 is : %d\n&quot;</span>, p3);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>输出如下内容：<br>this site of p0 is : 264622080<br>this site of p1 is : 264622080<br>this site of p2 is : 264623080<br>this site of p3 is : 264622080</p>
-<h1 id="brk函数"><a href="#brk函数" class="headerlink" title="brk函数"></a>brk函数</h1><p>在brk函数中，函数作用为将当前的内部指针移动到end_data_segment位置。成功返回0，失败返回-1。<br>函数使用举例如下：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> *p0 = sbrk(<span class="number">0</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site of p0 is : %d\n&quot;</span>, p0);</span><br><span class="line">    </span><br><span class="line">    brk(p0 + <span class="number">1000</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">    </span><br><span class="line">    brk(p0 + <span class="number">1001</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">    </span><br><span class="line">    brk(p0);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;this site is : %d\n&quot;</span>, sbrk(<span class="number">0</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>函数输出如下：<br>this site of p0 is : 206979072<br>this site is : 206983072<br>this site is : 206983076<br>this site is : 206979072</p>
-<h1 id="适用场景："><a href="#适用场景：" class="headerlink" title="适用场景："></a>适用场景：</h1><p>内存的管理方式比malloc和free更加灵活，适合申请不确定的内存空间的情况，特别适合同类型的大块数据。如果用malloc则可能存在申请内存空间过多浪费的情况，过少时需要重新调用realloc来重新申请内存的情况。速度比malloc快。</p>
-]]></content>
   </entry>
   <entry>
     <title>常用shell命令（持续更新）</title>
@@ -11057,7 +11057,7 @@ helm fetch lofts/vcluster
   </entry>
   <entry>
     <title>我理解的职场述职</title>
-    <url>/post/%E8%81%8C%E5%9C%BA/%E6%88%91%E7%90%86%E8%A7%A3%E7%9A%84%E8%81%8C%E5%9C%BA%E8%BF%B0%E8%81%8C/</url>
+    <url>//report/</url>
     <content><![CDATA[<p>阿里巴巴的财年为每年4月1日至次年3月31日，而4月1日至9月30日为财年的上半年。通常大部分的团队在每半个财年要完成一次述职，而眼下的 9 月 30 日前又到了述职的日子。</p>
 <p>在我过往的工作经历中，并没有述职的习惯，绩效的考核也相对随意一些，绩效的好坏跟主管的主管判断关系比较大，但通常绩效的好坏跟个人的成绩也是成正比的，不会出现较大的偏差。</p>
 <p>在阿里绩效的绩效考核会非常被重视，希望能够通过公平的方法来分配高低绩效，降低主管的主观判断，当然主观的判断仍然是无法避免的，而且也会仍然占较大的比重。</p>
