@@ -1,7 +1,9 @@
-title: kubectl常用命令
-date: 2022-01-18 15:10:14
-tags:
 ---
+title: kubectl常用命令
+permalink: /kubectl-command/
+date: 2022-01-18
+---
+
 本文记录常用的kubectl命令，不定期更新。
 
 ## 1. 统计k8s node上的污点信息
@@ -135,4 +137,7 @@ kubectl patch -p '{"spec":{"filed1": "value1"}}' --type=merge xxx -n yyy
 kubectl get nodes -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.labels.topology\.kubernetes\.io/zone}{"\n"}{end}'
 # 查看单个 k8s 节点的 label
 kubectl  get node c25e04016.cloud.e04.amtest130  -o jsonpath="{.metadata.labels['topology\.kubernetes\.io/zone']}"
+
+# 获取没有污点的节点对应的 label machine-type
+kubectl get nodes -o json | jq -r '.items[] | select(.spec.taints | not) | [.metadata.name, .metadata.labels["machine-type"]] | @tsv'
 ```
