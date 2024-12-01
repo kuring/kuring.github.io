@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">247</span>
+          <span class="site-state-item-count">248</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,101 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/x_window/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/x_window/" class="post-title-link" itemprop="url">X Window学习</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2014-02-17 00:00:00" itemprop="dateCreated datePublished" datetime="2014-02-17T00:00:00+00:00">2014-02-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>X Window的实现机制还是比较难以理解的，尤其是跟软件开发中的客户端-服务器模式不太一样。涉及到概念也比较多，甚至很对教程对概念的理解不一。最近深入学习了下X Window的原理，在此做一下整理。先上一个摘自维基百科的图：<br><img src="/ref/x_window/X_client_server_example.svg.png" alt="X Window架构"></p>
+<p>常用快捷键<br>ctrl+alt+fn：切换到相应的虚拟控制台，n为1-12。默认情况下，linux操作系统会在1-6上运行6个虚拟控制台。<br>ctrl+alt+退格键：关闭X window系统。<br>在vmware环境下，ctrl+alt快捷键跟vmware冲突，需要先按住ctrl+alt，然后按一下空格键并松开，再按下相应的fn键才能使用。</p>
+<p>X Server<br>负责硬件管理、屏幕绘制、字体，并接收输入设备（如键盘、鼠标等）的动作，并且告知X Client。<br>Linux下的X Server软件为Xorg，通过X（Xorg的链接文件）命令即可执行。<br>输入X命令后，会在第7个控制台启动X Server，将会出现一个什么都没有的漆黑界面，这是由于没有任何X client程序输入的原因。<br>可以在Linux下启动多个X Server软件，从0开始编号。如果再执行<code>X:2</code>命令会启动第二个X Server，此时X Server会在第8个控制台运行。如果第一次执行的是<code>X:2</code>命令则X Server会在第7个控制台运行。<br>在Windows操作系统下的Xming、Xmanager等可以远程连接Linux界面的软件其实就是X Server。</p>
+<p>X Client<br>即X应用程序，运行在X Window下的窗口程序都属于X client。比如firefox就是一个X Client。接收来自X Server的处理动作，将动作处理成为绘图数据，并将绘图数据传回给X Server。X Client与X Server之间通过X Window System Core Protocol协议进行通讯。<br>xclock是一个简易的X Client的时钟程序，在:1上启动X Server后，执行<code>xclock –display :1&amp;</code>命令将xclock输出到X Server后的画面如下：<br><img src="/ref/x_window/xclock_no_wm.png" alt="xclock"><br>该程序可以在X Server上执行，但是画面非常简陋，甚至没有窗口的菜单栏和最大化等按钮。</p>
+<p>Window Manager<br>一种特殊的X Client，提供了窗口的样式。常用的Window Manager包括GNOME默认的metacity、twm等。<br>将metacity输出到:1上的X Server的命令为<code>metacity –display=:1 &amp;</code>，效果如下：<br><img src="/ref/x_window/xclock_wm.png" alt="Image Title"><br>可以看到窗口多出了最小化、最大化、关闭按钮，并且窗口可以移动和缩放等操作。</p>
+<p>Display Manager<br>提供用户登录画面、帮助X Server建立Session。<br>gnome采用的Display Manager为gdm，KDE采用kdm，还有tdm、xdm等。</p>
+<p>Desktop Manager<br>X Server、X Client、Window Manager的一个集合。常用的Desktop Manager包括：KDE、GNOME等。</p>
+<p>startx启动流程<br>在命令行下执行startx命令后，系统直接进入了桌面环境，并未出现登录界面。进程树如下：<br><img src="/ref/x_window/startx_pstree.png" alt="Image Title"></p>
+<ol>
+<li>startx会调用xinit命令，xinit命令的主要是启动一个X Server软件。</li>
+<li>接着xinit命令会调用gnome-session启动gnome的环境所需要的软件。</li>
+</ol>
+<p>init 5启动流程<br>在命令行下执行init 5，首先出现的画面为登录信息。进程树如下：<br><img src="/ref/x_window/init5_pstree.png" alt="Image Title"></p>
+<ol>
+<li>执行&#x2F;etc&#x2F;rc.d&#x2F;rc5.d中的daemon。</li>
+<li>执行&#x2F;etc&#x2F;X11&#x2F;prefdm文件，会选择启动gdm、kdm、xdm、tdm。</li>
+<li>这里以gdm为例，gdm是一个shell脚本，会启动gdm-binary命令。</li>
+</ol>
+<p>实战<br>Windows主机连接Linux的教程参见我的另外一篇文章《Redhat安装完成之后的设置》中的相关部分。<br>两台Linux机器之间通过XWindow实现连接的用法比较少见，通常情况下可以通过vnc代替。<br>Linux主机连接Windows的工具为rdesktop。</p>
+<p>参考文章<br>《鸟哥的Linux私房菜》<br>《Linux操作系统之奥秘》<br>视频：<a target="_blank" rel="noopener" href="http://edu.51cto.com/lesson/id-12709.html">RH033-ULE112-16-linux下X图形显示体系</a><br>视频：<a target="_blank" rel="noopener" href="http://www.rhce.cc/?p=1117">Xwindow详解</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +314,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -326,7 +421,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -413,7 +508,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -514,7 +609,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -612,7 +707,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -697,7 +792,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -781,7 +876,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -858,7 +953,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -950,7 +1045,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -971,88 +1066,6 @@
 <p>如果这两个参数均未指定，则GCC不会对编码进行转换。<br>以上这两个参数就可以用来在不修改源文件编码的基础上来达到正确的效果，达到和上篇文章中解决问题同样的效果。</p>
 <h1 id="关于Unicode编码"><a href="#关于Unicode编码" class="headerlink" title="关于Unicode编码"></a>关于Unicode编码</h1><p>一直对Unicode编码比较糊涂，Unicode只是编码方法规范，而不是具体的存储方法。<br>常用的Unicode又分为UCS-2和UCS-两种编码，其中UCS-2采用固定的2个字节存储，UCS-4采用固定的4个字节存储。<br>通常情况下提到的Unicode编码即为UCS-2编码，比如Windows记事本中的保存为Unicode编码，其实就是保存为了UCS-2编码，由于每个字符均为2个字节，所以下次读取的时候仍然可以通过存储格式还原出来。</p>
 <h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p><a target="_blank" rel="noopener" href="http://www.ruanyifeng.com/blog/2007/10/ascii_unicode_and_utf-8.html">字符编码笔记：ASCII，Unicode和UTF-8</a><br><a target="_blank" rel="noopener" href="http://www.crifan.com/files/doc/docbook/char_encoding/release/html/char_encoding.html">字符编码详解</a><br><a target="_blank" rel="noopener" href="http://www.vip-tarena.com/C__peixun/876.html">关于c++的一些编码问题</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_ui_autorun/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux_ui_autorun/" class="post-title-link" itemprop="url">Linux上一个界面程序的开机自启动设置</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-11-09 00:00:00" itemprop="dateCreated datePublished" datetime="2013-11-09T00:00:00+00:00">2013-11-09</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>最近设置一个Linux下的截屏程序的开机自启动，Linux的XWindow系统为gnome。</p>
-<p>最先想到的方式是修改&#x2F;etc&#x2F;inittab文件，因为Linux在开机自启动的时候会执行该文件，该文件的读取时机是在界面启动之前。我写了一个在main函数中睡眠10分钟的小程序，然后将程序添加到&#x2F;etc&#x2F;inittab文件中，结果开不了机了，因为需要睡眠10分钟后才能往下执行程序。幸好我用的虚拟机做的测试，并且在做测试之前备份了虚拟机。</p>
-<p>仔细想一下在&#x2F;etc&#x2F;rc.d&#x2F;rc.local文件中启动截屏程序肯定是不合适的，因为如果用户默认是以运行级别非5启动，则程序仍然会被调用，但是没有XWindow，谈何截屏。</p>
-<p>接下来考虑将程序放到&#x2F;etc&#x2F;rc5.d目录下，这样就可以保证程序在XWindow环境下运行了。仔细一想也不合适，rc5.d仅在系统启动时运行，而Linux系统是多用户系统，允许多个用户同时登陆，多个用户登陆时截屏程序会怎样处理呢？这样显然不合适。</p>
-<p>然后想到程序既然为截屏程序，多个用户登陆的时候应该有几个用户就跑几个程序，这样才能保证每个用户的屏幕都能截取到。因此应该放到用户登录后的启动程序列表中。类似于windows系统中的开机启动项。我用的桌面为gnome，找到了gnome-session-properties命令来启动添加程序启动的界面，然后将我的程序添加到界面中即可。</p>
-<p>如果桌面系统为KDE，则应该也可以找到相关的设置界面。</p>
-<p>题外：利用&#x2F;etc&#x2F;inittab和rc5.d目录下添加脚本的方式来启动程序的用户为root，很多程序未了避免root权限带来的安全问题，程序内部采用了<code>su - 用户名</code>的方式切换到一半用户执行代码。程序还可以通过chroot的方式更改根目录的路径达到保护系统的目的。</p>
 
       
     </div>

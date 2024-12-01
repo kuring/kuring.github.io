@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">247</span>
+          <span class="site-state-item-count">248</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,168 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/kube-proxy-iptables/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/kube-proxy-iptables/" class="post-title-link" itemprop="url">kube-proxy iptables规则分析</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2020-02-08 12:10:33" itemprop="dateCreated datePublished" datetime="2020-02-08T12:10:33+00:00">2020-02-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>kube-proxy默认使用iptables规则来做k8s集群内部的负载均衡，本文通过例子来分析创建的iptabels规则。</p>
+<p>主要的自定义链涉及到：</p>
+<ul>
+<li>KUBE-SERVICES： 访问集群内服务的CLusterIP数据包入口，根据匹配到的目标ip+port将数据包分发到相应的KUBE-SVC-xxx链上。一个Service对应一条规则。由OUTPUT链调用。</li>
+<li>KUBE-NODEPORTS: 用来匹配nodeport端口号，并将规则转发到KUBE-SVC-xxx。一个NodePort类型的Service一条。在KUBE-SERVICES链的最后被调用</li>
+<li>KUBE-SVC-xxx：相当于是负载均衡，将流量利用random模块均分到KUBE-SEP-xxx链上。</li>
+<li>KUBE-SEP-xxx：通过dnat规则将连接的目的地址和端口号做dnat，从Service的ClusterIP或者NodePort转换为后端的pod ip</li>
+<li>KUBE-MARK-MASQ: 使用mark命令，对数据包设置标记0x4000&#x2F;0x4000。在KUBE-POSTROUTING链上有MARK标记的数据包进行一次MASQUERADE，即SNAT，会用节点ip替换源ip地址。</li>
+</ul>
+<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><p>创建nginx deployment</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx-svc</span></span><br><span class="line">    <span class="attr">version:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">default</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">2</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">nginx-svc</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">nginx-svc</span></span><br><span class="line">        <span class="attr">version:</span> <span class="string">nginx</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">image:</span> <span class="string">&#x27;nginx:1.9.0&#x27;</span></span><br><span class="line">          <span class="attr">name:</span> <span class="string">nginx</span></span><br><span class="line">          <span class="attr">ports:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">443</span></span><br><span class="line">              <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">            <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br><span class="line">              <span class="attr">protocol:</span> <span class="string">TCP</span></span><br></pre></td></tr></table></figure>
+
+<p>创建service对象</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-svc</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">default</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&#x27;80&#x27;</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">8000</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">80</span></span><br><span class="line">      <span class="attr">nodePort:</span> <span class="number">30080</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx-svc</span></span><br><span class="line">  <span class="attr">sessionAffinity:</span> <span class="string">None</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">NodePort</span></span><br></pre></td></tr></table></figure>
+
+<p>环境信息如下：</p>
+<ul>
+<li>容器网段：172.20.0.0&#x2F;16</li>
+<li>Service ClusterIP cidr: 192.168.0.0&#x2F;20</li>
+<li>k8s版本：</li>
+</ul>
+<p>提交后创建出来的信息如下：</p>
+<ul>
+<li>Service ClusterIP：192.168.103.148</li>
+<li>nginx pod的两个ip地址：172.16.3.3 172.16.4.4</li>
+</ul>
+<h2 id="从宿主机上访问ClusterIP"><a href="#从宿主机上访问ClusterIP" class="headerlink" title="从宿主机上访问ClusterIP"></a>从宿主机上访问ClusterIP</h2><p>从本机请求ClusterIP的数据包会经过iptables的链：OUTPUT -&gt; POSTROUTING</p>
+<p>要想详细知道iptabels的执行情况，可以通过iptables的trace功能。如何开启trace功能可以参考：<a href="http://kuring.me/post/iptables/%E3%80%82">http://kuring.me/post/iptables/。</a></p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/kube-proxy-clusterip.png" alt="image"></p>
+<p>执行 <code>iptables -nvL OUTPUT -t nat</code> 可以看到如下的iptables规则命令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target         prot opt in     out     source               destination         </span><br><span class="line">17M  1150M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br></pre></td></tr></table></figure>
+
+<p>执行 <code>iptables -nvL KUBE-SERVICES -t nat</code> 可以查看自定义链的具体内容，里面包含了多条规则，其中跟当前Service相关的规则如下。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target                     prot opt in     out     source               destination</span><br><span class="line">1    60    KUBE-SVC-Y5VDFIEGM3DY2PZE  tcp  --  *      *       0.0.0.0/0            192.168.103.148      /* default/nginx-svc:80 cluster IP */ tcp dpt:8000</span><br></pre></td></tr></table></figure>
+
+<p>执行 <code>iptables -nvL KUBE-SVC-Y5VDFIEGM3DY2PZE -t nat</code> 查看自定义链的具体规则</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pkts  bytes target                     prot opt in     out     source               destination</span><br><span class="line">0     0     KUBE-SEP-IFV44I3EMZAL3LH3  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ statistic mode random probability 0.50000000000</span><br><span class="line">1    60     KUBE-SEP-6PNQETFAD2JPG53P  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */</span><br></pre></td></tr></table></figure>
+
+<p>上述规则会按照特定的概率将流量均等的执行自定义链的规则，两个自定义的链的规则跟endpoint相关，执行 <code>iptables -nvL  KUBE-SEP-IFV44I3EMZAL3LH3 -t nat</code>可查看endpoint级别的iptabels规则。dnat操作会修改数据包的目的地址和端口，从clusterip+service port修改为访问pod ip+pod端口。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target          prot opt in     out     source               destination</span><br><span class="line">0     0    KUBE-MARK-MASQ  all  --  *      *       172.16.3.3           0.0.0.0/0            /* default/nginx-svc:80 */</span><br><span class="line">0     0    DNAT            tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ tcp to:172.16.3.3:80</span><br></pre></td></tr></table></figure>
+
+<p>会在dnat操作之前为对数据包执行打标签操作。KUBE-MARK-MASQ 自定义链为对数据包打标记的自定义规则，执行 <code>iptables -nvL  KUBE-MARK-MASQ -t nat</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target     prot opt in     out     source               destination         </span><br><span class="line"> 1    60   MARK       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MARK or 0x4000</span><br></pre></td></tr></table></figure>
+
+<p>接下来看一下POSTROUTING链上的规则，<code>iptables -nvL  POSTROUTING -t nat</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target            prot opt in     out     source               destination         </span><br><span class="line">205K   13M KUBE-POSTROUTING  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes postrouting rules */</span><br></pre></td></tr></table></figure>
+
+<p>继续看一下KUBE-POSTROUTING链的内容，<code>iptables -nvL  KUBE-POSTROUTING -t nat</code>，其中最后一条的MASQUERADE指令的操作实际上为SNAT操作。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Chain KUBE-POSTROUTING (1 references)</span><br><span class="line">pkts bytes target     prot opt in     out     source               destination         </span><br><span class="line">6499  398K RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0            mark match ! 0x4000/0x4000</span><br><span class="line">   1    60 MARK       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MARK xor 0x4000</span><br><span class="line">   1    60 MASQUERADE  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service traffic requiring SNAT */</span><br></pre></td></tr></table></figure>
+
+<p>即从本机访问service clusterip的数据包，在output链上经过了dnat操作，在postrouting链上经过了snat操作后，最终会发往目标pod。pod在处理完请求后，回的数据包最终会经过nat的逆过程返回到本机。</p>
+<h2 id="外部访问nodeport"><a href="#外部访问nodeport" class="headerlink" title="外部访问nodeport"></a>外部访问nodeport</h2><p>从外部访问本机的nodeport数据包会经过iptables的链：PREROUTING -&gt; FORWARD -&gt; POSTROUTING</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/kube-proxy-clusterip.png" alt="image"></p>
+<p>nodeport都是被外部访问的情况，入口位于PREROUTING链上。执行 <code>iptables -nvL PREROUTING  -t nat</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target         prot opt in     out     source               destination         </span><br><span class="line">349K   21M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br></pre></td></tr></table></figure>
+
+<p>在KUBE-SERVICES链的最后一条规则为跳转到KUBE-NODEPORTS链</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">4079  246K KUBE-NODEPORTS  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service nodeports; NOTE: this must be the last rule in this chain */ ADDRTYPE match dst-type LOCAL</span><br></pre></td></tr></table></figure>
+
+<p>执行<code>iptables -nvL KUBE-NODEPORTS -t nat</code>， 查看KUBE-NODEPORTS链 </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target                     prot opt in     out     source               destination         </span><br><span class="line">0     0    KUBE-MARK-MASQ             tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ tcp dpt:30080</span><br><span class="line">0     0    KUBE-SVC-Y5VDFIEGM3DY2PZE  tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ tcp dpt:30080</span><br></pre></td></tr></table></figure>
+
+<p>其中KUBE-MARK-MASQ链只有一条规则，即打上0x4000的标签。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target     prot opt in     out     source               destination         </span><br><span class="line">0     0    MARK       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MARK or 0x4000</span><br></pre></td></tr></table></figure>
+
+<p>自定义链KUBE-SVC-Y5VDFIEGM3DY2PZE的内容如下，跟clusterip的规则是重叠的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target     prot opt in     out     source               destination         </span><br><span class="line">0    0     KUBE-SEP-IFV44I3EMZAL3LH3  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ statistic mode random probability 0.50000000000</span><br><span class="line">0    0     KUBE-SEP-6PNQETFAD2JPG53P  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */</span><br></pre></td></tr></table></figure>
+
+<p>KUBE-SEP-IFV44I3EMZAL3LH3的内容为，会经过一次DNAT操作:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target          prot opt in     out     source               destination         </span><br><span class="line">0    0     KUBE-MARK-MASQ  all  --  *      *       172.16.3.3           0.0.0.0/0            /* default/nginx-svc:80 */</span><br><span class="line">0    0     DNAT            tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc:80 */ tcp to:172.16.3.3:80</span><br></pre></td></tr></table></figure>
+
+<p>在经过了PREROUTING链后，接下来会判断目的ip地址不是本机的ip地址，接下来会经过FORWARD链。在FORWARD链上，仅做了一件事情，就是将前面大了0x4000的数据包允许转发。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target              prot opt in     out     source               destination         </span><br><span class="line">0    0 KUBE-FORWARD            all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes forwarding rules */</span><br><span class="line">0    0 KUBE-SERVICES           all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate NEW /* kubernetes service portals */</span><br><span class="line">0    0 KUBE-EXTERNAL-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate NEW /* kubernetes externally-visible service portals */</span><br></pre></td></tr></table></figure>
+
+<p>KUBE-FORWARD的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">pkts bytes target     prot opt in     out     source               destination         </span><br><span class="line">0     0    DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate INVALID</span><br><span class="line">0     0    ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes forwarding rules */ mark match 0x4000/0x4000</span><br><span class="line">0     0    ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes forwarding conntrack pod source rule */ ctstate RELATED,ESTABLISHED</span><br><span class="line">0     0    ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes forwarding conntrack pod destination rule */ ctstate RELATED,ESTABLISHED</span><br></pre></td></tr></table></figure>
+
+<p>跟clusterip一样，会在POSTROUTING阶段匹配mark为0x4000&#x2F;0x4000的数据包，并进行一次MASQUERADE转换，将ip包替换为宿主上的ip地址。</p>
+<p>加入这里不做MASQUERADE，流量发到目的的pod后，pod回包时目的地址为发起端的源地址，而发起端的源地址很可能是在k8s集群外部的，此时pod发回的包是不能回到发起端的。NodePort跟ClusterIP的最大不同就是NodePort的发起端很可能是在集群外部的，从而这里必须做一层SNAT转换。</p>
+<p>在上述分析中，访问NodePort类型的Service会经过snat，从而服务端的pod不能获取到正确的客户端ip。可以设置Service的spec.externalTrafficPolicy为Local，此时iptables规则只会将ip包转发给运行在这台宿主机上的pod，而不需要经过snat。pod回包时，直接回复源ip地址即可，此时源ip地址是可达的，因为源ip地址跟宿主机是可达的。如果所在的宿主机上没有pod，那么此时流量就不可以转发，此为限制。</p>
+<h2 id="使用LoadBalancer类型访问的情况"><a href="#使用LoadBalancer类型访问的情况" class="headerlink" title="使用LoadBalancer类型访问的情况"></a>使用LoadBalancer类型访问的情况</h2><h3 id="externalTrafficPolicy为local"><a href="#externalTrafficPolicy为local" class="headerlink" title="externalTrafficPolicy为local"></a>externalTrafficPolicy为local</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">-A KUBE-SERVICES -d 10.149.30.186/32 -p tcp -m comment --comment &quot;acs-system/nginx-ingress-lb-cloudbiz:http loadbalancer IP&quot; -m tcp --dport 80 -j KUBE-FW-76HLDRT5IPNSMPF5</span><br><span class="line">-A KUBE-FW-76HLDRT5IPNSMPF5 -m comment --comment &quot;acs-system/nginx-ingress-lb-cloudbiz:http loadbalancer IP&quot; -j KUBE-XLB-76HLDRT5IPNSMPF5</span><br><span class="line">-A KUBE-FW-76HLDRT5IPNSMPF5 -m comment --comment &quot;acs-system/nginx-ingress-lb-cloudbiz:http loadbalancer IP&quot; -j KUBE-MARK-DROP</span><br><span class="line"></span><br><span class="line"># 10.149.112.0/23为pod网段</span><br><span class="line">-A KUBE-XLB-76HLDRT5IPNSMPF5 -s 10.149.112.0/23 -m comment --comment &quot;Redirect pods trying to reach external loadbalancer VIP to clusterIP&quot; -j KUBE-SVC-76HLDRT5IPNSMPF5</span><br><span class="line">-A KUBE-XLB-76HLDRT5IPNSMPF5 -m comment --comment &quot;Balancing rule 0 for acs-system/nginx-ingress-lb-cloudbiz:http&quot; -j KUBE-SEP-XZXLBWOKJBSJBGVU</span><br><span class="line"></span><br><span class="line">-A KUBE-SVC-76HLDRT5IPNSMPF5 -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-XZXLBWOKJBSJBGVU</span><br><span class="line">-A KUBE-SVC-76HLDRT5IPNSMPF5 -j KUBE-SEP-GP4UCOZEF3X7PGLR</span><br><span class="line"></span><br><span class="line">-A KUBE-SEP-XZXLBWOKJBSJBGVU -s 10.149.112.45/32 -j KUBE-MARK-MASQ</span><br><span class="line">-A KUBE-SEP-XZXLBWOKJBSJBGVU -p tcp -m tcp -j DNAT --to-destination 10.149.112.45:80</span><br><span class="line">-A KUBE-SEP-GP4UCOZEF3X7PGLR -s 10.149.112.46/32 -j KUBE-MARK-MASQ</span><br><span class="line">-A KUBE-SEP-GP4UCOZEF3X7PGLR -p tcp -m tcp -j DNAT --to-destination 10.149.112.46:80</span><br></pre></td></tr></table></figure>
+
+<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><ol>
+<li>iptables规则特别乱，一旦出现问题非常难以排查</li>
+<li>由于iptables规则是串行执行，算法复杂度为O(n)，一旦iptables规则多了后，性能将非常差。</li>
+<li>iptables规则提供的负载均衡功能非常有限，不支持较为复杂的负载均衡算法。</li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +381,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -316,7 +478,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -417,7 +579,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -527,7 +689,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -605,7 +767,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -710,7 +872,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -843,7 +1005,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -924,7 +1086,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -1011,7 +1173,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -1058,117 +1220,6 @@
 <li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/bakari/p/10449664.html">Linux 网络工具详解之 ip tuntap 和 tunctl 创建 tap&#x2F;tun 设备</a></li>
 <li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000009249039">Linux虚拟网络设备之tun&#x2F;tap</a></li>
 </ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/qinghai-5/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/qinghai-5/" class="post-title-link" itemprop="url">北京自驾青海甘肃大环线系列 - 5</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2019-05-29 02:22:36" itemprop="dateCreated datePublished" datetime="2019-05-29T02:22:36+00:00">2019-05-29</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-1.png"></p>
-<p>行程：海南藏族自治州黑马河乡（9:30） -&gt; 茶卡盐湖（11:30 - 15:00）-&gt; 柴达木盆地 -&gt; 可鲁克湖（18:00 - 18:30） -&gt; 大柴旦镇（21:00）</p>
-<p>路程：500+公里</p>
-<p>日期：2019.4.22</p>
-<p>今天是整个行程的第五天，第四天晚上到达了青海湖西端的黑马河乡，今天的主要行程是茶卡盐湖，以及横穿几乎整个柴达木盆地。</p>
-<h2 id="黑马河日出"><a href="#黑马河日出" class="headerlink" title="黑马河日出"></a>黑马河日出</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-2.jpg"></p>
-<p>黑马河地处青海湖最西端，往东边看去是平静的湖水，完全没有任何遮挡，加上高原的空气通透性特别好，况且地处干旱地带，以晴天为主，是个看日出的绝佳地点。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-3.jpg"></p>
-<p>从黑马河赶往茶卡镇需要经过橡皮山，橡皮山口的海拔在3800米+，是整个行程中的海拔最高点。此时的橡皮山还完全是一座雪山，是整个行程中的第二次到达雪山。同时也是由于这些山脉的原因，才阻隔了青海湖和茶卡盐湖，使其分别成为了只进不出的咸水湖。</p>
-<h2 id="茶卡盐湖"><a href="#茶卡盐湖" class="headerlink" title="茶卡盐湖"></a>茶卡盐湖</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-6.jpg"></p>
-<p>茶卡盐湖几乎是青海旅游的毕竟之地，无论是环青海湖小环线，还是青海甘肃大环线，同时也是网红景点，网络上有太多穿着红色裙子的漂亮的小姐姐的照片和视频。</p>
-<p>茶卡盐湖地处柴达木盆地，周边地势较低，在离盐湖十几公里的地方湖泊就清晰可见，天上的白云倒影在湖中，宛如一面镜子，因此素有“天空之境”之称。远处的昆仑山脉和祁连山脉的雪山清晰可见，由于天空太过透彻，使常年生活在华北地区的我很难判断出雪山的距离。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-4.jpg" alt="采盐船"><br>(图为采盐船)</p>
-<p>茶卡盐湖的开发利用相当充分，一方面是用来开发采盐，并建有盐厂，湖面上可以看到开采盐矿的船只。另一方面，通过旅游来进一步最大化其价值，其实整个柴达木盆地有很多的盐湖，但最为大众所熟知的仅此一家。而且旅游跟采盐是完全分离的，互不相干，毕竟大部分游客都是来拍照的，旅游占用的盐湖面积比重相对较小。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-5.jpg"></p>
-<p>茶卡盐湖的含盐量实在太高，大部分地方湖面的水都较浅，仅有薄薄的一层，下面全是沉积的盐矿，我此行并没有看到有数米深的湖水。很多地方是可以穿着靴子进入到里面的，但要小心盐坑，看似平坦的盐矿其实有很多的暗洞，很容易就陷进去，好在游客能去的地方盐洞都给堵住了，没啥安全问题。上图中黄色的网状结构为防止游客陷入的盖子。</p>
-<p>死海的含盐量肯定没有盐湖的含量高的，尚且人体可以漂浮在表面，我想茶卡盐湖如果有较深的地方，人体一定是可以漂浮在表面的，可惜盐湖并未提供该项旅游体验服务，要不还真想一试。</p>
-<p>茶卡盐湖的最佳拍照时机是清晨和傍晚，中午烈日当头的时候晒得人很不舒服，紫外线相当强烈，尤其是对于我这种没有墨镜装备的近视眼游客。在烈日下，去拍人像也很难拍的漂亮，眼睛是很难睁开的，手机在拍人像时，由于背景实在太亮，人像总是会偏黑一些。对于我而言，是很难做到早起的，也就赶不上清晨的茶卡盐湖，实际上到达盐湖景区的时候已经是中午了。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-7.jpeg"><center>(盐湖的路都是用盐结晶铺成的，好不奢侈)</center></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-8.jpeg"><center>(在湖中的沉淀物捞出来随手一攥都能成为一个大疙瘩)</center></p>
-<h2 id="柴达木盆地"><a href="#柴达木盆地" class="headerlink" title="柴达木盆地"></a>柴达木盆地</h2><p>游览完茶卡盐湖已经是下午三点钟了，接下来还有400多公里的路程要走，好在高原的天黑时间要到晚上八点半。离开茶卡镇后，就进入了漫长的柴达木盆地。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-9.jpeg" alt="http://p3.pstatp.com/large/pgc-image/1528418882025edccd91e79"></p>
-<hr>
-<p>我原以为柴达木盆地是属于新疆地区的，后来一看地图才发现彻头彻尾的属于青海省，夹在昆仑山、祁连山和阿尔金山三大山脉之间，而今天的行程几乎就是横穿整个柴达木盆地。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-10.jpg"></p>
-<p>刚离开茶卡镇，还能看到一些牧民养的成群的牛羊，地上也长有一些枯草，但后来地上随着枯草的减少，牛羊也就看不到了。到后面几乎就是戈壁，看不到任何的动物，完全的荒原，让我想起了《北方的空地》中描述的羌塘无人区中的画面，我感觉无人区中也不过如此罢了。地理课本上说柴达木盆地是“聚宝盆”，矿产资源异常丰富，抛开这些埋藏在地底下的矿产不说，但就感官而言，是极其的荒凉。好在一路上，总有雪山陪伴，也不至于太孤单。一路上有很多动物出没的指示牌，好想看到一个活物，但都以失望告终。</p>
-<p>由于地广人稀，这段高速公路的管理也相对简陋，曾看到了一辆当地的三轮车在高速的快车道上逆行，吓得我一脸懵，估计是要按正常的路线行驶要多走出好多路。</p>
-<h2 id="可鲁克湖"><a href="#可鲁克湖" class="headerlink" title="可鲁克湖"></a>可鲁克湖</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/qinghai/day5-11.jpg"></p>
-<p>可鲁克湖位于高速公路旁的大约两公里处，甚至都不用下高速就可以到达，属于3A级景区。到达可鲁克湖时已经是下午6点钟，对于进入景区本不报太大的希望，经询问景区居然营业到晚上八点钟，高原地区果然天黑的晚。景区主要是一个偌大的可鲁克湖，可供游玩的地方特别少，简单拍照走人。如果在这里拍张照，拿给别人看，说是青海湖拍的，没有人能够看得出破绽。如果时间紧迫，该景区完全可以不去参观。</p>
-<p>可鲁克湖景区旁边还有个比其更大的托素湖，托素湖是可鲁克湖的三倍大小，可鲁克湖的湖水最终会流入托素湖中。比较有意思的是，可鲁克湖的湖水属于淡水湖，而托素湖却属于典型的内陆咸水湖。咸水湖的形成离不开封闭的环境，托素湖由于没有排水渠道，只能靠蒸发来消耗水分，水分被蒸发后，水分中的盐分却不会被蒸发，日积月累就会形成咸水湖。而可鲁克湖由于会流向托素湖，湖水是流动的，因此没有形成咸水湖。</p>
-<p>托素湖离高速较远，要开车过去需要沿着可鲁克湖的湖边，来回至少还得要一个半小时的时间，时间不太允许，且可玩性较差，就直接忽略了该景区。</p>
-<p>托素湖旁边还有个外星人遗址，单看景区的名字是我特别感兴趣的类型，网上一搜，景区居然暂未开放!</p>
-<h2 id="当天终点-大柴旦"><a href="#当天终点-大柴旦" class="headerlink" title="当天终点 - 大柴旦"></a>当天终点 - 大柴旦</h2><p>又是在晚上的时候到达了当天的终点站大柴旦县。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">天空之镜湖</span><br><span class="line">白雪皑皑山</span><br><span class="line">漫漫柴达木</span><br><span class="line">渺渺无人烟</span><br><span class="line">盆地全是宝</span><br><span class="line">可惜只见草</span><br><span class="line">戈壁连成片</span><br><span class="line">夜宿大柴旦</span><br></pre></td></tr></table></figure>
-
-<p>未完待续…</p>
 
       
     </div>

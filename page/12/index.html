@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">247</span>
+          <span class="site-state-item-count">248</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,107 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-seccomp/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux-seccomp/" class="post-title-link" itemprop="url">Linux Seccomp</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-12-08 17:21:40" itemprop="dateCreated datePublished" datetime="2018-12-08T17:21:40+00:00">2018-12-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>seccomp是secure computing mode的缩写，是Linux内核中的一个安全计算工具，机制用于限制应用程序可以使用的系统调用，增加系统的安全性。可以理解为系统调用的防火墙，利用BPF来规律系统调用。</p>
+<p>在&#x2F;proc&#x2F;${pid}&#x2F;status文件中的Seccomp字段可以看到进程的Seccomp。</p>
+<h2 id="prctl"><a href="#prctl" class="headerlink" title="prctl"></a>prctl</h2><p>下面程序使用prctl来设置程序的seccomp为strict模式，仅允许read、write、_exit和sigreturn四个系统调用。当调用未在seccomp白名单中的系统调用后，应用程序会被kill。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span>         <span class="comment">/* printf */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/prctl.h&gt;</span>     <span class="comment">/* prctl */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/seccomp.h&gt;</span> <span class="comment">/* seccomp&#x27;s constants */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span>        <span class="comment">/* dup2: just for test */</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;step 1: unrestricted\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Enable filtering</span></span><br><span class="line">  prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;step 2: only &#x27;read&#x27;, &#x27;write&#x27;, &#x27;_exit&#x27; and &#x27;sigreturn&#x27; syscalls\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Redirect stderr to stdout</span></span><br><span class="line">  dup2(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;step 3: !! YOU SHOULD NOT SEE ME !!\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Success (well, not so in this case...)</span></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>执行上述程序后会输出如下内容：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">step <span class="number">1</span>: unrestricted</span><br><span class="line">step <span class="number">2</span>: only <span class="string">&#x27;read&#x27;</span>, <span class="string">&#x27;write&#x27;</span>, <span class="string">&#x27;_exit&#x27;</span> and <span class="string">&#x27;sigreturn&#x27;</span> syscalls</span><br><span class="line">Killed</span><br></pre></td></tr></table></figure>
+
+<h2 id="基于BPF的seccomp"><a href="#基于BPF的seccomp" class="headerlink" title="基于BPF的seccomp"></a>基于BPF的seccomp</h2><p>上述基于prctl系统调用的seccomp机制不够灵活，在linux 3.5之后引入了基于BPF的可定制的系统调用过滤功能。</p>
+<p>需要先安装依赖包：<code>yum install libseccomp-dev</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;   /* printf */</span><br><span class="line">#include &lt;unistd.h&gt;  /* dup2: just for test */</span><br><span class="line">#include &lt;seccomp.h&gt; /* libseccomp */</span><br><span class="line"></span><br><span class="line">int main() &#123;</span><br><span class="line">  printf(&quot;step 1: unrestricted\n&quot;);</span><br><span class="line"></span><br><span class="line">  // Init the filter</span><br><span class="line">  scmp_filter_ctx ctx;</span><br><span class="line">  ctx = seccomp_init(SCMP_ACT_KILL); // default action: kill</span><br><span class="line"></span><br><span class="line">  // setup basic whitelist</span><br><span class="line">  seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigreturn), 0);</span><br><span class="line">  seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit), 0);</span><br><span class="line">  seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 0);</span><br><span class="line">  seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 0);</span><br><span class="line"></span><br><span class="line">  // setup our rule</span><br><span class="line">  seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(dup2), 2,</span><br><span class="line">                        SCMP_A0(SCMP_CMP_EQ, 1),</span><br><span class="line">                        SCMP_A1(SCMP_CMP_EQ, 2));</span><br><span class="line"></span><br><span class="line">  // build and load the filter</span><br><span class="line">  seccomp_load(ctx);</span><br><span class="line">  printf(&quot;step 2: only &#x27;write&#x27; and dup2(1, 2) syscalls\n&quot;);</span><br><span class="line"></span><br><span class="line">  // Redirect stderr to stdout</span><br><span class="line">  dup2(1, 2);</span><br><span class="line">  printf(&quot;step 3: stderr redirected to stdout\n&quot;);</span><br><span class="line"></span><br><span class="line">  // Duplicate stderr to arbitrary fd</span><br><span class="line">  dup2(2, 42);</span><br><span class="line">  printf(&quot;step 4: !! YOU SHOULD NOT SEE ME !!\n&quot;);</span><br><span class="line"></span><br><span class="line">  // Success (well, not so in this case...)</span><br><span class="line">  return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输入如下内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">step 1: unrestricted</span><br><span class="line">step 2: only &#x27;write&#x27; and dup2(1, 2) syscalls</span><br><span class="line">step 3: stderr redirected to stdout</span><br><span class="line">Bad system call</span><br></pre></td></tr></table></figure>
+
+<h2 id="docker中的应用"><a href="#docker中的应用" class="headerlink" title="docker中的应用"></a>docker中的应用</h2><p>通过如下方式可以查看docker是否启用seccomp：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># docker info --format &quot;&#123;&#123; .SecurityOptions &#125;&#125;&quot;</span><br><span class="line">[name=seccomp,profile=default]</span><br></pre></td></tr></table></figure>
+
+<p>docker每个容器默认都设置了一个seccomp profile，启用的系统调用可以从<a target="_blank" rel="noopener" href="https://github.com/moby/moby/blob/master/profiles/seccomp/default.json">default.json</a>中看到。</p>
+<p>docker会将seccomp传递给runc中的sepc.linux.seccomp。</p>
+<p>可以通过<code>—security-opt seccomp=xxx</code>来设置docker的seccomp策略，xxx为json格式的文件，其中定义了seccomp规则。</p>
+<p>也可以通过<code>--security-opt seccomp=unconfined</code>来关闭docker引入默认的seccomp规则的限制。</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://blog.yadutaf.fr/2014/05/29/introduction-to-seccomp-bpf-linux-syscall-filter/">Introduction to seccomp: BPF linux syscall filter</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzI0NjI4MDg5MQ==&mid=2715292188&idx=1&sn=2b7f26203aa594027550e324460bc901&chksm=cd6d15c8fa1a9cde757868fd34c8336433c4877d3e7689ed0a2bd90eb1ef6271bda97aa3bb03&mpshare=1&scene=1&srcid=12045vIwpmKLu97HvFOssitt%23rd">如何在Docker内部使用gdb调试器</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +320,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -332,7 +433,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -445,7 +546,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -565,7 +666,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -802,7 +903,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -882,7 +983,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -974,7 +1075,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -1092,7 +1193,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -1181,7 +1282,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -1206,123 +1307,6 @@
 <li><a target="_blank" rel="noopener" href="http://man7.org/linux/man-pages/man1/nsenter.1.html">nsenter man page</a></li>
 <li><a target="_blank" rel="noopener" href="https://github.com/jpetazzo/nsenter">nsenter GitHub</a></li>
 </ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/knowledge-share/knowledge-share-5/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/knowledge-share/knowledge-share-5/" class="post-title-link" itemprop="url">知识分享第5期</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-10-26 21:02:27" itemprop="dateCreated datePublished" datetime="2018-10-26T21:02:27+00:00">2018-10-26</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/tanzhesi.jpeg"></p>
-<p>题图为北京城西部的潭柘寺，始建于西晋年间，有“先有潭柘寺，后有幽州城”的说法。</p>
-<p>明朝燕王朱棣听取了重臣姚广孝的建议后，起兵“靖难”，并成功夺取皇位。朱棣继皇帝位后，姚广孝辞官到京西的潭柘寺隐居修行。据说当年修建北京城时，设计师就是姚广孝，他从潭柘寺的建筑和布局中获得了不少灵感。</p>
-<h2 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h2><p>1.<a target="_blank" rel="noopener" href="https://github.com/virtual-kubelet/virtual-kubelet">virtual-kubelet</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/virtual-kubelet.svg"></p>
-<p>很多公有云厂商都提供了弹性容器服务实例，比如阿里云的ECI（Elastic Container Instance）、AWS Fargate、Azure Container Instances等，但这些平台都提供了私有的API，与kubernetes的API不兼容。该项目将公有云厂商的的容器组虚拟为kubernetes集群中的一个超级node，以便支持kubernetes的API，与此同时失去了很多kubernetes的特性。</p>
-<p>2.<a target="_blank" rel="noopener" href="https://katacontainers.io/">Kata Containers</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/katacontainers.jpg"></p>
-<p>容器在部署服务方面有得天独厚的优势，但受限于内核特性，在隔离性和安全性方面仍然较弱。虚拟机（VM）在隔离性和安全性方面都比较好，但启动速度和占用资源方面却不如容器。Kata Containers项目作为轻量级的虚拟机，但提供了快速的启动速度。同时支持Docker容器的OCI标准和kubernetes的CRI。目前华为公有云已经将此技术用于生产环境中。</p>
-<p>3.<a target="_blank" rel="noopener" href="https://github.com/knative/">Knative</a></p>
-<p>在今年的Google Cloud Next大会上，Google发布了Knative, 这是由Google、Pivotal、Redhat和IBM等云厂商共同推出的Serverless开源工具组件，它与Istio，Kubernetes一起，形成了开源Serverless服务的三驾马车。</p>
-<p>4.<a target="_blank" rel="noopener" href="https://github.com/XiaoMi/naftis">naftis</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/naftis.png"></p>
-<p>小米信息部武汉研发中心开源的istio的dashboard。</p>
-<p>5.<a target="_blank" rel="noopener" href="https://github.com/pulumi/kubespy">kubespy</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/kubespy.gif"></p>
-<p>用来查看kubernetes中资源实时变化的命令行工具。</p>
-<p>6.<a target="_blank" rel="noopener" href="http://md.aclickall.com/">Md2All</a></p>
-<p>如果你已经习惯了markdown写作，在微信公账号发文时，可以使用该工具渲染后，将文章复制到微信公众号后台。</p>
-<h2 id="精彩文章"><a href="#精彩文章" class="headerlink" title="精彩文章"></a>精彩文章</h2><p>1.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzU0NDEwMTc1MA==&mid=2247490379&idx=1&sn=17857e09e980b41bc188e592422c3459&chksm=fb001f52cc7796444cb18e5a483d3ad26e44fc70d543fa03fb2f56ae74d4db7d65e8d5df7b4e&mpshare=1&scene=1&srcid=1016QBaRRz9JrroPgKJ8xXBp%23rd">阿里云的这群疯子</a></p>
-<p>从记者的视角来了解阿里云的历史。</p>
-<p>2.<a target="_blank" rel="noopener" href="http://www.yinwang.org/blog-cn/2018/10/14/update">王垠最近博客-更新一下</a></p>
-<p>曾经以天才自居桀骜不驯傲视一切的垠神，突然变得温顺了许多，开始意识到自己的缺点，开始享受生活。</p>
-<p>3.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/9vYnko3l8asVr2Mly5NjbQ">为何“秀恩爱，死得快”？我是认真的</a></p>
-<p>用量子物理学的知识来解释为啥“秀恩爱，死得快”。</p>
-<p>4.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzAxOTc0NzExNg==&mid=2665515178&idx=1&sn=52cb7a6363a93a50fb5a6608fe0006a5&chksm=80d670e9b7a1f9ff3c99e444ad383905ea26793673ed6d220e889cfce66c833e4f48000e4525&mpshare=1&scene=1&srcid=1019RCPQVkN8CT6NF0xNe8Y5%23rd">CTO、技术总监、首席架构师的区别</a></p>
-<p>5.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzI5OTM3MjMyNA==&mid=2247485701&idx=1&sn=ff6e2e6d3090555339bd93b111ae3d20&chksm=ec96d34edbe15a58a0aa8252defd77c378565e88bcf2d5f9a522043ecfc8302f6133f185f79b&mpshare=1&scene=1&srcid=1019jffSXvtK3BUofnCzPx9n%23rd">面对云厂商插管吸血，MongoDB使出绝杀</a></p>
-<p>半年后看下MongoDB的修改开源协议的做法在国内奏效否。</p>
-<p>6.<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=MzU4MjQ0MTU4Ng==&mid=2247483928&idx=1&sn=157497314c4c2a2f5ad93f4a0d4b20b7&chksm=fdb90d05cace8413f9e2470f6f8eacec4479031e7acc8acb63ae99c9b57a5e4d9a15c3d37db8&mpshare=1&scene=1&srcid=1024ksuGmq7gQIMXBcJPNFcF%23rd">终于明白了 K8S 亲和性调度</a></p>
-<p>通过该文章，已经差不多可以了解kubernetes调度的亲和性、反亲和性、taint和toleration机制了。</p>
-<p>7.<a target="_blank" rel="noopener" href="http://mp.weixin.qq.com/s?__biz=MzU1OTAzNzc5MQ==&mid=2247486496&idx=1&sn=0214f3d62b7d65350cd58ea6b4173184&chksm=fc1c2010cb6ba906a94f851184a15f462d16836c3ab5ab362ca5faeb40726f056a40261ccba6&mpshare=1&scene=1&srcid=1022SujMyNtcwnqLaT3fI3aM%23rd">微软资深工程师详解 K8S 容器运行时</a></p>
-<h2 id="图书"><a href="#图书" class="headerlink" title="图书"></a>图书</h2><p>1.<a target="_blank" rel="noopener" href="http://product.china-pub.com/8053114#ml">鸟哥的Linux私房菜：基础学习篇（第四版）</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/niaoge_linux.png"></p>
-<p>鸟哥的linux私房菜终于出新版了，最新版本是基于CentOS7的。</p>
-<h2 id="电影"><a href="#电影" class="headerlink" title="电影"></a>电影</h2><p>1.嗝嗝老师</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/hichki.jpg"></p>
-<p>电影讲述了印度贫民窟中的孩子在学校上学总是遭受歧视不爱学习各种调皮捣蛋，在一位新老师来了后，将学生们带向正轨的故事。印度电影总能将平凡的电影演绎的很魔性，单就这些故事就已经足够了。偏偏这位老师还是抽动秽语综合征患者，在受到老师和学生们的双重歧视下，给故事情节增加了许多感人和励志色彩。</p>
-<p>强迫症患者谨慎观看，看完电影后，总感觉得抽搐两下才舒服。</p>
-<h2 id="精彩句子"><a href="#精彩句子" class="headerlink" title="精彩句子"></a>精彩句子</h2><blockquote>
-<p>货币的贬值，是永恒的趋势。明天的物价，一定比今天的贵。<br>你想要赚钱，就一定要把今天的钱，换成明天的物。<br>而且时间越紧凑越好。</p>
-</blockquote>
-<p>– <a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzUxMDAwOTE4OQ==&mid=2247483881&idx=2&sn=1226590dd47dd171e833fee97e43d30d&chksm=f908cbe3ce7f42f57d07e6c060a7f607b2c11d7f0542a3215800e1610b65c5f1ad0ddfded56d&mpshare=1&scene=1&srcid=10197m4srqox3aXZOybWcQgm%23rd">八年之后 房价多少？</a></p>
 
       
     </div>

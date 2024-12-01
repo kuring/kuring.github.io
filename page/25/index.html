@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">247</span>
+          <span class="site-state-item-count">248</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,101 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_create_process_methods/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux_create_process_methods/" class="post-title-link" itemprop="url">linux中创建新进程的方式</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-06-07 16:08:15" itemprop="dateCreated datePublished" datetime="2013-06-07T16:08:15+00:00">2013-06-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="system函数"><a href="#system函数" class="headerlink" title="system函数"></a>system函数</h1><p>函数包含在C语言的标准库中，在头文件stdlib.h中声明如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">int system(const char *command);</span><br></pre></td></tr></table></figure>
+<p>该函数会创建一个独立的进程，该进程拥有独立的进程空间，为阻塞函数，只有当新进程执行完毕该函数才返回。</p>
+<p>返回值：可以通过返回值来获取新进程的main函数的返回值，返回值保存在int类型的第二个字节即8-15比特，可以通过向右移位或者利用宏WEXITSTATUS(status)来获取新进程的返回值。其中WEXITSTATUS(status)宏包含在头文件&lt;sys&#x2F;wait.h&gt;中。</p>
+<p>这里以调用ls命令为例来展示用法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> r=system(<span class="string">&quot;ls&quot;</span>);</span><br><span class="line">    <span class="comment">// 用右移位的方式来获取新进程的返回值</span></span><br><span class="line">    <span class="comment">//printf(&quot;%d\n&quot;,r&gt;&gt;8&amp;255);</span></span><br><span class="line">    <span class="comment">// 用WEXITSTATUS(status)宏的方式来获取新进程的返回值</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>,WEXITSTATUS(r));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="popen函数"><a href="#popen函数" class="headerlink" title="popen函数"></a>popen函数</h1><p>函数包含在头文件stdio.h中，相关函数如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FILE *<span class="title function_">popen</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *command, <span class="type">const</span> <span class="type">char</span> *type)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">pclose</span><span class="params">(FILE *stream)</span>;</span><br></pre></td></tr></table></figure>
+<p>popen函数在父子进程之间建立一个管道，其中type指定管道的类型，可以为”r”或”w”即只读或可写。在shell中的管道符”|”即采用此函数来实现。popen函数为阻塞函数，函数的具体用法如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line">main()</span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span> buf[<span class="number">1024</span>];</span><br><span class="line">    FILE *f=popen(<span class="string">&quot;ls&quot;</span>,<span class="string">&quot;r&quot;</span>);</span><br><span class="line">    <span class="comment">// 根据管道获取文件描述符</span></span><br><span class="line">    <span class="type">int</span> fd=fileno(f);  </span><br><span class="line">    <span class="type">int</span> r;     </span><br><span class="line">    <span class="keyword">while</span>((r=read(fd,buf,<span class="number">1024</span>))&gt;<span class="number">0</span>)</span><br><span class="line">    &#123;   </span><br><span class="line">        buf[r]=<span class="number">0</span>;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>,buf);</span><br><span class="line">    &#125; </span><br><span class="line">    close(fd);</span><br><span class="line">    <span class="comment">// 关闭管道</span></span><br><span class="line">    pclose(f);  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="exec系列函数"><a href="#exec系列函数" class="headerlink" title="exec系列函数"></a>exec系列函数</h1><p>该系列函数并不创建新的进程，而是将程序加载到当前进程的代码空间来执行并替换当前进程的代码空间，在exec*函数后面的代码将无法执行。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">execl</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *path, <span class="type">const</span> <span class="type">char</span> *arg, ...)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execlp</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *file, <span class="type">const</span> <span class="type">char</span> *arg, ...)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execle</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *path, <span class="type">const</span> <span class="type">char</span> *arg, ..., <span class="type">char</span> * <span class="type">const</span> envp[])</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execv</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *path, <span class="type">char</span> *<span class="type">const</span> argv[])</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">execvp</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *file, <span class="type">char</span> *<span class="type">const</span> argv[])</span>;</span><br></pre></td></tr></table></figure>
+<h1 id="fork函数"><a href="#fork函数" class="headerlink" title="fork函数"></a>fork函数</h1><p>该函数非常常用。函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">pid_t</span> <span class="title function_">fork</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure>
+<p>调用该函数会产生一个子进程，该子进程不仅复制了父进程的代码空间、堆、栈，而且还复制了父进程的执行位置。之后父子进程同时执行，通常由于操作系统任务调度的原因，子进程会先执行。父进程和子进程之间的并不会共享堆、栈上的数据，可以通过文件或共享内存的方式来通讯。</p>
+<p>返回值：该函数父进程返回子进程的id，子进程返回0。通常在代码中通过返回值来判断是子进程还是父进程，用来执行不同的代码。</p>
+<p>如果父进程先结束，则子进程会成为孤儿进程，子进程仍然可以继续执行。进程数中的根进程init会成为该子进程的父进程。</p>
+<p>如果子进程先结束，则子进程会成为僵尸进程。僵尸进程并不再占用内存和CPU资源，但是会在进程数中看到僵尸进程。因此代码中必须对僵尸进程的情况做处理，通常的处理办法为采用wait函数和信号机制。子进程在结束的时候会向父进程发送一个信号SIGCHLD，整数值为17。父进程扑捉到该信号后通过调用wait函数来回收子进程的资源。其中wait函数为阻塞函数，会一直等待子进程结束。wait函数返回子进程退出时的状态码。下面通过实例演示一下当子进程先结束时父进程怎样回收子进程。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">processChildProcess</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;receive the child process end\n&quot;</span>);</span><br><span class="line">    wait();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> pid;</span><br><span class="line">    pid = fork();</span><br><span class="line">    <span class="keyword">if</span> (pid &gt; <span class="number">0</span>)</span><br><span class="line">    &#123;   </span><br><span class="line">        <span class="comment">// 父进程</span></span><br><span class="line">        signal(SIGCHLD, processChildProcess);</span><br><span class="line">        <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">        &#123;   </span><br><span class="line">            sleep(<span class="number">1</span>);</span><br><span class="line">        &#125;   </span><br><span class="line">    &#125;   </span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;   </span><br><span class="line">        <span class="comment">// 子进程</span></span><br><span class="line">        sleep(<span class="number">1</span>);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;child process end\n&quot;</span>);</span><br><span class="line">    &#125;   </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关于fork的详细理解可以看这里：<a target="_blank" rel="noopener" href="http://coolshell.cn/articles/7965.html">一个fork的面试题</a>。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +314,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -314,7 +409,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -404,7 +499,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -485,7 +580,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -570,7 +665,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -655,7 +750,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -750,7 +845,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   

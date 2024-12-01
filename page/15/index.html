@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">247</span>
+          <span class="site-state-item-count">248</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,95 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/grafana-upgrade/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/grafana-upgrade/" class="post-title-link" itemprop="url">grafana升级</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-09-13 00:22:51" itemprop="dateCreated datePublished" datetime="2017-09-13T00:22:51+00:00">2017-09-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>本次grafana的升级从版本3.1.1，变更为4.4.3，涉及到一个大的版本跨度。同时之前在使用的存储为sqlite，趁着这次升级更改为mysql。</p>
+<h1 id="grafana升级"><a href="#grafana升级" class="headerlink" title="grafana升级"></a>grafana升级</h1><p>直接从官网下载对应的4.4.3版本的二进制包，修改部分配置即可，该部分没任何难度。</p>
+<h1 id="sqlite-to-mysql"><a href="#sqlite-to-mysql" class="headerlink" title="sqlite to mysql"></a>sqlite to mysql</h1><p>由于grafana使用的表结构在3.1.1到4.4.3之间有变更，不能直接将3.1.1版本的sqlite中的数据导入到4.4.3的mysql中。我的方法为先使用3.1.1版grafana将数据从sqlite导入到mysql中，然后再升级grafana的版本，grafana可以自动修改表结构。</p>
+<p>在的mysql中创建grafana的数据库，并修改数据库的编码为utf-8.</p>
+<p>修改grafana 3.1.1配置文件conf&#x2F;defaults.ini如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[database]</span><br><span class="line"># You can configure the database connection by specifying type, host, name, user and password</span><br><span class="line"># as separate properties or as on string using the url property.</span><br><span class="line"></span><br><span class="line"># Either &quot;mysql&quot;, &quot;postgres&quot; or &quot;sqlite3&quot;, it&#x27;s your choice</span><br><span class="line">type = mysql</span><br><span class="line">host = xx.xx.xx.xx:3306</span><br><span class="line">name = grafana</span><br><span class="line">user = dev</span><br><span class="line"># If the password contains # or ; you have to wrap it with triple quotes. Ex &quot;&quot;&quot;#password;&quot;&quot;&quot;</span><br><span class="line">password = dev</span><br></pre></td></tr></table></figure>
+
+<p>启动grafana后会自动在grafana数据库中创建相应的表结构，接下来就是将sqlite中的数据导入到mysql中。</p>
+<p>在data目录下增加如下脚本sqlitedump.sh，并执行<code>sh sqlitedump.sh grafana.db &gt; grafana.sql</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/sh</span><br><span class="line">DB=$1</span><br><span class="line">TABLES=$(sqlite3 $DB .tables | grep -v migration_log)</span><br><span class="line">for t in $TABLES; do</span><br><span class="line">    echo &quot;TRUNCATE TABLE $t;&quot;</span><br><span class="line">done</span><br><span class="line">for t in $TABLES; do</span><br><span class="line">    echo -e &quot;.mode insert $t\nselect * from $t;&quot;</span><br><span class="line">done | sqlite3 $DB</span><br></pre></td></tr></table></figure>
+
+<p>然后将grafana.sql导入到新创建的mysql。</p>
+<p>将grafana 3.1.1版本停掉，将grafana 4.4.3版本的配置指向到mysql数据库，启动grafana 4.4.3后，mysql中的表结构会自动变更。</p>
+<p>至此，grafana的升级完成。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +308,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -307,7 +396,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -393,7 +482,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -488,7 +577,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -568,7 +657,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -659,7 +748,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -764,7 +853,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -886,7 +975,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -990,7 +1079,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -1019,95 +1108,6 @@
 <p>协议中的以太网Destination Address的值必须为多播地址224.0.0.18。</p>
 <p>当前正在使用的VRRP版本为version 2，认证功能已经取消，但为了向下兼容，仍然可用。在抓取的包中，仍在使用认证信息</p>
 <h1 id="download"><a href="#download" class="headerlink" title="download"></a>download</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/s/1jHreDyI">这里提供两个vrrp协议的pcap包</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/algorithm_heap/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/algorithm_heap/" class="post-title-link" itemprop="url">大顶堆小顶堆与堆排序</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-10-13 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-13T00:00:00+00:00">2015-10-13</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>一直对堆排序算法用的不错，但是又是在排序中挺重要的算法，并且可以求解其他问题，比如top k问题。已经对堆排序学习过好多次了，无奈每次都记不太清楚具体的细节问题，本文对堆的问题进行整理。本文的排序例子来源于严蔚敏的《数据结构》，本文的知识点来自《算法导论》。</p>
-<p>最大堆为堆中的最大元素位于根节点，顾名思义，最小堆的根节点为最小值。堆的性质决定了堆中节点一定大于等于其子节点。在堆排序算法中用到的是最大堆，最小堆用于构造优先队列，要是使用最小堆进行排序，得到的排序结果为倒序。</p>
-<p>堆的结构为完全二叉树，因此可以用数组存储来代替树的链式存储结构。</p>
-<h1 id="建最大堆过程"><a href="#建最大堆过程" class="headerlink" title="建最大堆过程"></a>建最大堆过程</h1><p>我这里通过图表的形式对建大顶堆的过程进行了展示，不再对文字进行叙述。在堆排序的过程中会不断进行建最大堆过程的调用。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/heap_sort_create.png" alt="堆的初始化"></p>
-<h1 id="堆排序的核心步骤"><a href="#堆排序的核心步骤" class="headerlink" title="堆排序的核心步骤"></a>堆排序的核心步骤</h1><p>清楚了堆的初始化，再看一下下面的堆排序步骤就非常清楚了，不需要图片进行描述了。堆排序的步骤：</p>
-<ol>
-<li>将待排序的数组初始化为大顶堆，该过程即建堆。</li>
-<li>将堆顶元素与最后一个元素进行交换，除去最后一个元素外可以组建为一个新的大顶堆。</li>
-<li>新建立的堆不是大顶堆，需要重新建立大顶堆。重复上面的处理流程，直到堆中仅剩下一个元素。</li>
-</ol>
-<h1 id="top-k问题的堆解法"><a href="#top-k问题的堆解法" class="headerlink" title="top k问题的堆解法"></a>top k问题的堆解法</h1><p>该问题最常规和通用的解决思路为使用快速排序，还可以在N的范围不大的情况下采用哈希（桶）的方式。</p>
-<p>另外一种解法就是堆排序的思路来解决。这里用到的为最小堆，用最小堆来存储最大的k个数，其中堆顶元素为最大k个数种最小的数。这个解法初看有些别扭，求最大的k个数，居然会用到小顶堆。</p>
-<p>该算法必然是一个个遍历N个数一次就够了，这点很好理解。每读取一个新的数x，如果x比堆顶的元素y小，则抛弃；如果x比y大，则用x替换y，并重新更新堆。</p>
 
       
     </div>

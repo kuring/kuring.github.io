@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">247</span>
+          <span class="site-state-item-count">248</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,111 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/k8s-support-zone-region/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/k8s-support-zone-region/" class="post-title-link" itemprop="url">k8s在region和zone方面的支持情况</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-01-25 12:33:00" itemprop="dateCreated datePublished" datetime="2022-01-25T12:33:00+00:00">2022-01-25</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>k8s虽然已经发展了多个版本，但在多region和多zone的场景下支持还是相对比较弱的，且很多的特性在alpha版本就已经废弃，说明k8s官方对于region和zone方面的支持情况有很大的不确定性。业界支持多reigon和容灾的特性更多是从上层的应用层来解决。本文主要是介绍k8s自身以及社区在region和zone方面的支持情况。</p>
+<h1 id="k8s标签"><a href="#k8s标签" class="headerlink" title="k8s标签"></a>k8s标签</h1><p><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone">https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone</a><br>官方推荐的跟region和zone有关的标签：</p>
+<ul>
+<li>failure-domain.beta.kubernetes.io&#x2F;region：1.17版本已经废弃，被topology.kubernetes.io&#x2F;region取代</li>
+<li>failure-domain.beta.kubernetes.io&#x2F;zone：1.17版本已经废弃，被topology.kubernetes.io&#x2F;zone取代</li>
+<li>topology.kubernetes.io&#x2F;region：1.17版本开始支持</li>
+<li>topology.kubernetes.io&#x2F;zone：1.17版本开始支持</li>
+</ul>
+<h1 id="服务拓扑ServiceTopology"><a href="#服务拓扑ServiceTopology" class="headerlink" title="服务拓扑ServiceTopology"></a>服务拓扑ServiceTopology</h1><p>支持版本：在1.17版本引入，在1.21版本废弃</p>
+<p>该特性在Service对象上增加了spec.topologyKeys字段，表示访问该Service的流量优先选用的拓扑域列表。访问Service流量的具体过程如下：</p>
+<ol>
+<li>当访问该Service时，一定是从某个k8s的node节点上发起，会查看当前node的label topology.kubernetes.io&#x2F;zone对应的value，如果发现有endpoint所在的node的lable topology.kubernetes.io&#x2F;zone对应的value相同，那么会将流量转发到该拓扑域的endpoint上。</li>
+<li>如果没有找到topology.kubernetes.io&#x2F;zone相同拓扑域的endpoint，则尝试找topology.kubernetes.io&#x2F;region相同拓扑域的endpoint。</li>
+<li>如果没有找到任何拓扑域的endpoint，那么该service会转发失败。<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">Name:</span> <span class="string">my-app-web</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">my-app</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">8080</span></span><br><span class="line">  <span class="attr">topologyKeys:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;topology.kubernetes.io/zone&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">&quot;topology.kubernetes.io/region&quot;</span></span><br></pre></td></tr></table></figure>
+在底层实现上，使用了1.16版本新引入的alpha版本特性 EndpointSlice，该特性主要是用来解决Endpoints对象过多时带来的性能问题，从而将Endpoints拆分为多个组，Service Topology特性恰好可以借助该特性来实现，本质上也是为了将Endpoints进行拆分。k8s会根据Service的topologyKeys来将Service拆分为多个EndpointSlice对象，kube-proxy根据EndpointSlice会将Service流量进行拆分。</li>
+</ol>
+<h1 id="拓扑感知提示Topology-Aware-Hints"><a href="#拓扑感知提示Topology-Aware-Hints" class="headerlink" title="拓扑感知提示Topology Aware Hints"></a>拓扑感知提示Topology Aware Hints</h1><p>该特性在1.21版本引入，在1.23版本变为beta版本，用来取代Topology Key功能。<br>该特性会启用两个组件：EndpointSlice控制器和kube-proxy。</p>
+<p>在Service Topology功能中，需要给Service来指定topologyKeys字段。该特性会更自动化一些，只需要在Service上增加annotation service.kubernetes.io&#x2F;topology-aware-hints:auto，EndpointSlice控制器会watch到Service，发现开启了拓扑感知功能，会自动向endpoints的hints中增加forZones字段，该字段的value会根据endpoint所在node的topology.kubernetes.io&#x2F;zone来决定。</p>
+<p>值得一提的是，当前的hints中并没有包含forRegions的字段。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">discovery.k8s.io/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">EndpointSlice</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">example-hints</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">kubernetes.io/service-name:</span> <span class="string">example-svc</span></span><br><span class="line"><span class="attr">addressType:</span> <span class="string">IPv4</span></span><br><span class="line"><span class="attr">ports:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http</span></span><br><span class="line">    <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">    <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line"><span class="attr">endpoints:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">addresses:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;10.1.2.3&quot;</span></span><br><span class="line">    <span class="attr">conditions:</span></span><br><span class="line">      <span class="attr">ready:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">hostname:</span> <span class="string">pod-1</span></span><br><span class="line">    <span class="attr">zone:</span> <span class="string">zone-a</span></span><br><span class="line">    <span class="attr">hints:</span></span><br><span class="line">      <span class="attr">forZones:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&quot;zone-a&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><a href="">Well-Known Labels, Annotations and Taints</a></li>
+<li>Google Ingress for Anthos：<a target="_blank" rel="noopener" href="https://cloud.google.com/kubernetes-engine/docs/concepts/ingress-for-anthos#architecture">https://cloud.google.com/kubernetes-engine/docs/concepts/ingress-for-anthos#architecture</a></li>
+<li>阿里云ccm支持多个k8s集群的场景（手工指定lb id和server group方案）：<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/335878.html#title-4wt-hc5-p2p">https://help.aliyun.com/document_detail&#x2F;335878.html#title-4wt-hc5-p2p</a></li>
+<li><a target="_blank" rel="noopener" href="https://tencentcloudcontainerteam.github.io/2019/11/26/service-topology/">https://tencentcloudcontainerteam.github.io/2019/11/26/service-topology/</a></li>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/zh/docs/concepts/services-networking/endpoint-slices/">https://kubernetes.io/zh/docs/concepts/services-networking/endpoint-slices/</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/245165617">使用 EndpointSlice 扩展 Kubernetes 网络</a></li>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/setup/best-practices/multiple-zones/">Running in multiple zones</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +324,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -331,7 +436,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -457,7 +562,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -623,7 +728,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -769,7 +874,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -894,7 +999,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -1025,7 +1130,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -1126,7 +1231,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -1273,7 +1378,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
+      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
     </span>
 
   
@@ -1307,98 +1412,6 @@
 <h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
 <li>得到 - 《金字塔原理》成甲解读</li>
 </ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/review-zhangyiming/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/review-zhangyiming/" class="post-title-link" itemprop="url">演讲的思考系列文章 - 张一鸣字节跳动9周年</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2021-04-05 18:50:11" itemprop="dateCreated datePublished" datetime="2021-04-05T18:50:11+00:00">2021-04-05</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-10-01 09:56:34" itemprop="dateModified" datetime="2024-10-01T09:56:34+00:00">2024-10-01</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>最近因为《致阿里》的缘故，读了不少阿里内网的热帖，很多都是洋洋洒洒几千字，而且说的有理有据。如果换做是我，很多帖子哪怕我憋上一天都是写不出来的。我一直在思考，我到底比别人差在了哪里。思来想去，其中一个原因是因为平时的思考总结不够，缺少积累。</p>
-<p>恰巧看了张一鸣在字节跳动9周年演讲，三观跟我特别合，想以贴为例，一来分享一下我个人的内心想法加深对演讲内容的认识，二来可以依次来锻炼自己的逻辑归纳能力。后续如有特别值得学习的演讲，也会分享一下自己的学习和思考，比如2020年张小龙的微信公开课的演讲就特别值得学习。</p>
-<p>文中提到最多的词莫过于“平常心”了，“平常心”是一个佛源词，看来张一鸣没少研究佛学，整篇演讲显得也比较佛系，对于平常心的最直白的解释就是：</p>
-<p>| 吃饭的时候好好吃饭，睡觉的时候好好睡觉</p>
-<p>要想做到“好好吃饭，好好睡觉”对我来说是挺难的，我举一个简单的例子。平常周末来说，特别想睡一个懒觉，如果在睡觉前自己明确知道因为工作没有完成，第二天早上会有人找我，那么第二天早上一定会醒的比较早，想睡个懒觉都很难，即使第二天上午并不一定有人在我醒之前找到我。说明因为有事情的缘故，已经在无形中影响了睡眠质量。再举个例子，春节假期的睡眠质量明显会高于平常周末的睡眠质量，原因是心里总有各种工作的事情不能完全放下。如果将春节假期的心态为平常心，那么一年中的其他时间对我而言都不是平常心。</p>
-<p>每家公司在年初的时候总会定义一些目标，比如全年营收目标为1个亿。一旦有了营收目标后，那么大家的工作重心一定会围绕的着目标展开。因为毕竟公司的资源是有限的，但是为了达成营收的目标，并不能保持一颗“平常心”来工作，焦虑的员工很难打磨出最好的产品，往往其他的地方就不会做的太好，比如用户体验、代码质量等等，一些本来很好的点子因为有营收目标的缘故，也很难展开实施，从而导致一些创新项目的流失。</p>
-<p>接下来就是一些平常心的工作原则，总结下来有如下几点：</p>
-<ul>
-<li>平常心对待自己，平常人做非常事</li>
-<li>平常心对待预期，没有预期和标签的束缚会发挥的更好</li>
-<li>平常心对待过去和未来，关注当下</li>
-<li>平常心对待竞争对手</li>
-<li>平常心对待业务</li>
-<li>平常心对待成功和失败</li>
-</ul>
-<p>文中特意提到了互联网八股文的一段话，这里就不再摘出来，我平时也没少见到类似的话术，看完后的感觉就是真牛逼，打死我都写不出来，但转头就忘记讲啥了，也许就是当时压根就看不懂，因为这些话太抽象了。互联网行业本身是一个特别务实接地气的行业，现在也渐渐在内卷严重，抽象的词汇也越来越多，期望下一个风口的到来，或许会将这股邪气吹走一些。</p>
-<h1 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h1><p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/eDn4rcdB7to-sD9N-NGySw">张一鸣演讲全文：外部波澜起伏，内心平静如常</a></p>
 
       
     </div>
