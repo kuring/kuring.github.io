@@ -3276,6 +3276,23 @@
 ]]></content>
   </entry>
   <entry>
+    <title>go mod使用</title>
+    <url>/post/go-mod/</url>
+    <content><![CDATA[<p>go mod从1.11开始已经成为了go的默认包管理工具，本文记录go mod的一些使用经验。</p>
+<p>要想使用go mod，需要将go升级到1.11或者更高版本。</p>
+<p>在没有go mod之前，项目源码必须是放在GOPATH目录下的，有了go mod之后项目即可以放在GOPATH目录下，也可以放在非GOPATH的目录下，在GOPATH目录下在执行时需要指定环境变量<code>GO111MODULE=on</code>,具体的写法可以是<code>GO111MODULE=on go mod init</code></p>
+<p>由于众所周知的原因，go的包相对还是比较难下载的，很多情况下还是需要vendor目录存在的，并将vendor目录中的包一并提交到代码库中。可以使用<code>go mod vendor</code>命令来完成，执行该命令后会将本地下载的包copy到vendor目录下。</p>
+<h2 id="坑1-提示unknown-revision"><a href="#坑1-提示unknown-revision" class="headerlink" title="坑1 提示unknown revision"></a>坑1 提示unknown revision</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># GO111MODULE=on go get gitlab.aa-inc.com/bb@v2</span><br><span class="line">go: finding gitlab.aa-inc.com/bb v2</span><br><span class="line">go: finding gitlab.aa-inc.com v2</span><br><span class="line">go get gitlab.aa-inc.com/bb@v2: unknown revision v2</span><br></pre></td></tr></table></figure>
+
+<p>在获取单个包的时候提示<code>unknown revision</code>错误，后发现是go get默认是使用的https协议，而不是git协议，而git仓库的https协议不支持导致的，解决办法为:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">git config --global url.&quot;git@gitlab.aa-inc.com:&quot;.insteadOf &quot;https://gitlab.aa-inc.com/&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><ul>
+<li><a href="https://zhuanlan.zhihu.com/p/65916369">Go 每日漫谈——Go Module 的一些坑</a></li>
+</ul>
+]]></content>
+  </entry>
+  <entry>
     <title>hexo添加gitment评论系统</title>
     <url>/post/gitment/</url>
     <content><![CDATA[<p>曾经使用多说和网易云评论作为博客的评论系统，不幸都相继倒闭后，博客就一直没有评论系统。虽博客的访问量可以忽略不计，但本着折腾和好奇的原则，还是折腾一下gitment。</p>
@@ -3310,148 +3327,6 @@
 
 <p>执行<code>hexo clean &amp;&amp; hexo g &amp;&amp; hexo s</code>重新生成页面并在本地运行，可以看到gitment组件已经可以显示了，但是提示<code>Error: Comments Not Initialized</code>错误，点击login，然后允许认证，即可消除该错误。</p>
 <p>在界面上添加评论后，可以在github repo的issuse中看到，整个搭建完毕。</p>
-]]></content>
-  </entry>
-  <entry>
-    <title>go mod使用</title>
-    <url>/post/go-mod/</url>
-    <content><![CDATA[<p>go mod从1.11开始已经成为了go的默认包管理工具，本文记录go mod的一些使用经验。</p>
-<p>要想使用go mod，需要将go升级到1.11或者更高版本。</p>
-<p>在没有go mod之前，项目源码必须是放在GOPATH目录下的，有了go mod之后项目即可以放在GOPATH目录下，也可以放在非GOPATH的目录下，在GOPATH目录下在执行时需要指定环境变量<code>GO111MODULE=on</code>,具体的写法可以是<code>GO111MODULE=on go mod init</code></p>
-<p>由于众所周知的原因，go的包相对还是比较难下载的，很多情况下还是需要vendor目录存在的，并将vendor目录中的包一并提交到代码库中。可以使用<code>go mod vendor</code>命令来完成，执行该命令后会将本地下载的包copy到vendor目录下。</p>
-<h2 id="坑1-提示unknown-revision"><a href="#坑1-提示unknown-revision" class="headerlink" title="坑1 提示unknown revision"></a>坑1 提示unknown revision</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># GO111MODULE=on go get gitlab.aa-inc.com/bb@v2</span><br><span class="line">go: finding gitlab.aa-inc.com/bb v2</span><br><span class="line">go: finding gitlab.aa-inc.com v2</span><br><span class="line">go get gitlab.aa-inc.com/bb@v2: unknown revision v2</span><br></pre></td></tr></table></figure>
-
-<p>在获取单个包的时候提示<code>unknown revision</code>错误，后发现是go get默认是使用的https协议，而不是git协议，而git仓库的https协议不支持导致的，解决办法为:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">git config --global url.&quot;git@gitlab.aa-inc.com:&quot;.insteadOf &quot;https://gitlab.aa-inc.com/&quot;</span><br></pre></td></tr></table></figure>
-
-<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><ul>
-<li><a href="https://zhuanlan.zhihu.com/p/65916369">Go 每日漫谈——Go Module 的一些坑</a></li>
-</ul>
-]]></content>
-  </entry>
-  <entry>
-    <title>Golang中的异常处理机制</title>
-    <url>/post/golang-error/</url>
-    <content><![CDATA[<p>异常处理分为error和defer和recover两类，其中error用来处理可预期的异常，recover用来处理意外的异常。</p>
-<h2 id="error"><a href="#error" class="headerlink" title="error"></a>error</h2><p>支持多个返回值，可以将业务的返回值和错误的返回值分开，很多都会返回两个值。如果不使用error返回值，可以用_变量来忽略。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// parseConfig returns a parsed configuration for an Azure cloudprovider config file</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">parseConfig</span><span class="params">(configReader io.Reader)</span></span> (*Config, <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="keyword">var</span> config Config</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> configReader == <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> &amp;config, <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	configContents, err := ioutil.ReadAll(configReader)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	err = yaml.Unmarshal(configContents, &amp;config)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// The resource group name may be in different cases from different Azure APIs, hence it is converted to lower here.</span></span><br><span class="line">	<span class="comment">// See more context at https://github.com/kubernetes/kubernetes/issues/71994.</span></span><br><span class="line">	config.ResourceGroup = strings.ToLower(config.ResourceGroup)</span><br><span class="line">	<span class="keyword">return</span> &amp;config, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><br />error的几种使用方式：</p>
-<table>
-<thead>
-<tr>
-<th>使用error的方式</th>
-<th>说明</th>
-<th>举例</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>errors.New</td>
-<td>简单静态字符串的错误，没有额外的信息</td>
-<td>errors.New(“shell not specified”)</td>
-</tr>
-<tr>
-<td><a href="https://golang.org/pkg/fmt/#Errorf">fmt.Errorf</a></td>
-<td>用于格式化的错误字符串</td>
-<td>fmt.Errorf(“failed to start kubernetes.io&#x2F;kube-apiserver-client-kubelet certificate controller: %v”, err)</td>
-</tr>
-<tr>
-<td>实现Error()方法的自定义类型</td>
-<td>客户段需要检测并处理该错误时使用该方式</td>
-<td>见下文自定义error</td>
-</tr>
-<tr>
-<td>Error wrapping</td>
-<td>Go 1.13支持的特性</td>
-<td></td>
-</tr>
-</tbody></table>
-<h3 id="errors-New"><a href="#errors-New" class="headerlink" title="errors.New"></a>errors.New</h3><p>原则：</p>
-<ul>
-<li>不要在客户端判断error中的包含字符串信息。</li>
-</ul>
-<table>
-<thead><tr><th>Bad</th><th>Good</th></tr></thead>
-<tbody>
-<tr><td>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// package foo</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">()</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> errors.New(<span class="string">&quot;could not open&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// package bar</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">use</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err := foo.Open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> err.Error() == <span class="string">&quot;could not open&quot;</span> &#123;</span><br><span class="line">      <span class="comment">// handle</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="built_in">panic</span>(<span class="string">&quot;unknown error&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td><td>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// package foo</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> ErrCouldNotOpen = errors.New(<span class="string">&quot;could not open&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">()</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> ErrCouldNotOpen</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// package bar</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> err := foo.Open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> errors.Is(err, foo.ErrCouldNotOpen) &#123;</span><br><span class="line">    <span class="comment">// handle</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;unknown error&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td></tr>
-</tbody></table>
-
-
-<p>当然也可以使用自定义error类型，但此时由于要实现自定义error类型，代码量会增加。</p>
-<h3 id="自定义error"><a href="#自定义error" class="headerlink" title="自定义error"></a>自定义error</h3><p>error是个接口，可以用来扩展自定义的错误处理。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// file: k8s.io/kubernetes/pkg/volume/util/nestedpendingoperations/nestedpendingoperations.go</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// NewAlreadyExistsError returns a new instance of AlreadyExists error.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewAlreadyExistsError</span><span class="params">(operationName <span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> alreadyExistsError&#123;operationName&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// IsAlreadyExists returns true if an error returned from</span></span><br><span class="line"><span class="comment">// NestedPendingOperations indicates a new operation can not be started because</span></span><br><span class="line"><span class="comment">// an operation with the same operation name is already executing.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">IsAlreadyExists</span><span class="params">(err <span class="type">error</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">	<span class="keyword">switch</span> err.(<span class="keyword">type</span>) &#123;</span><br><span class="line">	<span class="keyword">case</span> alreadyExistsError:</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> alreadyExistsError <span class="keyword">struct</span> &#123;</span><br><span class="line">	operationName <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> _ <span class="type">error</span> = alreadyExistsError&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(err alreadyExistsError)</span></span> Error() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> fmt.Sprintf(</span><br><span class="line">		<span class="string">&quot;Failed to create operation with name %q. An operation with that name is already executing.&quot;</span>,</span><br><span class="line">		err.operationName)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>还可以延伸出更复杂一些的树形error体系：<br /></p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// package net</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Error <span class="keyword">interface</span> &#123;</span><br><span class="line">    <span class="type">error</span></span><br><span class="line">    Timeout() <span class="type">bool</span>   <span class="comment">// Is the error a timeout?</span></span><br><span class="line">    Temporary() <span class="type">bool</span> <span class="comment">// Is the error temporary?</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> UnknownNetworkError <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Error() <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Temporary() <span class="type">bool</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Timeout() <span class="type">bool</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="Error-Wrapping"><a href="#Error-Wrapping" class="headerlink" title="Error Wrapping"></a>Error Wrapping</h3><p>error类型仅包含一个字符串类型的信息，如果函数的调用栈信息为A -&gt; B -&gt; C，如果函数C返回err，在函数A处打印err信息，那么很难判断出err的真正出错位置，不利于快速定位问题。我们期望的效果是在函数A出打印err，能够精确的找到err的源头。<br /><br><br />为了解决上述问题，需要error类型在函数调用栈之间传递，有如下解决方法：</p>
-<ul>
-<li>使用fmt.Errorf()函数来增加额外的信息</li>
-<li>使用Error Wrapping  <ul>
-<li>golang 1.13支持%w</li>
-<li><a href="https://github.com/pkg/errors">https://github.com/pkg/errors</a></li>
-</ul>
-</li>
-</ul>
-<p><br />使用fmt.Errorf()来封装error信息，基于已经存在的error再产生一个新的error类型，需要避免error中包含冗余信息。<br /></p>
-<table>
-<thead><tr><th>Bad</th><th>Good</th></tr></thead>
-<tbody>
-<tr><td>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// err: failed to call api: connection refused</span></span><br><span class="line">s, err := store.New()</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Errorf(</span><br><span class="line">        <span class="string">&quot;failed to create new store: %s&quot;</span>, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td><td>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// err: call api: connection refused</span></span><br><span class="line">s, err := store.New()</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Errorf(</span><br><span class="line">        <span class="string">&quot;new store: %s&quot;</span>, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<tr><td>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">failed to create new store: failed to call api: connection refused</span><br><span class="line">error中会有很多的冗余信息</span><br></pre></td></tr></table></figure>
-</td><td>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">new store: call api: connection refused</span><br><span class="line">error中没有冗余信息，同时包含了调用栈信息</span><br></pre></td></tr></table></figure>
-</td></tr>
-</tbody></table>
-
-<p>但使用fmt.Errorf()来全新封装的error信息的缺点也非常明显，丢失了最初的err信息，已经在中间转换为了全新的err。</p>
-<h2 id="类型断言"><a href="#类型断言" class="headerlink" title="类型断言"></a>类型断言</h2><p>类型转换如果类型不正确，会导致程序crash，必须使用类型判断来判断类型的正确性。<br /></p>
-<table>
-<thead><tr><th>Bad</th><th>Good</th></tr></thead>
-<tbody>
-<tr><td>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">t := i.(<span class="type">string</span>)</span><br></pre></td></tr></table></figure>
-</td><td>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">t, ok := i.(<span class="type">string</span>)</span><br><span class="line"><span class="keyword">if</span> !ok &#123;</span><br><span class="line">  <span class="comment">// handle the error gracefully</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td></tr>
-</tbody></table>
-
-<h2 id="panic"><a href="#panic" class="headerlink" title="panic"></a>panic</h2><p>用于处理运行时的异常情况。<br /><img src="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/220839/1615386682235-b67733ca-036d-40d3-a895-c6b65a58f9d3.png#align=left&display=inline&height=563&margin=%5Bobject%20Object%5D&name=image.png&originHeight=1060&originWidth=887&size=418096&status=done&style=none&width=471" alt="image.png"><br />使用原则</p>
-<ul>
-<li>不要使用panic，在kubernetes项目中几乎没有使用panic的场景</li>
-<li>即使使用panic后，一定要使用recover会捕获异常</li>
-<li>在测试用例中可以使用panic</li>
-</ul>
-<table>
-<thead><tr><th>Bad</th><th>Good</th></tr></thead>
-<tbody>
-<tr><td>
-
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">run</span><span class="params">(args []<span class="type">string</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(args) == <span class="number">0</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;an argument is required&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  run(os.Args[<span class="number">1</span>:])</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td><td>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">run</span><span class="params">(args []<span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(args) == <span class="number">0</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> errors.New(<span class="string">&quot;an argument is required&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err := run(os.Args[<span class="number">1</span>:]); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Fprintln(os.Stderr, err)</span><br><span class="line">    os.Exit(<span class="number">1</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</td></tr>
-</tbody></table>
-
-<h2 id="client-go"><a href="#client-go" class="headerlink" title="client-go"></a>client-go</h2><p>client-go利用队列来进行重试<br /><br><br /><a href="https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go#L93">https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go#L93</a></p>
-<h2 id="kube-builder"><a href="#kube-builder" class="headerlink" title="kube-builder"></a>kube-builder</h2><p>kube-builder为client-go的更上次封装，本质上跟client-go利用队列来进行重试的机制完全一致。</p>
-<h1 id="发生了错误后该如何处理"><a href="#发生了错误后该如何处理" class="headerlink" title="发生了错误后该如何处理"></a>发生了错误后该如何处理</h1><ul>
-<li>打印错误日志</li>
-<li>根据业务场景选择忽略或者自动重试</li>
-<li>程序自己crash</li>
-</ul>
-<h1 id="如何避免"><a href="#如何避免" class="headerlink" title="如何避免"></a>如何避免</h1><ul>
-<li>在编写代码时增加防御式编程意识，不能靠契约式编程。一个比较简单的判断错误处理情况的方法，看下代码中if语句占用的比例。<a href="https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/kubelet_volumes.go">https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/kubelet_volumes.go</a></li>
-<li>需求的评估周期中，不仅要考虑到软件开发完成的时间，同时要考虑到单元测试（单元测试用例的编写需要较长的时间）和集成测试的时间</li>
-<li>单元测试覆盖率提升，测试场景要考虑到各种异常场景</li>
-</ul>
 ]]></content>
   </entry>
   <entry>
@@ -3656,6 +3531,131 @@
       <tags>
         <tag>golang</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>Golang中的异常处理机制</title>
+    <url>/post/golang-error/</url>
+    <content><![CDATA[<p>异常处理分为error和defer和recover两类，其中error用来处理可预期的异常，recover用来处理意外的异常。</p>
+<h2 id="error"><a href="#error" class="headerlink" title="error"></a>error</h2><p>支持多个返回值，可以将业务的返回值和错误的返回值分开，很多都会返回两个值。如果不使用error返回值，可以用_变量来忽略。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// parseConfig returns a parsed configuration for an Azure cloudprovider config file</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">parseConfig</span><span class="params">(configReader io.Reader)</span></span> (*Config, <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="keyword">var</span> config Config</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> configReader == <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> &amp;config, <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	configContents, err := ioutil.ReadAll(configReader)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	err = yaml.Unmarshal(configContents, &amp;config)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// The resource group name may be in different cases from different Azure APIs, hence it is converted to lower here.</span></span><br><span class="line">	<span class="comment">// See more context at https://github.com/kubernetes/kubernetes/issues/71994.</span></span><br><span class="line">	config.ResourceGroup = strings.ToLower(config.ResourceGroup)</span><br><span class="line">	<span class="keyword">return</span> &amp;config, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><br />error的几种使用方式：</p>
+<table>
+<thead>
+<tr>
+<th>使用error的方式</th>
+<th>说明</th>
+<th>举例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>errors.New</td>
+<td>简单静态字符串的错误，没有额外的信息</td>
+<td>errors.New(“shell not specified”)</td>
+</tr>
+<tr>
+<td><a href="https://golang.org/pkg/fmt/#Errorf">fmt.Errorf</a></td>
+<td>用于格式化的错误字符串</td>
+<td>fmt.Errorf(“failed to start kubernetes.io&#x2F;kube-apiserver-client-kubelet certificate controller: %v”, err)</td>
+</tr>
+<tr>
+<td>实现Error()方法的自定义类型</td>
+<td>客户段需要检测并处理该错误时使用该方式</td>
+<td>见下文自定义error</td>
+</tr>
+<tr>
+<td>Error wrapping</td>
+<td>Go 1.13支持的特性</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="errors-New"><a href="#errors-New" class="headerlink" title="errors.New"></a>errors.New</h3><p>原则：</p>
+<ul>
+<li>不要在客户端判断error中的包含字符串信息。</li>
+</ul>
+<table>
+<thead><tr><th>Bad</th><th>Good</th></tr></thead>
+<tbody>
+<tr><td>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// package foo</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">()</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> errors.New(<span class="string">&quot;could not open&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// package bar</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">use</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err := foo.Open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> err.Error() == <span class="string">&quot;could not open&quot;</span> &#123;</span><br><span class="line">      <span class="comment">// handle</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="built_in">panic</span>(<span class="string">&quot;unknown error&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td><td>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// package foo</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> ErrCouldNotOpen = errors.New(<span class="string">&quot;could not open&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">()</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> ErrCouldNotOpen</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// package bar</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> err := foo.Open(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> errors.Is(err, foo.ErrCouldNotOpen) &#123;</span><br><span class="line">    <span class="comment">// handle</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;unknown error&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td></tr>
+</tbody></table>
+
+
+<p>当然也可以使用自定义error类型，但此时由于要实现自定义error类型，代码量会增加。</p>
+<h3 id="自定义error"><a href="#自定义error" class="headerlink" title="自定义error"></a>自定义error</h3><p>error是个接口，可以用来扩展自定义的错误处理。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// file: k8s.io/kubernetes/pkg/volume/util/nestedpendingoperations/nestedpendingoperations.go</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// NewAlreadyExistsError returns a new instance of AlreadyExists error.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewAlreadyExistsError</span><span class="params">(operationName <span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> alreadyExistsError&#123;operationName&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// IsAlreadyExists returns true if an error returned from</span></span><br><span class="line"><span class="comment">// NestedPendingOperations indicates a new operation can not be started because</span></span><br><span class="line"><span class="comment">// an operation with the same operation name is already executing.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">IsAlreadyExists</span><span class="params">(err <span class="type">error</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">	<span class="keyword">switch</span> err.(<span class="keyword">type</span>) &#123;</span><br><span class="line">	<span class="keyword">case</span> alreadyExistsError:</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> alreadyExistsError <span class="keyword">struct</span> &#123;</span><br><span class="line">	operationName <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> _ <span class="type">error</span> = alreadyExistsError&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(err alreadyExistsError)</span></span> Error() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> fmt.Sprintf(</span><br><span class="line">		<span class="string">&quot;Failed to create operation with name %q. An operation with that name is already executing.&quot;</span>,</span><br><span class="line">		err.operationName)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>还可以延伸出更复杂一些的树形error体系：<br /></p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// package net</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Error <span class="keyword">interface</span> &#123;</span><br><span class="line">    <span class="type">error</span></span><br><span class="line">    Timeout() <span class="type">bool</span>   <span class="comment">// Is the error a timeout?</span></span><br><span class="line">    Temporary() <span class="type">bool</span> <span class="comment">// Is the error temporary?</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> UnknownNetworkError <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Error() <span class="type">string</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Temporary() <span class="type">bool</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e UnknownNetworkError)</span></span> Timeout() <span class="type">bool</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Error-Wrapping"><a href="#Error-Wrapping" class="headerlink" title="Error Wrapping"></a>Error Wrapping</h3><p>error类型仅包含一个字符串类型的信息，如果函数的调用栈信息为A -&gt; B -&gt; C，如果函数C返回err，在函数A处打印err信息，那么很难判断出err的真正出错位置，不利于快速定位问题。我们期望的效果是在函数A出打印err，能够精确的找到err的源头。<br /><br><br />为了解决上述问题，需要error类型在函数调用栈之间传递，有如下解决方法：</p>
+<ul>
+<li>使用fmt.Errorf()函数来增加额外的信息</li>
+<li>使用Error Wrapping  <ul>
+<li>golang 1.13支持%w</li>
+<li><a href="https://github.com/pkg/errors">https://github.com/pkg/errors</a></li>
+</ul>
+</li>
+</ul>
+<p><br />使用fmt.Errorf()来封装error信息，基于已经存在的error再产生一个新的error类型，需要避免error中包含冗余信息。<br /></p>
+<table>
+<thead><tr><th>Bad</th><th>Good</th></tr></thead>
+<tbody>
+<tr><td>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// err: failed to call api: connection refused</span></span><br><span class="line">s, err := store.New()</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Errorf(</span><br><span class="line">        <span class="string">&quot;failed to create new store: %s&quot;</span>, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td><td>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// err: call api: connection refused</span></span><br><span class="line">s, err := store.New()</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Errorf(</span><br><span class="line">        <span class="string">&quot;new store: %s&quot;</span>, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<tr><td>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">failed to create new store: failed to call api: connection refused</span><br><span class="line">error中会有很多的冗余信息</span><br></pre></td></tr></table></figure>
+</td><td>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">new store: call api: connection refused</span><br><span class="line">error中没有冗余信息，同时包含了调用栈信息</span><br></pre></td></tr></table></figure>
+</td></tr>
+</tbody></table>
+
+<p>但使用fmt.Errorf()来全新封装的error信息的缺点也非常明显，丢失了最初的err信息，已经在中间转换为了全新的err。</p>
+<h2 id="类型断言"><a href="#类型断言" class="headerlink" title="类型断言"></a>类型断言</h2><p>类型转换如果类型不正确，会导致程序crash，必须使用类型判断来判断类型的正确性。<br /></p>
+<table>
+<thead><tr><th>Bad</th><th>Good</th></tr></thead>
+<tbody>
+<tr><td>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">t := i.(<span class="type">string</span>)</span><br></pre></td></tr></table></figure>
+</td><td>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">t, ok := i.(<span class="type">string</span>)</span><br><span class="line"><span class="keyword">if</span> !ok &#123;</span><br><span class="line">  <span class="comment">// handle the error gracefully</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td></tr>
+</tbody></table>
+
+<h2 id="panic"><a href="#panic" class="headerlink" title="panic"></a>panic</h2><p>用于处理运行时的异常情况。<br /><img src="https://intranetproxy.alipay.com/skylark/lark/0/2021/png/220839/1615386682235-b67733ca-036d-40d3-a895-c6b65a58f9d3.png#align=left&display=inline&height=563&margin=%5Bobject%20Object%5D&name=image.png&originHeight=1060&originWidth=887&size=418096&status=done&style=none&width=471" alt="image.png"><br />使用原则</p>
+<ul>
+<li>不要使用panic，在kubernetes项目中几乎没有使用panic的场景</li>
+<li>即使使用panic后，一定要使用recover会捕获异常</li>
+<li>在测试用例中可以使用panic</li>
+</ul>
+<table>
+<thead><tr><th>Bad</th><th>Good</th></tr></thead>
+<tbody>
+<tr><td>
+
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">run</span><span class="params">(args []<span class="type">string</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(args) == <span class="number">0</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;an argument is required&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  run(os.Args[<span class="number">1</span>:])</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td><td>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">run</span><span class="params">(args []<span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(args) == <span class="number">0</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> errors.New(<span class="string">&quot;an argument is required&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> err := run(os.Args[<span class="number">1</span>:]); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Fprintln(os.Stderr, err)</span><br><span class="line">    os.Exit(<span class="number">1</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</td></tr>
+</tbody></table>
+
+<h2 id="client-go"><a href="#client-go" class="headerlink" title="client-go"></a>client-go</h2><p>client-go利用队列来进行重试<br /><br><br /><a href="https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go#L93">https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go#L93</a></p>
+<h2 id="kube-builder"><a href="#kube-builder" class="headerlink" title="kube-builder"></a>kube-builder</h2><p>kube-builder为client-go的更上次封装，本质上跟client-go利用队列来进行重试的机制完全一致。</p>
+<h1 id="发生了错误后该如何处理"><a href="#发生了错误后该如何处理" class="headerlink" title="发生了错误后该如何处理"></a>发生了错误后该如何处理</h1><ul>
+<li>打印错误日志</li>
+<li>根据业务场景选择忽略或者自动重试</li>
+<li>程序自己crash</li>
+</ul>
+<h1 id="如何避免"><a href="#如何避免" class="headerlink" title="如何避免"></a>如何避免</h1><ul>
+<li>在编写代码时增加防御式编程意识，不能靠契约式编程。一个比较简单的判断错误处理情况的方法，看下代码中if语句占用的比例。<a href="https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/kubelet_volumes.go">https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/kubelet_volumes.go</a></li>
+<li>需求的评估周期中，不仅要考虑到软件开发完成的时间，同时要考虑到单元测试（单元测试用例的编写需要较长的时间）和集成测试的时间</li>
+<li>单元测试覆盖率提升，测试场景要考虑到各种异常场景</li>
+</ul>
+]]></content>
   </entry>
   <entry>
     <title>Golang中的panic和recover用法</title>
@@ -6560,6 +6560,38 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
       </tags>
   </entry>
   <entry>
+    <title>Linux下的screen命令</title>
+    <url>/post/linux_screen/</url>
+    <content><![CDATA[<p>在使用SSH或者telent远程登录到Linux 服务器，经常运行一些需要很长时间才能完成的任务，比如系统备份、ftp 传输等等。通常情况下我们都是为每一个这样的任务开一个远程终端窗口，因为它们执行的时间太长了。必须等待它们执行完毕，在此期间不能关掉窗口或者断开连接，否则这个任务就会被杀掉，一切半途而废了。</p>
+<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>CentOS下默认没有安装该命令，从screen的官方网站下载，下载地址：<a href="http://ftp.gnu.org/gnu/screen/%E3%80%82">http://ftp.gnu.org/gnu/screen/。</a></p>
+<ol>
+<li>解压后执行<code>./configure</code>。</li>
+<li>执行<code>make</code>命令。在执行make命令时会遇到错误<code>pty.c:38:26: 错误：sys/stropts.h：没有那个文件或目录</code>，在&#x2F;usr&#x2F;install&#x2F;sys&#x2F;目录下创建一个stropts.h的空文件即可。</li>
+<li>执行<code>make install</code>，该命令并不会将screen命令复制到系统的PATH变量包含的路径下，即不能执行screen命令。</li>
+<li>执行<code>install -m 644 etc/etcscreenrc /etc/screenrc</code>。</li>
+<li>执行<code>cp screen /bin/</code>。</li>
+<li>执行<code>cp doc/man/man1/screen.1 /usr/share/man/man1/</code>，即可以可使用<code>man screen</code>查看帮助。</li>
+</ol>
+<h1 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h1><p>当关闭窗口或断开连接时，内核会将SIGHUP信号发送到会话期首进程，进程对SIGHUP的处理动作为终止。如果会话期首进程终止，则该信号发送到该会话期前台进程组。一个进程退出导致一个孤儿进程组中产生时，如果任意一个孤儿进程组进程处于STOP状态，发送SIGHUP和SIGCONT信号到该进程组中所有进程。因此当网络断开或终端窗口关闭后，控制进程收到SIGHUP信号退出，会导致该会话期内其他进程退出。</p>
+<p>为解决上述问题，Linux程序在设计时可设计成守护进程的方式启动。</p>
+<p>另外也可以通过<code>nohup 命令 &amp;</code>的方式启动来解决问题。</p>
+<h1 id="新建screen"><a href="#新建screen" class="headerlink" title="新建screen"></a>新建screen</h1><ul>
+<li>直接输入<code>screen</code>命令即可使用。</li>
+<li>输入<code>screen -S kuring</code>，这里给screen取了一个名字，方便辨认。</li>
+<li><code>screen 命令</code>直接在screen中执行命令，命令结束后screen退出。</li>
+</ul>
+<h1 id="分离与恢复"><a href="#分离与恢复" class="headerlink" title="分离与恢复"></a>分离与恢复</h1><p>在screen窗口中执行<code>ctrl + a d</code>命令，screen会给出_[detached]_提示，并恢复到执行screen之前的bash。<br>查找之前的screen执行<code>screen -ls</code>，会列出当前打开的screen。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">There are screens on:</span><br><span class="line">        8576.pts-3.localhost    (Attached)</span><br><span class="line">        8449.kuring     (Detached)</span><br><span class="line">2 Sockets in /tmp/uscreens/S-kuring.</span><br></pre></td></tr></table></figure>
+<p>这里系统中打开了两个screen，一个为Attached，另一个为Detached。</p>
+<p>重新连接执行<code>screen -r kuring</code>或<code>screen -r 8449</code>或<code>screen -r</code>，当系统中仅有一个处于Detached状态的screen时就可以直接执行<code>screen -r</code>命令。</p>
+<h1 id="关闭窗口"><a href="#关闭窗口" class="headerlink" title="关闭窗口"></a>关闭窗口</h1><p>在screen的shell中执行<code>exit</code>命令即可关闭screen。</p>
+<p>也可以执行<code>ctrl + a k</code>，会杀死当前screen中的所有运行进程。</p>
+<h1 id="错误"><a href="#错误" class="headerlink" title="错误"></a>错误</h1><p>在screen中执行vi命令时会提示_E437: terminal capability “cm” required_错误，执行<code>echo $TERM</code>查看发现打印值为_screen_，而未执行screen时的bash打印值为_xterm_，在screen中执行<code>export TERM=xterm</code>即可解决该问题。</p>
+<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p>更多高级使用方法请参考以下文档：</p>
+<p><a href="http://www.ibm.com/developerworks/cn/linux/l-cn-screen/">linux 技巧：使用 screen 管理你的远程会话</a><br><a href="http://www.cnblogs.com/mchina/archive/2013/01/30/2880680.html">linux screen 命令详解</a></p>
+]]></content>
+  </entry>
+  <entry>
     <title>Linux难点之权限类型</title>
     <url>/post/linux_permission/</url>
     <content><![CDATA[<p>[TOC]</p>
@@ -6624,38 +6656,6 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 <h1 id="表示方法"><a href="#表示方法" class="headerlink" title="表示方法"></a>表示方法</h1><p>如果设置了setuid位，属主的执行权限中的x用s来代替；<br>如果设置了setgid位，组执行权限中的x用s来代替；<br>如果设置了sticky位，权限最后的那个字符被设置为t；<br>如果设置了setuid、setgid或sticky位中一个，又没有设置相应的执行位，这些位显示为S或T。</p>
 <h1 id="权限设定方式"><a href="#权限设定方式" class="headerlink" title="权限设定方式"></a>权限设定方式</h1><p>4为setuid位，2为setgid位，1为sticky位。具体参考《鸟哥的Linux私房菜》。</p>
 <h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p>《鸟哥的Linux私房菜》<br>《UNIX&#x2F;Linux系统管理技术手册》</p>
-]]></content>
-  </entry>
-  <entry>
-    <title>Linux下的screen命令</title>
-    <url>/post/linux_screen/</url>
-    <content><![CDATA[<p>在使用SSH或者telent远程登录到Linux 服务器，经常运行一些需要很长时间才能完成的任务，比如系统备份、ftp 传输等等。通常情况下我们都是为每一个这样的任务开一个远程终端窗口，因为它们执行的时间太长了。必须等待它们执行完毕，在此期间不能关掉窗口或者断开连接，否则这个任务就会被杀掉，一切半途而废了。</p>
-<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>CentOS下默认没有安装该命令，从screen的官方网站下载，下载地址：<a href="http://ftp.gnu.org/gnu/screen/%E3%80%82">http://ftp.gnu.org/gnu/screen/。</a></p>
-<ol>
-<li>解压后执行<code>./configure</code>。</li>
-<li>执行<code>make</code>命令。在执行make命令时会遇到错误<code>pty.c:38:26: 错误：sys/stropts.h：没有那个文件或目录</code>，在&#x2F;usr&#x2F;install&#x2F;sys&#x2F;目录下创建一个stropts.h的空文件即可。</li>
-<li>执行<code>make install</code>，该命令并不会将screen命令复制到系统的PATH变量包含的路径下，即不能执行screen命令。</li>
-<li>执行<code>install -m 644 etc/etcscreenrc /etc/screenrc</code>。</li>
-<li>执行<code>cp screen /bin/</code>。</li>
-<li>执行<code>cp doc/man/man1/screen.1 /usr/share/man/man1/</code>，即可以可使用<code>man screen</code>查看帮助。</li>
-</ol>
-<h1 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h1><p>当关闭窗口或断开连接时，内核会将SIGHUP信号发送到会话期首进程，进程对SIGHUP的处理动作为终止。如果会话期首进程终止，则该信号发送到该会话期前台进程组。一个进程退出导致一个孤儿进程组中产生时，如果任意一个孤儿进程组进程处于STOP状态，发送SIGHUP和SIGCONT信号到该进程组中所有进程。因此当网络断开或终端窗口关闭后，控制进程收到SIGHUP信号退出，会导致该会话期内其他进程退出。</p>
-<p>为解决上述问题，Linux程序在设计时可设计成守护进程的方式启动。</p>
-<p>另外也可以通过<code>nohup 命令 &amp;</code>的方式启动来解决问题。</p>
-<h1 id="新建screen"><a href="#新建screen" class="headerlink" title="新建screen"></a>新建screen</h1><ul>
-<li>直接输入<code>screen</code>命令即可使用。</li>
-<li>输入<code>screen -S kuring</code>，这里给screen取了一个名字，方便辨认。</li>
-<li><code>screen 命令</code>直接在screen中执行命令，命令结束后screen退出。</li>
-</ul>
-<h1 id="分离与恢复"><a href="#分离与恢复" class="headerlink" title="分离与恢复"></a>分离与恢复</h1><p>在screen窗口中执行<code>ctrl + a d</code>命令，screen会给出_[detached]_提示，并恢复到执行screen之前的bash。<br>查找之前的screen执行<code>screen -ls</code>，会列出当前打开的screen。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">There are screens on:</span><br><span class="line">        8576.pts-3.localhost    (Attached)</span><br><span class="line">        8449.kuring     (Detached)</span><br><span class="line">2 Sockets in /tmp/uscreens/S-kuring.</span><br></pre></td></tr></table></figure>
-<p>这里系统中打开了两个screen，一个为Attached，另一个为Detached。</p>
-<p>重新连接执行<code>screen -r kuring</code>或<code>screen -r 8449</code>或<code>screen -r</code>，当系统中仅有一个处于Detached状态的screen时就可以直接执行<code>screen -r</code>命令。</p>
-<h1 id="关闭窗口"><a href="#关闭窗口" class="headerlink" title="关闭窗口"></a>关闭窗口</h1><p>在screen的shell中执行<code>exit</code>命令即可关闭screen。</p>
-<p>也可以执行<code>ctrl + a k</code>，会杀死当前screen中的所有运行进程。</p>
-<h1 id="错误"><a href="#错误" class="headerlink" title="错误"></a>错误</h1><p>在screen中执行vi命令时会提示_E437: terminal capability “cm” required_错误，执行<code>echo $TERM</code>查看发现打印值为_screen_，而未执行screen时的bash打印值为_xterm_，在screen中执行<code>export TERM=xterm</code>即可解决该问题。</p>
-<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p>更多高级使用方法请参考以下文档：</p>
-<p><a href="http://www.ibm.com/developerworks/cn/linux/l-cn-screen/">linux 技巧：使用 screen 管理你的远程会话</a><br><a href="http://www.cnblogs.com/mchina/archive/2013/01/30/2880680.html">linux screen 命令详解</a></p>
 ]]></content>
   </entry>
   <entry>
@@ -10934,10 +10934,12 @@ helm fetch lofts/vcluster
 <li>车道偏离后的被车机紧急控制。我刚买车的时候，曾经有一次向右侧变道，右侧的车在后视镜的盲区内，变道过程中就被车机紧急接管方向盘，避免了一次剐蹭的事故。</li>
 </ol>
 <p>当然辅助驾驶还是比较弱的，在很多的极端情况下，还是无能为力的。分享我曾经遇到过两个案例。</p>
-<p>案例一：<br>![[IMG_3024.mov]]<br>在右转刚开始，外卖小哥还在马路对面，在车内是很难观察的，即使看到了也预判不了外卖小哥的风骚走位。当车头调转 90 度后，正准备加速时，外卖小哥突然冲到了车身前面，没有任何一个摄像头看到了外面小哥的存在，车机也没有发出告警，位置正好卡在了摄像头的盲区。</p>
+<p>案例一：<br><video width="640" height="480" controls> <source src="https://kuring.oss-cn-beijing.aliyuncs.com/vedio/IMG_3024.mov" type="video/mp4"> Your browser does not support the video tag. </video><br>在右转刚开始，外卖小哥还在马路对面，在车内是很难观察的，即使看到了也预判不了外卖小哥的风骚走位。当车头调转 90 度后，正准备加速时，外卖小哥突然冲到了车身前面，没有任何一个摄像头看到了外面小哥的存在，车机也没有发出告警，位置正好卡在了摄像头的盲区。</p>
 <p>好在这次事故后，外卖小哥没啥事，扶起电动车看看外卖无碍后头也不回的就走了，佩服小哥的敬业精神！而我的小 Y 就没那么幸运了，车牌凹进去了一大块，车牌上的漆被碰掉了很多。</p>
 <p>这次事故后，我每次右转都要提心吊胆，尤其是在转方向时不做过快的加速，否则可能会超出对方的预判，尤其是视时间为金钱的外卖骑手们的预判。</p>
-<p>案例二：<br>![[2690.mov]]<br>在等红绿灯的时候，左侧车道为摩托车。绿灯起步时，摩托车要右转到辅路。摩托车以为其他车道的车肯定没他加速快，忽略了有一种车叫 Model Y。由于带着头盔，头也没法向后扭，就直接右转到辅路。</p>
+<p>案例二：</p>
+<p><video width="640" height="480" controls> <source src="https://kuring.oss-cn-beijing.aliyuncs.com/vedio/2690.mov" type="video/mp4"> Your browser does not support the video tag. </video></p>
+<p>在等红绿灯的时候，左侧车道为摩托车。绿灯起步时，摩托车要右转到辅路。摩托车以为其他车道的车肯定没他加速快，忽略了有一种车叫 Model Y。由于带着头盔，头也没法向后扭，就直接右转到辅路。</p>
 <p>摩托车右转到我车前时，还突然减了一下速，车机都完全没反应过来，没有任何告警。幸好我当时反应快，踩了一脚刹车，要不然后果不堪设想。估计事后摩托车也不知道自己离事故这么近。</p>
 <p>上面两个危险的经历告诉了我们两个道理：</p>
 <ol>
