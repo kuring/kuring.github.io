@@ -450,6 +450,18 @@ lvcreate --type striped --stripes 2 --stripesize 32k -L 250G -n lv1 vg1
 
 通过使用`--type mirror`来指定为镜像模式，-m参数来指定冗余的数量。
 
+# 常见问题
+## 报错 "Device /dev/sdd excluded by a filter."
+
+当执行 `pvcreate /dev/sdd` 命令是报错信息如下：
+```
+Device /dev/sdd excluded by a filter.
+```
+检查下 /etc/lvm/lvm.conf 文件中的 filter 字段是否将磁盘过滤掉了。
+
+执行 `pvcreate /dev/sdd -vvv`可以查看更详细的报错信息。
+
+可以通过执行`wipefs -a /dev/sdd` 命令后再执行 pvcreate。
 # ref
 
 - [Linux LVM简明教程](https://linux.cn/article-3218-1.html)
