@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">248</span>
+          <span class="site-state-item-count">249</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,97 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/keepalived_easy/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/keepalived_easy/" class="post-title-link" itemprop="url">keepalived简易教程</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2015-10-23 00:00:00" itemprop="dateCreated datePublished" datetime="2015-10-23T00:00:00+00:00">2015-10-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2024-12-17 16:09:25" itemprop="dateModified" datetime="2024-12-17T16:09:25+00:00">2024-12-17</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>keepalived的作用为保持存活服务，服务启动后会在两台物理机器之间维护一个vip，但是仅有一台物理机器拥有该vip，这样就保证了两台机器之间是主备。</p>
+<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>在ubuntu下直接执行：<code>sudo apt-get install keepalived</code>.</p>
+<h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><p>本例子两台机器的物理ip地址分别为10.101.185和10.101.1.186，要增加的虚拟ip地址为10.101.0.101、10.101.0.102、10.101.0.107和10.101.0.108，其中10.101.0.101和10.101.0.102在10.101.185上为主，10.101.0.107和10.101.0.108在10.101.1.186上为主。</p>
+<p>keepalived的默认配置文件位于&#x2F;etc&#x2F;keepalived&#x2F;keepalived.conf目录下，由于两台物理机器之间的主辅关系不同，配置文件也不相同。</p>
+<p>10.101.185机器上的配置文件如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line">! Configuration File for keepalived</span><br><span class="line"></span><br><span class="line">global_defs &#123;</span><br><span class="line">   # 报警邮箱配置</span><br><span class="line">   notification_email &#123;</span><br><span class="line">     ops@yidian-inc.com</span><br><span class="line">   &#125;</span><br><span class="line">   smtp_server 10.101.1.139</span><br><span class="line">   smtp_connect_timeout 30</span><br><span class="line">   router_id 101-1-185-lg-201-l10.yidian.com  // 运行机器的唯一标识，每个机器应该都不一样，可以直接使用hostname代替，具体用在什么地方暂时不是很清楚</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">vrrp_instance ha-internal-1 &#123;</span><br><span class="line">    state MASTER</span><br><span class="line">    interface eth0</span><br><span class="line">    virtual_router_id 1	// VRID标记，可以设置为0-255，对应VRRD协议中的Virtual Rtr Id</span><br><span class="line">    priority 100  // 对应VRRD协议中的priority选项</span><br><span class="line">    advert_int 1	// 检测间隔，默认为1s，对应VRRD协议中的adver int</span><br><span class="line">    authentication &#123;</span><br><span class="line">        auth_type PASS // 认证方式，支持PASS和AH</span><br><span class="line">        auth_pass 1-internal-ha  // 认证的密码，从抓取的包中看到</span><br><span class="line">    &#125;</span><br><span class="line">    // 声明的虚拟ip地址，这些ip会在VRRP一些的一个包发送</span><br><span class="line">    // 另外VRRP协议中还有一个Count IP Addrs用来指明需要声明多少个VIP</span><br><span class="line">    virtual_ipaddress &#123;</span><br><span class="line">        10.101.0.101/22 dev eth0</span><br><span class="line">        10.101.0.102/22 dev eth0</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">vrrp_instance ha-internal-2 &#123;</span><br><span class="line">    state BACKUP</span><br><span class="line">    interface eth0</span><br><span class="line">    virtual_router_id 2</span><br><span class="line">    priority 99</span><br><span class="line">    advert_int 1</span><br><span class="line">    authentication &#123;</span><br><span class="line">        auth_type PASS</span><br><span class="line">        auth_pass 2-internal-ha</span><br><span class="line">    &#125;</span><br><span class="line">    virtual_ipaddress &#123;</span><br><span class="line">        10.101.0.107/22 dev eth0</span><br><span class="line">        10.101.0.108/22 dev eth0</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>10.101.1.186上的配置文件如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">! Configuration File for keepalived</span><br><span class="line"></span><br><span class="line">global_defs &#123;</span><br><span class="line">   notification_email &#123;</span><br><span class="line">     ops@yidian-inc.com</span><br><span class="line">   &#125;</span><br><span class="line">   smtp_server 10.101.1.139</span><br><span class="line">   smtp_connect_timeout 30</span><br><span class="line">   router_id 101-1-186-lg-201-l10.yidian.com</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">vrrp_instance ha-internal-1 &#123;</span><br><span class="line">    state BACKUP</span><br><span class="line">    interface eth0</span><br><span class="line">    virtual_router_id 1</span><br><span class="line">    priority 99</span><br><span class="line">    advert_int 1</span><br><span class="line">    authentication &#123;</span><br><span class="line">        auth_type PASS</span><br><span class="line">        auth_pass 1-internal-ha</span><br><span class="line">    &#125;</span><br><span class="line">    virtual_ipaddress &#123;</span><br><span class="line">        10.101.0.101/22 dev eth0</span><br><span class="line">        10.101.0.102/22 dev eth0</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">vrrp_instance ha-internal-2 &#123;</span><br><span class="line">    state MASTER</span><br><span class="line">    interface eth0</span><br><span class="line">    virtual_router_id 2</span><br><span class="line">    priority 100</span><br><span class="line">    advert_int 1</span><br><span class="line">    authentication &#123;</span><br><span class="line">        auth_type PASS</span><br><span class="line">        auth_pass 2-internal-ha</span><br><span class="line">    &#125;</span><br><span class="line">    virtual_ipaddress &#123;</span><br><span class="line">        10.101.0.107/22 dev eth0</span><br><span class="line">        10.101.0.108/22 dev eth0</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>配置文件搭建完毕后，通过<code>sudo service keepalived start</code>即可启动服务，执行<code>ip addr</code>命令即可看到vip。需要注意的是，通过<code>ifconfig</code>命令是看不到vip的。</p>
+<p>有了vip，其他服务就可以利用该vip做一些绑定vip的端口来作为主辅热备模式了。</p>
+<h1 id="about-vrrp"><a href="#about-vrrp" class="headerlink" title="about vrrp"></a>about vrrp</h1><p>关于VRRP的详细说明可以查看<a target="_blank" rel="noopener" href="https://tools.ietf.org/html/rfc3768">RFC3768</a>，我这里记录几点说明。</p>
+<p>协议中的以太网Destination Address的值必须为多播地址224.0.0.18。</p>
+<p>当前正在使用的VRRP版本为version 2，认证功能已经取消，但为了向下兼容，仍然可用。在抓取的包中，仍在使用认证信息</p>
+<h1 id="download"><a href="#download" class="headerlink" title="download"></a>download</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/s/1jHreDyI">这里提供两个vrrp协议的pcap包</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +310,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+      <time title="Modified: 2024-12-17 16:09:25" itemprop="dateModified" datetime="2024-12-17T16:09:25+00:00">2024-12-17</time>
     </span>
 
   
@@ -308,7 +399,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+      <time title="Modified: 2024-12-17 16:09:25" itemprop="dateModified" datetime="2024-12-17T16:09:25+00:00">2024-12-17</time>
     </span>
 
   
@@ -397,7 +488,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+      <time title="Modified: 2024-12-17 16:09:25" itemprop="dateModified" datetime="2024-12-17T16:09:25+00:00">2024-12-17</time>
     </span>
 
   
@@ -506,7 +597,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+      <time title="Modified: 2024-12-17 16:09:25" itemprop="dateModified" datetime="2024-12-17T16:09:25+00:00">2024-12-17</time>
     </span>
 
   
@@ -599,7 +690,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+      <time title="Modified: 2024-12-17 16:09:25" itemprop="dateModified" datetime="2024-12-17T16:09:25+00:00">2024-12-17</time>
     </span>
 
   
@@ -701,7 +792,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+      <time title="Modified: 2024-12-17 16:09:25" itemprop="dateModified" datetime="2024-12-17T16:09:25+00:00">2024-12-17</time>
     </span>
 
   
@@ -871,7 +962,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+      <time title="Modified: 2024-12-17 16:09:25" itemprop="dateModified" datetime="2024-12-17T16:09:25+00:00">2024-12-17</time>
     </span>
 
   
@@ -959,7 +1050,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+      <time title="Modified: 2024-12-17 16:09:25" itemprop="dateModified" datetime="2024-12-17T16:09:25+00:00">2024-12-17</time>
     </span>
 
   
@@ -1177,7 +1268,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
+      <time title="Modified: 2024-12-17 16:09:25" itemprop="dateModified" datetime="2024-12-17T16:09:25+00:00">2024-12-17</time>
     </span>
 
   
@@ -1193,101 +1284,6 @@
           <p>最近粗读了一遍《大型网站技术架构-核心原理与案例分析》，并对其中的内容通过思维导图的形式进行了整理。本书的所讲解的内容均为大型网站中涉及到的问题及相关技术，但并未展开深入讨论相关技术的解决办法，非常适合入门。下面我将我的思维导图以图片的形式贴出来，并提供XMind编辑的.xmid格式的文件。</p>
 <p><img src="http://kuring.qiniudn.com/large_website_architecture.png"></p>
 <h1 id="下载"><a href="#下载" class="headerlink" title="下载"></a>下载</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/s/1lngiq">大型网站技术架构读书笔记</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/airodump-ng_ssid_messy/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/airodump-ng_ssid_messy/" class="post-title-link" itemprop="url">解决airodump-ng显示ssid名称的乱码问题</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-05-04 00:00:00" itemprop="dateCreated datePublished" datetime="2015-05-04T00:00:00+00:00">2015-05-04</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-01 13:06:54" itemprop="dateModified" datetime="2024-12-01T13:06:54+00:00">2024-12-01</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h1><p>无线wifi的essid支持英文和中文，中文的编码在802.11协议并没有规定，对于802.11协议而言仅将essid看作是二进制。而中文又存在多种编码方式，最常见的就是GB18030（我这里直接用GB18030代替了GB系列的字符集）和UTF-8了。</p>
-<p>iwlist程序通过命令<code>iwlist wlan0 scanning</code>可以在终端上正常显示UTF-8编码的essid，对于其他编码的中文仍然是乱码，这也就非常容易理解了。因为具体的essid能否将中文正常显示在终端屏幕上跟essid的编码和当前终端环境的编码是否能够匹配有关，如果essid的编码和当前终端环境的编码均为UTF-8，则essid可以在屏幕上正常显示。如果当前网络中的可以搜索到的essid即包含了GB18030编码又包含了UTF-8编码，则打印在终端上的essid必然会有乱码的情况出现。</p>
-<h1 id="airodump-ng程序问题"><a href="#airodump-ng程序问题" class="headerlink" title="airodump-ng程序问题"></a>airodump-ng程序问题</h1><p>对于airodump-ng程序而言，即时是essid的编码和终端编码一致也会出现某些中文字符乱码的问题，这一点比较奇怪。比如“免费”中的“免”字是乱码，“费”却能正常显示。通过这一现象有理由怀疑airodump-ng对essid做了某些处理。</p>
-<p>经过查看源码发现，在airodump-ng.c文件中存在三处如下类似代码，作用为将essid中的ascii值在(126,160)之间的转换为”.”。看来airodump-ng程序并没有考虑到中文的情况，仅将ascii中无法显示的字符做了转换。将程序中的三处代码注释后就可以正常显示了。具体三处代码可以通过搜索’.’来查找。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span>( i = <span class="number">0</span>; i &lt; n; i++ )</span><br><span class="line">&#123;</span><br><span class="line">	c = p[<span class="number">2</span> + i];</span><br><span class="line">	<span class="keyword">if</span>( c == <span class="number">0</span> || ( c &gt; <span class="number">126</span> &amp;&amp; c &lt; <span class="number">160</span> ) )</span><br><span class="line">	&#123;</span><br><span class="line">		c = <span class="string">&#x27;.&#x27;</span>;  <span class="comment">//could also check ||(c&gt;0 &amp;&amp; c&lt;32)</span></span><br><span class="line">	&#125;</span><br><span class="line">	st_cur-&gt;probes[st_cur-&gt;probe_index][i] = c;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="NetworkManager"><a href="#NetworkManager" class="headerlink" title="NetworkManager"></a>NetworkManager</h1><p>通过实践发现，GNOME和KDE桌面下的查看无线网络连接的ssid是可以正常显示的，即可以正常显示GB18030，又可以正常显示UTF-8编码的essid。则可以推测，在桌面环境下的搜索网络的程序肯定对编码做了某些处理，顺着这个思路，就可以查找GNOME或KDE的代码了。</p>
-<p>在GNOME的源码中看到了network-manager-applet，该程序即为桌面上查看无线网络连接的小控件。在applet-device-wifi.c文件中看到了如下代码，其中的<code>nm_utils_ssid_to_utf8</code>函数即为将其他编码转换为UTF-8编码的函数。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">static</span> <span class="type">char</span> *</span></span><br><span class="line"><span class="function"><span class="title">get_ssid_utf8</span> <span class="params">(NMAccessPoint *ap)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">char</span> *ssid_utf8 = <span class="literal">NULL</span>;</span><br><span class="line">	<span class="type">const</span> GByteArray *ssid;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (ap) &#123;</span><br><span class="line">		ssid = <span class="built_in">nm_access_point_get_ssid</span> (ap);</span><br><span class="line">		<span class="keyword">if</span> (ssid)</span><br><span class="line">			ssid_utf8 = <span class="built_in">nm_utils_ssid_to_utf8</span> (ssid);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (!ssid_utf8)</span><br><span class="line">		ssid_utf8 = <span class="built_in">g_strdup</span> (_(<span class="string">&quot;(none)&quot;</span>));</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> ssid_utf8;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><code>nm_utils_ssid_to_utf8</code>函数定义在NetworkManager工程中的nm-utils.c文件中。该函数的代码如下，该函数具体功能可以查看代码中的注释，已经非常详细了。其中以<code>g_</code>开头的函数是glib库中的函数。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">char</span> *</span></span><br><span class="line"><span class="function"><span class="title">nm_utils_ssid_to_utf8</span> <span class="params">(<span class="type">const</span> GByteArray *ssid)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">char</span> *converted = <span class="literal">NULL</span>;</span><br><span class="line">	<span class="type">char</span> *lang, *e1 = <span class="literal">NULL</span>, *e2 = <span class="literal">NULL</span>, *e3 = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">g_return_val_if_fail</span> (ssid != <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">g_utf8_validate</span> ((<span class="type">const</span> gchar *) ssid-&gt;data, ssid-&gt;len, <span class="literal">NULL</span>))</span><br><span class="line">		<span class="keyword">return</span> <span class="built_in">g_strndup</span> ((<span class="type">const</span> gchar *) ssid-&gt;data, ssid-&gt;len);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* LANG may be a good encoding hint */</span></span><br><span class="line">	<span class="built_in">g_get_charset</span> ((<span class="type">const</span> <span class="type">char</span> **)(&amp;e1));</span><br><span class="line">	<span class="keyword">if</span> ((lang = <span class="built_in">getenv</span> (<span class="string">&quot;LANG&quot;</span>))) &#123;</span><br><span class="line">		<span class="type">char</span> * dot;</span><br><span class="line"></span><br><span class="line">		lang = <span class="built_in">g_ascii_strdown</span> (lang, <span class="number">-1</span>);</span><br><span class="line">		<span class="keyword">if</span> ((dot = <span class="built_in">strchr</span> (lang, <span class="string">&#x27;.&#x27;</span>)))</span><br><span class="line">			*dot = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line"></span><br><span class="line">		<span class="built_in">get_encodings_for_lang</span> (lang, &amp;e1, &amp;e2, &amp;e3);</span><br><span class="line">		<span class="built_in">g_free</span> (lang);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	converted = <span class="built_in">g_convert</span> ((<span class="type">const</span> gchar *) ssid-&gt;data, ssid-&gt;len, <span class="string">&quot;UTF-8&quot;</span>, e1, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">	<span class="keyword">if</span> (!converted &amp;&amp; e2)</span><br><span class="line">		converted = <span class="built_in">g_convert</span> ((<span class="type">const</span> gchar *) ssid-&gt;data, ssid-&gt;len, <span class="string">&quot;UTF-8&quot;</span>, e2, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!converted &amp;&amp; e3)</span><br><span class="line">		converted = <span class="built_in">g_convert</span> ((<span class="type">const</span> gchar *) ssid-&gt;data, ssid-&gt;len, <span class="string">&quot;UTF-8&quot;</span>, e3, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!converted) &#123;</span><br><span class="line">		converted = <span class="built_in">g_convert_with_fallback</span> ((<span class="type">const</span> gchar *) ssid-&gt;data, ssid-&gt;len,</span><br><span class="line">		                                     <span class="string">&quot;UTF-8&quot;</span>, e1, <span class="string">&quot;?&quot;</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> converted;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>nm_utils_ssid_to_utf8该函数位于libnm-util.so.1动态库中，可通过<code>nm -D  /usr/lib64/libnm-util.so.1 | grep nm_utils_ssid_to_utf8</code>命令查看导出表中存在该函数。但是系统中并不存在该函数的头文件libnm-util.h，给该库的调用增加了不少难度。可以通过将相关头文件引入到该工程编译的方式来完成，但是可能会牵涉到的头文件比较多，比较繁琐。</p>
-<p>我这里直接采用了将NetworkManager中相关代码抓取出来的思路，并将其封装成类的形式以方便调用。具体代码可以参照demo中的例子。</p>
-<h1 id="glib"><a href="#glib" class="headerlink" title="glib"></a>glib</h1><p>glib是GTK底层调用的核心库，跟glibc是没有关系的，虽然名字中仅差一个字母。为了调用该库需要在编译的时候添加*<code>pkg-config --cflags --libs glib-2.0</code>*信息，以引入需要的头文件和要链接的库。</p>
-<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/s/1qWqjMCc">文中用到的软件源码和程序demo</a></p>
-<h1 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h1><ul>
-<li><a target="_blank" rel="noopener" href="https://git.gnome.org/browse/">GNOME源码列表</a></li>
-</ul>
 
       
     </div>
