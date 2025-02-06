@@ -1,0 +1,14 @@
+---
+title: AI 术语表（不断更新中）
+date: 2025-02-06
+tags:
+  - ai
+permalink: /ai/term/
+---
+- NLP：自然语言处理 Natural Language Processing
+- 词向量：Word Vector，一种寻找词和词之间相似性的技术，词汇在各个维度上的特征用数值向量进行表示，利用这些维度上的特征相似程度，从而判断出词和词之间的相似程度。通常又叫做 ”词嵌入“（Word Embedding）。
+- 词嵌入：Word Embedding。将词映射到向量空间的过程。
+- 张量：概念源自物理学和数学中的张量分析，可以理解为多维数组的通用说法。可以是一维、或者 N 维的数组。
+- 泛化：Generalization，模型在未见过数据上的表现能力。
+- 过拟合：Overfitting，模型在训练数据上表现良好，但在新数据上表现不佳。
+- 欠拟合：Underfitting，模型在训练数据上和新数据上都表现不佳。
