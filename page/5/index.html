@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">249</span>
+          <span class="site-state-item-count">250</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,134 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/pod-memory-stats/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/pod-memory-stats/" class="post-title-link" itemprop="url">内存使用分析</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-04-14 20:33:17" itemprop="dateCreated datePublished" datetime="2022-04-14T20:33:17+00:00">2022-04-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="操作系统级别"><a href="#操作系统级别" class="headerlink" title="操作系统级别"></a>操作系统级别</h2><h3 id="x2F-proc-x2F-meminfo"><a href="#x2F-proc-x2F-meminfo" class="headerlink" title="&#x2F;proc&#x2F;meminfo"></a>&#x2F;proc&#x2F;meminfo</h3><p>其中的Buffers和Cached的迷惑性非常大，非常难理解。Buffers是指的磁盘数据的缓存，Cached是指对文件数据的缓存.</p>
+<h3 id="free"><a href="#free" class="headerlink" title="free"></a>free</h3><p>该命令实际上是通过读取&#x2F;proc&#x2F;meminfo文件得到的如下输出</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ free -h</span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:            30G         22G        412M         47M        7.6G        7.3G</span><br><span class="line">Swap:            0B          0B          0B</span><br></pre></td></tr></table></figure>
+
+<p>具体列含义：</p>
+<ul>
+<li>total: 总内存大小</li>
+<li>used：已经使用的内存大小，包含共享内存</li>
+<li>free：未使用的内存大小</li>
+<li>shared：共享内存大小</li>
+<li>buff&#x2F;cache：缓存和缓冲区的大小</li>
+<li>available：新进程可用的内存大小</li>
+</ul>
+<h3 id="vmstat"><a href="#vmstat" class="headerlink" title="vmstat"></a>vmstat</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ vmstat 1</span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 4  0      0 1091484 1142360 34545436    0    0   146   265    0    0  8  5 86  1  0</span><br></pre></td></tr></table></figure>
+
+<h2 id="容器级别"><a href="#容器级别" class="headerlink" title="容器级别"></a>容器级别</h2><h3 id="通过kubectl命令来查看内存使用"><a href="#通过kubectl命令来查看内存使用" class="headerlink" title="通过kubectl命令来查看内存使用"></a>通过kubectl命令来查看内存使用</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl top pod nginx-ingress-controller-85cd6c7b5d-md6vc</span><br><span class="line">NAME                                        CPU(cores)   MEMORY(bytes)</span><br><span class="line">nginx-ingress-controller-85cd6c7b5d-md6vc   22m          502Mi</span><br></pre></td></tr></table></figure>
+
+<h3 id="通过docker-stats命令来查看容器"><a href="#通过docker-stats命令来查看容器" class="headerlink" title="通过docker stats命令来查看容器"></a>通过docker stats命令来查看容器</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ docker stats $container_id</span><br><span class="line">CONTAINER ID  NAME                CPU %   MEM USAGE / LIMIT   MEM %  NET I/O   BLOCK I/O           PIDS</span><br><span class="line">97d8bff3f89f  k8s_nginx-ingress   6.33%   180.3MiB / 512MiB   35.21% 0B / 0B   0B / 0B             119</span><br></pre></td></tr></table></figure>
+
+<p>docker通过cgroup的统计数据来获取的内存值</p>
+<p>参考文档：<a target="_blank" rel="noopener" href="https://docs.docker.com/engine/reference/commandline/stats/">https://docs.docker.com/engine/reference/commandline/stats/</a></p>
+<h2 id="进程级别"><a href="#进程级别" class="headerlink" title="进程级别"></a>进程级别</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/vm-1.png"></p>
+<p>具体的含义可以通过下文的&#x2F;proc&#x2F;$pid&#x2F;status来查看，其他进程的内存含义</p>
+<h3 id="cat-x2F-proc-x2F-pid-x2F-status"><a href="#cat-x2F-proc-x2F-pid-x2F-status" class="headerlink" title="cat &#x2F;proc&#x2F;$pid&#x2F;status"></a>cat &#x2F;proc&#x2F;$pid&#x2F;status</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">cat status</span><br><span class="line">Name:   nginx</span><br><span class="line">Umask:  0022</span><br><span class="line">State:  S (sleeping)</span><br><span class="line">Tgid:   46787</span><br><span class="line">Ngid:   0</span><br><span class="line">Pid:    46787</span><br><span class="line">PPid:   33</span><br><span class="line">TracerPid:      0</span><br><span class="line">Uid:    1000    1000    1000    1000</span><br><span class="line">Gid:    19062   19062   19062   19062</span><br><span class="line">FDSize: 128</span><br><span class="line">Groups:</span><br><span class="line">VmPeak:   559768 kB</span><br><span class="line">VmSize:   559120 kB</span><br><span class="line">VmLck:         0 kB</span><br><span class="line">VmPin:         0 kB</span><br><span class="line">VmHWM:    285240 kB</span><br><span class="line">VmRSS:    284752 kB</span><br><span class="line">RssAnon:          279016 kB</span><br><span class="line">RssFile:            3420 kB</span><br><span class="line">RssShmem:           2316 kB</span><br><span class="line">VmData:   371784 kB</span><br><span class="line">VmStk:       136 kB</span><br><span class="line">VmExe:      4716 kB</span><br><span class="line">VmLib:      6828 kB</span><br><span class="line">VmPTE:       900 kB</span><br><span class="line">VmSwap:        0 kB</span><br><span class="line">Threads:        33</span><br><span class="line">SigQ:   1/123857</span><br><span class="line">SigPnd: 0000000000000000</span><br><span class="line">ShdPnd: 0000000000000000</span><br><span class="line">SigBlk: 0000000000000000</span><br><span class="line">SigIgn: 0000000040001000</span><br><span class="line">SigCgt: 0000000198016eef</span><br><span class="line">CapInh: 0000001fffffffff</span><br><span class="line">CapPrm: 0000000000000400</span><br><span class="line">CapEff: 0000000000000400</span><br><span class="line">CapBnd: 0000001fffffffff</span><br><span class="line">CapAmb: 0000000000000000</span><br><span class="line">NoNewPrivs:     0</span><br><span class="line">Seccomp:        0</span><br><span class="line">Speculation_Store_Bypass:       vulnerable</span><br><span class="line">Cpus_allowed:   0001</span><br><span class="line">Cpus_allowed_list:      0</span><br><span class="line">Mems_allowed:   00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001</span><br><span class="line">Mems_allowed_list:      0</span><br><span class="line">voluntary_ctxt_switches:        343464</span><br><span class="line">nonvoluntary_ctxt_switches:     35061</span><br></pre></td></tr></table></figure>
+
+<p>具体字段含义可以查看man文档：<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/proc.5.html%EF%BC%8C%E8%B7%9F%E5%86%85%E5%AD%98%E7%9B%B8%E5%85%B3%E7%9A%84%E5%AD%97%E6%AE%B5%E5%A6%82%E4%B8%8B%EF%BC%9A">https://man7.org/linux/man-pages/man5/proc.5.html，跟内存相关的字段如下：</a></p>
+<ul>
+<li>VmRSS：虚拟内存驻留在物理内存中的部分大小</li>
+<li>VmHWM：使用物理内存的峰值</li>
+<li>VmData：进程占用的数据段大小</li>
+</ul>
+<h3 id="top命令查看"><a href="#top命令查看" class="headerlink" title="top命令查看"></a>top命令查看</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ top -p $pid</span><br><span class="line">    PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND</span><br><span class="line">  46787 www-data  20   0  559120 286544   5740 S   1.3  0.9   2:43.64 nginx</span><br></pre></td></tr></table></figure>
+
+<p>具体列含义如下：</p>
+<ul>
+<li>VIRT：进程使用虚拟内存总大小，即使没有占用物理内存，包括了进程代码段、数据段、共享内存、已经申请的堆内存和已经换到swap空间的内存等</li>
+<li>RES: 进程实际使用的物理内存大小，不包括swap和共享内存</li>
+<li>SHR：与其他进程的共享内存、加载的动态链接库、程序代码段的大小</li>
+<li>MEM：进程使用的物理内存占系统总内存的百分比</li>
+</ul>
+<h3 id="ps命令查看"><a href="#ps命令查看" class="headerlink" title="ps命令查看"></a>ps命令查看</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ps aux</span><br><span class="line">USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND</span><br><span class="line">www-data       1  0.0  0.0    212     8 ?        Ss   Apr09   0:00 /usr/bin/dumb-init -- /nginx-ingress-controller</span><br><span class="line">www-data       6  0.9  0.3 813500 99644 ?        Ssl  Apr09  67:32 /nginx-ingress-controller</span><br><span class="line">www-data      33  0.0  0.7 458064 242252 ?       S    Apr09   0:53 nginx: master process /usr/local/nginx/sbin/nginx -c /etc/nginx/nginx.conf</span><br><span class="line">www-data   46786  0.0  0.7 459976 239996 ?       S    17:57   0:00 rollback logs/eagleeye.log interval=60 adjust=600</span><br><span class="line">www-data   46787  1.3  0.8 559120 284452 ?       Sl   17:57   2:22 nginx: worker process</span><br><span class="line">www-data   46788  1.0  0.8 558992 285168 ?       Sl   17:57   1:51 nginx: worker process</span><br><span class="line">www-data   46789  0.0  0.7 452012 237152 ?       S    17:57   0:01 nginx: cache manager process</span><br><span class="line">www-data   46790  0.0  0.8 490832 267600 ?       S    17:57   0:00 nginx: x</span><br><span class="line">www-data   47533  0.0  0.0  60052  1832 pts/2    R+   20:50   0:00 ps aux</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>RSS：虚拟内存中的常驻内存，即实际占用的物理内存，包括所有已经分配的堆内存、栈内存、共享内存，由于共享内存非独占，实际上进程独占的物理内存要少于RSS</li>
+</ul>
+<h3 id="pmap"><a href="#pmap" class="headerlink" title="pmap"></a>pmap</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"># pmap -x 452021</span><br><span class="line">452021:   nginx: worker process</span><br><span class="line">Address           Kbytes     RSS   Dirty Mode  Mapping</span><br><span class="line">0000000000400000    4716    1540       0 r-x-- tengine</span><br><span class="line">0000000000a9a000      20      16       4 r---- tengine</span><br><span class="line">0000000000a9f000     212     196     176 rw--- tengine</span><br><span class="line">0000000000ad4000     248      60      60 rw---   [ anon ]</span><br><span class="line">00002b0da6cb0000     136       4       0 r-x-- ld-2.17.so</span><br><span class="line">00002b0da6cd2000       4       4       4 rw---   [ anon ]</span><br><span class="line">00002b0da6cd3000       4       4       4 rw-s- zero (deleted)</span><br><span class="line">00002b0da6cd7000      28      24      24 rw---   [ anon ]</span><br><span class="line">00002b0da6cde000      64       8       8 rwx--   [ anon ]</span><br><span class="line">00002b0da6ed1000       4       4       4 r---- ld-2.17.so</span><br><span class="line">00002b0da6ed2000       4       4       4 rw--- ld-2.17.so</span><br><span class="line">00002b0da6ed3000       4       4       4 rw---   [ anon ]</span><br><span class="line">00002b0da6ed4000       8       0       0 r-x-- libdl-2.17.so</span><br><span class="line">00002b0da70d8000      92      32       0 r-x-- libpthread-2.17.so</span><br><span class="line">00002b0da72f0000      16       4       4 rw---   [ anon ]</span><br><span class="line">00002b0da72f4000      32       0       0 r-x-- libcrypt-2.17.so</span><br><span class="line">00002b0da72fc000    2044       0       0 ----- libcrypt-2.17.so</span><br><span class="line">00002b0da74fb000       4       4       4 r---- libcrypt-2.17.so</span><br><span class="line">00002b0da74fc000       4       4       4 rw--- libcrypt-2.17.so</span><br><span class="line">00002b0da74fd000     184       0       0 rw---   [ anon ]</span><br><span class="line">00002b0da752b000    1028       8       0 r-x-- libm-2.17.so</span><br><span class="line">00002b0da7a35000     760     372       0 r-x-- libssl.so.1.1</span><br><span class="line">00002b0da7d03000    2812    1124       0 r-x-- libcrypto.so.1.1</span><br><span class="line">00002b0da7fc2000    2044       0       0 ----- libcrypto.so.1.1</span><br><span class="line">00002b0da81c1000     172     172     172 r---- libcrypto.so.1.1</span><br><span class="line">00002b0da81ec000      12      12      12 rw--- libcrypto.so.1.1</span><br><span class="line">00002b0da81ef000      16       8       8 rw---   [ anon ]</span><br><span class="line">00002b0da81f3000      84      40       0 r-x-- libgcc_s-4.8.5-20150702.so.1</span><br><span class="line">00002b0da8409000    1808     316       0 r-x-- libc-2.17.so</span><br><span class="line">00002b0da85cd000    2044       0       0 ----- libc-2.17.so</span><br><span class="line">00002b0da87cc000      16      16      16 r---- libc-2.17.so</span><br><span class="line">00002b0da87d0000       8       8       8 rw--- libc-2.17.so</span><br><span class="line">00002b0da87d2000      20      12      12 rw---   [ anon ]</span><br><span class="line">00002b0da87d7000       8       0       0 r-x-- libfreebl3.so</span><br><span class="line">00002b0da87d9000    2044       0       0 ----- libfreebl3.so</span><br><span class="line">00002b0da89d8000       4       4       4 r---- libfreebl3.so</span><br><span class="line">00002b0da89d9000       4       4       4 rw--- libfreebl3.so</span><br><span class="line">00002b0da8a00000   24576   21936   21936 rw---   [ anon ]</span><br><span class="line">00002b0daa200000    8192    8180    8180 rw---   [ anon ]</span><br><span class="line">00002b0daaa00000    8192    8192    8192 rw---   [ anon ]</span><br><span class="line">00002b0dab200000    8192    8192    8192 rw---   [ anon ]</span><br><span class="line">00002b0daba00000    8192    8172    8172 rw---   [ anon ]</span><br><span class="line">00002b0dac200000    4096    4096    4096 rw---   [ anon ]</span><br><span class="line">00002b0dac600000    4096    4096    4096 rw---   [ anon ]</span><br><span class="line">00002b0daca00000    4096      12      12 rw-s- zero (deleted)</span><br><span class="line">00002b0dace00000    1024       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0dacf00000    1024       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0dad000000   16384   16384   16384 rw---   [ anon ]</span><br><span class="line">00002b0dae000000   10240       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0db3f00000      24      16       0 r-x-- cjson.so</span><br><span class="line">00002b0db3f06000    2048       0       0 ----- cjson.so</span><br><span class="line">00002b0db4106000       4       4       4 r---- cjson.so</span><br><span class="line">00002b0db4107000       4       4       4 rw--- cjson.so</span><br><span class="line">00002b0db4108000       8       0       0 r-x-- librestychash.so</span><br><span class="line">00002b0db410a000    2044       0       0 ----- librestychash.so</span><br><span class="line">00002b0db4309000       4       4       4 r---- librestychash.so</span><br><span class="line">00002b0db430a000       4       4       4 rw--- librestychash.so</span><br><span class="line">00002b0db430b000   10240    1784    1784 rw-s- zero (deleted)</span><br><span class="line">00002b0db4d0b000   10240       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0db5800000    6144    6144    6144 rw---   [ anon ]</span><br><span class="line">00002b0db5e00000    6144    6144    6144 rw---   [ anon ]</span><br><span class="line">00002b0db6400000    8192    8192    8192 rw---   [ anon ]</span><br><span class="line">00002b0db6c0b000    5120       8       8 rw-s- zero (deleted)</span><br><span class="line">00002b0db7200000    8192    8192    8192 rw---   [ anon ]</span><br><span class="line">00002b0dc2800000    1024       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0dc2900000   10240       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0dc3300000   10240       0       0 rw-s- zero (deleted)</span><br><span class="line">00002b0dc861f000    2048       8       8 rw---   [ anon ]</span><br><span class="line">00002b0dc881f000       4       0       0 -----   [ anon ]</span><br><span class="line">00002b0dc8820000    2048       8       8 rw---   [ anon ]</span><br><span class="line">00007fff60f6c000     136      44      44 rw---   [ stack ]</span><br><span class="line">00007fff60fdd000       8       4       0 r-x--   [ anon ]</span><br><span class="line">ffffffffff600000       4       0       0 r-x--   [ anon ]</span><br><span class="line">---------------- ------- ------- -------</span><br><span class="line">total kB          558996  289376  285888</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Mapping: 支持如下值<ul>
+<li>[anon]：分配的内存</li>
+</ul>
+</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +347,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-17 16:20:24" itemprop="dateModified" datetime="2024-12-17T16:20:24+00:00">2024-12-17</time>
+      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
     </span>
 
   
@@ -349,7 +477,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-17 16:20:24" itemprop="dateModified" datetime="2024-12-17T16:20:24+00:00">2024-12-17</time>
+      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
     </span>
 
   
@@ -585,7 +713,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-17 16:20:24" itemprop="dateModified" datetime="2024-12-17T16:20:24+00:00">2024-12-17</time>
+      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
     </span>
 
   
@@ -713,7 +841,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-17 16:20:24" itemprop="dateModified" datetime="2024-12-17T16:20:24+00:00">2024-12-17</time>
+      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
     </span>
 
   
@@ -820,7 +948,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-17 16:20:24" itemprop="dateModified" datetime="2024-12-17T16:20:24+00:00">2024-12-17</time>
+      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
     </span>
 
   
@@ -994,7 +1122,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-17 16:20:24" itemprop="dateModified" datetime="2024-12-17T16:20:24+00:00">2024-12-17</time>
+      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
     </span>
 
   
@@ -1096,7 +1224,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-17 16:20:24" itemprop="dateModified" datetime="2024-12-17T16:20:24+00:00">2024-12-17</time>
+      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
     </span>
 
   
@@ -1191,7 +1319,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-17 16:20:24" itemprop="dateModified" datetime="2024-12-17T16:20:24+00:00">2024-12-17</time>
+      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
     </span>
 
   
@@ -1314,7 +1442,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-17 16:20:24" itemprop="dateModified" datetime="2024-12-17T16:20:24+00:00">2024-12-17</time>
+      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
     </span>
 
   
@@ -1382,86 +1510,6 @@
 
 
 
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/grafana-dashboard-k8s/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/grafana-dashboard-k8s/" class="post-title-link" itemprop="url">用来排查k8s问题的常用grafana dashboard</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-03-14 23:09:31" itemprop="dateCreated datePublished" datetime="2022-03-14T23:09:31+00:00">2022-03-14</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2024-12-17 16:20:24" itemprop="dateModified" datetime="2024-12-17T16:20:24+00:00">2024-12-17</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>排查k8s上问题通常需要监控的配合，而k8s上的监控标准为prometheus，prometheus的dashboard最通用的为grafana。本文用来记录排查k8s问题时经常遇到的dashboard，dashboard监控的数据来源包括node-exporter、metrics-server、kube-state-metrics等最场景。</p>
-<h2 id="node-top监控"><a href="#node-top监控" class="headerlink" title="node top监控"></a>node top监控</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/grafana-dashboard1.jpg"></p>
-<p><a target="_blank" rel="noopener" href="https://kuring.oss-cn-beijing.aliyuncs.com/files/node%20top%E7%9B%91%E6%8E%A7-1647271172485.json">下载链接</a></p>
-<h2 id="node上的pod监控"><a href="#node上的pod监控" class="headerlink" title="node上的pod监控"></a>node上的pod监控</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/grafana-dashboard2.jpg"></p>
-<p><a target="_blank" rel="noopener" href="https://kuring.oss-cn-beijing.aliyuncs.com/files/node%E4%B8%8A%E7%9A%84pod-1647271326652.json">下载链接</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
   <nav class="pagination">
     <a class="extend prev" rel="prev" title="Previous page" aria-label="Previous page" href="/page/4/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/25/">25</a><a class="extend next" rel="next" title="Next page" aria-label="Next page" href="/page/6/"><i class="fa fa-angle-right"></i></a>
   </nav>
@@ -1474,7 +1522,7 @@
 
   <div class="copyright">
     &copy; 
-    <span itemprop="copyrightYear">2024</span>
+    <span itemprop="copyrightYear">2025</span>
     <span class="with-love">
       <i class="fa fa-heart"></i>
     </span>
