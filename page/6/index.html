@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">250</span>
+          <span class="site-state-item-count">251</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,118 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/k8s-pod-errors/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/k8s-pod-errors/" class="post-title-link" itemprop="url">k8s pod异常状态分析</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-03-17 15:54:47" itemprop="dateCreated datePublished" datetime="2022-03-17T15:54:47+00:00">2022-03-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="pod状态"><a href="#pod状态" class="headerlink" title="pod状态"></a>pod状态</h1><h2 id="1-前置检查"><a href="#1-前置检查" class="headerlink" title="1. 前置检查"></a>1. 前置检查</h2><p>在排查异常状态的pod错误之前，可以先检查一下node状态，执行<code>kubectl get node</code>查看是否所有的node状态都正常。</p>
+<h2 id="2-pod状态为CrashLoopBackOff"><a href="#2-pod状态为CrashLoopBackOff" class="headerlink" title="2. pod状态为CrashLoopBackOff"></a>2. pod状态为CrashLoopBackOff</h2><p>如果pod状态为CrashLoopBackOff状态，查看pod日志来定位原因，或者describe pod看一下。</p>
+<h2 id="3-pod状态为Pending"><a href="#3-pod状态为Pending" class="headerlink" title="3. pod状态为Pending"></a>3. pod状态为Pending</h2><p>pod状态为Pending状态，说明调度失败，通常跟污点、标签、cpu、内存、磁盘等资源相关。</p>
+<p>可以通过<code>kubectl describe pod -n &#123;NAMESPACE&#125; &#123;POD_NAME&#125;</code>，可以在最后的Event部分找到原因。</p>
+<h2 id="4-pod状态为Init-0-x2F-1"><a href="#4-pod状态为Init-0-x2F-1" class="headerlink" title="4. pod状态为Init:0&#x2F;1"></a>4. pod状态为Init:0&#x2F;1</h2><p>有些pod会有Init Containers，这些container是在pod的containers执行之前先执行。如果Init Container出现未执行完成的情况，此时pod处于Init状态。</p>
+<p>通过<code>kubectl get pod -n &#123;NAMESPACE&#125; &#123;POD_NAME&#125; -o yaml</code> 找到pod的Init Containers，并找到其中的name字段。执行<code>kubectl logs -n &#123;NAMESPACE&#125; &#123;POD_NAME&#125; -c &#123;INIT_CONTAINER_NAME&#125;</code>可以查看Init Container的日志来分析原因。</p>
+<h2 id="5-pod状态为Terminating"><a href="#5-pod状态为Terminating" class="headerlink" title="5. pod状态为Terminating"></a>5. pod状态为Terminating</h2><p>pod处于此种状态的原因大致可分为：<br>1、pod或其控制器被删除。<br>解决方法：查看pod控制器类型和控制器名称，查看其控制器是否正常。如果正常pod将会被重建，如果pod没有被重建，查看controller-manager是否正常。<br>2、pod所在节点状态NotReady导致。<br>解决方法：检查该节点的网络，cpu，内存，磁盘空间等资源是否正常。检查该节点的kubelet、docker服务是否正常。检查该节点的网络插件pod是否正常。</p>
+<p>最常见的pod处于Terminating状态的解决办法为强制删除 <code>kubectl delete pods -n $&#123;namespace&#125; $&#123;name&#125; --grace-period=0 --force</code></p>
+<h2 id="6-pod状态为Evicted"><a href="#6-pod状态为Evicted" class="headerlink" title="6. pod状态为Evicted"></a>6. pod状态为Evicted</h2><p>pod处于Evicted的原因大致可分为：<br>1、kubelet服务启动时存在驱逐限制当节点资源可用量达到指定阈值（magefs.available&lt;15%,memory.available&lt;300Mi,nodefs.available&lt;10%,nodefs.inodesFree&lt;5%）<br>会优先驱逐Qos级别低的pod以保障Qos级别高的pod可用。<br>解决方法：增加节点资源或将被驱逐的pod迁移到其他空闲资源充足的节点上。<br>2、pod所在节点上被打上了NoExecute的污点，此种污点会将该节点上无法容忍此污点的pod进行驱逐。<br>解决方法：查看该节点上的NoExecute污点是否必要。或者pod是否可以迁移到其他节点。<br>3、pod所在的节点为NotReady状态</p>
+<p>通常可以通过<code>kubectl describe pods $&#123;pod&#125; -n $&#123;namespace&#125;</code>的底部的Events信息来找到一些问题的原因。例如下面例子中可以看到DiskPressure信息，说明跟磁盘相关。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">Events:</span></span><br><span class="line">  <span class="string">Type</span>     <span class="string">Reason</span>     <span class="string">Age</span>        <span class="string">From</span>                 <span class="string">Message</span></span><br><span class="line">  <span class="string">----</span>     <span class="string">------</span>     <span class="string">----</span>       <span class="string">----</span>                 <span class="string">-------</span></span><br><span class="line">  <span class="string">Warning</span>  <span class="string">Evicted</span>    <span class="string">61s</span>        <span class="string">kubelet,</span> <span class="attr">acs.deploy  The node had condition:</span> [<span class="string">DiskPressure</span>]<span class="string">.</span></span><br><span class="line">  <span class="string">Normal</span>   <span class="string">Scheduled</span>  <span class="string">&lt;invalid&gt;</span>  <span class="string">default-scheduler</span>    <span class="string">Successfully</span> <span class="string">assigned</span> <span class="string">ark-system/bridge-console-bridge-console-554d57bb87-nh2vd</span> <span class="string">to</span> <span class="string">acs.deploy</span></span><br></pre></td></tr></table></figure>
+<p>或者根据pod的Message字段来找到原因</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Name:           tiller-deploy-7f6456894f-22vgr</span><br><span class="line">Namespace:      kube-system</span><br><span class="line">Priority:       0</span><br><span class="line">Node:           a36e04001.cloud.e04.amtest17/</span><br><span class="line">Start Time:     Mon, 08 Jun 2020 12:17:26 +0800</span><br><span class="line">Labels:         app=helm</span><br><span class="line">                name=tiller</span><br><span class="line">                pod-template-hash=7f6456894f</span><br><span class="line">Annotations:    &lt;none&gt;</span><br><span class="line">Status:         Failed</span><br><span class="line">Reason:         Evicted</span><br><span class="line">Message:        Pod The node had condition: [DiskPressure].</span><br></pre></td></tr></table></figure>
+<p>由于pod驱逐的原因排查跟时间点相关，需要根据pod被驱逐的时间来分析当时的状态。<br>4、批量删除状态Evicted的pod，此操作会删除集群里面所有状态为Evicted的pod</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ns=`kubectl get ns | awk &#x27;NR&gt;1 &#123;print $1&#125;&#x27;`</span><br><span class="line">for i in $ns;do  kubectl get pods -n $i  | grep Evicted| awk &#x27;&#123;print $1&#125;&#x27; | xargs  kubectl delete pods -n $i ;done</span><br></pre></td></tr></table></figure>
+<h2 id="7-pod状态为Unknown"><a href="#7-pod状态为Unknown" class="headerlink" title="7. pod状态为Unknown"></a>7. pod状态为Unknown</h2><p>通常该状态为pod对应节点的为NotReady，通过查看 kubectl get node 来查看node是否为NotReady。</p>
+<h2 id="8-pod为running，但是Not-Ready状态"><a href="#8-pod为running，但是Not-Ready状态" class="headerlink" title="8. pod为running，但是Not Ready状态"></a>8. pod为running，但是Not Ready状态</h2><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">argo-ui-56f4d67b69-8gshr</span>   <span class="number">0</span><span class="string">/1</span>     <span class="string">Running</span>     <span class="number">0</span>          <span class="string">10h</span></span><br></pre></td></tr></table></figure>
+<p>类似上面这种状态，此时说明pod的readiness健康检查没过导致的，需要先从pod的健康检查本身来排查问题。可以通过 <code>kubectl get pods -n $&#123;namespace&#125; $&#123;name&#125; -o yaml</code> 找到pod的健康检查部分，关键字为readiness，然后进入pod中执行对应的健康检查命令来测试健康检查的准确性。</p>
+<p>例如readiness的配置如下，需要进入pod中执行<code>curl http://127.0.0.1/api/status</code>，也可以在pod对应的node节点上执行<code>curl [http://$&#123;pod_ip&#125;/api/status](http://127.0.0.1/api/status)</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">livenessProbe:</span></span><br><span class="line">  <span class="attr">failureThreshold:</span> <span class="number">3</span></span><br><span class="line">  <span class="attr">httpGet:</span></span><br><span class="line">    <span class="attr">path:</span> <span class="string">/api/status</span></span><br><span class="line">    <span class="attr">port:</span> <span class="string">http</span></span><br><span class="line">    <span class="attr">scheme:</span> <span class="string">HTTP</span></span><br><span class="line">  <span class="attr">initialDelaySeconds:</span> <span class="number">120</span></span><br><span class="line">  <span class="attr">periodSeconds:</span> <span class="number">10</span></span><br><span class="line">  <span class="attr">successThreshold:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">timeoutSeconds:</span> <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<h2 id="9-pod为ContainerCreating状态"><a href="#9-pod为ContainerCreating状态" class="headerlink" title="9. pod为ContainerCreating状态"></a>9. pod为ContainerCreating状态</h2><p>通过<code>kubectl describe pods -n $&#123;namespace&#125; $&#123;name&#125;</code>的Events部分来分析原因，可能的原因如下：</p>
+<ul>
+<li>网络分配ip地址失败</li>
+</ul>
+<h2 id="10-Init-CrashLoopBackOff"><a href="#10-Init-CrashLoopBackOff" class="headerlink" title="10. Init:CrashLoopBackOff"></a>10. Init:CrashLoopBackOff</h2><ol>
+<li>通过<code>kubectl get pod -n &#123;NAMESPACE&#125; &#123;POD_NAME&#125; -o yaml</code> 找到pod的Init Containers，并找到其中的name字段。</li>
+<li>执行<code>kubectl logs -n &#123;NAMESPACE&#125; &#123;POD_NAME&#125; -c &#123;INIT_CONTAINER_NAME&#125;</code>可以查看Init Container的日志来分析原因。</li>
+</ol>
+<h2 id="11-PodInitializing"><a href="#11-PodInitializing" class="headerlink" title="11. PodInitializing"></a>11. PodInitializing</h2><p>需要查看initContainer的日志</p>
+<h2 id="12-MatchNodeSelector"><a href="#12-MatchNodeSelector" class="headerlink" title="12. MatchNodeSelector"></a>12. MatchNodeSelector</h2><p>查看pod的status信息可以看到如下信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">status:</span><br><span class="line">  message: Pod Predicate MatchNodeSelector failed</span><br><span class="line">  phase: Failed</span><br><span class="line">  reason: MatchNodeSelector</span><br><span class="line">  startTime: &quot;2022-03-15T05:07:57Z&quot;</span><br></pre></td></tr></table></figure>
+
+<p>说明该pod没有调度成功，在predicate的MatchNodeSelector阶段失败了，没有匹配上node节点。</p>
+<p>在k8s 1.21之前的版本，存在bug，节点重启后可能遇到过问题，将pod delete后重新调度可以解决。<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/issues/92067">https://github.com/kubernetes/kubernetes/issues/92067</a></p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/412618.html#section-7gv-3tf-paf">常见的Pod异常状态及处理方式</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +331,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
+      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
     </span>
 
   
@@ -299,7 +411,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
+      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
     </span>
 
   
@@ -392,7 +504,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
+      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
     </span>
 
   
@@ -484,7 +596,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
+      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
     </span>
 
   
@@ -648,7 +760,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
+      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
     </span>
 
   
@@ -1124,7 +1236,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
+      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
     </span>
 
   
@@ -1222,7 +1334,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
+      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
     </span>
 
   
@@ -1309,7 +1421,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
+      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
     </span>
 
   
@@ -1489,7 +1601,7 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
+      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
     </span>
 
   
@@ -1544,113 +1656,8 @@ local-up-karmada.sh有两个细节问题值得关注。<br>kind创建出来的�
 
 
 
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/kubernetes-opensource-project/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/kubernetes-opensource-project/" class="post-title-link" itemprop="url">Github Kubernetes组织下开源项目（持续更新）</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-02-09 20:12:00" itemprop="dateCreated datePublished" datetime="2022-02-09T20:12:00+00:00">2022-02-09</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>在k8s官方的Github kubernetes group下除了k8s的核心组件外，还有很多开源项目，本文用来简要分析这些开源项目的用途。</p>
-<h1 id="apimachinery"><a href="#apimachinery" class="headerlink" title="apimachinery"></a><a target="_blank" rel="noopener" href="https://github.com/kubernetes/apimachinery">apimachinery</a></h1><p>关于k8s的scheme等的sdk项目，代码跟kubernetes项目的如下路径保持同步：<br><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery">https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery</a></p>
-<h1 id="autoscaler"><a href="#autoscaler" class="headerlink" title="autoscaler"></a><a target="_blank" rel="noopener" href="https://github.com/kubernetes/autoscaler">autoscaler</a></h1><p>跟k8s的弹性扩缩容相关的组件，有如下两个功能：</p>
-<h2 id="vpa（pod垂直扩缩容）"><a href="#vpa（pod垂直扩缩容）" class="headerlink" title="vpa（pod垂直扩缩容）"></a>vpa（pod垂直扩缩容）</h2><p>k8s的kube-controller-manager默认支持了hpa功能，即水平扩缩容。同时k8s还提供了vpa功能，即垂直扩缩容，会根据pod历史的资源占用，修改pod的request值，并不会修改pod的limit值。之所以k8s没有默认提供vpa功能，原因是因为vpa实现要复杂很多，需要通过webhook的技术来在pod创建的时候修改pod的request值。vpa的功能通常用于大型单体应用。</p>
-<p>autoscaler的功能之一即提供了vpa的实现。</p>
-<h2 id="Cluster-Autoscaler（node节点自动扩缩容）"><a href="#Cluster-Autoscaler（node节点自动扩缩容）" class="headerlink" title="Cluster Autoscaler（node节点自动扩缩容）"></a>Cluster Autoscaler（node节点自动扩缩容）</h2><p>该功能是为了重新利用k8s node的节点资源，在节点资源不足的时候可以动态创建资源，在节点资源空闲的时候可以自动回收资源。k8s node的创建和释放需要公有云平台的支持，该功能对接了多个公有云厂商的api。</p>
-<h1 id="cloud-provider"><a href="#cloud-provider" class="headerlink" title="cloud-provider"></a><a target="_blank" rel="noopener" href="https://github.com/kubernetes/cloud-provider">cloud-provider</a></h1><p>k8s的cloud provider功能用来跟云厂商对接以实现对k8s的node、LoadBalancer Service管理，比如LoadBalancer Service申请vip需要跟云厂商的LB API进行对接。</p>
-<p>在k8s 1.6版本之前，cloud provider的代码完全是耦合在k8s的kube-apiserver、kubelet、kube-contorller-manager的代码中的，如果要支持更多的云厂商，只能修改k8s的代码，扩展性比较差。</p>
-<p>从k8s 1.6版本之后，cloud provider作为单独的二进制组件来提供服务，并提供了接口定义。本项目为非二进制项目，仅包含k8s的cloud-provider机制的接口定义，为了让第三方的cloud-provider的实现项目引用接口定义方便，将kubernetes项目中的定义为单独的项目，且代码跟<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/tree/master/staging/src/k8s.io/cloud-provider">kubernetes项目</a>中的保持同步。</p>
-<p>参考资料：</p>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/a_540yJ1EGVroJ9TpvYtPw">从 K8S 的 Cloud Provider 到 CCM 的演进之路</a></li>
-</ul>
-<h1 id="Descheduler"><a href="#Descheduler" class="headerlink" title="Descheduler"></a>Descheduler</h1><p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/kubernetes-sigs/descheduler">https://github.com/kubernetes-sigs/descheduler</a></p>
-<p>k8s的pod调度完全动态的，kube-scheduler组件在调度pod的时候会根据当时k8s集群的运行时环境来决定pod可以调度的节点，可以保证pod的调度在当时是最优的。但是随着的推移，比如环境中增加了新的node、创建了一批亲和节点的pod，都有可能会导致如果相同的pod再重新调度会到其他的节点上。但k8s的设计是，一旦pod调度完成后，就不会再重新调度。</p>
-<p>Descheduler组件用来解决pod的重新调度问题，可以根据配置的一系列的规则来触发驱逐pod，让pod可以重新调度，从而使k8s集群内的pod尽可能达到最优状态，有点类似于计算机在运行了一段时间后的磁盘脆片整理功能。Descheduler组件可以以job、cronjob或者deployment的方式运行在k8s集群中。</p>
-<h1 id="kubernetes-template-project"><a href="#kubernetes-template-project" class="headerlink" title="kubernetes-template-project"></a><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes-template-project">kubernetes-template-project</a></h1><p>用来存放了k8s项目的标准模板，里面包含了一些必要的文件，新建的项目可以fork该项目。</p>
-<h1 id="node-problem-detector-npd"><a href="#node-problem-detector-npd" class="headerlink" title="node-problem-detector(npd)"></a>node-problem-detector(npd)</h1><p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/kubernetes/node-problem-detector">https://github.com/kubernetes/node-problem-detector</a></p>
-<p>k8s的管控组件对于iaas层的node运行状态是完全不感知的，比如节点出现了ntp服务挂掉、硬件告警（cpu、内存、磁盘故障）、内核死锁。node-problem-detector旨在将node节点的问题转换k8s node event，以DaemonSet的方式部署在所有的k8s节点上。</p>
-<p>上报故障的方式支持如下两种方式：</p>
-<ul>
-<li>对于永久性故障，通过修改node status中的condition上报给apiserver</li>
-<li>对于临时性故障，通过Event的方式上报</li>
-</ul>
-<p>node-problem-detector在将节点的故障信息上报给k8s后，通常会配合一些自愈系统搭配使用，比如Draino和Descheduler 。</p>
-<h1 id="sample-apiserver"><a href="#sample-apiserver" class="headerlink" title="sample-apiserver"></a><a target="_blank" rel="noopener" href="https://github.com/kubernetes/sample-apiserver">sample-apiserver</a></h1><p>k8s提供了aggregated apiserver的方式来扩展api，该项目为一个简单的aaggregated apiserver的例子，可以直接编译出二进制文件。要想开发一个AA类型的服务，只需要frok一下该项目，并在项目的基础上进行修改即可完成。</p>
-<p>相关资料：</p>
-<ul>
-<li>[Set up an Extension API Server](Set up an Extension API Server)</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
   <nav class="pagination">
-    <a class="extend prev" rel="prev" title="Previous page" aria-label="Previous page" href="/page/5/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/25/">25</a><a class="extend next" rel="next" title="Next page" aria-label="Next page" href="/page/7/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" title="Previous page" aria-label="Previous page" href="/page/5/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/26/">26</a><a class="extend next" rel="next" title="Next page" aria-label="Next page" href="/page/7/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 </div>

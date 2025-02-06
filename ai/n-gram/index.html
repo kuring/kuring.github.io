@@ -27,7 +27,7 @@
 <meta property="og:description" content="本文为对《GPT 图解 - 大模型是怎样构建的》一书的学习笔记，所有的例子和代码均来源于本书。  基本介绍 N-Gram 模型为语言模型的雏形，诞生于 1948 年。 基本思想为：一个词出现的概率仅依赖其前面的 N-1 个词。即通过有限的 N-1 个词来预测第 N 个词。 以 “我爱吃肉” 举例，分词为 [”我“, “爱”, “吃”, “肉”]。  当 N&#x3D;1 时，对应的序列为[”我“">
 <meta property="og:locale">
 <meta property="article:published_time" content="2024-08-19T00:00:00.000Z">
-<meta property="article:modified_time" content="2025-02-06T15:04:30.795Z">
+<meta property="article:modified_time" content="2025-02-06T16:13:26.746Z">
 <meta property="article:tag" content="ai">
 <meta name="twitter:card" content="summary">
 
@@ -139,7 +139,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">基本介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Gram-%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">2-Gram 的构建过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%86%E8%AF%AD%E6%96%99%E6%8B%86%E5%88%86%E4%B8%BA%E5%88%86%E8%AF%8D"><span class="nav-number">2.1.</span> <span class="nav-text">将语料拆分为分词</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%AF%8F%E4%B8%AA-2-Gram%EF%BC%88BiGram%EF%BC%89-%E5%9C%A8%E8%AF%AD%E6%96%99%E5%BA%93%E4%B8%AD%E7%9A%84%E8%AF%8D%E9%A2%91"><span class="nav-number">2.2.</span> <span class="nav-text">计算每个 2-Gram（BiGram） 在语料库中的词频</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%AF%8F%E4%B8%AA-2-Gram-%E5%87%BA%E7%8E%B0%E7%9A%84%E6%A6%82%E7%8E%87"><span class="nav-number">2.2.1.</span> <span class="nav-text">计算每个 2-Gram 出现的概率</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%99%E5%AE%9A%E4%B8%80%E4%B8%AA%E5%89%8D%E7%BC%80%EF%BC%8C%E8%BE%93%E5%87%BA%E8%BF%9E%E7%BB%AD%E7%9A%84%E6%96%87%E6%9C%AC"><span class="nav-number">2.3.</span> <span class="nav-text">给定一个前缀，输出连续的文本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">基本介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Gram-%E7%9A%84%E4%BB%A3%E7%A0%81%E5%AE%9E%E8%B7%B5"><span class="nav-number">2.</span> <span class="nav-text">2-Gram 的代码实践</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%86%E8%AF%AD%E6%96%99%E6%8B%86%E5%88%86%E4%B8%BA%E5%88%86%E8%AF%8D"><span class="nav-number">2.1.</span> <span class="nav-text">将语料拆分为分词</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%AF%8F%E4%B8%AA-2-Gram%EF%BC%88BiGram%EF%BC%89-%E5%9C%A8%E8%AF%AD%E6%96%99%E5%BA%93%E4%B8%AD%E7%9A%84%E8%AF%8D%E9%A2%91"><span class="nav-number">2.2.</span> <span class="nav-text">计算每个 2-Gram（BiGram） 在语料库中的词频</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E6%AF%8F%E4%B8%AA-2-Gram-%E5%87%BA%E7%8E%B0%E7%9A%84%E6%A6%82%E7%8E%87"><span class="nav-number">2.2.1.</span> <span class="nav-text">计算每个 2-Gram 出现的概率</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%99%E5%AE%9A%E4%B8%80%E4%B8%AA%E5%89%8D%E7%BC%80%EF%BC%8C%E8%BE%93%E5%87%BA%E8%BF%9E%E7%BB%AD%E7%9A%84%E6%96%87%E6%9C%AC"><span class="nav-number">2.3.</span> <span class="nav-text">给定一个前缀，输出连续的文本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -152,7 +152,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">250</span>
+          <span class="site-state-item-count">251</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -226,7 +226,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 15:04:30" itemprop="dateModified" datetime="2025-02-06T15:04:30+00:00">2025-02-06</time>
+      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
     </span>
 
   
@@ -249,7 +249,7 @@
 <li>当 N&#x3D;2 时，对应的序列为[”我爱“, “爱吃”, “吃肉”]，又成为 Bigram。</li>
 <li>当 N&#x3D;3 时，对应的序列为[”我爱吃“, “爱吃肉”]，又成为 Trigram。</li>
 </ul>
-<h2 id="2-Gram-的构建过程"><a href="#2-Gram-的构建过程" class="headerlink" title="2-Gram 的构建过程"></a>2-Gram 的构建过程</h2><h3 id="将语料拆分为分词"><a href="#将语料拆分为分词" class="headerlink" title="将语料拆分为分词"></a>将语料拆分为分词</h3><p>将给定的语料库，拆分为以一个的分词。在真实的场景中需要使用分词函数，这里简单起见，使用了一个汉字一个分词的方式。</p>
+<h2 id="2-Gram-的代码实践"><a href="#2-Gram-的代码实践" class="headerlink" title="2-Gram 的代码实践"></a>2-Gram 的代码实践</h2><h3 id="将语料拆分为分词"><a href="#将语料拆分为分词" class="headerlink" title="将语料拆分为分词"></a>将语料拆分为分词</h3><p>将给定的语料库，拆分为以一个的分词。在真实的场景中需要使用分词函数，这里简单起见，使用了一个汉字一个分词的方式。</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">corpus = [ <span class="string">&quot;我喜欢吃苹果&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;我喜欢吃香蕉&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;她喜欢吃葡萄&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;他不喜欢吃香蕉&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;他喜欢吃苹果&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;她喜欢吃草莓&quot;</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个分词函数，将文本转换为单个字符的列表  </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">tokenize</span>(<span class="params">text</span>):  </span><br><span class="line"> <span class="keyword">return</span> [char <span class="keyword">for</span> char <span class="keyword">in</span> text] <span class="comment"># 将文本拆分为字符列表  </span></span><br><span class="line"><span class="comment"># 对每个文本进行分词，并打印出对应的单字列表  </span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;单字列表:&quot;</span>)   </span><br><span class="line"><span class="keyword">for</span> text <span class="keyword">in</span> corpus:  </span><br><span class="line">    tokens = tokenize(text)  </span><br><span class="line">    <span class="built_in">print</span>(tokens)</span><br></pre></td></tr></table></figure>
 
 <p>得到如下的结果：</p>
