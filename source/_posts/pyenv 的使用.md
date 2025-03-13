@@ -3,7 +3,6 @@ title: pyenv 的使用
 permalink: /pyenv
 date: 2025-03-05
 ---
-
 通过 pyenv 命令可以管理本地的 python 版本和 python 环境（各类安装包）。
 
 # 安装 python 版本
