@@ -71,20 +71,20 @@ CNCF项目包括：
 
 CNCF项目包括：
 
-| CNCF项目                                                     | 项目阶段 | 项目介绍                                                     |
-| ------------------------------------------------------------ | -------- | ------------------------------------------------------------ |
-| [cert-manager]([cert-manager](https://cert-manager.io/))     | 沙箱     | 证书签发工具，部署在k8s之上，通过抽象CRD Certificate来管理证书，也可以用来管理Ingress的证书 |
-| Confidential Containers                                      | 沙箱     |                                                              |
-| Curiefense                                                   | 沙箱     |                                                              |
-| Dex                                                          | 沙箱     |                                                              |
-| Falco                                                        | 孵化     |                                                              |
-| in-toto                                                      | 孵化     |                                                              |
-| Keylime                                                      | 沙箱     |                                                              |
-| Kyverno                                                      | 沙箱     | 基于k8s的策略引擎工具，通过抽象CRD ClusterPolicy的方式来声明策略，在运行时通过webhook的技术来执行策略。相比于opa & gatekeeper，更加k8s化，但却没有编程语言的灵活性。 |
-| Notary                                                       | 孵化     |                                                              |
-| Open Policy Agent (OPA)                                      | 毕业     | 基于Rego语言的策略引擎，编程能力非常强大                     |
-| Parsec                                                       | 沙箱     |                                                              |
-| [The Update Framework (TUF)]([The Update Framework](https://theupdateframework.io/)) | 毕业     |                                                              |
+| CNCF项目                                                                               | 项目阶段 | 项目介绍                                                                                                      |
+| ------------------------------------------------------------------------------------ | ---- | --------------------------------------------------------------------------------------------------------- |
+| [cert-manager]([cert-manager](https://cert-manager.io/))                             | 沙箱   | 证书签发工具，部署在k8s之上，通过抽象CRD Certificate来管理证书，也可以用来管理Ingress的证书                                                |
+| Confidential Containers                                                              | 沙箱   |                                                                                                           |
+| Curiefense                                                                           | 沙箱   |                                                                                                           |
+| Dex                                                                                  | 沙箱   |                                                                                                           |
+| Falco                                                                                | 孵化   |                                                                                                           |
+| in-toto                                                                              | 孵化   |                                                                                                           |
+| Keylime                                                                              | 沙箱   |                                                                                                           |
+| Kyverno                                                                              | 沙箱   | 基于k8s的策略引擎工具，通过抽象CRD ClusterPolicy的方式来声明策略，在运行时通过webhook的技术来执行策略。相比于opa & gatekeeper，更加k8s化，但却没有编程语言的灵活性。 |
+| Notary                                                                               | 孵化   |                                                                                                           |
+| Open Policy Agent (OPA)                                                              | 毕业   | 基于Rego语言的策略引擎，编程能力非常强大                                                                                    |
+| Parsec                                                                               | 沙箱   |                                                                                                           |
+| [The Update Framework (TUF)]([The Update Framework](https://theupdateframework.io/)) | 毕业   |                                                                                                           |
 
 ### 秘钥和身份管理
 
