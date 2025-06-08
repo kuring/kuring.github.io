@@ -1,5 +1,5 @@
 ---
-permalink: /architecture/cqrs
+permalink: /architecture/cqrs/
 date: 2025-06-08
 title: 命令查询职责分离 CQRS
 ---

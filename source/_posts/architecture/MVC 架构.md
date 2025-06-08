@@ -1,6 +1,6 @@
 ---
 date: 2025-06-08
-permalink: /architecture/mvc
+permalink: /architecture/mvc/
 title: MVC 架构
 ---
 # 1 MVC 结构
