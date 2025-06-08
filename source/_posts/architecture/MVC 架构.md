@@ -1,6 +1,7 @@
 ---
 date: 2025-06-08
 permalink: /architecture/mvc
+title: MVC 架构
 ---
 # 1 MVC 结构
 分为了 Model（模型层）、View（视图层）、Controller（控制器层）。

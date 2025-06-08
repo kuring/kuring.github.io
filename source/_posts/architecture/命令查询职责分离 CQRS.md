@@ -1,6 +1,7 @@
 ---
 permalink: /architecture/cqrs
 date: 2025-06-08
+title: 命令查询职责分离 CQRS
 ---
 CQRS（**Command Query Responsibility Segregation**，命令查询职责分离）是一种在**复杂业务系统中常用的架构模式**，其核心思想是将“读操作”（Query）和“写操作”（Command）进行**职责分离**，从而提升系统的可维护性、扩展性和性能。
 - **命令（Command）**：负责处理数据的更新操作（如创建、修改、删除），通常涉及业务逻辑和事务管理。

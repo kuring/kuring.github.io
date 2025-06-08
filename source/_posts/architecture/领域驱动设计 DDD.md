@@ -1,6 +1,7 @@
 ---
 permalink: /architecture/ddd
 date: 2025-06-08
+title: 领域驱动设计 DDD
 ---
 # 1 核心概念
 ## 1.1 战略设计
