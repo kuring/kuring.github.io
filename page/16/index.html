@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">251</span>
+          <span class="site-state-item-count">256</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,463 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/relay-auto-login/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/relay-auto-login/" class="post-title-link" itemprop="url">自动通过跳板机登录到其他服务器</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-05-17 16:04:01" itemprop="dateCreated datePublished" datetime="2017-05-17T16:04:01+00:00">2017-05-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>最近公司需要首先登录跳板机relay，然后通过跳板机才能登录服务器，操作上略显麻烦。为了节省登录服务器的时间，我编写了一个简单的脚本来简化登录操作。</p>
+<p>实现效果为在本地terminal下，执行<code>wrelay $host</code>，即可自动登录到相应的主机。</p>
+<h1 id="在relay服务器上增加对其他服务器的免登录命令"><a href="#在relay服务器上增加对其他服务器的免登录命令" class="headerlink" title="在relay服务器上增加对其他服务器的免登录命令"></a>在relay服务器上增加对其他服务器的免登录命令</h1><p>在relay服务器上ssh到其他主机时需要输入密码，使用expect命令来登录到其他主机时通过expect脚本来实现自动输入密码并登录的功能。</p>
+<p>在&#x2F;home&#x2F;$user目录下新建mybin文件夹，并将mybin文件夹添加到$PATH环境变量中，具体修改方法不展开。</p>
+<p>在mybin目录下增加gw脚本，内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/expect</span><br><span class="line"></span><br><span class="line">if &#123;$argc &lt; 1&#125; &#123;</span><br><span class="line">    puts &quot;Usage:cmd &lt;host&gt;&quot;</span><br><span class="line">    exit 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">set host [lindex $argv 0]</span><br><span class="line"># 在这里填写要登录的用户</span><br><span class="line">set username &quot;worker&quot;</span><br><span class="line"># 在这里填写要登录的密码</span><br><span class="line">set password &quot;worker&quot;</span><br><span class="line"></span><br><span class="line">spawn ssh $username@$host</span><br><span class="line">set timeout 2</span><br><span class="line">expect &#123;</span><br><span class="line">    &quot;*password:&quot; &#123;</span><br><span class="line">        send &quot;$password\n&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &quot;Are you sure you want to continue connecting (yes/no)?&quot; &#123;</span><br><span class="line">        send &quot;yes\r&quot;</span><br><span class="line">        exp_continue</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">expect &quot;*#&quot;</span><br><span class="line">interact</span><br></pre></td></tr></table></figure>
+
+<p>执行<code>gw 10.1.1.8</code>，即可登录到对应的主机上。</p>
+<h1 id="本地主机免登录relay服务器，并自动登录到对应的服务器"><a href="#本地主机免登录relay服务器，并自动登录到对应的服务器" class="headerlink" title="本地主机免登录relay服务器，并自动登录到对应的服务器"></a>本地主机免登录relay服务器，并自动登录到对应的服务器</h1><p>在本地自动登录relay主机同样使用expect的方式，脚本名称为wrelay，内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/expect</span><br><span class="line"></span><br><span class="line">if &#123;$argc &lt; 1&#125; &#123;</span><br><span class="line">    puts &quot;Usage:cmd &lt;remote_host&gt;&quot;</span><br><span class="line">    exit 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># 下面指定relay主机</span><br><span class="line">set host &quot;relay.name&quot;</span><br><span class="line"># 这里输入relay的用户名</span><br><span class="line">set username &quot;&quot;</span><br><span class="line"># 这里输入relay的密码</span><br><span class="line">set password &quot;&quot;</span><br><span class="line">set remote_host [lindex $argv 0]</span><br><span class="line"></span><br><span class="line">spawn ssh $username@$host</span><br><span class="line">set timeout 2</span><br><span class="line">expect &#123;</span><br><span class="line">    &quot;*password:&quot; &#123;</span><br><span class="line">        send &quot;$password\n&quot;</span><br><span class="line">    &#125;</span><br><span class="line">    &quot;Are you sure you want to continue connecting (yes/no)?&quot; &#123;</span><br><span class="line">        send &quot;yes\r&quot;</span><br><span class="line">        exp_continue</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">expect &quot;*#&quot;</span><br><span class="line"></span><br><span class="line">sleep 0.1</span><br><span class="line"># 在relay上自动登录到其他服务器主机</span><br><span class="line">send &quot;gw $remote_host\n&quot;</span><br><span class="line">interact</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/mv-farbox-to-hexo/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/mv-farbox-to-hexo/" class="post-title-link" itemprop="url">blog从farbox迁移到了hexo</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2017-04-06 23:33:47" itemprop="dateCreated datePublished" datetime="2017-04-06T23:33:47+00:00">2017-04-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>清明节假期突然想起了我好久不更的blog，看到Farbox官网上的<a target="_blank" rel="noopener" href="https://blog.farbox.com/post/2017">《2016，终结了几个产品》</a>，说明Farbox已经停止更新了。虽然我挺喜欢Farbox这个项目，也见证了Farbox的成长及作者做产品的思考，在这里也向作者致敬。</p>
+<p>我当时开始准备启用Farbox之前试用过jekyll，翻遍了整个github，也没找到个合我心意的theme。幸好是Farbox的出现，让我眼前一亮，这就是我想好的blog系统了。Farbox的停更使我不得不考虑重新换个blog，虽然2016的文章数量仅为罕见的个位数，但有可能今年有时间会多写一些。</p>
+<p>近几年hexo特别的火，在试看了官方文档了解功能及考虑了blog的迁移成本后，心想，这就是我想要的blog系统了。hexo该有的功能全都有，甚至比Farbox要强大很多。Farbox的很多设计思想跟hexo相仿，但hexo显的更加自由，blog需要自己一手搭建完成。</p>
+<p>当然hexo要想使用的好，做一些全面的了解及折腾是必不可少的，毕竟最终利用的Github pages是个静态的系统。早已没有了想当年翻遍整个github上jekyll theme的精力了，我这次的基调是能少折腾就少折腾，毕竟blog我也不是经常写，访问量也更是少的可怜，就当全面了解下当前最火的hexo就好了。</p>
+<h1 id="theme"><a href="#theme" class="headerlink" title="theme"></a>theme</h1><p>本着不折腾原则，直接启用了很火的hexo-theme-next，文档比较全，维护比较及时。基本上按照文档走一遍，该配置的就都可以配置上了。</p>
+<h1 id="代码同步"><a href="#代码同步" class="headerlink" title="代码同步"></a>代码同步</h1><p>代码通过git同步是必备技能。</p>
+<h2 id="hexo项目代码同步"><a href="#hexo项目代码同步" class="headerlink" title="hexo项目代码同步"></a>hexo项目代码同步</h2><p>hexo采用的是node.js环境，而Github pages是静态的，因此Github pages上仅能存储的是hexo编译后的静态文件，这些静态文件直接通过<code>hexo d</code>部署到kuring.github.com仓库中就可以了。</p>
+<p>而对于项目中的_config.yml、md文件我直接用git同步到Github上另外一个项目hexo_bak中了。网上还有思路是同步到kuring.github.com上的另外一个分支，我感觉太啰嗦，容易出错，还不如直接分开来的简便。</p>
+<h2 id="theme项目的代码同步"><a href="#theme项目的代码同步" class="headerlink" title="theme项目的代码同步"></a>theme项目的代码同步</h2><p>theme项目中也包含了部分自己的配置及修改，我这里选择的同步策略为从github上fork对应的theme项目，然后clone fork下来的项目到本地，然后直接在theme的项目中通过git命令同步到github fork的项目中。</p>
+<p>网上也有思路是通过git subtree的方式来解决，我仍然感觉太啰嗦，不采用。</p>
+<p>但这样一个blog项目需要多个git仓库，git push起来会比较麻烦，好在theme一般不怎么修改。</p>
+<h1 id="评论系统"><a href="#评论系统" class="headerlink" title="评论系统"></a>评论系统</h1><p>之前用多说的时候也没几个评论的，用起来还不错，至少比被墙了的disqus要好很多，可是多说这么好的项目要关闭了。我直接使用了国内的网易云跟帖来满足评论的需求。</p>
+<h1 id="站内搜索"><a href="#站内搜索" class="headerlink" title="站内搜索"></a>站内搜索</h1><p>站内搜索是必不可少的功能，next主题提供了多种选择，我直接使用了hexo-generator-searchdb通过本地搜索来完成，生成的xml文件目前还比较小，效果还可以。</p>
+<h1 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h1><ul>
+<li>启用本地server端：<code>hexo clean &amp;&amp; hexo g &amp;&amp; hexo s</code></li>
+<li>部署到github：<code>hexo d</code></li>
+<li>发布文章：<code>hexo new 文章url</code></li>
+</ul>
+<p>使用<code>hexo new draft test</code>会在source&#x2F;_drafts目录下创建对应文件，此时文件不会生成页面，用于存放未写完的文章。<code>hexo publish draft test</code>命令可将_drafts下的文章移动到_posts目录下，并添加创建时间等信息。</p>
+<h1 id="收个尾"><a href="#收个尾" class="headerlink" title="收个尾"></a>收个尾</h1><p>blog总算迁移完成了，期望今年能多写上几篇。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/logstash-php-fpm/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/logstash-php-fpm/" class="post-title-link" itemprop="url">使用logstash收集php-fpm slow log</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2016-06-10 00:00:00" itemprop="dateCreated datePublished" datetime="2016-06-10T00:00:00+00:00">2016-06-10</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>目前php-fpm的服务部署在了docker中，对php-fpm的log和php error log可以通过syslog协议的形式发送出去，而php-fpm的slow log却不能配置为syslog协议，只能输出到文件中，因为一条slow log的是有多行组成的。</p>
+<p>在docker中使用时发现fpm-slowlog不能正常输出，后经发现是docker默认没有ptrace系统调用的权限，而slow log的产生需要该系统调用。通过在docker启动的时候增加”–cap-add SYS_PTRACE”启动项可修正该问题。</p>
+<p>为了收集slow log，可以通过logstash、flume等工具进行收集，本文采用logstash对slow log进行收集，并将收集的log写入到kafka中，便于后续的处理。logstash的input采用读取文件的方式，即跟tail -f的原理类似。为了能够将多行日志作为一行，采用了filter中的multiline来对多行日志进行合并操作。logstash的配置如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">input &#123;</span><br><span class="line">    file &#123;</span><br><span class="line">        path =&gt; [“/var/log/php-fpm/fpm-slow.log&quot;]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">filter &#123;</span><br><span class="line">    multiline &#123;</span><br><span class="line">        pattern =&gt; &quot;^$&quot;</span><br><span class="line">        negate =&gt; true</span><br><span class="line">        what =&gt; &quot;previous&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">output &#123;</span><br><span class="line">    stdout&#123;codec =&gt; rubydebug&#125;</span><br><span class="line">    kafka &#123;</span><br><span class="line">        codec =&gt; plain &#123;</span><br><span class="line">           format =&gt; “tag|%&#123;host&#125;%&#123;message&#125;&quot;</span><br><span class="line">        &#125;</span><br><span class="line">        topic_id =&gt; &quot;fpm-slowlog&quot;</span><br><span class="line">        bootstrap_servers =&gt; “kafka1.hostname:8082,kafka2.hostname:8082&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/elk_nginx/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/elk_nginx/" class="post-title-link" itemprop="url">ELK解析nginx日志</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2016-02-18 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-18T00:00:00+00:00">2016-02-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>ELK解析nginx日志</p>
+<p>最近使用ELK搭建了一个nginx的日志解析环境，中间遇到一些挫折，好不容易搭建完毕，有必要记录一下。</p>
+<h1 id="nginx"><a href="#nginx" class="headerlink" title="nginx"></a>nginx</h1><p>nginx配置文件中的日志配置如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">error_log /var/log/nginx/error.log;</span><br><span class="line">log_format  main  &#x27;$remote_addr [$time_local] &quot;$request&quot; &#x27;</span><br><span class="line">                      &#x27;$status $body_bytes_sent &quot;$http_referer&quot; &#x27;</span><br><span class="line">                      &#x27;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&#x27;;</span><br><span class="line"></span><br><span class="line">access_log /var/log/nginx/access.log  main;</span><br></pre></td></tr></table></figure>
+
+<h1 id="logstash"><a href="#logstash" class="headerlink" title="logstash"></a>logstash</h1><p>由于是测试环境，我这里使用logstash读取nginx日志文件的方式来获取nginx的日志，并且仅读取了nginx的access log，对于error log没有关心。</p>
+<p>使用的logstash版本为2.2.0，在log stash程序目录下创建conf文件夹，用于存放解析日志的配置文件，并在其中创建文件test.conf，文件内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">input &#123;</span><br><span class="line">    file &#123;</span><br><span class="line">        path =&gt; [&quot;/var/log/nginx/access.log&quot;]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">filter &#123;</span><br><span class="line">    grok &#123;</span><br><span class="line">        match =&gt; &#123;</span><br><span class="line">            &quot;message&quot; =&gt; &quot;%&#123;IPORHOST:clientip&#125; \[%&#123;HTTPDATE:time&#125;\] \&quot;%&#123;WORD:verb&#125; %&#123;URIPATHPARAM:request&#125; HTTP/%&#123;NUMBER:httpversion&#125;\&quot; %&#123;NUMBER:http_status_code&#125; %&#123;NUMBER:bytes&#125; \&quot;(?&lt;http_referer&gt;\S+)\&quot; \&quot;(?&lt;http_user_agent&gt;\S+)\&quot; \&quot;(?&lt;http_x_forwarded_for&gt;\S+)\&quot;&quot;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;   </span><br><span class="line">&#125;</span><br><span class="line">output &#123;</span><br><span class="line">    elasticsearch &#123;</span><br><span class="line">        hosts =&gt; [&quot;10.103.17.4:9200&quot;]</span><br><span class="line">        index =&gt; &quot;logstash-nginx-test-%&#123;+YYYY.MM.dd&#125;&quot;</span><br><span class="line">        workers =&gt; 1</span><br><span class="line">        flush_size =&gt; 1</span><br><span class="line">        idle_flush_time =&gt; 1</span><br><span class="line">        template_overwrite =&gt; true</span><br><span class="line">    &#125;</span><br><span class="line">    stdout&#123;codec =&gt; rubydebug&#125;</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+
+<p>需要说明的是，filter字段中的grok部分，由于nginx的日志是格式化的，logstash解析日志的思路为通过正则表达式来匹配日志，并将字段保存到相应的变量中。logstash中使用grok插件来解析日志，grok中message部分为对应的grok语法，并不完全等价于正则表达式的语法，在其中增加了变量信息。</p>
+<p>具体grok语法不作过多介绍，可以通过logstash的官方文档中来了解。但grok语法中的变量类型如IPORHOST并未找到具体的文档，只能通过在logstash的安装目录下通过<code>grep -nr &quot;IPORHOST&quot; .</code>来搜索具体的含义。</p>
+<p>配置文件中的stdout部分用于打印grok解析结果的信息，在调试阶段一定要打开。</p>
+<p>可以通过<a target="_blank" rel="noopener" href="http://grokconstructor.appspot.com/do/match">这里</a>来验证grok表达式的语法是否正确，编写grok表达式的时候可以在这里编写和测试。</p>
+<p>对于elasticsearch部分不做过多介绍，网上容易找到资料。</p>
+<h1 id="kibana"><a href="#kibana" class="headerlink" title="kibana"></a>kibana</h1><p>kibana不做过多介绍，使用可以查看官方文档和自己摸索。</p>
+<h1 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h1><p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/logstash/current/plugins-filters-grok.html">logstash中的grok插件介绍</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/aws_net/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/aws_net/" class="post-title-link" itemprop="url">利用aws科学上网</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2016-02-17 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-17T00:00:00+00:00">2016-02-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>曾经使用过多种科学上网方式，​最近尝试了使用aws的免费试用一年的功能搭建shadowsocks，访问google的速度非常不错，比很多收费的服务要好用，amazon真是良心企业！</p>
+<p>本文用于记录在aws上搭建服务的步骤及其中的一些注意事项，步骤不会太详细，aws上关于主机的功能需要读者自己在试验的过程中去自己探索。</p>
+<h1 id="注册aws账号"><a href="#注册aws账号" class="headerlink" title="注册aws账号"></a>注册aws账号</h1><p>为了能够搭建搭建aws服务，拥有一个amazon账号是必须的，在<a target="_blank" rel="noopener" href="https://aws.amazon.com/cn/free/">aws免费套餐</a>的页面点击『创建免费账号』按钮即可按照步骤创建aws账号。</p>
+<p>值得一提的是，注册aws的账号需要一张信用卡。</p>
+<h1 id="开启EC2主机实例"><a href="#开启EC2主机实例" class="headerlink" title="开启EC2主机实例"></a>开启EC2主机实例</h1><p>该步骤的目的是开启aws上的主机实例。​</p>
+<p>进入aws的控制面板，在左上角的服务中选择EC2，aws提供了多种类型的主机，这里选择EC2即可。</p>
+<p>在EC2控制面板界面中需要选择右上角的区域，这个用于选择EC2主机所在的机房，不同机房之间主机是不可以共享的。我这里选择了『美国西部（俄勒冈）』，感觉速度还不错，没有试验过亚洲地区的，新加坡的速度是不是会更好些。后续经过验证，首尔的服务器确实速度更快一些。<br>​<br>下面即可创建EC2的实例了，点击界面上的『启动实例』按钮即可按照步骤创建EC2实例了，创建实例的时候一定要选择免费的EC2主机，否则就会悲剧了。我选择了ubuntu14.04的主机，redhat7.2的主机yum源不太全，没有选择使用。</p>
+<p>最终会得到ssh登录用的pem文件，用于ssh远程登录主机。并在界面上启动刚刚创建的实例。</p>
+<h1 id="按照shadowsocks"><a href="#按照shadowsocks" class="headerlink" title="按照shadowsocks"></a>按照shadowsocks</h1><p>接下来就是在EC2实例上安装sock5代理工具了。</p>
+<p>登录刚刚启动的EC2，需要pem文件。可以通过<code>ssh -i &quot;key.pem&quot; ubuntu@ec2-52-26-2-14.us-west-2.compute.amazonaws.com</code>命令来登录到远程主机，其他工具请自行google。</p>
+<p>使用命令<code>pip install shadowsocks</code>来安装shadowssocks，pip命令的安装自行解决。</p>
+<p>在ubuntu的home目录下执行<code>mkdir shadowsocks</code>创建保存配置文件的文件夹，并创建配置文件config.json，内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;server&quot;:&quot;0.0.0.0&quot;,</span><br><span class="line">    &quot;server_port&quot;:10001,</span><br><span class="line">    &quot;local_port&quot;:1080,</span><br><span class="line">    &quot;password&quot;:&quot;xxx&quot;,</span><br><span class="line">    &quot;timeout&quot;:600,</span><br><span class="line">    &quot;method&quot;:&quot;bf-cfb&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>需要说明的是最好配置一下server_port选项，更改shadowsocks的默认端口号。method选项用于控制加密方式，我这里更改为了bf-cfb。</p>
+<p>执行<code>nohup ssserver -c config.json &amp;</code>命令即可启动shadowsocks服务。</p>
+<p>由于对外增加了10001端口号，aws的默认安全策略为仅对外提供22端口，需要在EC2主机的安全策略中增加外放访问tcp端口10001的权限。</p>
+<h1 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h1><p>为了安装方便，我简单写了个脚本如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">yum -y install epel-release</span><br><span class="line">#yum update -y</span><br><span class="line">yum install python2-pip -y</span><br><span class="line">pip install shadowsocks</span><br><span class="line">mkdir ~/shadowsocks</span><br><span class="line">echo &#x27;&#123;</span><br><span class="line">    &quot;server&quot;:&quot;0.0.0.0&quot;,</span><br><span class="line">    &quot;server_port&quot;:10001,</span><br><span class="line">    &quot;local_port&quot;:1080,</span><br><span class="line">    &quot;password&quot;:&quot;xxx&quot;,</span><br><span class="line">    &quot;timeout&quot;:600,</span><br><span class="line">    &quot;method&quot;:&quot;aes-256-cfb&quot;</span><br><span class="line">&#125;&#x27; &gt; ~/shadowsocks/config.json</span><br><span class="line">systemctl disable firewalld.service</span><br><span class="line">systemctl stop firewalld.service</span><br><span class="line">nohup ssserver -c ~/shadowsocks/config.json &amp;</span><br></pre></td></tr></table></figure>
+
+<p>在某些云主机的CentOS7系统发现无法使用<code>yum install python2-pip</code>进行安装，原因是有些源被禁用了，可以使用<code>yum repolist disabled</code>来查看被禁用的源，其中会包含epel源。可以使用<code>yum install python2-pip -y --enablerepo=epel</code>的方式来安装。</p>
+<h1 id="安装shadowsocks客户端"><a href="#安装shadowsocks客户端" class="headerlink" title="安装shadowsocks客户端"></a>安装shadowsocks客户端</h1><p>这里是支持的<a target="_blank" rel="noopener" href="https://shadowsocks.com/client.html">客户端列表</a>，​我这里仅使用的mac客户端ShadowsocksX，支持Auto Proxy Mode和Global Mode两种方式，其中Auto方式会自动下载使用sock5代理的列表，非常方便。</p>
+<h1 id="kcptun"><a href="#kcptun" class="headerlink" title="kcptun"></a>kcptun</h1><p>为了加快访问速度，推荐使用kcp + shadowsocks</p>
+<p>kcp的服务端配置如下，即启用20001端口，该端口会将流量导入到127.0.0.1:10001端口，即本机的shadowsocks端口</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd ~ &amp;&amp; mkdir kcptun &amp;&amp; cd kcptun</span><br><span class="line">wget https://github.com/xtaci/kcptun/releases/download/v20190109/kcptun-linux-amd64-20190109.tar.gz</span><br><span class="line">tar zvxf kcptun-linux-amd64-20190109.tar.gz</span><br><span class="line">nohup ./server_linux_amd64 -l :20001 -t 127.0.0.1:10001 -key xxx -mode fast2 --log ~/kcptun/20001.log &amp;</span><br></pre></td></tr></table></figure>
+
+<p>配置了kcptun的shadowsocks客户端仅需要配置代理为远程的kcpdun端口即可，不再需要指定shadowsocks的端口，相当于shadowsocks是透明的。</p>
+<h1 id="监控"><a href="#监控" class="headerlink" title="监控"></a>监控</h1><p>为了避免aws产生额外的费用，一定要设置一下费用报警，否则被扣费了就麻烦了。</p>
+<p>另外，可定期查看下aws的费用。试用期为一年，一年后一定要记得停掉aws服务。</p>
+<p>最后，祝你玩的愉快！</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +676,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -341,7 +798,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -445,7 +902,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -536,7 +993,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -625,7 +1082,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -652,568 +1109,6 @@
 <p>我在此次事件中并没有第一时间作出应有的反应，这点我需要反省。首先，我见到母亲签字后没有跟骗子要一下工作证明，这样子至少让骗子没这么容易得逞，给我的反驳增加大大的筹码。其次，没有阻拦母亲给骗子送钱，按照我的意思是跟骗子死缠到底的，毕竟是在我家，给不给钱也是我的自由。但我怕在家里生活时间不长，骗子的规矩我不懂，还是顺从了母亲的行为。</p>
 <p>之所以写这篇文章是想梳理下农民身上的共同缺点及我身上的缺点。我不是歧视农民，我是农村出来的，我知道农村人的辛苦，忙起来的时候他们的辛苦程度是我等码农不能企及的。</p>
 <p>在这里为广大奋斗在田地里的农民致敬！</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/saltstack/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/saltstack/" class="post-title-link" itemprop="url">SaltStack使用</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-08-21 00:00:00" itemprop="dateCreated datePublished" datetime="2015-08-21T00:00:00+00:00">2015-08-21</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>本文在学习saltstack的过程中编写，内容比较基础，方便使用时查阅命令。</p>
-<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>为了方便起见，直接采用yum的安装方式，centos源中并没有salt，需要手工添加一下。</p>
-<h2 id="CentOS-7"><a href="#CentOS-7" class="headerlink" title="CentOS 7"></a>CentOS 7</h2><p>安装master</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpm -Uvh http://ftp.jaist.ac.jp/pub/Linux/Fedora/epel/7/x86_64/e/epel-release-7-5.noarch.rpm</span><br><span class="line">yum install salt-master</span><br></pre></td></tr></table></figure>
-
-<p>修改&#x2F;etc&#x2F;salt&#x2F;master配置文件，在其中指定salt文件根目录位置，默认路径为&#x2F;srv&#x2F;salt&#x2F;。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">file_roots:</span><br><span class="line">  base:</span><br><span class="line">    - /svr/salt/</span><br></pre></td></tr></table></figure>
-
-<p>salt在安装的时候已经创建了systemctl命令启动程序需要的service文件，位于&#x2F;usr&#x2F;lib&#x2F;systemd&#x2F;system&#x2F;salt-master.service，重启<code>systemctl restart salt-master.service</code>生效。</p>
-<h2 id="CentOS-6-5"><a href="#CentOS-6-5" class="headerlink" title="CentOS 6.5"></a>CentOS 6.5</h2><p>安装minion</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpm -Uvh http://ftp.linux.ncsu.edu/pub/epel/6/i386/epel-release-6-8.noarch.rpm</span><br><span class="line">yum install salt-minion</span><br></pre></td></tr></table></figure>
-
-<p>修改&#x2F;etc&#x2F;salt&#x2F;minion配置文件，在其中指定master主机的地址</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">master: 192.168.204.128</span><br></pre></td></tr></table></figure>
-
-<p>执行<code>service salt-minion restart</code>对服务进行重启。</p>
-<h2 id="连通性测试"><a href="#连通性测试" class="headerlink" title="连通性测试"></a>连通性测试</h2><p>执行<code>salt-key -L</code>命令可以看到已认证和未认证的minion，执行<code>salt-key -a 192.168.204.149</code>可接收minion。</p>
-<p>在master主机中执行<code>salt &#39;*&#39; test.ping</code>可测试连接的minion主机。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">➜  stats  salt-key -L</span><br><span class="line">Accepted Keys:</span><br><span class="line">Denied Keys:</span><br><span class="line">Unaccepted Keys:</span><br><span class="line">192.168.204.149</span><br><span class="line">Rejected Keys:</span><br><span class="line"></span><br><span class="line">➜  stats  salt-key -a 192.168.204.149</span><br><span class="line">The following keys are going to be accepted:</span><br><span class="line">Unaccepted Keys:</span><br><span class="line">192.168.204.149</span><br><span class="line">Proceed? [n/Y] y</span><br><span class="line">Key for minion 192.168.204.149 accepted.</span><br><span class="line"></span><br><span class="line">➜  stats  salt &#x27;*&#x27; test.ping</span><br><span class="line">192.168.204.149:</span><br><span class="line">    True</span><br></pre></td></tr></table></figure>
-
-<h1 id="state"><a href="#state" class="headerlink" title="state"></a>state</h1><p>可以通过预先定义好的sls文件对被控主机进行管理，这里演示一个简单的文件复制的例子，该例子可以将master主机上的vimrc文件复制到目标主机上。</p>
-<p>在master主机的&#x2F;svr&#x2F;salt&#x2F;edit目录下新建vim.sls文件，文件内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/etc/vimrc:</span><br><span class="line">  file.managed:</span><br><span class="line">    - source: salt://edit/vimrc</span><br><span class="line">    - mode: 644</span><br><span class="line">    - user: root</span><br><span class="line">    - group: root</span><br></pre></td></tr></table></figure>
-
-<p>另外在edit目录下需要存在一个空的init.sls，以确保state.sls可以找到该目录下的sls文件。同时该目录下还需要存在要复制的vimrc文件。</p>
-<p>执行<code>salt &#39;*&#39; state.sls edit.vim</code>即可以执行该命令。</p>
-<p>如果将vim.sls更改为init.sls文件，执行<code>salt &#39;*&#39; state.sls edit</code>命令即可。</p>
-<h1 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h1><p>salt ‘192.168.204.149’ cmd.run ‘free -m’</p>
-<p>salt ‘192.168.204.149’ sys.list_modules  列出minion支持哪些模块，默认已经支持很多模块</p>
-<p>salt ‘192.168.204.149’ cp.get_file salt:&#x2F;&#x2F;test_file &#x2F;root&#x2F;test_file  将master主机file_roots目录下的文件复制到minion任意目录下，该命令不可以将master主机任意目录下的文件进行复制</p>
-<p>salt ‘192.168.204.149’ cp.get_dir salt:&#x2F;&#x2F;test_dir&#x2F; &#x2F;root&#x2F; 实验未成功</p>
-<p>salt ‘*’ file.mkdir dir_path&#x3D;&#x2F;root&#x2F;test_dir user&#x3D;root group&#x3D;root mode&#x3D;700  在minion主机上创建目录s</p>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><p>*<a target="_blank" rel="noopener" href="http://docs.saltstack.com/en/latest/topics/index.html">saltstack官方文档</a></p>
-<p>*《python自动化运维技术与最佳实践》</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/2015_interview/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/2015_interview/" class="post-title-link" itemprop="url">2015年找工作的一段经历</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-07-18 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-18T00:00:00+00:00">2015-07-18</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>前段时间我的工作有了一个比较大的变动，我的工作地点从济南到了北京，离开了待了9年的济南，离开了温馨的家，离开了我的亲人，独自一人开启了北漂模式。</p>
-<p>本文不打算叙述面试细节问题，具体的面试细节我自己在印象笔记中整理过，但不打算放出来。本文仅选取有代表性的几家公司来叙述。</p>
-<p>之所以有如此大的变动，最大的因素是我的个人技术的发展遇到了瓶颈。我近几年对个人发展的定位是在技术上能够更上一层楼，尽量不走管理路线，还是以踏踏实实学技术为主要任务。可是在济南工作已经慢慢被推上了管理的岗位，我怕会逐渐脱离技术，直到完全走上了管理的岗位，这跟我对技术非常感兴趣的初衷是有些违背的。</p>
-<p>工作这几年，技术的进步主要来自于自己业余时间的学习，工作中越来越学不太着东西，不是因为工作中不需要牛逼的技术，而是没有人和精力去研究新技术，济南缺乏这个环境，而且是非常匮乏。我已经深深感觉到济南的IT行业未来会逐渐缩小，实际上目前济南的圈子就是很小的，稍微有点规模的公司也就那么几家而已。</p>
-<p>我自从开始工作就以互联网公司为目标，可以济南没有一家真正意义上的互联网公司，用的技术也都不咋地，工作五年后，有了一定的技术积累，家庭也算稳定了，是时候出来闯闯了，不能在济南的安逸环境中，像水煮青蛙般等待着济南IT业的下滑。</p>
-<p>这次来北京找工作的目标非常明确，互联网公司，最好是规模能够稍微大些的，BAT更好，不想加入A轮的公司，我需要的是成熟的互联网公司的环境和技术，来洗刷我已经在传统行业奋斗了多年的旧习。</p>
-<p>我是裸辞的，因为毕竟面试是需要去北京的，在职请假面太麻烦，且不能够全身心的找工作。我给自己找工作的期限为一个月的时间，我最终上班的时间是在20天多点的时间。</p>
-<p>在辞职后的第一周我在家里边休息边看了一遍《STL源码剖析》，之前一直觉得没必要看此书，结果看起来效果还不错，比我想象的要简单的多的多。另外，我制作了自己的简历，包括了pdf版本和markdown版本，并在拉勾网上投递了几份简历。</p>
-<p>就这样第一周过去了，而我没有收到任何的面试通知，第二周我必须加紧开始找工作了。首先在100offer上申请拍卖了我的简历，之前一直关注100offer，微信公众账号和知乎上经常看到100offer的文章，感觉是个靠谱的平台，事实证明确实是一个靠谱的平台。另外，恰巧我在微信公共账号“余晟以为”的文章看到了怎样写简历的文章，就跟作者聊了一会，并且作者在twitter上推荐了我的简历，我的博客有史以来日pv达到了600多，这是我没有想到的，在这里非常感谢余晟的无私帮助。</p>
-<p>100offer上拍卖后没多久就收到了二个面试通知，周三上午就赶到了北京参加面试。上午参加的一家游戏公司的面试，用C++做后台的业务逻辑处理，其实我并不喜欢游戏类工作，来面试也仅仅是为了了解北京面试的流畅增加一些资历而已。两天后收到了该公司的offer，而我理所当然是拒绝了。</p>
-<p>周四上午参加了一个创业团队的面试，面试官年龄跟我差不多，问的问题非常多，非常杂，最后还有一个我最讨厌的逻辑题，一直面试到下午一点。这家公司的面试是通过twitter上看到我的简历联系我的，我来的目的其实也是出于学习和了解行业。面试完后跟团队成员一起吃了个饭，令我感动的是我面试完已经一点钟了，而大家都在等着我一起吃饭，团队的成员都是做技术的码农，还是非常好相处的。如果我已经有了几年的工作经历，或许我会选择这样一家公司。</p>
-<p>下午参加了我目前所在公司一点资讯的面试，面试流程还是非常nice的，感觉跟我心目中的互联网公司基本吻合，虽然面试的时候问的问题过于简单些，令我有点怀疑公司的真实技术实力。另外还问了一堆我并不深入的web技术问题，令我非常捉急。</p>
-<p>没有面试的时候，我就直接回济南了，毕竟在自己家里比北京不知舒服多少倍。</p>
-<p>第三周的时候，我已经开始有些慌了。该用的能有面试机会的方式我都用了，而却收不到面试的邀请了。我用到了100offer、拉勾网、内推、jobdeer、同学内推的方式。难道是我简历写的太水了，可是我已经很难改进自己的简历了，我不想将简历写的夸张了。</p>
-<p>我开始反思原因。我发现互联网用到的我擅长的C++技术的公司非常少，互联网追求的是短平快，C++并不具备开发速度快的特点，因此并不受互联网公司欢迎。像BAT类的公司用C++技术还是比较多的，因为做到一定程度会深究程序的性能，而这是C++擅长的。而BAT类的公司，我并没有任何优势，我虽有几年工作经验，但是都是在传统行业，互联网行业的经验却为0。很多大公司的hr在看到我的简历后直接就给pass掉了，压根没有面试的机会。</p>
-<p>我找同学内推了百度的简历，另外在拉勾网上也投了一些百度的简历。在我入职之前的几天百度的hr妹子给我电话沟通说一周之内会给我面试通知，最终的结果是一周后百度hr妹子给我打电话让我去面试，看来大公司的流程真是复杂，连面试都得排队，而那天是我入职的第一天。没办法，只能委婉的拒绝了，hr倒是很爽快的挂掉了电话。</p>
-<p>目前，我已经入职有三周的时间了，工作已经趋于稳定。我也搬到了公司附近，离公司就几分钟的路程，毕竟就自己一个人，没必要离公司太远，上下班太折腾。晚上一般会在公司待到十点以后，毕竟回去了也没太有什么事情。周末会抽时间回济南跟家人团聚，或者家人来北京，不期望因为工作的原因而对家庭有损伤。工作方面的内容还算满意，能涉及到很多新技术，对个人的成长还不错，只是组内的人员较少，沟通交流的机会不够多，通过招聘慢慢就会解决了。由于用到的很多技术都不够熟悉，自己俨然变成了一个菜鸟，有大量的技术需要学习。同事也还比较给力，大家对工作也很认真负责，团队的凝聚力也符合我的预期。</p>
-<p>总结来看，这段找工作的经历虽有很多失误的地方，错误的对行业的需求进行了估计，以为C++程序员很抢手，事实并不是如此，但结果还算满意。现在自己一个人在北京奋斗，期望通过自己的努力能够有个好的收货。要想写的东西很多，很多都一笔带过了，非技术类的文章写起来还是挺费脑力的。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/question_getaddrinfo/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/question_getaddrinfo/" class="post-title-link" itemprop="url">getaddrinfo函数调用问题</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-07-17 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-17T00:00:00+00:00">2015-07-17</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>最近在开发程序的过程中遇到了一个getaddrinfo函数的问题，令我感到非常奇怪。</p>
-<p>程序中调用了librdkafka库，当程序选择用-static方式链接所有库时程序会在librdkafka库中某个函数core dump，但是选择动态链接系统库（包括libpthread、libdl、libz、libm、libc等）时程序却能正常运行。</p>
-<p>每次程序都回core dump在getaddrinfo函数中，经过搜索发现有人跟我遇到同样的<a target="_blank" rel="noopener" href="https://sourceware.org/bugzilla/show_bug.cgi?id=10652">问题</a>，但是却没有解决方案。</p>
-<p>我这里实验了文中提到了例子，在静态链接的时候确实会报错，动态链接却非常正常，编译选项为<code>g++ -o test_getaddrinfo test_getaddrinfo.cpp -lpthread -Wall -static</code>。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">include &lt;stdio.h&gt;</span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;netdb.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> *<span class="title">test</span><span class="params">(<span class="type">void</span> *)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">addrinfo</span> *res = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="built_in">fprintf</span>(stderr, <span class="string">&quot;x=&quot;</span>);</span><br><span class="line">    <span class="type">int</span> ret = <span class="built_in">getaddrinfo</span>(<span class="string">&quot;localhost&quot;</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, &amp;res);</span><br><span class="line">    <span class="built_in">fprintf</span>(stderr, <span class="string">&quot;%d &quot;</span>, ret);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">512</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">pthread_t</span> thr;</span><br><span class="line">        <span class="built_in">pthread_create</span>(&amp;thr, <span class="literal">NULL</span>, test, <span class="literal">NULL</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">sleep</span>(<span class="number">5</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>发现程序在链接的时候会提示如下警告：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/tmp/cc0WILtn.o: In function `test(void*)&#x27;:</span><br><span class="line">test_getaddrinfo.cpp:(.text+0x49): warning: Using &#x27;getaddrinfo&#x27; in statically linked applications requires at runtime the shared libraries from the glibc version used for linking</span><br><span class="line">/usr/lib/gcc/x86_64-redhat-linux/4.8.3/../../../../lib64/libpthread.a(libpthread.o): In function `sem_open&#x27;:</span><br><span class="line">(.text+0x685b): warning: the use of `mktemp&#x27; is dangerous, better use `mkstemp&#x27;</span><br></pre></td></tr></table></figure>
-
-<p>从网上查看有该警告的人还是非常多的，都是在-static方式链接glibc库时遇到的，但是没有发现很好的解决方案。该问题的原因<br>产生估计是glibc在静态链接时调用libnss库存在问题，因此不提倡静态链接方式。</p>
-<p>我看到了两种解决方案：</p>
-<p>方案一：用newlib或uClibc来代替glibc来静态链接，这种方案我没有去尝试是否可行。</p>
-<p>方案二：用<code>--enable-static-nss</code>重新编译glibc。我试了一下问题仍然存在。</p>
-<p>我之所以采用静态链接的方式，是因为开发机器和运行机器的glibc版本不一致造成的。我尝试将libc.so相关文件复制运行机器上，并让程序链接我复制过去的文件，ldd查看可执行文件没有错误，但是当运行程序时会报如下错误：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./xxx: relocation error: /home/kuring/lib/libc.so.6: symbol _dl_starting_up, version GLIBC_PRIVATE not defined in file ld-linux-x86-64.so.2 with link time reference</span><br></pre></td></tr></table></figure>
-
-<p>最终，我放弃了静态链接的方式，采用了动态链接方式来暂时解决了问题。如果你知道解决方案，请告诉我。</p>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><ul>
-<li><p><a target="_blank" rel="noopener" href="https://sourceware.org/bugzilla/show_bug.cgi?id=10652">getaddrinfo causes segfault if multithreaded and linked statically</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="https://sourceware.org/glibc/wiki/FAQ#Even_statically_linked_programs_need_some_shared_libraries_which_is_not_acceptable_for_me.__What_can_I_do.3F">Even statically linked programs need some shared libraries which is not acceptable for me.</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="http://stackoverflow.com/questions/2725255/create-statically-linked-binary-that-uses-getaddrinfo">Create statically-linked binary that uses getaddrinfo?</a></p>
-</li>
-<li><p><a target="_blank" rel="noopener" href="http://www.akkadia.org/drepper/no_static_linking.html">Static Linking Considered Harmful</a></p>
-</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/build_lnmp/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/build_lnmp/" class="post-title-link" itemprop="url">LNMP开发环境搭建</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-07-16 00:00:00" itemprop="dateCreated datePublished" datetime="2015-07-16T00:00:00+00:00">2015-07-16</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>这是一篇拿来主义的文章，所有的安装步骤仅为互联网上查找，网络上的教程各种凌乱，这里根据我的实践情况进行了更改，本文仅记录了我的安装过程，由于不同环境可能导致安装步骤不甚相同。</p>
-<h1 id="MAC-OS-X-10-10"><a href="#MAC-OS-X-10-10" class="headerlink" title="MAC OS X 10.10"></a>MAC OS X 10.10</h1><h2 id="php"><a href="#php" class="headerlink" title="php"></a>php</h2><p>Mac OSX 10.10的系统自带了php、php-fpm，省去了安装的麻烦，可以执行<code>php -v</code>查看php的版本。这里需要简单地修改下php-fpm的配置，否则运行php-fpm会报错。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo cp /private/etc/php-fpm.conf.default /private/etc/php-fpm.conf</span><br><span class="line">vim /private/etc/php-fpm.conf</span><br></pre></td></tr></table></figure>
-
-<p>修改php-fpm.conf文件中的error_log项，默认该项被注释掉，这里需要去注释并且修改为error_log &#x3D; &#x2F;usr&#x2F;local&#x2F;var&#x2F;log&#x2F;php-fpm.log。如果不修改该值，运行php-fpm的时候会提示log文件输出路径不存在的错误。</p>
-<p>如果系统中存在多个php-fpm.conf，不知道需要编辑哪一个，可以执行<code>php-fpm -t</code>命令查看php-fpm要读取的配置文件。</p>
-<p>通过<code>php-fpm -D</code>来启动php-fpm，可以通过<code>lsof -Pni4 | grep LISTEN | grep php</code>命令来查看php-fpm是否监听在9000端口。</p>
-<h2 id="nginx"><a href="#nginx" class="headerlink" title="nginx"></a>nginx</h2><p>这里为了简单，直接采用了brew的方式安装。执行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install nginx</span><br></pre></td></tr></table></figure>
-
-<p>nginx的配置文件位于&#x2F;usr&#x2F;local&#x2F;etc&#x2F;nginx&#x2F;nginx.conf，默认只能解析html文件，需要配置后才能调用php-fpm解析php文件。下面内容为该修改后的文件全部有效内容：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">worker_processes  1;</span><br><span class="line">events &#123;</span><br><span class="line">    worker_connections  1024;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">http &#123;</span><br><span class="line">    include       mime.types;</span><br><span class="line">    default_type  application/octet-stream;</span><br><span class="line">    sendfile        on;</span><br><span class="line">    keepalive_timeout  65;</span><br><span class="line">    server &#123;</span><br><span class="line">        listen       8080;</span><br><span class="line">        server_name  localhost;</span><br><span class="line">        root           /Users/kuring/www;	// 页面存放路径</span><br><span class="line">        location / &#123;</span><br><span class="line">            index  index.html index.htm index.php;</span><br><span class="line">        &#125;</span><br><span class="line">        error_page   500 502 503 504  /50x.html;</span><br><span class="line">        location = /50x.html &#123;</span><br><span class="line">            root   html;</span><br><span class="line">        &#125;</span><br><span class="line">        location ~ \.php$ &#123;</span><br><span class="line">            fastcgi_pass   127.0.0.1:9000;</span><br><span class="line">            fastcgi_index  index.php;</span><br><span class="line">            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;</span><br><span class="line">            include        fastcgi_params;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">include servers/*;</span><br></pre></td></tr></table></figure>
-
-<p>然后执行<code>nginx</code>命令即可启动，默认监听的端口为8080，在浏览器中输入<code>http://127.0.0.1:8080</code>即可看到nginx的初始界面。nginx要想监听1024以下端口还需要进一步的配置，8080端口既能满足我需求，不再更改。</p>
-<h2 id="mysql"><a href="#mysql" class="headerlink" title="mysql"></a>mysql</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install mysql</span><br></pre></td></tr></table></figure>
-
-<p>在启动mysql之前可对mysql的配置文件进行更改，我这里需要更改mysql的编码方式，将所有的编码方式都更改为utf8，防止乱码问题的发生。mysql的配置文件为my.cnf，我的位于&#x2F;usr&#x2F;local&#x2F;Cellar&#x2F;mysql&#x2F;5.6.25&#x2F;my.cnf，对文件添加如下内容，有些选项不存在，可手动添加。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">character-set-server=utf8</span><br><span class="line"></span><br><span class="line">[client]</span><br><span class="line">default-character-set=utf8</span><br><span class="line"></span><br><span class="line">[mysqld_safe]</span><br><span class="line">default-character-set=utf8</span><br></pre></td></tr></table></figure>
-
-<p>输入<code>mysqld</code>命令即可启动mysql，启动mysql后输入<code>mysql_secure_installation</code>命令对mysql进行配置，可以设置root用户的密码。</p>
-<p>通过<code>mysql -uroot -p</code>命令连接到mysql后，输入<code>status</code>命令可查看刚才更改的编码是否生效。</p>
-<p>由于不需要长期使用mysql，这里不设置mysql自启动命令。</p>
-<h1 id="CentOS6"><a href="#CentOS6" class="headerlink" title="CentOS6"></a>CentOS6</h1><p>我首先采用的方案为完全用普通用户安装，尝试失败后采用root安装依赖库普通用户编译程序的方案。</p>
-<h2 id="普通用户安装依赖库"><a href="#普通用户安装依赖库" class="headerlink" title="普通用户安装依赖库"></a>普通用户安装依赖库</h2><p>我首选选择在普通用户kuring下进行安装和运行整个web环境。因此不能使用yum安装方式，必须采用源码安装的方式。通过普通用户安装，最麻烦的地方就在于需要安装很多的依赖库，而依赖的库的安装可能又有需要的库，且库之间存在版本问题。</p>
-<p>首先普及几个小知识：</p>
-<p>bash查找命令的先后顺序为：</p>
-<ol>
-<li>alias别名</li>
-<li>shell中的关键字，如if等</li>
-<li>shell中的函数</li>
-<li>shell内置命令，如echo等</li>
-<li>$PATH环境变量，PATH中的匹配顺序为从前向后的。</li>
-</ol>
-<p>程序查找lib库的先后顺序为：</p>
-<ol>
-<li>编译程序时指定的链接库路径，g++编译器可以通过<code>-Wl,-rpath,路径</code>来指定链接库的路径。</li>
-<li>环境变量LD_LIBRARY_PATH指定的搜索路径。</li>
-<li>&#x2F;etc&#x2F;ld.so.conf指定的路径。</li>
-<li>默认的系统动态库搜索路径，如&#x2F;usr&#x2F;lib64、&#x2F;usr&#x2F;local&#x2F;lib64等。</li>
-</ol>
-<p>很多程序采用pkg-config程序来检查库的版本号，pkg-config命令依赖于动态链接库对应的.pc文件，这些.pc文件一般位于系统的&#x2F;usr&#x2F;local&#x2F;lib&#x2F;pkgconfig目录下。为了能够将安装完成的库通过pkg-config找到对应的.pc文件，需要将.pc文件所在的路径&#x2F;home&#x2F;kuring&#x2F;local&#x2F;lib&#x2F;pkg-config设置到环境变量PKG_CONFIG_PATH中。</p>
-<p>安装php依赖的libxml2库时提示找不到libtool、autoconf和automake，首先安装libtool。执行<code>./configure --prefix=/home/kuring/local;make; make install</code>将其安装到当前用户的local目录下。</p>
-<p>用同样的步骤安装autoconf，执行<code>./configure --prefix=/home/kuring/local;make; make install</code>。</p>
-<p>为了能够将安装的程序起作用，需要将&#x2F;home&#x2F;kuring&#x2F;local目录添加到PATH环境变量中，在.bash_profile文件中添加PATH&#x3D;$PATH:$HOME&#x2F;local&#x2F;bin语句，并执行<code>source ~/.bash_profile</code>。</p>
-<p>安装之前需要先安装libxml2库，下载地址采用<code>git clone git://git.gnome.org/libxml2</code>的方式下载。在执行<code>sh autogen</code>产生configure配置文件的过程中，发现提示</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./configure: line 13094: syntax error near unexpected token `LZMA,liblzma,&#x27;</span><br><span class="line">./configure: line 13094: `    PKG_CHECK_MODULES(LZMA,liblzma,&#x27;</span><br></pre></td></tr></table></figure>
-
-<p>经过发现是由于找不到PKG_CHECK_MODULES造成的，正常情况下该函数定义在aclocal.m4文件，而该情况下aclocal.m4文件中并不存在该函数。之所以不存在是由于aclocal命令找不到pkg.m4文件造成的，可以通过<code>aclocal --print</code>命令查看查找的pkg.m4文件的路径。我这里的解决思路为直接从其他机器上复制一个pkg.m4文件过来。</p>
-<p>在产生了configure命令后，执行<code>./configure --prefix=/home/kuring/local</code>命令后发现提示找不到Python.h命令的错误。</p>
-<p>鉴于遇到了如此之多的错误，本着不浪费生命的原则还是采用yum来安装依赖库吧。</p>
-<h2 id="php-1"><a href="#php-1" class="headerlink" title="php"></a>php</h2><p>这里的mysql直接采用了yum命令安装的。</p>
-<p>在执行php的<code>./configure</code>命令后提示libxml2找不到错误，直接<code>yum install libxml-devel</code>命令安装libxml-devel即可。然后执行<code>./configure --enable-fpm --prefix=/home/kuring/php5.5 --with-mysqli=/usr/bin/mysql_config;make; make install;</code>。在编译php的时候要加上php-fpm选项来安装php-fpm命令。</p>
-<p>安装后配置~&#x2F;.bash_profile文件的$PATH环境变量的值为：PATH&#x3D;$HOME&#x2F;bin:$HOME&#x2F;php5.5&#x2F;bin:$HOME&#x2F;php5.5&#x2F;sbin:$PATH。</p>
-<p>此时即可通过<code>php-fpm -D</code>命令来启动php-fpm命令了。</p>
-<p>安装完成后通过phpinfo()函数查看里面有MySQLi的选项，但是实际程序运行的时候居然不支持mysqli的一些力函数，说明mysqli的扩展安装不成功。在&#x2F;home&#x2F;kuring&#x2F;php5.5&#x2F;include&#x2F;php&#x2F;ext&#x2F;mysqli目录中找到了对应的.h文件，却没有找到mysqli.so的动态链接库文件。大概是由于在编译php时mysql的路径配置有些问题造成的，因为mysql是通过yum安装的，路径比较乱一些。</p>
-<p>为了能够产生mysqli.so文件，采用单独编译的方式，在php的源码目录中已经包含了mysqli的源码，进入mysqli源码目录下执行<code>phpize;./configure --prefix=/home/kuring/php5.5/mysqli --with-php-config=/home/kuring/php5.5/bin/php-config --with-mysqli=/usr/bin/mysql_config;make;make install；</code>。将mysqli.so文件安装到了&#x2F;home&#x2F;kuring&#x2F;php5.5&#x2F;lib&#x2F;php&#x2F;extensions&#x2F;no-debug-non-zts-20121212目录下，不知道为什么目录末尾还要加个这么长的文件夹名，直接将文件复制到上一级目录下。</p>
-<p>在&#x2F;home&#x2F;kuring&#x2F;php5.5目录下没有找到php.ini文件，通过<code>php --ini</code>命令查看php的配置文件路径为&#x2F;home&#x2F;kuring&#x2F;php5.5&#x2F;lib，直接从php的源码文件中复制一个php.ini文件到该目录下。并将php.ini中的增加如下内容：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">extension_dir = &quot;/home/kuring/php5.5/lib/php/extensions&quot;</span><br><span class="line">extension=mysqli.so</span><br></pre></td></tr></table></figure>
-
-<p>再运行程序，发现mysqli的系列函数已经支持了，好一段折腾。</p>
-<h2 id="php-fpm"><a href="#php-fpm" class="headerlink" title="php-fpm"></a>php-fpm</h2><p>执行<code>cp $HOME/php5.5/etc/php-fpm.conf.default $HOME/php5.5/etc/php-fpm.conf</code>来增加配置文件。</p>
-<h2 id="nginx-1"><a href="#nginx-1" class="headerlink" title="nginx"></a>nginx</h2><p>首先安装pcre库，该库为正则表达式库。下载后通过</p>
-<p>下载源码后执行<code>./configure --prefix /home/kuring/nginx;make;make install;</code>即可安装完成。</p>
-<p>修改nginx的配置文件为如下内容：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">worker_processes  1;</span><br><span class="line">events &#123;</span><br><span class="line">    worker_connections  1024;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">http &#123;</span><br><span class="line">    include       mime.types;</span><br><span class="line">    default_type  application/octet-stream;</span><br><span class="line">    sendfile        on;</span><br><span class="line">    keepalive_timeout  65;</span><br><span class="line">    server &#123;</span><br><span class="line">        listen       8080;</span><br><span class="line">        server_name  localhost;</span><br><span class="line">        root           /home/kuring/www;   </span><br><span class="line">        location / &#123;</span><br><span class="line">            index  index.html index.htm index.php;</span><br><span class="line">        &#125;</span><br><span class="line">        error_page   500 502 503 504  /50x.html;</span><br><span class="line">        location = /50x.html &#123;</span><br><span class="line">            root   html;</span><br><span class="line">        &#125;</span><br><span class="line">        location ~ \.php$ &#123;</span><br><span class="line">            fastcgi_pass   127.0.0.1:9000;</span><br><span class="line">            fastcgi_index  index.php;</span><br><span class="line">            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;</span><br><span class="line">            include        fastcgi_params;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">include servers/*;</span><br></pre></td></tr></table></figure>
-
-
-<h1 id="常见操作"><a href="#常见操作" class="headerlink" title="常见操作"></a>常见操作</h1><h2 id="nginx-2"><a href="#nginx-2" class="headerlink" title="nginx"></a>nginx</h2><ul>
-<li>nginx -s stop：关闭</li>
-<li>nginx -t：检测nginx的配置是否正确</li>
-</ul>
-<h2 id="mysql-1"><a href="#mysql-1" class="headerlink" title="mysql"></a>mysql</h2><ul>
-<li>mysqld_safe：启动mysql</li>
-<li>mysqladmin shutdown -u root -p：关闭mysql</li>
-<li>create user kuring identified by ‘kuring_pass’：mysql创建用户（我尝试过几次，每次创建的用户密码都为空）</li>
-<li>drop user kuring：删除一个用户</li>
-<li>grant all privileges on <em>.</em> to ‘root‘@’%’ identified by ‘root’ with grant option ：允许mysql的root用户通过远程登录</li>
-</ul>
-<h3 id="创建用户的操作"><a href="#创建用户的操作" class="headerlink" title="创建用户的操作"></a>创建用户的操作</h3><p>使用<code>create user kuring identified by &#39;kuring_pass&#39;</code>命令创建用户kuring。默认创建完成的用户在本机无法登陆，但是远程却可以登陆。 这是因为mysql数据库中的user表中存在一条记录造成的。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">use mysql;</span><br><span class="line">select user,host,password from user;</span><br><span class="line"></span><br><span class="line">// 在表中存在一条用户名为空的记录</span><br><span class="line">+---------+-----------+-------------------------------------------+</span><br><span class="line">| User    | host      | password                                  |</span><br><span class="line">+---------+-----------+-------------------------------------------+</span><br><span class="line">| root    | localhost | *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B |</span><br><span class="line">| root    | 127.0.0.1 | *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B |</span><br><span class="line">| root    | ::1       | *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B |</span><br><span class="line">|         | localhost |                                           |</span><br><span class="line">| root    | %         | *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B |</span><br><span class="line">| report1 | %         | *884CAA4D6FA1C3F7E4849C8DAF1B5B37FCB3EC0B |</span><br><span class="line">+---------+-----------+-------------------------------------------+</span><br><span class="line"></span><br><span class="line">// 将mysql中的为空的记录删除掉，这样就可以通过创建的用户连接了</span><br></pre></td></tr></table></figure>
-
-<p>在mysql命令行中执行<code>grant all privileges on kuring_db.* to kuring identified by &#39;kuring_pass&#39;</code>命令可以给刚创建的用户对数据库的权限。</p>
-<h3 id="修改mysql用户密码"><a href="#修改mysql用户密码" class="headerlink" title="修改mysql用户密码"></a>修改mysql用户密码</h3><p>mysql将用户名和密码存放到了mysql数据库的user表中，在mysql命令行中执行<code>use mysql;update user set password=password(&quot;new password&quot;) where user=&quot;username&quot;;flush privileges;</code>即可更新相应用户的密码。</p>
-<h2 id="php-fpm-1"><a href="#php-fpm-1" class="headerlink" title="php-fpm"></a>php-fpm</h2><ul>
-<li>php-fpm -D：启动php-fpm，如果需要指定php.ini文件，可以使用-c参数</li>
-<li>php-fpm -t：检查php-fpm的配置文件</li>
-<li>kill -USR2: 重启php-fpm</li>
-<li>kill -INT: 停止php-fpm</li>
-</ul>
-<h2 id="php-2"><a href="#php-2" class="headerlink" title="php"></a>php</h2><ul>
-<li>php –ini：显示php.ini文件路径</li>
-</ul>
-<h1 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1><ol>
-<li><a target="_blank" rel="noopener" href="http://www.cnblogs.com/hnrainll/archive/2013/01/06/2847069.html">运用Autoconf和Automake生成Makefile的学习之路</a></li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/company_question/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/company_question/" class="post-title-link" itemprop="url">公司问题及经验总结</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2015-06-01 00:00:00" itemprop="dateCreated datePublished" datetime="2015-06-01T00:00:00+00:00">2015-06-01</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>我在软件行业工作已经有五个年头了，在现在这家公司已经有两个年头了。虽然身为公司的研发部经理可以参与公司的一些决定，但是没有绝对的话语权，对于公司的很多决定我深知是错误的，虽然后来也证明是错误的，但是我仍然无能为力。这里总结一下在公司中遇到的问题。</p>
-<p>宁可招聘一个技术水平高的也不愿招聘三个技术水平低的。在工作中能够非常有力的证明这一点，三个刚工作的技术人员，尤其对于C++这样门槛稍微高一些，需要工作经验来弥补C++中坑的语言，三个C++技术人员远没有一个高水平的工作效率高，因为三个菜鸟需要将大牛踩过的坑全部踩一遍，踩过多少坑就代表走了多少弯路。</p>
-<p>兴趣是最大的老师。我带过不少人，很多都是新人，我给他们制定了学习计划，期望他们能够在业余时间多学习，但实际上哪有几个人能够充分利用业余时间的。我就非常怀疑他们对技术的兴趣问题，如果他们对技术不感兴趣那为什么要加入该行业，为没有兴趣的工作而工作就是自己对自己耍流氓。如果他们对技术感兴趣，那只能说明他们业余时间中有更大的诱惑。</p>
-<p>在招聘中不要过于在意金钱，便宜无好货在招聘行业中仍然非常适用。在招聘中千万不要吝惜给员工的那点钱，因为一千块钱而错失一个好的员工是非常不值得的。</p>
-<p>盈利模式决定了公司对产品的态度。我所在的软件行业属于传统的软件行业，传统软件行业的盈利模式为销售，由于软件具有可复制性的特点，因此只要一套产品卖的越多就赚的越多。对于传统软件行业的产品使用者很多情况下就是几个人，至少跟互联网产品的用户数量不在一个量级。使用的人数决定了传统软件行业的用户体验可以做的很烂，技术水平可以不用那么高，只要能用就行，慢点无所谓，只要能卖出去就行了。身为一个技术人员，一个对技术有追求的技术人员，这令我非常反感，我做技术我不能对技术无所谓，我讨厌听到无所谓这样的字眼。</p>
-<p>一定要明确公司的定位，明白什么时候应该干什么，什么应该干，野心太大也是问题。公司处于成长阶段提出了今年营业额比去年增长10倍的目标，我听到之后就是嗤之以鼻，这压根就是不可能的任务，而事实证明这也根本不可能完成，实际上当年营业额仅比去年增长了一倍。</p>
-<p>一家公司一定要有自己的明确产品线，要抵住外界的诱惑。公司的产品线本来是非常明确的，后来由于客户需求和各种方面的原因，开始考虑疯狂扩展产品，这就造成了本来人手就紧蹙的情况下，没有时间去改善现有的系统，不得不去研发新的产品。自己没有的产品甚至跟客户合作或者完全购买别人的产品，导致公司很多人都在考虑跟其他公司合作的事宜。结果可想而知，新产品的销售并不理想，旧有的产品升级维护的也开始变慢。ps：我是非常讨厌在技术上跟其他公司之间考虑合作的问题，因为这从本质上讲并没有产生任何的社会价值，技术上必然涉及到接口的问题，只要是接口必然会有很多细节问题，这些往往会出现技术人员扯皮的问题，一个问题你可以解决他也可以解决，但是谁都不愿意解决，你说烦不烦。</p>
-<p>技术人员后来要么转行要么做管理了。在济南技术人员就这两种出路吧，没见过多少大龄的程序员，很多情况下写着写着程序突然发现自己转为公司的中层了，比如我，并逐渐参与公司的事务。很多对程序不感兴趣的，可能就直接换个行业或者转行做销售了。</p>
-<p>有些人再怎么培养也成不了高手。在工作我发现，有些人即使有了几年的工作经验，对公司的产品也非常了解，但是在解决问题的时候总是找不到点子上，占了一大堆资源，最后解决起问题来即慢又绕弯路，还留下一堆bug。对于这部分人，我想说也许这个行业不适合你。</p>
-<p>领导千万不可三天两头一个想法，这在员工看来就是一个不靠谱的领导。谁都不愿意追随一个拿着自己当猴耍的领导，一会一个想法只能说明领导不够成熟，不适合做领导。跟随杰出的人，为杰出的人工作。</p>
-<p>搞公司最好不要搞施工太久的。公司很多做工程的都在为现场的情况忙碌，一个点架设完毕后往往还需要耗费大量的时间来维护，维护对于公司而言牵涉到精力太大，尽量避免需要整天跟客户打交道和整天维护的业务。</p>
-<p>专科生是很难撑起一家科技企业。虽然我不完全认同学历就能决定能力，但学历跟能力之间是成正比关系的。我的朋友中有专科生在工作几年后可以做专业的视频教程，并且业余时间写过几部玄幻小说。由于学习经历的不同这就造就了科班出身的程度不同，自然能力之间是有差异的。虽然中国的大学教育跟工作很脱节，但是在工作中还是能够跟大学教育挂起钩来的。学历跟素质之间也是成正比关系的，这里的素质体现在工作中就包括了工作中的责任心，工作态度等方面，这里就不展开了，要展开的话我可以举出非常多活生生的例子。因此，我非常不提倡在公司招聘中招聘专科生。我发现在很多情况下，很多专科人员是连普通话都不会的，操着各种方言或各种被普通话的方言。基本上能不能说普通话也是一个断定人素质的标准，扩展到其他行业同样适用。</p>
-<p>也许本文的观点有些偏激，没错我就是一个偏激的IT工程师，就酱。</p>
 
       
     </div>

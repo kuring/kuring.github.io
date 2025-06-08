@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">251</span>
+          <span class="site-state-item-count">256</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,518 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/inside_the_c++_object_model_chapter_2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/inside_the_c++_object_model_chapter_2/" class="post-title-link" itemprop="url">深度探索C++对象模型读书笔记_第二章：构造函数语义学</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-07-22 00:00:00" itemprop="dateCreated datePublished" datetime="2013-07-22T00:00:00+00:00">2013-07-22</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="2-1-默认构造函数的生成"><a href="#2-1-默认构造函数的生成" class="headerlink" title="2.1 默认构造函数的生成"></a>2.1 默认构造函数的生成</h1><p>只有当编译器需要默认构造函数的时候才会合成默认构造函数，并不是类只要没有定义默认构造函数编译器就会合成默认构造函数，而是只有以下四种情况编译器会生成默认构造函数。编译器合成的默认构造函数仅会处理类的基类对象和类中的数据成员对象，对于类中的普通类型的非静态数据成员并不会作任何处理。比如类中一个指针类型的数据成员，编译器合成的默认构造函数不会对该指针作任何处理，该指针就是一个野指针。</p>
+<h2 id="带有默认构造函数的类成员对象"><a href="#带有默认构造函数的类成员对象" class="headerlink" title="带有默认构造函数的类成员对象"></a>带有默认构造函数的类成员对象</h2><p>一个类没有定义任何构造函数，该类中包含了一个带有默认构造函数（包括了合成的默认构造函数和定义的默认构造函数）的类成员对象，那么编译器需要为此类合成一个默认构造函数，合成默认构造函数的时机为该构造函数被调用时。合成的默认构造函数默认为内联函数，如果不适合使用内联函数，就合成explicit static的构造函数。</p>
+<p>默认构造函数、复制构造函数和赋值操作符的生成都是inline。inline函数有静态链接，不会被当前文件之外的文件看到。如果函数过于复杂不适合生成inline函数，会生成一个explicit non_inline static实体。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Dopey</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="built_in">Dopey</span>();</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Sneezy</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="built_in">Sneezy</span>(<span class="type">int</span>);</span><br><span class="line">	<span class="built_in">Sneezy</span>();</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Bashful</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="built_in">Bashful</span>();</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Snow_White</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	Dopey dopey;</span><br><span class="line">	Sneezy sneezy;</span><br><span class="line">	Bashful bashful;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">	<span class="type">int</span> mumble;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">foo</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	Snow_White snow_white;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在上述例子中，foo()中需要调用Bashful的构造函数，编译器会为Bar类生成内联的默认构造函数。Bashful类会生成类似于下面的默认构造函数。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">inline</span> <span class="title">Bar::Bar</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    dopey.Dopey::<span class="built_in">Dopey</span>();</span><br><span class="line">    sneezy.Sneezy::<span class="built_in">Sneezy</span>();</span><br><span class="line">    bashful.Bashful::<span class="built_in">Bashful</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>默认构造函数的生成原则为：如果类A中包含了一个或一个以上的类成员对象，那么类A的默认构造函数必须调用每一个类成员的默认构造函数。但是不会初始化普通类型的变量，因此在上例中必须手动初始化mumble变量。在编译器合成的默认构造函数中类成员变量的默认构造函数的调用次序为成员变量在类中的声明顺序，该顺序和类成员的构造函数初始化列表顺序是一致的。</p>
+<p>如果Snow_White类定义了如下的默认构造函数，则编译器会自动在定义的构造函数中增加调用类成员变量的代码，调用类成员变量相应构造函数的顺序仍然和类成员变量在类中的声明顺序一致。</p>
+<p>从中可以看出类成员变量的构造函数的调用要早于类构造函数的调用，这一点是在很多面试题中经常会见到的。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 定义的默认构造函数，包含了类成员变量sneezy的初始化列表</span></span><br><span class="line">Snow_White::<span class="built_in">Snow_White</span>() : <span class="built_in">sneezy</span>(<span class="number">1024</span>)</span><br><span class="line">&#123;</span><br><span class="line">	mumble = <span class="number">2048</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 编译器扩张后的默认构造函数</span></span><br><span class="line">Snow_White::<span class="built_in">Snow_White</span>() : <span class="built_in">sneezy</span>(<span class="number">1024</span>)</span><br><span class="line">&#123;</span><br><span class="line">	dopey.Dopey::<span class="built_in">Dopey</span>();           <span class="comment">// 调用默认构造函数</span></span><br><span class="line">	sneezy.Sneezy::<span class="built_in">Sneezy</span>(<span class="number">1024</span>);    <span class="comment">// 自动调用合适的构造函数</span></span><br><span class="line">	bashful.Bashful::<span class="built_in">Bashful</span>();</span><br><span class="line">	mumble = <span class="number">2048</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="带有默认构造函数的基类"><a href="#带有默认构造函数的基类" class="headerlink" title="带有默认构造函数的基类"></a>带有默认构造函数的基类</h2><p>在继承机制中，一个没有构造函数的子类继承自带有默认构造函数的基类，则子类的构造函数会被合成，并且会调用基类的默认构造函数。若子类没有定义默认构造函数，却定义了多个带参数的构造函数，编译器会扩张所有自定义的构造函数，将调用基类默认构造函数的代码添加到子类的构造函数的最前面。</p>
+<p>从这里可以看出继承机制中，首先构造基类，后构造子类，这点也是面试题中经常遇到的。</p>
+<h2 id="带有虚函数的类"><a href="#带有虚函数的类" class="headerlink" title="带有虚函数的类"></a>带有虚函数的类</h2><p>为了实现虚函数或虚继承机制，编译器需要为每一个类对象设定vptr（指向虚函数表的指针）的初始值，使其指向一个vtbl（虚函数表）的地址。如果类包含构造函数则编译器会生成一些代码来完成此工作；如果类没有任何构造函数，则编译器会在合成的默认构造函数中添加代码来完成此工作。</p>
+<h2 id="带有虚基类的类"><a href="#带有虚基类的类" class="headerlink" title="带有虚基类的类"></a>带有虚基类的类</h2><p>需要维护内部指针来实现虚继承。</p>
+<h1 id="2-2-复制构造函数的生成"><a href="#2-2-复制构造函数的生成" class="headerlink" title="2.2 复制构造函数的生成"></a>2.2 复制构造函数的生成</h1><p>复制构造函数被调用有三种情况：</p>
+<ul>
+<li>明确的一个对象的内容作为另外一个对象的初始值。如X xx &#x3D; x或X xx(x)。</li>
+<li>对象作为参数传递给函数时。</li>
+<li>类对象作为函数返回值时。</li>
+</ul>
+<h2 id="合成复制构造函数的情况"><a href="#合成复制构造函数的情况" class="headerlink" title="合成复制构造函数的情况"></a>合成复制构造函数的情况</h2><p>如果一个类没有提供显式的复制构造函数，同默认构造函数一样，只有编译器认为需要合成复制构造函数时，编译器才会合成一个。那么问题来了，什么时候编译器才合成复制构造函数呢？书中给出的答案为当一个类不展现出_bitwise copy semantics_<sup>1</sup>的时候。具体来说有以下四种情况，跟类的默认构造函数的合成基本一致。</p>
+<ul>
+<li>当类内包含一个类成员变量且类成员变量声明了复制构造函数。</li>
+<li>当类继承的基类有复制构造函数（复制构造函数可以是显示声明或合成的）</li>
+<li>一个类中包含了一个或多个虚函数</li>
+<li>类继承自一个或多个虚基类</li>
+</ul>
+<p>其中前面两种情况必须将成员变量或基类的复制构造函数的调用插入到合成的复制构造函数中，因此不是按照按比特复制的。第三和第四点分别用下面两小节来说明。</p>
+<h2 id="重新设定虚函数表的指针"><a href="#重新设定虚函数表的指针" class="headerlink" title="重新设定虚函数表的指针"></a>重新设定虚函数表的指针</h2><p>当编译器需要在类对象中设定一个指向虚函数表的指针时，该类就不能再使用按位复制的复制构造函数了。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ZooAnimal</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="built_in">ZooAnimal</span>();</span><br><span class="line">	<span class="keyword">virtual</span> ~<span class="built_in">ZooAnimal</span>();</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">animate</span><span class="params">()</span></span>;</span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">draw</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Bear</span> : <span class="keyword">public</span> ZooAnimal</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="built_in">Bear</span>();</span><br><span class="line">	<span class="function"><span class="type">void</span> <span class="title">animate</span><span class="params">()</span></span>;</span><br><span class="line">	<span class="function"><span class="type">void</span> <span class="title">draw</span><span class="params">()</span></span>;</span><br><span class="line">	<span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">dance</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">foo</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">// yogi的vptr指向Bear的虚函数表</span></span><br><span class="line">	Bear yogi;</span><br><span class="line">	<span class="comment">// franny的vptr指向ZooAnimal的虚函数表</span></span><br><span class="line">	ZooAnimal franny = yogi;</span><br><span class="line">	<span class="built_in">draw</span>(yogi);	<span class="comment">// 调用Bear::draw()</span></span><br><span class="line">	<span class="built_in">draw</span>(franny);	<span class="comment">// 调用ZooAnimal::draw()</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/ref/c++/c++_object_model/chapter2_1.PNG" alt="Image Title"></p>
+<p>合成出来的ZooAnimal的复制构造函数会明确设定对象的vptr指向ZooAnimal的虚函数表，而不是从右值中复制过来的值。</p>
+<h2 id="处理virtual-base-class-subobjects"><a href="#处理virtual-base-class-subobjects" class="headerlink" title="处理virtual base class subobjects"></a>处理virtual base class subobjects</h2><p>虚基类的存在需要特别处理，一个类对象如果以另外一个类对象作为初始值，而后者有一个virtual base class subobjects，也会使按比特复制的复制构造函数失效。</p>
+<p>每一个编译器都必须让派生的类对象的virtual base class subobjects位置在执行期准备完毕。按比特复制的复制构造函数可能会破坏virtual base class subobjects的位置，因此编译器必须在自己合成出来的复制构造函数中修改。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ZooAnimal</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">ZooAnimal</span>();</span><br><span class="line">    <span class="keyword">virtual</span> ~<span class="built_in">ZooAnimal</span>();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">animate</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">draw</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Raccoon</span> : <span class="keyword">public</span> <span class="keyword">virtual</span> ZooAnimal</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Raccoon</span>();</span><br><span class="line">    <span class="built_in">Raccoon</span>(<span class="type">int</span> val);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">RedPanda</span> : <span class="keyword">public</span> Raccoon</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">RedPanda</span>();</span><br><span class="line">    <span class="built_in">RedPanda</span>(<span class="type">int</span> val);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>文章的内容没有完全理解，虚继承机制使用较少，可以暂时不用理解。</p>
+<h1 id="2-3-程序转化语意学"><a href="#2-3-程序转化语意学" class="headerlink" title="2.3 程序转化语意学"></a>2.3 程序转化语意学</h1><p>本节涉及到了编译器优化的相关细节，由于较容易理解，可以直接看书上内容，对工作帮助不大。包括类对象的初始化优化，函数参数的初始化优化，函数返回值的初始化优化，使用者层面的优化和编译器层面的优化。</p>
+<p>如果不是上节指定的四种情况，不需要显示的声明复制构造函数，因为显示的声明的复制构造函数往往效率不如编译器合成的复制构造函数效率高。编译器合成的复制构造函数利用memcpy()或memset()函数来合成，效率最高。</p>
+<h1 id="2-4-类成员的初始化列表"><a href="#2-4-类成员的初始化列表" class="headerlink" title="2.4 类成员的初始化列表"></a>2.4 类成员的初始化列表</h1><p>说到类成员的初始化列表必然想起一个经常出现的面试题：成员初始化列表的顺序是按照成员变量在类中声明的顺序。如果成员初始化列表的顺序和成员变量在类中声明的顺序不一致时某些编译器会提示警告。编译器将成员初始化列表的代码插入到构造函数的最开始位置，优先级跟调用类类型的成员变量的默认构造函数是一致的，都是跟类类型成员变量在类中的声明次序相关。</p>
+<p>类成员初始化必须使用成员初始化列表的四种方式：</p>
+<ul>
+<li>初始化一个引用类型的成员变量</li>
+<li>初始化一个const的成员变量</li>
+<li>调用基类的构造函数，且基类的构造函数采用成员初始化列表的方式</li>
+<li>调用类成员的构造函数，且类成员的构造函数采用成员初始化列表的方式</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span>  <span class="title class_">Word</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	 <span class="built_in">Word</span>()</span><br><span class="line">	 &#123;</span><br><span class="line">	 	_name = <span class="number">0</span>;</span><br><span class="line">	 	_cnt = <span class="number">0</span>;</span><br><span class="line">	 &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">	String _name;</span><br><span class="line">	<span class="type">int</span> _cnt;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>此例子在构造函数中对成员变量进行测试，编译器对构造函数的扩张方式可能会生成如下的伪码：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Word::<span class="built_in">Word</span>()</span><br><span class="line">&#123;</span><br><span class="line">	_name.String::<span class="built_in">String</span>();</span><br><span class="line">	String temp = <span class="built_in">String</span>(<span class="number">0</span>);</span><br><span class="line">	_name.String::<span class="keyword">operator</span>=(temp);</span><br><span class="line">	temp.String::~<span class="built_in">String</span>();</span><br><span class="line">	_cnt = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>构造函数中生成了一个临时性的String对象，这浪费了一部分开销。如果将构造函数该成如下的定义方式：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">Word</span>() : _name(<span class="number">0</span>)</span><br><span class="line"> &#123;</span><br><span class="line"> 	_cnt = <span class="number">0</span>;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<p>即将其中的类成员变量更改为成员初始化列表的方式来初始化，编译器会自动将构造函数扩张为如下方式，这样减少了临时对象，提供了程序效率。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Word::<span class="built_in">Word</span>()</span><br><span class="line">&#123;</span><br><span class="line">	_name.String::<span class="built_in">String</span>(<span class="number">0</span>);</span><br><span class="line">	_cnt = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="引申"><a href="#引申" class="headerlink" title="引申"></a>引申</h1><p>下面例子是对本章内容的一个简单概况，也是面试题中经常碰到的。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">A</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">A</span>()</span><br><span class="line">    &#123;                                                                                                                                                                           </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;A\n&quot;</span>);</span><br><span class="line">    &#125;   </span><br><span class="line"></span><br><span class="line">    ~<span class="built_in">A</span>()</span><br><span class="line">    &#123;   </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;~A\n&quot;</span>);</span><br><span class="line">    &#125;   </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">B</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">B</span>(<span class="type">int</span> n)</span><br><span class="line">    &#123;   </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;B_%d\n&quot;</span>, n); </span><br><span class="line">    &#125;   </span><br><span class="line">    ~<span class="built_in">B</span>()</span><br><span class="line">    &#123;   </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;~B\n&quot;</span>);</span><br><span class="line">    &#125;   </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Base</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Base</span>()</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Base\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">virtual</span> ~<span class="built_in">Base</span>()</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;~Base\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Derived</span> : <span class="keyword">public</span> Base</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Derived</span>() : _m(<span class="number">1</span>), _b(_m)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Derived\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ~<span class="built_in">Derived</span>()</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;~Derived\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> _m;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 下面两个类类型的成员遍历的构造函数的调用次序跟在类中的声明次序是相关的</span></span><br><span class="line">    B _b;   <span class="comment">// 类类型的类成员变量，初始化列表中包含该变量</span></span><br><span class="line">    A _a;   <span class="comment">// 类类型的类成员变量</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 调用基类的构造函数-&gt;调用子类类类型成员变量的构造函数-&gt;调用子类的构造函数</span></span><br><span class="line">    Derived derived;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 根据栈的特点，类析构的次序跟构造是相反的</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述代码执行的结果为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Base</span><br><span class="line">B_1</span><br><span class="line">A</span><br><span class="line">Derived</span><br><span class="line">~Derived</span><br><span class="line">~A</span><br><span class="line">~B</span><br><span class="line">~Base</span><br></pre></td></tr></table></figure>
+
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>本章讲述了合成的默认构造函数、合成的复制构造函数和构造函数的成员初始化列表。其中如果类没有定义默认构造函数，只有在文中提到的四种情况下编译器才会合成默认构造函数。合成的复制构造函数在需要的时候编译器就会生成，默认是按对象比特复制的方式实现，有四种情况下编译器是不按照比特复制的方式。</p>
+<hr>
+<p>[1] bitwise copy semantics书中翻译为“位逐次拷贝”，就是按照内存中的字节进行复制类，感觉翻译不如不翻译好理解。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/inside_the_c++_object_model_chapter_1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/inside_the_c++_object_model_chapter_1/" class="post-title-link" itemprop="url">深度探索C++对象模型读书笔记_第一章：关于对象</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-07-20 00:00:00" itemprop="dateCreated datePublished" datetime="2013-07-20T00:00:00+00:00">2013-07-20</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>C++对象模型是深入了解C++必须掌握知识，而《深度探索C++对象模型》一书基本是理解C++对象模型的必须之作。可惜本书看起来更像是作者Stanley B.Lippman的随笔，语言诙谐，跟作者的另外一本经典之作《C++ Primer》有着天壤之别，侯捷的翻译也是晦涩难懂，跟侯捷翻译的其他作品也有一定差距（这两位大师还真是凑到一块了），所以这本书看起来还是很吃力的。这里挑选文中重点记录笔记，忽略扯淡部分，以备忘。</p>
+<h1 id="C-的额外开销"><a href="#C-的额外开销" class="headerlink" title="C++的额外开销"></a>C++的额外开销</h1><p>C++相比C语言多出了封装、继承和多态等特性，新特性的增加必然会以牺牲一部分性能为代价。额外开销主要是由virtual引起的，包括：</p>
+<ul>
+<li>虚函数机制：需要在运行期间动态绑定。</li>
+<li>虚基类：多次出现在继承中的基类有一个单一且被共享的实体。</li>
+</ul>
+<h1 id="C-对象模型"><a href="#C-对象模型" class="headerlink" title="C++对象模型"></a>C++对象模型</h1><p>C++类成员变量包括：静态成员变量和非静态成员变量。成员函数包括：静态成员函数、非静态成员函数和虚函数。</p>
+<h2 id="单一类的对象模型"><a href="#单一类的对象模型" class="headerlink" title="单一类的对象模型"></a>单一类的对象模型</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Point</span> &#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">Point</span>(<span class="type">float</span> xval);</span><br><span class="line">        <span class="keyword">virtual</span> ~<span class="built_in">Point</span>();</span><br><span class="line">        <span class="function"><span class="type">float</span> <span class="title">x</span><span class="params">()</span> <span class="type">const</span></span>;            <span class="comment">/* 非静态成员函数 */</span>                                                                                                                         </span><br><span class="line">        <span class="function"><span class="type">static</span> <span class="type">int</span> <span class="title">PointCount</span><span class="params">()</span></span>;    <span class="comment">/* 静态成员函数 */</span>  </span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span>:</span><br><span class="line">        <span class="function"><span class="keyword">virtual</span> ostream&amp; <span class="title">print</span><span class="params">(ostream &amp;os)</span> <span class="type">const</span></span>;  <span class="comment">/* 虚函数 */</span>  </span><br><span class="line">        <span class="type">float</span> _x;                   <span class="comment">/* 非静态成员变量 */</span>  </span><br><span class="line">        <span class="type">static</span> <span class="type">int</span> _point_count;    <span class="comment">/* 静态成员函数 */</span>  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该类的c++对象模型如下图：<br><img src="/ref/c++/c++_object_model/chapter1_1.PNG" alt="Image Title"></p>
+<p>通过图中可以看出：</p>
+<ul>
+<li>非静态数据成员直接放到了类的对象里面。</li>
+<li>静态数据成员放到所有的类对象的外面，即静态存储区。</li>
+<li>静态和非静态的成员函数放在类对象之外，即代码区。</li>
+<li>如果类中存在虚函数，则会产生一个虚函数表（vtbl），表中的表项存储了指向虚函数的指针。在类对象的开始位置添加一个指向虚函数表的指针（vptr）。vptr的赋值由类的构造函数和赋值运算符自动完成。</li>
+<li>虚函数表的第一项指向用来作为动态类型识别用的type_info对象。</li>
+</ul>
+<h1 id="C-支持的编程范式-programming-paradigms"><a href="#C-支持的编程范式-programming-paradigms" class="headerlink" title="C++支持的编程范式(programming paradigms)"></a>C++支持的编程范式(programming paradigms)</h1><ul>
+<li>程序模型：通俗的理解成C语言的面向过程编程方式。</li>
+<li>抽象数据类型模型：通过类封装成为了一种新的数据类型，该数据类型有别于基本数据类型。</li>
+<li>面向对象模型：利用封装、继承和多态的特性。</li>
+</ul>
+<h1 id="C-支持多态的方式"><a href="#C-支持多态的方式" class="headerlink" title="C++支持多态的方式"></a>C++支持多态的方式</h1><ul>
+<li>隐含的转换操作，例如通过父类的指针指向子类的对象。<code>shape *ps = new circle();</code></li>
+<li>通过虚函数机制。</li>
+<li>通过dynamic_cast强制类型转换。如<code>if (circle *pc = dynamic_cast&lt;circle*&gt;(ps))</code>。</li>
+</ul>
+<h1 id="类对象的内存构成"><a href="#类对象的内存构成" class="headerlink" title="类对象的内存构成"></a>类对象的内存构成</h1><ul>
+<li>非静态数据成员。</li>
+<li>由于内存对齐而添加到非静态数据成员中的空白。</li>
+<li>为了支持虚机制（包括：虚函数和虚继承）而额外占用的内存。</li>
+</ul>
+<h1 id="利用工具查看对象模型"><a href="#利用工具查看对象模型" class="headerlink" title="利用工具查看对象模型"></a>利用工具查看对象模型</h1><p>查看C++类的对象模型有两种比较简便的方式，一种是使用Virtual Studio在调试模式下查看对象的组成，但是往往显示的对象不全;另外一种是通过Virtual Studio中cl命令来静态查看。</p>
+<p>本文选择使用cl工具的方式，cl命令位于C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin目录下，为了方便使用可以将该变量添加到Path环境变量中。在命令行中执行cl命令，提示“计算机中丢失mspdb80.dll”，该文件位于C:\Program Files (x86)\Microsoft Visual Studio 9.0\Common7\IDE目录下，将msobj80.dll,mspdb80.dll,mspdbcore.dll,mspdbsrv.exe四个文件复制到C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin目录下即可。</p>
+<p>通过<code>cl xxx.cpp /d1reportSingleClassLayoutXX</code>命令即可查看文件中类的对象模型，其中该命令最后的XX需要更换为要查看的类名，中间没有空格。</p>
+<p>执行上述命令时提示：无法打开文件“LIBCMT.lib”。该文件位于C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\lib目录下，将该目录添加到环境变量lib中。重新打开命令行执行cl提示：无法打开文件“kernel32.lib”，将C:\Program Files\Microsoft SDKs\Windows\v6.0A\Lib添加lib环境变量中。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/java_call_c_bit_file/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/java_call_c_bit_file/" class="post-title-link" itemprop="url">Java读取C语言写的二进制文件</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-07-19 15:47:40" itemprop="dateCreated datePublished" datetime="2013-07-19T15:47:40+00:00">2013-07-19</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>本程序将讲解java调用C语言写的二进制文件，并将二进制文件中的内容利用Java读出。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line">#include &lt;string.h&gt;</span><br><span class="line"></span><br><span class="line">union data  </span><br><span class="line">&#123;  </span><br><span class="line">    int inter;  </span><br><span class="line">    char ch;    </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">struct Test</span><br><span class="line">&#123;</span><br><span class="line">    int length;</span><br><span class="line">    char arr[20];</span><br><span class="line"></span><br><span class="line">    void toBigEndian()</span><br><span class="line">    &#123;   </span><br><span class="line">        union data c;</span><br><span class="line">        c.inter = 1;</span><br><span class="line">        if(c.ch == 1)</span><br><span class="line">        &#123;   </span><br><span class="line">            // 小端</span><br><span class="line">            unsigned char temp;</span><br><span class="line">            unsigned char *tempData = (unsigned char *)&amp;length;</span><br><span class="line">            for (int i=0; i &lt; sizeof(int) / 2; i++)</span><br><span class="line">            &#123;   </span><br><span class="line">                temp = tempData[i];</span><br><span class="line">                tempData[i] = tempData[sizeof(int) - i - 1]; </span><br><span class="line">                tempData[sizeof(int) - i - 1] = temp;</span><br><span class="line">            &#125;   </span><br><span class="line">        &#125;   </span><br><span class="line">    &#125;   </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">    Test test;</span><br><span class="line">    memset(&amp;test, 0, sizeof(Test));</span><br><span class="line">    test.length = 0x12345678;</span><br><span class="line">    strcpy(test.arr, &quot;hello world&quot;);</span><br><span class="line">    test.toBigEndian();</span><br><span class="line">    FILE *file = fopen(&quot;test.txt&quot;, &quot;w+&quot;);</span><br><span class="line">    fwrite(&amp;test, sizeof(Test), 1, file);</span><br><span class="line">    fclose(file);</span><br><span class="line">    return 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>本例子中的C程序将一个包含int变量和char数组的结构体写入文件中。</p>
+<p>其中需要考虑到机器的大小端问题，java程序采用的大端字节序，因此这里将C的结构体在写入文件时转换成大端字节序。在将结构体写入到文件时，将其中的int类型变量转换成大端字节序，如果机器本身即为大端字节序则不需要转换字节序。</p>
+<p>java端读取的文件代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.File;</span><br><span class="line"><span class="keyword">import</span> java.io.FileInputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.FileNotFoundException;</span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="type">int</span> <span class="title function_">byte2int</span><span class="params">(<span class="type">byte</span>[] res)</span> &#123;</span><br><span class="line">		<span class="type">int</span> <span class="variable">targets</span> <span class="operator">=</span> (res[<span class="number">3</span>] &amp; <span class="number">0xff</span>) | (res[<span class="number">2</span>] &lt;&lt; <span class="number">8</span>) | (res[<span class="number">1</span>] &lt;&lt; <span class="number">16</span>) | (res[<span class="number">0</span>] &lt;&lt; <span class="number">24</span>);</span><br><span class="line">		<span class="keyword">return</span> targets; </span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> args</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">		<span class="type">File</span> <span class="variable">file</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">File</span>(<span class="string">&quot;test.txt&quot;</span>);</span><br><span class="line">		<span class="keyword">if</span> (!file.exists()) &#123;</span><br><span class="line">			System.out.println(<span class="string">&quot;文件不存在&quot;</span>);</span><br><span class="line">			<span class="keyword">return</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		<span class="type">byte</span>[] data = <span class="keyword">new</span> <span class="title class_">byte</span>[<span class="number">50</span>];</span><br><span class="line">		</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="type">FileInputStream</span> <span class="variable">fis</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FileInputStream</span>(file);</span><br><span class="line">			<span class="type">int</span> <span class="variable">size</span> <span class="operator">=</span> fis.read(data);</span><br><span class="line">			System.out.println(<span class="string">&quot;读取到&quot;</span> + size + <span class="string">&quot;个字节的数据&quot;</span>);</span><br><span class="line">		&#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		<span class="comment">// 转换完成的int值</span></span><br><span class="line">		<span class="type">int</span> <span class="variable">value</span> <span class="operator">=</span> byte2int(data);</span><br><span class="line">		System.out.printf(<span class="string">&quot;%x\n&quot;</span>, value);</span><br><span class="line">		</span><br><span class="line">		</span><br><span class="line">		<span class="type">StringBuffer</span> <span class="variable">sb</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuffer</span>();</span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">4</span>; i&lt;<span class="number">24</span>; i++) &#123;</span><br><span class="line">			System.out.print((<span class="type">char</span>)data[i]);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/rely_on_drug_over/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/rely_on_drug_over/" class="post-title-link" itemprop="url">药物过度依赖</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-07-17 18:24:50" itemprop="dateCreated datePublished" datetime="2013-07-17T18:24:50+00:00">2013-07-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p><img src="/ref/life/rely_on_drug_over.jpg" alt="Image Title"></p>
+<p>药是什么？药是人类文明的发展过程中不断克服自身疾病的必然产物。谁让外星人造人的时候没有把人类制造的那么完美，要是人类除了生老死之外没有病这个状态，或许药物就不会产生。</p>
+<p>现实生活中，过度依赖药物的人比比皆是，尤其是在中国。在中国，药物已经用到了满天飞的程度了。得个小感冒会去药店买药，医生除了推荐你感冒药之外，肯定会推荐你消炎药。以至于大众普遍认为，有炎症必须吃消炎药。感冒烧到38度，医院医生会推荐你打针。感冒烧到38.5度，医生会推荐你挂上三天吊瓶，美其名曰挂吊瓶好的快，如果患者的心理能起到恢复快的作用的话，那么挂吊瓶应该是管用的。</p>
+<p>我没去过西方国家，但我猜测在西方国家，医药分离的占多数。得病了想吃个消炎药解解馋可没那么容易，消炎药岂能是想吃就吃，没有医生的处方药店怎敢卖给患者，又不是口香糖。想打个针过过瘾更是难了，喜欢花钱让针扎着屁股玩的活中国人比较喜欢。要想挂个吊瓶数滴答玩，除非烧到了40度一星期高烧不退，否则还是自己在家挂瓶自来水数着玩吧。以上有杜撰的成分，但是话激理不歪，你懂得。</p>
+<p>要知道中国较西方的文明程度还有差距。西方发明的西药在西方都谨慎使用了，反倒在中国大行其道。谁家没一抽屉瓶瓶罐罐，这可都是毒药啊。除了可以拉动GDP外，有理由怀疑中国担心未来人口老龄化加剧给经济发展造成压力而采取的措施。</p>
+<p>是时候阐述本文的观点了，药物不是万能的，能少用尽量少用。</p>
+<p>中药讲究是药三分毒，换成西药是药五分毒应该毫不夸张吧。当时治好了我们身体的病症，感觉一身轻松了，但是后患无穷。人类本身就具备一定的修复能力，而且修复能力很强。在人类自我修复能力许可的范围内非要硬用药物加速治疗，那造成的必然结果就是身体下次不干了，有药物可以对抗疾病，那用身体的修复能力干嘛。久而久之，身体就再也扛不住疾病了。</p>
+<p>吃西药多了往往治的病好了，却带来了其他疾病。比如感冒了吃消炎药，吃着吃着把胃给吃坏了。治感冒的医生才不会管你的其他身体部位情况，反正胃吃坏了找不到他。这也是医院分那么多科室的一个弊端，只从局部看问题，不能从整体上看问题，所以看到的问题总是片面的。</p>
+<p>解决药物依赖的问题从三方面着手解决。一方面要从心理上战胜自己，不要迷信药物，更不能依赖药物。另一方面，多运动，生命在于运动，真理中的真理。第三，眼光放长远，多看其他国家，多了解长寿的人是怎么生存的。</p>
+<p>真心希望过度依赖药物的人可以走出这个误区。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/C_C++_review/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/C_C++_review/" class="post-title-link" itemprop="url">C/C++程序员面试宝典读书笔记</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2013-07-16 11:30:56" itemprop="dateCreated datePublished" datetime="2013-07-16T11:30:56+00:00">2013-07-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>本文摘录《C&#x2F;C++程序员面试宝典》一书中我认为需要注意的地方。</p>
+<h1 id="数组指针与指针数组的区别"><a href="#数组指针与指针数组的区别" class="headerlink" title="数组指针与指针数组的区别"></a>数组指针与指针数组的区别</h1><p>数组指针即指向数组的指针，定义数组指针的代码如<code>int (*ap)[2]</code>，定义了一个指向包含两个元素的数组的数组指针。<br>如果数组的每一个元素都是一个指针，则该数组为指针数组。实例代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">char *chararr[] = &#123;&quot;C&quot;, &quot;C++&quot;, &quot;Java&quot;&#125;;</span><br></pre></td></tr></table></figure>
+<p><code>int (*ap)[2]</code>和<code>int *ap[2]</code>的区别就是前一个是数组指针，后一个是指针数组。因为”[]”的优先级高于”*”，决定了这两个表达式的不同。</p>
+<h1 id="public、protected、private"><a href="#public、protected、private" class="headerlink" title="public、protected、private"></a>public、protected、private</h1><h2 id="修饰成员变量或成员函数"><a href="#修饰成员变量或成员函数" class="headerlink" title="修饰成员变量或成员函数"></a>修饰成员变量或成员函数</h2><ul>
+<li>public：可以被该类中的函数、子类的函数、友元函数和该类的对象访问。</li>
+<li>protected：可以被该类中的函数、子类的函数和友元函数访问，不能被该类的对象访问。</li>
+<li>private：只能由该类中的函数或友元函数访问。</li>
+<li>默认为private权限。</li>
+</ul>
+<h2 id="用在继承中"><a href="#用在继承中" class="headerlink" title="用在继承中"></a>用在继承中</h2><ul>
+<li>public：基类成员保持自己的访问级别，基类的public成员为派生类的public成员，基类的protected成员为派生类的protected成员。</li>
+<li>protected：基类的public和protected成员在派生类中未protected成员。</li>
+<li>private：基类的所有成员在派生类中为private成员。</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +731,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -303,7 +815,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -389,7 +901,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -474,7 +986,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -613,7 +1125,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -631,664 +1143,6 @@
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">严重: Exception starting filter SolrRequestFilter</span><br><span class="line">org.apache.solr.common.SolrException: Could not find necessary SLF4j logging jars. If using Jetty, the SLF4j logging jars need to go in the jetty lib/ext directory. For other containers, the corresponding directory should be used. For more information, see: http://wiki.apache.org/solr/SolrLogging</span><br></pre></td></tr></table></figure>
 <p>解决办法：将<del>&#x2F;solr-4.3.1&#x2F;example&#x2F;lib&#x2F;ext目录下的所有jar文件复制到</del>&#x2F;apache-tomcat-7.0.41&#x2F;lib目录下，然后重启tomcat即可。</p>
 <h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/share/link?shareid=1811860312&uk=3506813023">用到的文件</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/solr_setup_distribute/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/solr_setup_distribute/" class="post-title-link" itemprop="url">搭建分布式的solr环境</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-07-02 14:29:23" itemprop="dateCreated datePublished" datetime="2013-07-02T14:29:23+00:00">2013-07-02</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>本文以《<a href="/post/solr_setup">在Linux上搭建solr环境</a>》为基础，假设已经在192.168.20.6和192.168.20.38上搭建了单机版solr环境。</p>
-<h1 id="主服务器配置"><a href="#主服务器配置" class="headerlink" title="主服务器配置"></a>主服务器配置</h1><p>找到solr的环境目录下的conf文件夹下的solrconfig.xml文件，我的是在<code>/hadoop/solr/conf/solrconfig.xml</code>目录下，打开后找到如下行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br></pre></td></tr></table></figure>
-<p>默认是被注释的，将其修改为</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br><span class="line">       &lt;lst name=&quot;master&quot;&gt;</span><br><span class="line">         &lt;str name=&quot;replicateAfter&quot;&gt;commit&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;replicateAfter&quot;&gt;startup&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;confFiles&quot;&gt;schema.xml,stopwords.txt&lt;/str&gt;</span><br><span class="line">       &lt;/lst&gt;</span><br><span class="line">&lt;/requestHandler&gt;</span><br></pre></td></tr></table></figure>
-<p>replicateAfter表示solr会在什么情况下复制，可选项包括：commit、startup、optimize，这里保持默认。<br>confFiles表示要分发的配置文件。</p>
-<h1 id="从服务器配置"><a href="#从服务器配置" class="headerlink" title="从服务器配置"></a>从服务器配置</h1><p>在从服务器上，将<code>/hadoop/solr/conf/solrconfig.xml</code>文件相应的修改为</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;requestHandler name=&quot;/replication&quot; class=&quot;solr.ReplicationHandler&quot; &gt;</span><br><span class="line">       &lt;lst name=&quot;slave&quot;&gt;</span><br><span class="line">         &lt;str name=&quot;masterUrl&quot;&gt;http://192.168.20.6:8080/solr/replication&lt;/str&gt;</span><br><span class="line">         &lt;str name=&quot;pollInterval&quot;&gt;00:00:60&lt;/str&gt;</span><br><span class="line">       &lt;/lst&gt;</span><br><span class="line">&lt;/requestHandler&gt;</span><br></pre></td></tr></table></figure>
-<p>masterUrl为服务器的url地址。<br>pollInterval为从服务器的同步时间间隔。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/solr_setup/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/solr_setup/" class="post-title-link" itemprop="url">在Linux上搭建solr环境</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-07-02 00:00:00" itemprop="dateCreated datePublished" datetime="2013-07-02T00:00:00+00:00">2013-07-02</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>本文采用Linux操作系统在hadoop用户下安装，solr采用3.x中的最新版本3.6.2，tomcat采用6.0.37版本，安装包可以从本文下方链接下载。<br>这里有两种安装方式，一种方式为利用solr自带的jetty来启动solr，默认端口为8983。另外一种方式为将solr集成到tomcat中。其中第一种方式较为简单，推荐新手采用。</p>
-<h1 id="独立启动"><a href="#独立启动" class="headerlink" title="独立启动"></a>独立启动</h1><ol>
-<li>将sorl的安装包解压到用户的根目录下，解压后文件夹为apache-solr-3.6.2。</li>
-<li>进入到example目录下，执行<code>java -jar start.jar</code>命令，solr服务启动，端口为8983。</li>
-<li>通过<code>http://IP地址:8983/solr/</code>来访问solr的web页面，进入admin页面后可以通过输入字符串来查找索引。查找索引默认显示的格式为xml格式，可以通过在url的后面加上参数<code>wt=json</code>来显示json格式的结果。</li>
-</ol>
-<h1 id="利用tomcat"><a href="#利用tomcat" class="headerlink" title="利用tomcat"></a>利用tomcat</h1><h2 id="安装tomcat"><a href="#安装tomcat" class="headerlink" title="安装tomcat"></a>安装tomcat</h2><p>1. 将apache-tomcat-6.0.37.tar.gz解压到hadoop的跟目录下。<br>2. 修改hadoop用户的环境变量，执行<code>vi ~/.bash_profile</code>命令，添加如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export CATALINA_HOME=/home/hadoop/apache-tomcat-6.0.37</span><br><span class="line">export CLASSPATH=.:$JAVA_HOME/lib:$CATALINA_HOME/lib</span><br><span class="line">export PATH=$PATH:$CATALINA_HOME/bin</span><br></pre></td></tr></table></figure>
-<p>3. 执行<code>source ~/.bash_profile </code>使修改的环境变量生效。<br>4. 执行tomcat的bin目录下的startup.bat脚本来启动tomcat。<br>5. 通过<code>netstat -anp | grep 8080</code>命令查看tomcat是否启动。</p>
-<h2 id="安装solr"><a href="#安装solr" class="headerlink" title="安装solr"></a>安装solr</h2><p>1. 将solr的dist&#x2F;apache-solr-3.6.2.war文件复制到tomcat的webapps目录下，并将文件命名为solr.war。执行<code>cp ~/apache-solr-3.6.2/dist/apache-solr-3.6.2.war ~/apache-tomcat-6.0.37/webapps/solr.war</code>命令。WAR是一个完整的web应用程序，包括了Solr的jar文件和所有运行Solr所依赖的Jar文件，Jsp和很多的配置文件与资源文件。</p>
-<p>2. 修改<code>~/apache-tomcat-6.0.37/conf/server.xml</code>文件相应行的内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;Connector port=&quot;8080&quot; protocol=&quot;HTTP/1.1&quot; </span><br><span class="line">    connectionTimeout=&quot;20000&quot; </span><br><span class="line">    URIEncoding=&quot;UTF-8&quot;</span><br><span class="line">    redirectPort=&quot;8443&quot; /&gt;</span><br></pre></td></tr></table></figure>
-<p>增加<code>URIEncoding=&quot;UTF-8&quot;</code>来支持中文。这是因为solr基于xml，json，javabin，php，python等多种格式传输请求和返回结果。</p>
-<p>3.复制<code>~/apache-solr-3.6.2/example/solr</code>目录到<code>/home/hadoop/solr</code>位置。该位置为solr的应用环境目录。</p>
-<p>4. 修改<code>/home/hadoop/solr/conf/solrconfig.xml</code>文件中的dataDir一行内容为：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;dataDir&gt;$&#123;solr.data.dir:/home/hadoop/solr/data&#125;&lt;/dataDir&gt;</span><br></pre></td></tr></table></figure>
-<p>目的是为了指定存放索引数据的路径。</p>
-<p>5. 在<code>~/apache-tomcat-6.0.37/conf/Catalina/localhost</code>目录下新建文件<code>solr.xml</code>。增加内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;Context docBase=&quot;/home/hadoop/apache-tomcat-6.0.37/webapps/solr.war&quot; debug=&quot;0&quot; crossContext=&quot;true&quot; &gt;</span><br><span class="line">    &lt;Environment name=&quot;solr/home&quot; type=&quot;java.lang.String&quot; value=&quot;/home/hadoop/solr&quot; override=&quot;true&quot; /&gt;</span><br><span class="line">&lt;/Context&gt;</span><br></pre></td></tr></table></figure>
-<p>其中docBase为tomcat的webapps下的solr.war完整路径。Environment的value属性的值为存放solr索引的文件夹，即第三步中复制的文件夹。<br>需要注意的是：Catalina目录在首次启动tomcat时创建，因此在此步骤前需要启动过tomcat。</p>
-<p>6. 在tomcat的bin目录下通过<code>startup.sh</code>启动tomcat。</p>
-<p>7. 通过<code>http://IP地址:8080/solr/</code>来访问solr的web页面。</p>
-<h1 id="相关命令"><a href="#相关命令" class="headerlink" title="相关命令"></a>相关命令</h1><h2 id="放入数据到solr中"><a href="#放入数据到solr中" class="headerlink" title="放入数据到solr中"></a>放入数据到solr中</h2><p>在apache-solr-3.6.2&#x2F;example&#x2F;exampledocs目录下，执行<code>java -jar post.jar 要存放的文件名</code>。这里自己新建一个文件test.xml放入到solr中，文件内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;add&gt;</span><br><span class="line">    &lt;doc&gt;  </span><br><span class="line">        &lt;field name=&quot;id&quot;&gt;company&lt;/field&gt;  </span><br><span class="line">        &lt;field name=&quot;text&quot;&gt;kaitone&lt;/field&gt;  </span><br><span class="line">    &lt;/doc&gt;</span><br><span class="line">&lt;/add&gt;</span><br></pre></td></tr></table></figure>
-<p>执行<code>java -jar post.jar test.xml</code>将数据放入solr中。</p>
-<h2 id="删除数据"><a href="#删除数据" class="headerlink" title="删除数据"></a>删除数据</h2><p>新建文本文件test_delete.xml，内容如下</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;delete&gt;</span><br><span class="line">    &lt;id&gt;company&lt;/id&gt;</span><br><span class="line">&lt;/delete&gt;</span><br></pre></td></tr></table></figure>
-<p>执行<code>java -jar post.jar test_delete.xml</code>将数据从solr中删除。<br>另外还可以通过命令行的方式来删除，命令为<code>java -Ddate=args -jar post.jar &#39;&lt;delete&gt;&lt;id&gt;company&lt;/id&gt;&lt;/delete&gt;&#39;</code>。</p>
-<h1 id="在Eclipse中搭建环境操作Solr-api"><a href="#在Eclipse中搭建环境操作Solr-api" class="headerlink" title="在Eclipse中搭建环境操作Solr api"></a>在Eclipse中搭建环境操作Solr api</h1><p>1. 新建一个java工程<br>2. 在工程中引入如下包：</p>
-<ul>
-<li>commons-httpclient-3.1.jar</li>
-<li>commons-codec-1.6.jar</li>
-<li>apache-solr-solrj-3.6.2.jar</li>
-<li>slf4j-api-1.6.1.jar</li>
-<li>slf4j-log4j12-1.6.1.jar</li>
-<li>commons-logging-1.1.3.jar</li>
-<li>log4j-1.2.12.jar</li>
-<li>httpclient-4.2.5.jar</li>
-<li>httpcore-4.2.4.jar</li>
-<li>httpmime-4.2.5.jar</li>
-</ul>
-<p>其中<code>commons-httpclient-3.1.jar</code>、<code>commons-codec-1.6.jar</code>、<code>apache-solr-solrj-3.6.2.jar</code>、<code>slf4j-api-1.6.1.jar</code>可以从solr的目录<code>apache-solr-3.6.2</code>中的dist目录下找到。</p>
-<p><code>slf4j-log4j12-1.6.1.jar</code>可以从slf4j的压缩包中<code>slf4j-1.6.1.tar.gz</code>找到。</p>
-<p><code>commons-logging-1.1.3.jar</code>可以从slf4j的压缩包中<code>commons-logging-1.1.3-bin.zip</code>找到。</p>
-<p><code>log4j-1.2.12.jar</code>可以从log4j的压缩包中<code>logging-log4j-1.2.12.tar.gz</code>找到。</p>
-<p><code>httpclient-4.2.5.jar</code>、<code>httpcore-4.2.4.jar</code>、<code>httpmime-4.2.5.jar</code>在<code>httpcomponents-client-4.2.5-bin.tar.gz</code>文件中。</p>
-<p>具体的API编程可以参考<a target="_blank" rel="noopener" href="http://www.cnblogs.com/hoojo/archive/2011/10/21/2220431.html">Solr开发文档</a>。</p>
-<h1 id="在linux上编译并执行程序"><a href="#在linux上编译并执行程序" class="headerlink" title="在linux上编译并执行程序"></a>在linux上编译并执行程序</h1><p>1. 将工程中用到的jar包复制到Linux机器上，这里复制到<code>/home/hadoop/test_solr/lib</code>目录下。</p>
-<p>2. 将测试程序的源码放到Linux机器上，这里复制到<code>/home/hadoop/test_solr</code>目录下。其中源码包括三个文件：SolrTest.java、SolrClient.java、Index.java。该三个文件将会包含在下面相关下载中的Eclipse工程中。</p>
-<p>3. 在<code>/home/hadoop/test_solr</code>目录下执行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javac -cp lib/apache-solr-solrj-3.6.2.jar:lib/commons-httpclient-3.1.jar:lib/log4j-1.2.12.jar:lib/commons-codec-1.6.jar:lib/commons-logging-1.1.3.jar:lib/slf4j-api-1.6.1.jar:lib/httpclient-4.2.5.jar:lib/httpcore-4.2.4.jar:lib/httpmime-4.2.5.jar:. SolrTest.java</span><br></pre></td></tr></table></figure>
-<p>其中-cp等同于-classpath参数，指定编译SolrTest.java文件需要的ClassPath路径，不要忘记路径后面的<code>.</code>表示当前路径，否则找不到当前目录下的其他java文件。<br>命令执行后会在<code>/home/hadoop/test_solr</code>目录下生成Index.class、SolrClient.class、SolrTest.class三个class文件。</p>
-<p>4. 在<code>/home/hadoop/test_solr</code>目录下执行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -cp lib/apache-solr-solrj-3.6.2.jar:lib/commons-httpclient-3.1.jar:lib/log4j-1.2.12.jar:lib/commons-codec-1.6.jar:lib/commons-logging-1.1.3.jar:lib/slf4j-api-1.6.1.jar:lib/httpclient-4.2.5.jar:lib/httpcore-4.2.4.jar:lib/:httpmime-4.2.5.jar:. SolrTest</span><br></pre></td></tr></table></figure>
-<p>来运行程序。</p>
-<h1 id="在Linux上打包并执行"><a href="#在Linux上打包并执行" class="headerlink" title="在Linux上打包并执行"></a>在Linux上打包并执行</h1><p>1. 在上面步骤基础上，为了方便执行，可以将class文件打成jar包来执行，这样在使用java命令执行的时候就不用指定classpath路径了，只需要在jar包的MANIFEST.MF文件中指定classpath。</p>
-<p>2. 在<code>/home/hadoop/test_solr</code>下新建一个文件，文件名可以随便，这里取名为MANIFEST.MF，与生成的jar包中的文件名一致，文件内容为</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Manifest-Version: 1.0</span><br><span class="line">Created-By: 1.6.0_10 (Sun Microsystems Inc.)</span><br><span class="line">Main-Class: SolrTest</span><br><span class="line">Class-Path: /home/hadoop/test_solr/lib/apache-solr-solrj-3.6.2.jar /home/hadoop/test_solr/lib/commons-httpclient-3.1.jar /home/hadoop/test_solr/lib/log4j-1.2.12.jar /home/hadoop/test_solr/lib/commons-codec-1.6.jar /home/hadoop/test_solr/lib/commons-logging-1.1.3.jar /home/hadoop/test_solr/lib/slf4j-api-1.6.1.jar</span><br><span class="line">/home/hadoop/test_solr/lib/httpclient-4.2.5.jar</span><br><span class="line">/home/hadoop/test_solr/lib/httpcore-4.2.4.jar</span><br><span class="line">/home/hadoop/test_solr/lib/httpmime-4.2.5.jar</span><br></pre></td></tr></table></figure>
-<p>其中Main-Class指定main函数所在的类。<br>Class-Path指定用到的jar所在的路径。其中Class-Path的各个jar文件之间通过空格分隔而不是通过<code>:</code>分隔。</p>
-<p>3. 将class文件打包成jar文件。执行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jar -cfm solrtest.jar MANIFEST.MF Index.class SolrClient.class SolrTest.class </span><br></pre></td></tr></table></figure>
-<p>会在此目录下生成solrtest.jar文件。jar命令会根据指定的MANIFEST.MF文件来产生jar包中的META-INF&#x2F;MANIFEST.MF文件。两个文件内容并不完全一致，jar命令会根据格式对内容进行调整。</p>
-<p>4. 运行jar文件。通过<code>java -jar solrtest.jar</code>来执行。</p>
-<h1 id="相关下载"><a href="#相关下载" class="headerlink" title="相关下载"></a>相关下载</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/share/link?shareid=2915568646&uk=3506813023">本文中用到的安装包</a></p>
-<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p><a target="_blank" rel="noopener" href="http://demi-panda.com/2013/03/13/install-solr/">简单的Solr安装配置</a><br><a target="_blank" rel="noopener" href="https://lucene.apache.org/solr/3_6_2/doc-files/tutorial.html">官方安装教程</a><br><a target="_blank" rel="noopener" href="http://cxshun.iteye.com/blog/1039445">Solr初体验系列</a>讲的非常详细，适合初学者<br><a target="_blank" rel="noopener" href="http://www.cnblogs.com/hoojo/archive/2011/10/21/2220431.html">Solr开发文档</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/compile_java_code/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/compile_java_code/" class="post-title-link" itemprop="url">通过命令编译java程序</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-07-01 11:04:01" itemprop="dateCreated datePublished" datetime="2013-07-01T11:04:01+00:00">2013-07-01</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>通过Eclipse编写java程序久了，发现已经不会用命令来编译java程序了。今天在windows下搭建了一个solr环境，想放到linux下去跑一下，在windows上打成jar包后放在linux下不能运行，是时候回顾一下java的编译命令了。而且网上的资料比较零散，没有特别系统的资料。</p>
-<p>本文在linux测试，同windows下的命令行工具差别不大。</p>
-<h1 id="编译并执行单个文件"><a href="#编译并执行单个文件" class="headerlink" title="编译并执行单个文件"></a>编译并执行单个文件</h1><p>1. 在目录下<code>~/test_java/com/kuring</code>下新建HelloWorld.java的文件，文件内容为</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HellowWorld</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;hello world&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>2. 在目录<code>~/test_java</code>下执行<code>javac com/kuring/HelloWorld.java</code>命令来编译文件。此时会在HelloWorld.java文件所在的目录下生成HelloWorld.class的二进制文件。</p>
-<p>3. 在目录<code>~/test_java</code>下执行<code>java com.kuring.HelloWorld</code>来执行HelloWorld.class。屏幕会输出<code>hello world</code>，说明文件执行成功。<br>也可以在任意路径下指定classpath路径来执行，命令为<code>java -classpath  ~/test_java com.kuring.HelloWorld</code>，其中classpath指定了类的搜索路径。</p>
-<h1 id="编译并执行多个文件"><a href="#编译并执行多个文件" class="headerlink" title="编译并执行多个文件"></a>编译并执行多个文件</h1><p>1. 在目录下<code>~/test_java/com/kuring</code>下新建HelloWorld2.java和Main.java的文件，HelloWorld2.java文件内容为</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HellowWorld2</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">print</span><span class="params">()</span> &#123;</span><br><span class="line">		System.out.println(<span class="string">&quot;hello world too&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>Main.java的文件内容为</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.kuring;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">		<span class="type">HelloWorld2</span> <span class="variable">hello</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HelloWorld2</span>();</span><br><span class="line">		hello.print();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>2. 在目录<code>~/test_java</code>下执行<code>javac com/kuring/Main.java</code>命令来编译文件。此时会在Main.java文件所在的目录下生成Main.class和HelloWorld2.class两个文件，可以看出javac有自动推导编译的功能。</p>
-<p>3. 在目录<code>~/test_java</code>下执行<code>java com.kuring.Main</code>。屏幕会输出<code>hello world too</code>，说明文件执行成功。</p>
-<h1 id="打包"><a href="#打包" class="headerlink" title="打包"></a>打包</h1><p>将上述例子中的程序打成jar包，可以在<code>~/test_java</code>目录下通过执行命令<code>jar cvf my.jar com</code>来生成jar文件。其中my.jar为要生成的jar文件的名字。<br>通过<code>java -classpath my.jar com.kuring.Main</code>来执行jar文件。<br>上述命令需要指定要执行的类名Main，如果想通过<code>java -jar my.jar</code>命令即可执行程序需要在jar包的META-INF&#x2F;MANIFEST.MF文件中增加一行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Main-Class: SolrTest</span><br></pre></td></tr></table></figure>
-<p>来执行含有main函数的类。然后通过<code>jar -cfm my.jar MANIFEST.MF路径 要打包的目录或文件</code>来重新生成jar包。这样就可以通过<code>java -jar my.jar</code>来执行jar包了。</p>
-<p>关于如何创建并执行引用了其他jar包的jar包，可以参考我的另外一篇博客《<a href="/post/solr_setup">在Linux上搭建solr环境</a>》，这里不再赘述。</p>
-<h1 id="常用jar命令"><a href="#常用jar命令" class="headerlink" title="常用jar命令"></a>常用jar命令</h1><table border="1" cellpadding="3" cellspacing="0" summary="" width="100%">
-    <tr>
-        <td><strong>功能</strong></td>
-        <td><strong>命令</strong></td>
-    </tr>
-    <tr>
-        <td>用一个单独的文件创建一个 JAR 文件</td>
-        <td>jar cf jar-file input-file...</td>
-    </tr>
-    <tr>
-        <td>用一个目录创建一个 JAR 文件</td>
-        <td>jar cf jar-file dir-name</td>
-    </tr>
-    <tr>
-        <td>创建一个未压缩的 JAR 文件</td>
-        <td>jar cf0 jar-file dir-name</td>
-    </tr>
-    <tr>
-        <td>更新一个 JAR 文件</td>
-        <td>jar uf jar-file input-file...</td>
-    </tr>
-    <tr>
-        <td>查看一个 JAR 文件的内容</td>
-        <td>jar tf jar-file</td>
-    </tr>
-    <tr>
-        <td>提取一个 JAR 文件的内容</td>
-        <td>jar xf jar-file</td>
-    </tr>
-    <tr>
-        <td>从一个 JAR 文件中提取特定的文件</td>
-        <td>jar xf jar-file archived-file...</td>
-    </tr>
-    <tr>
-        <td>运行一个打包为可执行 JAR 文件的应用程序</td>
-        <td>java -jar app.jar</td>
-    </tr>
-</table>
-
-<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p><a target="_blank" rel="noopener" href="http://www.ibm.com/developerworks/cn/java/j-jar/">JAR 文件揭密</a><br><a target="_blank" rel="noopener" href="http://blog.sina.com.cn/s/blog_774c75080100q73w.html">Java程序的编译、执行和打包</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/hadoop_setup/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/hadoop_setup/" class="post-title-link" itemprop="url">在Linux上搭建Hadoop集群环境</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-06-26 00:00:00" itemprop="dateCreated datePublished" datetime="2013-06-26T00:00:00+00:00">2013-06-26</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>本文选择安装的hadoop版本为网上资料较多的0.20.2，对于不懂的新技术要持保守态度。遇到问题解决问题的痛苦远比体会用不着功能的新版本的快感来的更猛烈。</p>
-<h1 id="安装环境"><a href="#安装环境" class="headerlink" title="安装环境"></a>安装环境</h1><p>本文选择了三台机器来搭建hadoop集群，1个Master和2个Slave。本文中的master主机即namenode所在的机器，slave即datanode所在的机器。节点的机器名和IP地址如下</p>
-<table>
-<tr>
-    <td>机器名</td>
-    <td>IP地址</td>
-    <td>用途</td>
-    <td>运行模块</td>
-</tr>
-<tr>
-    <td>server206</td>
-    <td>192.168.20.6</td>
-    <td>Master</td>
-    <td>NameNode、JobTracker、SecondaryNameNode</td>
-</tr>
-<tr>
-    <td>ap1</td>
-    <td>192.168.20.36</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-</tr>
-<tr>
-    <td>ap2</td>
-    <td>192.168.20.38</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-</tr>
-</table>
-
-
-<h1 id="安装Java"><a href="#安装Java" class="headerlink" title="安装Java"></a>安装Java</h1><ol>
-<li>检查本机是否已安装Java<br>在命令行中输入<code>java -version</code>判断是否已经安装。如果已经安装检查Java的版本，某些操作系统在安装的时候会安装Jdk，但可能版本会太低。如果版本过低，需要将旧的版本删除。在Redhat操作系统中可以通过rpm命令来删除系统自带的Jdk。</li>
-<li>安装java<br>本文选择jdk1.6安装，将解压出的文件夹jdk1.6.0_10复制到&#x2F;usr&#x2F;java目录下。</li>
-<li>设置java的环境变量<br>添加系统环境变量，修改&#x2F;etc&#x2F;profile文件，在文件末尾添加如下内容：<blockquote>
-<p>export JAVA_HOME&#x3D;&#x2F;usr&#x2F;java&#x2F;jdk1.6.0_10<br>export CLASSPATH&#x3D;.:$JAVA_HOME&#x2F;lib&#x2F;tools.jar:$JAVA_HOME&#x2F;lib&#x2F;dt.jar<br>export PATH&#x3D;$JAVA_HOME&#x2F;bin:$PATH<br>export JRE_HOME&#x3D;$JAVA_HOME&#x2F;jre</p>
-</blockquote>
- 修改完profile文件后要执行<code>source /etc/profile</code>命令才能使刚才的修改在该命令行环境下生效。</li>
-<li>检查java是否安装成功<br>在命令行中输入java -version、javac命令来查看是否安装成功及安装版本。</li>
-</ol>
-<h1 id="配置hosts文件"><a href="#配置hosts文件" class="headerlink" title="配置hosts文件"></a>配置hosts文件</h1><p>本步骤必须操作，需要root用户来操作，修改完成之后立即生效。在三台机器的&#x2F;etc&#x2F;hosts文件末尾添加如下内容：</p>
-<blockquote>
-<p>192.168.20.6   server206<br>192.168.20.36   ap1<br>192.168.20.38   ap2</p>
-</blockquote>
-<p>修改完成之后可以通过<code>ping 主机名</code>的方式来测试hosts文件是否正确。</p>
-<h1 id="新建hadoop用户"><a href="#新建hadoop用户" class="headerlink" title="新建hadoop用户"></a>新建hadoop用户</h1><p>在三台机器上分别新建hadoop用户，该用户的目录为&#x2F;home&#x2F;hadoop。利用useradd命令来添加用户，利用passwd命令给用户添加密码。</p>
-<h1 id="配置SSH免登录"><a href="#配置SSH免登录" class="headerlink" title="配置SSH免登录"></a>配置SSH免登录</h1><p>该步骤非必须，推荐配置，否则在Master上执行start-all.sh命令来启动hadoop集群的时候需要手动输入ssh密码，非常麻烦。<br>原理：用户将自己的公钥储存在远程主机上。登录的时候，远程主机会向用户发送一段随机字符串，用户用自己的私钥加密后，再发回来。远程主机用事先储存的公钥进行解密，如果成功，就证明用户是可信的，直接允许登录shell，不再要求输入密码。<br>在本例中，需要实现的是192.168.20.6上的hadoop用户可以无密码登录自己、192.168.20.36和192.168.20.38的hadoop用户。需要将192.168.20.6上的ssh公钥复制到192.168.20.36和192.168.20.38机器上。</p>
-<ol>
-<li>在192.168.20.6上执行<code>ssh-keygen –t rsa</code>命令来生成ssh密钥对。会在&#x2F;home&#x2F;hadoop&#x2F;.ssh目录下生成id_rsa.pub和id_rsa两个文件，其中id_rsa.pub为公钥文件，id_rsa为私钥文件。</li>
-<li>在192.168.20.6上执行<code>cat ~/.ssh/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</code>命令将公钥添加到授权的key里。</li>
-<li>权限设置。在192.168.20.6上执行<code>chmod 600 ~/.ssh/authorized_keys</code>来修改authorized_keys文件的权限，执行<code>chmod 700 ~/.ssh</code>命令将.ssh文件夹的权限设置为700。如果权限不对无密码登录就配置不成功，而且没有错误提示，这一步特别注意。</li>
-<li>在本机上测试是否设置无密码登录成功。在192.168.20.6上执行<code>ssh -p 本机SSH服务端口号 localhost</code>，如果不需要输入密码则登录成功。</li>
-<li>利用scp命令将192.168.20.6上的公钥文件id_rsa.pub追加到192.168.20.36和192.168.20.38机器上的~&#x2F;.ssh&#x2F;authorized_keys文件中。scp命令的格式如下：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">scp -P ssh端口号 ~/.ssh/id_rsa.pub hadoop@192.168.20.36:~/id_rsa.pub</span><br></pre></td></tr></table></figure>
-在192.168.20.36和192.168.20.38机器上分别执行<code>cat ~/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</code>命令将192.168.20.6机器上的公钥添加到authorized_keys文件的尾部。</li>
-<li>配置无密码登录完成，在Master机器上执行<code>ssh -P 本机SSH服务端口号 要连接的服务器IP地址</code>命令进行测试。</li>
-</ol>
-<h1 id="搭建单机版hadoop"><a href="#搭建单机版hadoop" class="headerlink" title="搭建单机版hadoop"></a>搭建单机版hadoop</h1><p>在192.168.20.6上首先搭建单机版hadoop进行测试。</p>
-<ol>
-<li>将hadoop-0.20.2.tar.gz文件解压到hadoop用户的目录下。</li>
-<li>配置hadoop的环境变量。修改&#x2F;etc&#x2F;profile文件，在文件的下面加入如下：<blockquote>
-<p>HADOOP_HOME&#x3D;&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2<br>export HADOOP_HOME<br>export HADOOP&#x3D;$HADOOP_HOME&#x2F;bin<br>export PATH&#x3D;$HADOOP:$PATH</p>
-</blockquote>
-</li>
-</ol>
-<p>修改完成之后执行<code>source /etc/profile</code>使修改的环境变量生效。<br>3. 配置hadoop用到的java环境变量<br>修改conf&#x2F;hadoop-env.sh文件，添加<code>export JAVA_HOME=/usr/java/jdk1.6.0_10</code>。<br>4. 修改conf&#x2F;core-site.xml的内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.default.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://localhost:9000&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.replication&lt;/name&gt; </span><br><span class="line">        &lt;value&gt;1&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<ol start="5">
-<li>修改&#x2F;conf&#x2F;mapred-site.xml的内容如下：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;   </span><br><span class="line">        &lt;name&gt;mapred.job.tracker&lt;/name&gt;  </span><br><span class="line">        &lt;value&gt;localhost:9001&lt;/value&gt;   </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure></li>
-<li>至此单击版搭建完毕。可以通过hadoop自带的wordcount程序测试是否运行正常。下面为运行wordcount例子的步骤。</li>
-<li>在hadoop目录下新建input文件夹。</li>
-<li>将conf目录下的内容拷贝到input文件夹下，执行<code>cp conf/* input</code>。</li>
-<li>通过start-all.sh脚本来启动单机版hadoop。</li>
-<li>执行wordcount程序：<code>hadoop jar hadoop-0.20.2-examples.jar wordcount input output</code>。</li>
-<li>通过stop-all.sh脚本来停止单机版hadoop。</li>
-</ol>
-<h1 id="搭建分布式hadoop"><a href="#搭建分布式hadoop" class="headerlink" title="搭建分布式hadoop"></a>搭建分布式hadoop</h1><p>在上述基础之上，在192.168.20.6上执行如下操作。<br>1. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的core-site.xml文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.default.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://192.168.20.6:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<p>如没有配置hadoop.tmp.dir参数，此时系统默认的临时目录为：&#x2F;tmp&#x2F;hadoo-hadoop。而这个目录在每次重启后都会被干掉，必须重新执行format才行，否则会出错。<br>2. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的hdfs-site.xml文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;dfs.replication&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;1&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;dfs.support.append&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;true&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<p>3. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的mapred-site.xml文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;mapred.job.tracker&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;http://192.168.20.6:9001&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<p>4. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的masters文件。<br>将Master机器的IP地址或主机名添加进文件，如192.168.20.6。<br>5. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的slaves文件。<em>Master主机特有</em><br>在其中将slave节点的Ip地址或主机名添加进文件中，本例中加入</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">192.168.20.36</span><br><span class="line">192.168.20.38</span><br></pre></td></tr></table></figure>
-<p>6. hadoop主机的master主机已经配置完毕，利用scp命令将hadoop-0.20.2目录复制到两台slave机器的hadoop目录下。命令为：<code>scp -r /home/hadoop hadoop@服务器IP:/home/hadoop/</code>。注意slaves文件在master和slave机器上是不同的。</p>
-<h1 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h1><ul>
-<li>hadoop dfsadmin -report 查看集群状态</li>
-<li><a target="_blank" rel="noopener" href="http://192.168.20.6:50070/dfshealth.jsp">http://192.168.20.6:50070/dfshealth.jsp</a>  查看NameNode状态</li>
-<li><a target="_blank" rel="noopener" href="http://192.168.20.6:50030/jobtracker.jsp">http://192.168.20.6:50030/jobtracker.jsp</a> Map&#x2F;Reduce管理</li>
-<li>hadoop fs -mkdir input 在HDFS上创建文件夹</li>
-<li>hadoop fs -put ~&#x2F;file&#x2F;file*.txt input 将文件放入HDFS文件系统中</li>
-</ul>
-<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><ul>
-<li><a target="_blank" rel="noopener" href="http://www.cnblogs.com/xia520pi/archive/2012/05/16/2503949.html">细细品味Hadoop系列</a>。超详细的hadoop教程，作者非常用心。</li>
-</ul>
-<h1 id="下载链接"><a href="#下载链接" class="headerlink" title="下载链接"></a>下载链接</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/share/link?shareid=1235031445&uk=3506813023">http://pan.baidu.com/share/link?shareid=1235031445&uk=3506813023</a> 提取码：v8ok</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/hbase_test/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/hbase_test/" class="post-title-link" itemprop="url">HBase性能测试</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-06-26 00:00:00" itemprop="dateCreated datePublished" datetime="2013-06-26T00:00:00+00:00">2013-06-26</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>本文选择四台机器作为集群环境，hadoop采用0.20.2，HBase采用0.90.2，zookeeper采用独立安装的3.3.2稳定版。本文所采用的数据均为简单的测试数据，如果插入的数据量大可能会对结果产生影响。集群环境部署情况如下：</p>
-<table>
-<tr>
-    <td>机器名</td>
-    <td>IP地址</td>
-    <td>用途</td>
-    <td>Hadoop模块</td>
-    <td>HBase模块</td>
-    <td>ZooKeeper模块</td>
-</tr>
-<tr>
-    <td>server206</td>
-    <td>192.168.20.6</td>
-    <td>Master</td>
-    <td>NameNode、JobTracker、SecondaryNameNode</td>
-    <td>HMaster</td>
-    <td>QuorumPeerMain</td>
-</tr>
-<tr>
-    <td>ap1</td>
-    <td>192.168.20.36</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-    <td>HRegionServer</td>
-    <td>QuorumPeerMain</td>
-</tr>
-<tr>
-    <td>ap2</td>
-    <td>192.168.20.38</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-    <td>HRegionServer</td>
-    <td>QuorumPeerMain</td>
-</tr>
-<tr>
-    <td>ap2</td>
-    <td>192.168.20.8</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-    <td>HRegionServer</td>
-    <td>QuorumPeerMain</td>
-</tr>
-</table>
-
-<h1 id="单线程插入100万行"><a href="#单线程插入100万行" class="headerlink" title="单线程插入100万行"></a>单线程插入100万行</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br></pre></td><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;1; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 1000000, 1000000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>测试5次的结果分布图如下：<br><img src="/ref/hadoop/hbase_test_1.png" alt="Image Title"><br>其中Y轴单位为毫秒。平均速度在1秒插入3万行记录。</p>
-<h1 id="10个线程每个线程插入10万行"><a href="#10个线程每个线程插入10万行" class="headerlink" title="10个线程每个线程插入10万行"></a>10个线程每个线程插入10万行</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br></pre></td><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;10; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 100000, 100000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>耗时分布图为：<br><img src="/ref/hadoop/hbase_test_2.png" alt="Image Title"><br>结果比单线程插入有提升。</p>
-<h1 id="20个线程每个线程插入5万行"><a href="#20个线程每个线程插入5万行" class="headerlink" title="20个线程每个线程插入5万行"></a>20个线程每个线程插入5万行</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br></pre></td><td class="code"><pre><span class="line">import java.io.IOException;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">import org.apache.hadoop.conf.Configuration;</span><br><span class="line">import org.apache.hadoop.hbase.HBaseConfiguration;</span><br><span class="line">import org.apache.hadoop.hbase.HColumnDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.HTableDescriptor;</span><br><span class="line">import org.apache.hadoop.hbase.client.HBaseAdmin;</span><br><span class="line">import org.apache.hadoop.hbase.client.HTable;</span><br><span class="line">import org.apache.hadoop.hbase.client.Put;</span><br><span class="line">import org.apache.hadoop.hbase.util.Bytes;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class InsertRowThreadTest &#123;</span><br><span class="line">	</span><br><span class="line">	private static Configuration conf = null;</span><br><span class="line">	</span><br><span class="line">	private static String tableName = &quot;blog&quot;;</span><br><span class="line">	</span><br><span class="line">	static &#123;</span><br><span class="line">		Configuration conf1 = new Configuration();</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.quorum&quot;, &quot;server206,ap1,ap2&quot;);</span><br><span class="line">		conf1.set(&quot;hbase.zookeeper.property.clientPort&quot;, &quot;2181&quot;);</span><br><span class="line">        conf = HBaseConfiguration.create(conf1);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	/**</span><br><span class="line">	 * @param args</span><br><span class="line">	 * @throws Exception </span><br><span class="line">	 */</span><br><span class="line">	public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        // 列族</span><br><span class="line">        String[] familys = &#123;&quot;article&quot;, &quot;author&quot;&#125;;</span><br><span class="line">        // 创建表</span><br><span class="line">        try &#123;</span><br><span class="line">        	HBaseAdmin admin = new HBaseAdmin(conf);</span><br><span class="line">        	if (admin.tableExists(tableName)) &#123;</span><br><span class="line">                System.out.println(&quot;表已经存在，首先删除表&quot;);</span><br><span class="line">                admin.disableTable(tableName);</span><br><span class="line">                admin.deleteTable(tableName);</span><br><span class="line">            &#125;</span><br><span class="line">        	</span><br><span class="line">            HTableDescriptor tableDesc = new HTableDescriptor(tableName);</span><br><span class="line">            for(int i=0; i&lt;familys.length; i++)&#123;</span><br><span class="line">            	HColumnDescriptor columnDescriptor = new HColumnDescriptor(familys[i]);</span><br><span class="line">                tableDesc.addFamily(columnDescriptor);</span><br><span class="line">            &#125;</span><br><span class="line">            admin.createTable(tableDesc);</span><br><span class="line">            System.out.println(&quot;创建表成功&quot;);</span><br><span class="line">		&#125; catch (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		// 向表中插入数据</span><br><span class="line">		long time1 = System.currentTimeMillis();</span><br><span class="line">		System.out.println(&quot;开始向表中插入数据，当前时间为:&quot; + time1);</span><br><span class="line">		</span><br><span class="line">		for (int i=0; i&lt;20; i++) &#123;</span><br><span class="line">			InsertThread thread = new InsertThread(i * 50000, 50000, &quot;thread&quot; + i, time1);</span><br><span class="line">			thread.start();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	public static class InsertThread extends Thread &#123;</span><br><span class="line">		</span><br><span class="line">		private int beginSite;</span><br><span class="line">		</span><br><span class="line">		private int insertCount;</span><br><span class="line">				</span><br><span class="line">		private String name;</span><br><span class="line">		</span><br><span class="line">		private long beginTime;</span><br><span class="line">		</span><br><span class="line">		public InsertThread(int beginSite, int insertCount, String name, long beginTime) &#123;</span><br><span class="line">			this.beginSite = beginSite;</span><br><span class="line">			this.insertCount = insertCount;</span><br><span class="line">			this.name = name;</span><br><span class="line">			this.beginTime = beginTime;</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		@Override</span><br><span class="line">		public void run() &#123;</span><br><span class="line">			HTable table = null;</span><br><span class="line">			try &#123;</span><br><span class="line">				table = new HTable(conf, Bytes.toBytes(tableName));</span><br><span class="line">				table.setAutoFlush(false);</span><br><span class="line">				table.setWriteBufferSize(1 * 1024 * 1024);</span><br><span class="line">			&#125; catch (IOException e1) &#123;</span><br><span class="line">				e1.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;从&quot; + beginSite + &quot;开始插入&quot;);</span><br><span class="line">			</span><br><span class="line">			List&lt;Put&gt; putList = new ArrayList&lt;Put&gt;();</span><br><span class="line">			for (int i=beginSite; i&lt;beginSite + insertCount; i++) &#123;</span><br><span class="line">				Put put = new Put(Bytes.toBytes(&quot;&quot; + i));</span><br><span class="line">				put.add(Bytes.toBytes(&quot;article&quot;), Bytes.toBytes(&quot;tag&quot;), Bytes.toBytes(&quot;hadoop&quot;));</span><br><span class="line">				putList.add(put);</span><br><span class="line">				if (putList.size() &gt; 10000) &#123;</span><br><span class="line">					try &#123;</span><br><span class="line">						table.put(putList);</span><br><span class="line">						table.flushCommits();</span><br><span class="line">					&#125; catch (IOException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">					putList.clear();</span><br><span class="line">					try &#123;</span><br><span class="line">						Thread.sleep(5);</span><br><span class="line">					&#125; catch (InterruptedException e) &#123;</span><br><span class="line">						e.printStackTrace();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			try &#123;</span><br><span class="line">				table.put(putList);</span><br><span class="line">				table.flushCommits();</span><br><span class="line">				table.close();</span><br><span class="line">			&#125; catch (IOException e) &#123;</span><br><span class="line">				System.out.println(&quot;线程&quot; + name + &quot;失败&quot;);</span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			long currentTime = System.currentTimeMillis();</span><br><span class="line">			System.out.println(&quot;线程&quot; + name + &quot;结束，用时&quot; + (currentTime - beginTime));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>结果如下：<br><img src="/ref/hadoop/hbase_test_3.png" alt="Image Title"><br>执行结果跟10个线程效果差不多。</p>
-<h1 id="10个线程每个线程插入100万行"><a href="#10个线程每个线程插入100万行" class="headerlink" title="10个线程每个线程插入100万行"></a>10个线程每个线程插入100万行</h1><p>代码跟前面例子雷同，为节约篇幅未列出。<br>执行结果如下：<br><img src="/ref/hadoop/hbase_test_4.png" alt="Image Title"></p>
-<h1 id="20个线程每个线程插入50万行"><a href="#20个线程每个线程插入50万行" class="headerlink" title="20个线程每个线程插入50万行"></a>20个线程每个线程插入50万行</h1><p>执行结果如下：<br><img src="/ref/hadoop/hbase_test_5.png" alt="Image Title"></p>
-<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
-<li>多线程比单线程的插入效率有所提高，开10个线程与开20个线程的插入行效率差不多。</li>
-<li>插入效率存在不稳定情况，通过折线图可以看出。</li>
-</ul>
-<h1 id="相关文章"><a href="#相关文章" class="headerlink" title="相关文章"></a>相关文章</h1><p><a href="/post/hadoop_setup">在Linux上搭建Hadoop集群环境</a><br><a href="/post/hbase_setup">在Linux上搭建HBase集群环境</a></p>
 
       
     </div>

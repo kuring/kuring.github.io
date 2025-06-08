@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">251</span>
+          <span class="site-state-item-count">256</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,1322 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/resolv-conf/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/resolv-conf/" class="post-title-link" itemprop="url">/etc/resolv.conf文件</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-06-16 21:57:43" itemprop="dateCreated datePublished" datetime="2022-06-16T21:57:43+00:00">2022-06-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>&#x2F;etc&#x2F;resolv.conf文件为Linux主机的DNS配置文件，在 Linux 主机上可以执行 <code>man resolv.conf</code> 查看帮助信息。</p>
+<h2 id="配置文件说明"><a href="#配置文件说明" class="headerlink" title="配置文件说明"></a>配置文件说明</h2><p>整个配置文件分为了4个部分：nameserver、search、sortlist和options</p>
+<h3 id="nameserver"><a href="#nameserver" class="headerlink" title="nameserver"></a>nameserver</h3><p>用来配置DNS服务器地址。支持ipv4和ipv6地址。如果要配置多个DNS服务器，可以增加多条配置，域名按照DNS服务器配置的顺序来解析。配置多条的例子如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nameserver 100.100.2.136</span><br><span class="line">nameserver 100.100.2.138</span><br></pre></td></tr></table></figure>
+
+<h3 id="search"><a href="#search" class="headerlink" title="search"></a>search</h3><p>在默认情况下，如果要查找的域名中不包含domain信息（即不包含<code>.</code>字符），此时会以当前hostname的domain信息来进行查找。可以通过search字段来修改该行为，即可以通过在域名的后面增加配置的后缀来进行查找。</p>
+<p>如果存在多条search记录，则以最后一条search记录为准。</p>
+<p>比如k8s的pod中的search域格式如下，如果要查找defaultnamespace下的service的svc1，此时系统会自动追加 svc1.default.svc.cluster.local来进行查找：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">search default.svc.cluster.local svc.cluster.local cluster.local</span><br></pre></td></tr></table></figure>
+
+<h3 id="sortlist"><a href="#sortlist" class="headerlink" title="sortlist"></a>sortlist</h3><p>该字段极少场景下会用到。在做域名解析时，如果返回的A记录为多条，可以对结果进行排序，排序的依据为当前的字段配置。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sortlist 130.155.160.0/255.255.240.0 130.155.0.0</span><br></pre></td></tr></table></figure>
+
+<h4 id="options"><a href="#options" class="headerlink" title="options"></a>options</h4><p>该配置必须加载一行中，格式如下，其中option部分可以为多个，多个之间用空格分割：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">options option ...</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>inet6: 应用程序在执行系统调用 gethostbyname 时，会优先执行 AAAA 记录的查询。如果查询不到 ipv6 地址，再去查询 ipv4 地址。</li>
+</ul>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><h3 id="实验一"><a href="#实验一" class="headerlink" title="实验一"></a>实验一</h3><p>修改&#x2F;resolv.conf配置文件的内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nameserver 8.8.8.8</span><br></pre></td></tr></table></figure>
+
+<p>可以看到该nameserver是生效的，但是访问map域名是不生效的，因为没有map这个域名.</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[vagrant@localhost ~]$ ping map.baidu.com</span><br><span class="line">PING map.n.shifen.com (119.75.222.71) 56(84) bytes of data.</span><br><span class="line">64 bytes from 119.75.222.71: icmp_seq=1 ttl=63 time=4.22 ms</span><br><span class="line"></span><br><span class="line">[vagrant@localhost ~]$ ping map</span><br><span class="line">ping: unknown host map</span><br></pre></td></tr></table></figure>
+
+<h3 id="实验二"><a href="#实验二" class="headerlink" title="实验二"></a>实验二</h3><p>修改文件内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">nameserver 8.8.8.8</span><br><span class="line"></span><br><span class="line">search baidu.com google.com</span><br></pre></td></tr></table></figure>
+<p>此时可以ping通map域名，解析到了跟map.baidu.com相同的域名.如果map.baidu.com的域名没有解析到，会继续解析map.google.com的域名。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[vagrant@localhost ~]$ ping map</span><br><span class="line">PING map.n.shifen.com (112.80.248.48) 56(84) bytes of data.</span><br><span class="line">64 bytes from 112.80.248.48: icmp_seq=1 ttl=63 time=28.6 ms</span><br></pre></td></tr></table></figure>
+
+<p>domain的作用跟search类似，作为search的默认值，因为search可以使用多个域。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/resolv.conf.5.html">resolv.conf(5) - Linux manual page (man7.org)</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/cncf-landscape/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/cncf-landscape/" class="post-title-link" itemprop="url">CNCF Landscape解读</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-06-10 00:14:00" itemprop="dateCreated datePublished" datetime="2022-06-10T00:14:00+00:00">2022-06-10</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="什么是CNCF-Landscape？"><a href="#什么是CNCF-Landscape？" class="headerlink" title="什么是CNCF Landscape？"></a>什么是CNCF Landscape？</h1><p>CNCF（Cloud Native Computing Foundation）为云原生计算基金会的英文缩写，致力于云原生技术的普及和推广。</p>
+<p>CNCF Landscape为CNCF的一个重要项目，为了帮助企业和个人开发者快速了解云原生技术的全貌，该项目维护在<a target="_blank" rel="noopener" href="https://github.com/cncf/landscape">GitHub</a>。CNCF Landscape的最重要的两个产出物为路线图和愿景图。</p>
+<h1 id="CNCF-Landscape路线图"><a href="#CNCF-Landscape路线图" class="headerlink" title="CNCF Landscape路线图"></a>CNCF Landscape路线图</h1><p><img src="https://raw.githubusercontent.com/cncf/trailmap/master/CNCF_TrailMap_latest.png"></p>
+<p>路线图的目的是指导用户使用云原生技术的路径和开源项目。其中包括了10个步骤。</p>
+<h1 id="CNCF-Landscape愿景图"><a href="#CNCF-Landscape愿景图" class="headerlink" title="CNCF Landscape愿景图"></a>CNCF Landscape愿景图</h1><p>将云原生技术进行了分层分类，可以非常清晰的将云原生技术展示给用户。类似于软件架构中，又称“方块图”、“砌砖图”。<br><img src="https://landscape.cncf.io/images/landscape.png"></p>
+<p>精简版图形如下：</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/cncf_landscape2.png"></p>
+<h2 id="供给层（provisioning）"><a href="#供给层（provisioning）" class="headerlink" title="供给层（provisioning）"></a>供给层（provisioning）</h2><p>愿景图的第一层，是云原生平台和云原生应用的基础。</p>
+<h3 id="自动化配置"><a href="#自动化配置" class="headerlink" title="自动化配置"></a>自动化配置</h3><p>关键词：IaC（基础设施即代码）、声明式配置</p>
+<p>用来加速计算机资源的创建和配置，资源包括虚拟机、网络、防火墙规则、负载均衡等。只需要点击下按钮，即可自动化创建对应的资源，用来降低人工的维护。</p>
+<p>典型工具代表：Terraform、Chef、Ansible、Puppet</p>
+<p>CNCF项目列表：</p>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Akri</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>CDK for Kubernetes</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Cloud Custodian</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>KubeDL</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>KubeEdge</td>
+<td>孵化</td>
+<td>华为开源的边缘计算项目</td>
+</tr>
+<tr>
+<td>Metal3-io</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>OpenYurt</td>
+<td>沙箱</td>
+<td>阿里云开源的边缘计算项目</td>
+</tr>
+<tr>
+<td>SuperEdge</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Tinkerbell</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="容器镜像仓库"><a href="#容器镜像仓库" class="headerlink" title="容器镜像仓库"></a>容器镜像仓库</h3><p>用来存储和拉取容器镜像，最简单的项目如docker官方的单机版的docker registry，所有的公有云厂商也都有自己的工具。</p>
+<p>CNCF项目包括：</p>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a target="_blank" rel="noopener" href="https://goharbor.io/">Harbor</a></td>
+<td>毕业</td>
+<td>由vmware打造的镜像仓库，提供了很多企业级的特性，广受企业内部使用。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://d7y.io/">Dragonfly</a></td>
+<td>孵化</td>
+<td>阿里开源的基于P2P技术做镜像分发项目，在大规模集群的场景下效果会比较明显。</td>
+</tr>
+</tbody></table>
+<h3 id="安全合规"><a href="#安全合规" class="headerlink" title="安全合规"></a>安全合规</h3><p>关键词：镜像扫描、镜像签名、策略管理、审计、证书管理、代码扫描、漏洞扫描、网络层安全</p>
+<p>用来监控、增强应用和平台的安全性，包括从容器到k8s的运行时环境均会涉及到。</p>
+<p>CNCF项目包括：</p>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="%5Bcert-manager%5D(https://cert-manager.io/)">cert-manager</a></td>
+<td>沙箱</td>
+<td>证书签发工具，部署在k8s之上，通过抽象CRD Certificate来管理证书，也可以用来管理Ingress的证书</td>
+</tr>
+<tr>
+<td>Confidential Containers</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Curiefense</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Dex</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Falco</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>in-toto</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>Keylime</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Kyverno</td>
+<td>沙箱</td>
+<td>基于k8s的策略引擎工具，通过抽象CRD ClusterPolicy的方式来声明策略，在运行时通过webhook的技术来执行策略。相比于opa &amp; gatekeeper，更加k8s化，但却没有编程语言的灵活性。</td>
+</tr>
+<tr>
+<td>Notary</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>Open Policy Agent (OPA)</td>
+<td>毕业</td>
+<td>基于Rego语言的策略引擎，编程能力非常强大</td>
+</tr>
+<tr>
+<td>Parsec</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>[The Update Framework (TUF)](<a target="_blank" rel="noopener" href="https://theupdateframework.io/">The Update Framework</a>)</td>
+<td>毕业</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="秘钥和身份管理"><a href="#秘钥和身份管理" class="headerlink" title="秘钥和身份管理"></a>秘钥和身份管理</h3><p>关键词：秘钥、身份、Secret、访问控制、认证、授权</p>
+<p>CNCF项目包括：</p>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Athenz</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>SPIFFE</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>SPIRE</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>Teller</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+</tbody></table>
+<h2 id="运行时层（Runtime）"><a href="#运行时层（Runtime）" class="headerlink" title="运行时层（Runtime）"></a>运行时层（Runtime）</h2><h3 id="云原生存储"><a href="#云原生存储" class="headerlink" title="云原生存储"></a>云原生存储</h3><p>关键词：PV、CSI、备份和恢复</p>
+<p>云原生架构下，存储类的工具主要涉及到如下几个方面：</p>
+<ol>
+<li>为容器提供云原生的存储。由于容器具有灵活、弹性的特点，云原生的存储相比传统存储会更复杂。</li>
+<li>需要有统一的接口。这块基本都会使用k8s的CSI接口。另外，minio提供了S3协议的接口。</li>
+<li>备份和还原功能。例如Velero可以用来备份k8s本身和容器使用到的存储。</li>
+</ol>
+<p>CNCF项目包括：</p>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CubeFS</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>K8up</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Longhorn</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>OpenEBS</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>ORAS</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Piraeus Datastore</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Rook</td>
+<td>毕业</td>
+<td></td>
+</tr>
+<tr>
+<td>Vineyard</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="容器运行时"><a href="#容器运行时" class="headerlink" title="容器运行时"></a>容器运行时</h3><p>容器运行时的三个主要特征：标准化、安全、隔离性。Containerd和CRI-O为容器运行时的标准实现方案，业界类似KataContainer的方式为将VM作为容器运行时，gVisor方案则在OS和容器中间增加了额外的安全层。</p>
+<p>发展趋势：</p>
+<ol>
+<li>基于 MicroVM 的安全容器技术，通过虚拟化和容器技术的结合，可以提升更高的安全性。比如 KataContainer。</li>
+<li>操作系统的虚拟化程度进一步增加。Linux 4.5 版本的 CGroup V2 技术逐渐成熟，进一步提升了容器的隔离能力。Docker 提供了 rootless 技术，可以以非 root 用户运行，提升了容器的安全性。</li>
+<li>WebAssembly技术作为跨平台的容器技术可能会作为新的挑战者出现。</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Containerd</td>
+<td>毕业</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="%5Bcri-o%5D(https://cri-o.io/)">CRI-O</a></td>
+<td>孵化</td>
+<td>k8s的CRI的轻量级实现，支持runc和kata作为容器运行时</td>
+</tr>
+<tr>
+<td>Inclavare Containers</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>rkt</td>
+<td>归档</td>
+<td>CoreOS公司主导研发的容器引擎，昔日的Docker竞争对手，目前已经没落，已经被CNCF归档</td>
+</tr>
+<tr>
+<td>WasmEdge Runtime</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="云原生网络"><a href="#云原生网络" class="headerlink" title="云原生网络"></a>云原生网络</h3><p>关键词：SDN、CNI、Overlay网络</p>
+<p>云原生网络具体指的是容器网络，k8s定义了CNI的网络规范，开源项目只需要实现CNI的网络规范即可，社区有非常多的CNI项目可以选择，比如Calico、Flannel、Weave Net等。网络分为Underlay和Overlay网络，其中容器网络为SDN网络，以overlay网络居多。</p>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Antrea</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Cilium</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://github.com/cni-genie/CNI-Genie">CNI-Genie</a></td>
+<td>沙箱</td>
+<td>华为云开源的多网络平面的项目，该项目并非具体的网络插件实现，而是k8s的CNI和具体网络插件实现的中间层，可以实现同一个节点上有多种网络插件的实现，支持同一个pod中有多个网卡。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://github.com/containernetworking/cni">CNI（Container Network Interface）</a></td>
+<td>孵化</td>
+<td>k8s的容器网络规范，指的一提的是在[plugins](<a target="_blank" rel="noopener" href="https://github.com/containernetworking/plugins">containernetworking&#x2F;plugins: Some reference and example networking plugins, maintained by the CNI team. (github.com)</a>)项目中，提供了很多k8s内置的简单容器插件，比如macvlan、bandwidth等</td>
+</tr>
+<tr>
+<td>Kube-OVN</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Network Service Mesh</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Submariner</td>
+<td>沙箱</td>
+<td>Rancher公司开源的项目，用来解决k8s的多集群场景下的跨集群互通问题</td>
+</tr>
+</tbody></table>
+<h2 id="编排和管理层（Orchestration-amp-Management）"><a href="#编排和管理层（Orchestration-amp-Management）" class="headerlink" title="编排和管理层（Orchestration &amp; Management）"></a>编排和管理层（Orchestration &amp; Management）</h2><h3 id="调度和编排"><a href="#调度和编排" class="headerlink" title="调度和编排"></a>调度和编排</h3><p>在单机的系统中，操作系统会来调度系统中运行的所有的进程，允许某个时间点调度某个进程到某个cpu上面。在集群的环境中，同样需要调度容器在某个时间点运行在某台主机的某个cpu上。</p>
+<p>在云原生社区基本上形成以k8s为生态的调度和编排，主要的发展方向为：</p>
+<ul>
+<li>扩展k8s自身的功能。</li>
+<li>k8s的多集群方向。</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Crossplane</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>Fluid</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Karmada</td>
+<td>沙箱</td>
+<td>华为云开源的k8s多集群管理项目，用来管理多个k8s集群。自己实现了一套完整的apiserver、scheduler、controller-manager，用来多k8s集群的调度。</td>
+</tr>
+<tr>
+<td>kube-rs</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Kubernetes</td>
+<td>毕业</td>
+<td>CNCF的最重要项目，在容器编排领域具有绝对的统治地位。俗称“现代数据中心的操作系统”</td>
+</tr>
+<tr>
+<td>Open Cluster Management</td>
+<td>沙箱</td>
+<td>Redhat主导的k8s多集群项目</td>
+</tr>
+<tr>
+<td>Volcano</td>
+<td>孵化</td>
+<td>华为云开源的基于k8s的容器批量计算平台，常用于大数据、AI领域。k8s默认的Job设计较为简单，无法满足很多批处理场景。Volcano通过CRD扩展的方式定义了Queue、PodGroup、VolcanoJob等实现对批处理作业的抽象，并通过调度器扩展的方式来大幅提升pod的调度效率。</td>
+</tr>
+<tr>
+<td>wasmCloud</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="调协和服务发现"><a href="#调协和服务发现" class="headerlink" title="调协和服务发现"></a>调协和服务发现</h3><p>该领域主要包含两类工具：</p>
+<ol>
+<li>服务发现引擎。</li>
+<li>域名解析服务。比如CoreDNS。</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CoreDNS</td>
+<td>毕业</td>
+<td></td>
+</tr>
+<tr>
+<td>etcd</td>
+<td>毕业</td>
+<td></td>
+</tr>
+<tr>
+<td>k8gb</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="远程过程调用（RPC）"><a href="#远程过程调用（RPC）" class="headerlink" title="远程过程调用（RPC）"></a>远程过程调用（RPC）</h3><p>用于进程间通讯的框架，主要解决的问题：</p>
+<ol>
+<li>提供了框架，使开发者编码更简单。</li>
+<li>提供了结构化的通讯协议。</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>gRPC</td>
+<td>孵化</td>
+<td>业界使用较为广泛的RPC框架</td>
+</tr>
+</tbody></table>
+<h3 id="服务代理"><a href="#服务代理" class="headerlink" title="服务代理"></a>服务代理</h3><p>通常又称为负载均衡，从协议上来划分，可以分为四层负载均衡和七层负载均衡。</p>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BFE</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Contour</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>Envoy</td>
+<td>毕业</td>
+<td></td>
+</tr>
+<tr>
+<td>OpenELB</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="API网关"><a href="#API网关" class="headerlink" title="API网关"></a>API网关</h3><p>相比于七层负载均衡，API网关还提供了更多高级特性，比如认证、鉴权、限流等。</p>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Emissary-Ingress</td>
+<td>孵化</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="服务网格"><a href="#服务网格" class="headerlink" title="服务网格"></a>服务网格</h3><p>值得注意的是，业内最为流行的istio项目并不在该范围内。</p>
+<table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Kuma</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Linkerd</td>
+<td>毕业</td>
+<td>流行的服务网格项目</td>
+</tr>
+<tr>
+<td>Meshery</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Open Service Mesh</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Service Mesh Interface</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Service Mesh Performance</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+</tbody></table>
+<h2 id="应用定义和应用部署"><a href="#应用定义和应用部署" class="headerlink" title="应用定义和应用部署"></a>应用定义和应用部署</h2><h3 id="数据库"><a href="#数据库" class="headerlink" title="数据库"></a>数据库</h3><table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SchemaHero</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>TiKV</td>
+<td>毕业</td>
+<td>国内公司PingCAP开源的分布式kv数据库</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://vitess.io/zh/">Vitess</a></td>
+<td>毕业</td>
+<td>用来扩展mysql集群的数据库解决方案，突破单mysql集群的性能瓶颈</td>
+</tr>
+</tbody></table>
+<h3 id="流式计算和消息"><a href="#流式计算和消息" class="headerlink" title="流式计算和消息"></a>流式计算和消息</h3><table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a target="_blank" rel="noopener" href="https://cloudevents.io/">CloudEvents</a></td>
+<td>孵化</td>
+<td>仅描述了事件的数据规范，并非具体的实现</td>
+</tr>
+<tr>
+<td>NATS</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>Pravega</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Strimzi</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Tremor</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="应用定义和镜像构建"><a href="#应用定义和镜像构建" class="headerlink" title="应用定义和镜像构建"></a>应用定义和镜像构建</h3><table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Artifact Hub</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Backstage</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>Buildpacks</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>Devfile</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Helm</td>
+<td>毕业</td>
+<td>k8s的应用打包工具</td>
+</tr>
+<tr>
+<td>Krator</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>KubeVela</td>
+<td>沙箱</td>
+<td>阿里云开源的基于OAM的应用模型的实现，用来做应用的发布，同时支持多集群</td>
+</tr>
+<tr>
+<td>KubeVirt</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>KUDO</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Nocalhost</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="%5Bhttps://operatorframework.io%5D(https://operatorframework.io/)">Operator Framework</a></td>
+<td>孵化</td>
+<td>用来开发基于k8s CRD的operator框架，功能跟k8s亲生的kubebuilder非常相似</td>
+</tr>
+<tr>
+<td>Porter</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>sealer</td>
+<td>沙箱</td>
+<td>阿里云开源的集群部署工具，理念比较先进，通过升维的方式可以通过类似Dockerfile的方式来构建集群镜像，并可以通过类似docker run的方式一键拉起完成的一套基于k8s的集群环境</td>
+</tr>
+<tr>
+<td>Serverless Workflow</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Telepresence</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="持续集成和持续交付"><a href="#持续集成和持续交付" class="headerlink" title="持续集成和持续交付"></a>持续集成和持续交付</h3><table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Argo</td>
+<td>孵化</td>
+<td>k8s上应用广泛的工作流引擎</td>
+</tr>
+<tr>
+<td>Brigade</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Flux</td>
+<td>孵化</td>
+<td>gitops工具</td>
+</tr>
+<tr>
+<td>Keptn</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>OpenGitOps</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://openkruise.io/zh/">OpenKruise</a></td>
+<td>沙箱</td>
+<td>基于k8s能力扩展的组件，通过CRD的方式定义了很多对象，用来增强k8s的workload能力。该组件放到该领域下有些不合适。</td>
+</tr>
+</tbody></table>
+<h2 id="可观测和分析"><a href="#可观测和分析" class="headerlink" title="可观测和分析"></a>可观测和分析</h2><h3 id="监控"><a href="#监控" class="headerlink" title="监控"></a>监控</h3><table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cortex</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>Fonio</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Kuberhealthy</td>
+<td>沙箱</td>
+<td>k8s的巡检工具，用来检查k8s的健康状态。支持以插件的方式接入巡检脚本。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md">OpenMetrics</a></td>
+<td>沙箱</td>
+<td>从Prometheus项目中发展出来的监控数据格式标准，该项目仅定义标准，非实现。</td>
+</tr>
+<tr>
+<td>Pixie</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Prometheus</td>
+<td>毕业</td>
+<td>云原生领域事实上的监控标准</td>
+</tr>
+<tr>
+<td>Skooner</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Thanos</td>
+<td>孵化</td>
+<td>prometheus的集群化方案</td>
+</tr>
+<tr>
+<td>Trickster</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="日志"><a href="#日志" class="headerlink" title="日志"></a>日志</h3><table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a target="_blank" rel="noopener" href="https://www.fluentd.org/">Fluentd</a></td>
+<td>毕业</td>
+<td>日志收集工具</td>
+</tr>
+</tbody></table>
+<h3 id="分布式会话跟踪"><a href="#分布式会话跟踪" class="headerlink" title="分布式会话跟踪"></a>分布式会话跟踪</h3><table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Jaeger</td>
+<td>毕业</td>
+<td>User开源的完整的分布式会话跟踪项目</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://opentelemetry.io/">OpenTelemetry</a></td>
+<td>孵化</td>
+<td>同时集成了监控、日志和分布式会话跟踪三个领域的数据收集工具，大有一统可观察性领域的趋势。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://opentracing.io/">OpenTracing</a></td>
+<td>归档</td>
+<td>已经完全被OpenTelemetry取代</td>
+</tr>
+</tbody></table>
+<h3 id="混沌引擎"><a href="#混沌引擎" class="headerlink" title="混沌引擎"></a>混沌引擎</h3><table>
+<thead>
+<tr>
+<th>CNCF项目</th>
+<th>项目阶段</th>
+<th>项目介绍</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Chaos Mesh</td>
+<td>孵化</td>
+<td></td>
+</tr>
+<tr>
+<td>Chaosblade</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+<tr>
+<td>Litmus</td>
+<td>沙箱</td>
+<td></td>
+</tr>
+</tbody></table>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://landscape.cncf.io/">Cloud Native Landscape</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/RPuzsVOyFGtqPdcqZqF_1Q">云原生全景图详解系列（一）：带你了解云原生技术图谱</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/NrW9-cJ1Lg-VF0WK8kPb7w">云原生全景图详解系列（二）：供应层</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/Q3USUso_PqeTrpNW8mIDhA">云原生全景图详解系列（三）：运行时层</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/2G4uvqo9_mEbRPh9MfnUmw">云原生全景图详解系列（四）：编排和管理层</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/Zkj0jQC1QOXFLkhCc0zlug">云原生全景图详解系列（五）：应用程序定义和开发层</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/73AjqjDG7VuFjtYgCBhHDg">云原生全景图详解（六）｜托管 Kubernetes 和 PaaS 解决什么问题</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/vJwqf9S8l9KpymmAAWACxw">云原生全景图详解（七）：可观察性是什么，有哪些相关工具</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/flux/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/flux/" class="post-title-link" itemprop="url">Flux（学习笔记）</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-05-06 23:42:46" itemprop="dateCreated datePublished" datetime="2022-05-06T23:42:46+00:00">2022-05-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="核心原理"><a href="#核心原理" class="headerlink" title="核心原理"></a>核心原理</h1><p>Flux为一款GitOPS的发布工具，应用信息全部放到git仓库中，一旦git仓库中应用信息有新的提交，Flux即可在k8s中发布新的部署。支持kustomize和helm chart形式的应用。目前该项目为CNCF的孵化项目。</p>
+<h1 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h1><h2 id="前置条件"><a href="#前置条件" class="headerlink" title="前置条件"></a>前置条件</h2><ol>
+<li>已经存在k8s集群</li>
+<li>可以获取到Github的个人token</li>
+</ol>
+<h2 id="安装flux-cli"><a href="#安装flux-cli" class="headerlink" title="安装flux cli"></a>安装flux cli</h2><p>执行如下命令安装flux cli</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">curl</span> <span class="string">-s</span> <span class="string">https://fluxcd.io/install.sh</span> <span class="string">|</span> <span class="string">sudo</span> <span class="string">bash</span></span><br></pre></td></tr></table></figure>
+<p>将如下内容追到到文件~&#x2F;.bash_profile</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">.</span> <span class="string">&lt;(flux</span> <span class="string">completion</span> <span class="string">bash)</span></span><br></pre></td></tr></table></figure>
+<h2 id="bootstrap"><a href="#bootstrap" class="headerlink" title="bootstrap"></a>bootstrap</h2><p>bootstrap操作会在k8s集群中安装flux到flux-system下，并且会通过git的方式来管理其自身。这里直接采用github，首先要获取到token，并设置为环境变量。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">export</span> <span class="string">GITHUB_TOKEN=xxx</span></span><br></pre></td></tr></table></figure>
+<p>并执行如下命令开始bootstrap</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">flux</span> <span class="string">bootstrap</span> <span class="string">github</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--owner=kuring</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--repository=flux-learn</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--path=clusters/my-cluster</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--personal</span></span><br></pre></td></tr></table></figure>
+<p>会自动创建github repo，并且会在main分支的clusters&#x2F;my-cluster&#x2F;flux-system下创建三个文件：</p>
+<ul>
+<li>gotk-components.yaml：flux的组件yaml</li>
+<li>gotk-sync.yaml</li>
+<li>kustomization.yaml：使用kustomization来个性化flux组件</li>
+</ul>
+<p>会安装如下组件到k8s中</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">k</span> <span class="string">get</span> <span class="string">deployment</span> <span class="string">-n</span> <span class="string">flux-system</span> </span><br><span class="line"><span class="string">NAME</span>                      <span class="string">READY</span>   <span class="string">UP-TO-DATE</span>   <span class="string">AVAILABLE</span>   <span class="string">AGE</span></span><br><span class="line"><span class="string">helm-controller</span>           <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br><span class="line"><span class="string">kustomize-controller</span>      <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br><span class="line"><span class="string">notification-controller</span>   <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br><span class="line"><span class="string">source-controller</span>         <span class="number">1</span><span class="string">/1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="string">27m</span></span><br></pre></td></tr></table></figure>
+<p>也可以使用更简单的方式<code>flux install</code>来安装flux，该命令不会将flux的安装信息存放到git仓库中，而是会直接安装。</p>
+<h2 id="部署应用"><a href="#部署应用" class="headerlink" title="部署应用"></a>部署应用</h2><p>将上述的github项目copy到本地，需要特别注意的是github不允许使用密码来认证，需要在输入密码的地方输入token。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">git</span> <span class="string">clone</span> <span class="string">https://github.com/kuring/flux-learn</span></span><br><span class="line"><span class="string">cd</span> <span class="string">fleet-infra</span></span><br></pre></td></tr></table></figure>
+<p>使用如下命令在git仓库中创建podinfo-source.yaml文件和kustomization文件</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">flux</span> <span class="string">create</span> <span class="string">source</span> <span class="string">git</span> <span class="string">podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--url=https://github.com/stefanprodan/podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--branch=master</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--interval=30s</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--export</span> <span class="string">&gt;</span> <span class="string">./clusters/my-cluster/podinfo-source.yaml</span></span><br><span class="line">  </span><br><span class="line"><span class="string">flux</span> <span class="string">create</span> <span class="string">kustomization</span> <span class="string">podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--target-namespace=default</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--source=podinfo</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--path=&quot;./kustomize&quot;</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--prune=true</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--interval=5m</span> <span class="string">\</span></span><br><span class="line">  <span class="string">--export</span> <span class="string">&gt;</span> <span class="string">./clusters/my-cluster/podinfo-kustomization.yaml</span></span><br></pre></td></tr></table></figure>
+<p>podinfo-source.yaml文件内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">source.toolkit.fluxcd.io/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">GitRepository</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">flux-system</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">interval:</span> <span class="string">30s</span></span><br><span class="line">  <span class="attr">ref:</span></span><br><span class="line">    <span class="attr">branch:</span> <span class="string">master</span></span><br><span class="line">  <span class="attr">url:</span> <span class="string">https://github.com/stefanprodan/podinfo</span></span><br></pre></td></tr></table></figure>
+<p>podinfo-kustomization.yaml文件内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">kustomize.toolkit.fluxcd.io/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Kustomization</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">flux-system</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">interval:</span> <span class="string">5m0s</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">./kustomize</span></span><br><span class="line">  <span class="attr">prune:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">sourceRef:</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">GitRepository</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">targetNamespace:</span> <span class="string">default</span></span><br></pre></td></tr></table></figure>
+<p>执行如下命令将文件提供到git仓库</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">git</span> <span class="string">add</span> <span class="string">-A</span> <span class="string">&amp;&amp;</span> <span class="string">git</span> <span class="string">commit</span> <span class="string">-m</span> <span class="string">&quot;Add podinfo GitRepository&quot;</span></span><br><span class="line"><span class="string">git</span> <span class="string">push</span></span><br></pre></td></tr></table></figure>
+<p>查看podinfo的部署状态，说明已经自动部署成功。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">$</span> <span class="string">flux</span> <span class="string">get</span> <span class="string">kustomizations</span> <span class="string">--watch</span></span><br><span class="line"><span class="string">NAME</span>    <span class="string">REVISION</span>        <span class="string">SUSPENDED</span>       <span class="string">READY</span>   <span class="string">MESSAGE</span>                          </span><br><span class="line"><span class="attr">podinfo master/bf09377  False           True    Applied revision:</span> <span class="string">master/bf09377</span></span><br><span class="line"><span class="attr">flux-system     main/81f2115    False   True    Applied revision:</span> <span class="string">main/81f2115</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>修改podinfo-kustomization.yaml文件内容如下，并重新提交到git仓库</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">kustomize.toolkit.fluxcd.io/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Kustomization</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">flux-system</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">interval:</span> <span class="string">5m0s</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">./kustomize</span></span><br><span class="line">  <span class="attr">prune:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">sourceRef:</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">GitRepository</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">  <span class="attr">targetNamespace:</span> <span class="string">default</span></span><br><span class="line">  <span class="attr">patches:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">patch:</span> <span class="string">|-</span></span><br><span class="line"><span class="string">        apiVersion: autoscaling/v2beta2</span></span><br><span class="line"><span class="string">        kind: HorizontalPodAutoscaler</span></span><br><span class="line"><span class="string">        metadata:</span></span><br><span class="line"><span class="string">          name: podinfo</span></span><br><span class="line"><span class="string">        spec:</span></span><br><span class="line"><span class="string">          minReplicas: 3             </span></span><br><span class="line"><span class="string"></span>      <span class="attr">target:</span></span><br><span class="line">        <span class="attr">name:</span> <span class="string">podinfo</span></span><br><span class="line">        <span class="attr">kind:</span> <span class="string">HorizontalPodAutoscaler</span></span><br></pre></td></tr></table></figure>
+<p>过会可以看到环境中的hpa最小副本数已经变更为3.</p>
+<h1 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://fluxcd.io/">https://fluxcd.io/</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/get_pod_by_pid/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/get_pod_by_pid/" class="post-title-link" itemprop="url">根据pid获取到pod名称</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-05-06 14:45:20" itemprop="dateCreated datePublished" datetime="2022-05-06T14:45:20+00:00">2022-05-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>在k8s的运维过程中，经常会有根据pid获取到pod名称的需求。比如某个pid占用cpu特别高，想知道是哪个pod里面的进程。</p>
+<h1 id="操作步骤"><a href="#操作步骤" class="headerlink" title="操作步骤"></a>操作步骤</h1><p>查看进程的cgroup信息</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ cat /proc/5760/cgroup </span><br><span class="line">11:rdma:/</span><br><span class="line">10:hugetlb:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">9:freezer:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">8:pids:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">7:perf_event:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">6:blkio:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">5:devices:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">4:memory:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">3:cpuset,cpu,cpuacct:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">2:net_cls,net_prio:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">1:name=systemd:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>其中的 <code>17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</code> 即为容器的id，可以如下的命令直接获取到容器的pid</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CID=$(cat /proc/5760/cgroup | awk -F &#x27;/&#x27; &#x27;&#123;print $6&#125;&#x27;)</span><br><span class="line">echo $&#123;CID:0:8&#125;</span><br></pre></td></tr></table></figure>
+
+<p>继续执行如下命令查看docker的label</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker  inspect 17e15f --format &quot;&#123;&#123;json .Config.Labels&#125;&#125;&quot; </span><br></pre></td></tr></table></figure>
+
+<p>其中io.kubernetes.pod.namespace为pod所在的namespace，io.kubernetes.pod.name为pod的name。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://icloudnative.io/posts/find-kubernetes-pod-info-from-process-id/">Kubernetes 教程：根据 PID 获取 Pod 名称</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/cuelang/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/cuelang/" class="post-title-link" itemprop="url">cue语言（个人笔记）</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2022-05-04 23:24:34" itemprop="dateCreated datePublished" datetime="2022-05-04T23:24:34+00:00">2022-05-04</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>cue为使用golang编写的一款配置语言。</p>
+<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>mac用户执行：<code>brew install cue-lang/tap/cue</code>，其他操作系统用户可以直接使用源码安装：<code>go install cuelang.org/go/cmd/cue@latest</code></p>
+<h1 id="命令行使用"><a href="#命令行使用" class="headerlink" title="命令行使用"></a>命令行使用</h1><p>创建如下文件first.cue</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">a: 1.5</span><br><span class="line">a: float</span><br><span class="line">b: 1</span><br><span class="line">b: int</span><br><span class="line">d: [1, 2, 3]</span><br><span class="line">g: &#123;</span><br><span class="line">    h: &quot;abc&quot;</span><br><span class="line">&#125;</span><br><span class="line">e: string</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>cue fmt first.cue：对代码进行格式化</li>
+<li>cue vet first.cue：校验语法的正确性</li>
+<li>cue eval first.cue：获得渲染结果</li>
+<li>cue export first.cue：将渲染结果以json格式的形式导出，如果指定参数–out yaml，则可以以yaml方式导出。如果要导出某个变量，可以使用-e参数来指定变量。</li>
+</ul>
+<h1 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h1><h2 id="基础数据类型"><a href="#基础数据类型" class="headerlink" title="基础数据类型"></a>基础数据类型</h2><p>支持的数据类型包括：float、int、string、array、bool、struct、null、自定义数据类型</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">//</span> <span class="string">float</span></span><br><span class="line"><span class="attr">a:</span> <span class="number">1.5</span></span><br><span class="line"></span><br><span class="line"><span class="string">//</span> <span class="string">int</span></span><br><span class="line"><span class="attr">b:</span> <span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="string">//</span> <span class="string">string</span></span><br><span class="line"><span class="attr">c:</span> <span class="string">&quot;blahblahblah&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="string">//</span> <span class="string">array</span></span><br><span class="line"><span class="attr">d:</span> [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]</span><br><span class="line"></span><br><span class="line"><span class="string">//</span> <span class="string">bool</span></span><br><span class="line"><span class="attr">e:</span> <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"><span class="string">//</span> <span class="string">struct</span></span><br><span class="line"><span class="attr">f:</span> &#123;</span><br><span class="line">    <span class="attr">a:</span> <span class="number">1.5</span></span><br><span class="line">    <span class="attr">b:</span> <span class="number">1</span></span><br><span class="line">    <span class="attr">d:</span> [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]</span><br><span class="line">    <span class="attr">g:</span> &#123;</span><br><span class="line">        <span class="attr">h:</span> <span class="string">&quot;abc&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="string">//</span> <span class="literal">null</span></span><br><span class="line"><span class="attr">j:</span> <span class="literal">null</span></span><br><span class="line"></span><br><span class="line"><span class="string">//</span> <span class="string">表示两种类型的值，即可以是string，也可以是int</span></span><br><span class="line"><span class="attr">h:</span> <span class="string">string</span> <span class="string">|</span> <span class="string">int</span></span><br><span class="line"></span><br><span class="line"><span class="string">//</span> <span class="string">表示k的默认值为1，且类型为int</span></span><br><span class="line"><span class="attr">k:</span> <span class="string">*1</span> <span class="string">|</span> <span class="string">int</span></span><br><span class="line"></span><br><span class="line"><span class="string">//</span> <span class="string">自定义数据类型</span></span><br><span class="line"><span class="comment">#abc: string</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>更复杂的自定义数据类型如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#abc: &#123;</span></span><br><span class="line">  <span class="attr">x:</span> <span class="string">int</span></span><br><span class="line">  <span class="attr">y:</span> <span class="string">string</span></span><br><span class="line">  <span class="attr">z:</span> &#123;</span><br><span class="line">    <span class="attr">a:</span> <span class="string">float</span></span><br><span class="line">    <span class="attr">b:</span> <span class="string">bool</span></span><br><span class="line">  &#125;</span><br><span class="line"><span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="定义cue模板"><a href="#定义cue模板" class="headerlink" title="定义cue模板"></a>定义cue模板</h2><p>文件deployment.cue定义如下内容</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">//</span> <span class="string">自定义结构体类型</span></span><br><span class="line"><span class="comment">#parameter: &#123;</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">string</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">string</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">template:</span> &#123;</span><br><span class="line">    <span class="attr">apiVersion:</span> <span class="string">&quot;apps/v1&quot;</span></span><br><span class="line">    <span class="attr">kind:</span>       <span class="string">&quot;Deployment&quot;</span></span><br><span class="line">    <span class="attr">spec:</span> &#123;</span><br><span class="line">        <span class="attr">selector: matchLabels:</span> &#123;</span><br><span class="line">            <span class="attr">&quot;app.oam.dev/component&quot;:</span> <span class="string">parameter.name</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="attr">template:</span> &#123;</span><br><span class="line">            <span class="attr">metadata: labels:</span> &#123;</span><br><span class="line">                <span class="attr">&quot;app.oam.dev/component&quot;:</span> <span class="string">parameter.name</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="attr">spec:</span> &#123;</span><br><span class="line">                <span class="attr">containers:</span> [&#123;</span><br><span class="line">                    <span class="attr">name:</span>  <span class="string">parameter.name</span>  <span class="string">//</span> <span class="string">引用自定义结构体变量parameter</span></span><br><span class="line">                    <span class="attr">image:</span> <span class="string">parameter.image</span></span><br><span class="line">                &#125;]</span><br><span class="line">            &#125;&#125;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="string">parameter:&#123;</span></span><br><span class="line">   <span class="attr">name:</span> <span class="string">&quot;mytest&quot;</span></span><br><span class="line">   <span class="attr">image:</span> <span class="string">&quot;nginx:v1&quot;</span></span><br><span class="line"><span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>执行 cue export deployment.cue -e template –out yaml 可获取到渲染结果。</p>
+<h1 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://cuelang.org/docs/install/">Getting Started</a></li>
+<li><a target="_blank" rel="noopener" href="https://kubevela.io/zh/docs/platform-engineers/cue/basic">CUE语言基础入门</a></li>
+<li><a target="_blank" rel="noopener" href="https://cuetorials.com/zh/introduction/">Cuetorials</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +1535,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -317,7 +1633,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -445,7 +1761,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -575,7 +1891,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -811,7 +2127,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -877,607 +2193,6 @@
 <li><a target="_blank" rel="noopener" href="https://firewalld.org/">firewalld官方文档</a></li>
 <li><a target="_blank" rel="noopener" href="https://www.certdepot.net/rhel7-get-started-firewalld/">RHEL7: How to get started with Firewalld</a></li>
 </ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-auditd/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux-auditd/" class="post-title-link" itemprop="url">linux auditd</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-03-28 11:57:28" itemprop="dateCreated datePublished" datetime="2022-03-28T11:57:28+00:00">2022-03-28</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="audit简介"><a href="#audit简介" class="headerlink" title="audit简介"></a>audit简介</h2><p>audit为linux内核安全体系的重要组成部分，用来记录内核的系统调用，文件修改等事件，用于审计目的。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/linux_audit.png"></p>
-<ul>
-<li>auditctl: 面向用户的工具，类似于iptables命令</li>
-<li>auditd: 负责将审计信息写入到&#x2F;var&#x2F;</li>
-</ul>
-<h2 id="启动auditd服务"><a href="#启动auditd服务" class="headerlink" title="启动auditd服务"></a>启动auditd服务</h2><p>auditd作为单独的服务运行在系统上，Redhat系统使用<code>systemctl start auditd</code>启动服务，启动后通过 <code>ps -ef | grep auditd</code>查看进程是否启动成功。</p>
-<h2 id="auditctl"><a href="#auditctl" class="headerlink" title="auditctl"></a>auditctl</h2><p>查看auditd的运行状态</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -s</span><br><span class="line">enabled 1</span><br><span class="line">failure 1</span><br><span class="line">pid 638</span><br><span class="line">rate_limit 0</span><br><span class="line">backlog_limit 8192</span><br><span class="line">lost 0</span><br><span class="line">backlog 0</span><br><span class="line">loginuid_immutable 0 unlocked</span><br></pre></td></tr></table></figure>
-
-<p>查看当前环境规则</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -l</span><br><span class="line">-w /tmp/hosts -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries1 -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries2 -p rwxa</span><br><span class="line">-w /proc/sys/net/ipv4/tcp_retries2 -p wa</span><br></pre></td></tr></table></figure>
-
-<p>删除所有的audit规则</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ auditctl -D</span><br><span class="line">No rules</span><br></pre></td></tr></table></figure>
-
-<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="监控文件变化"><a href="#监控文件变化" class="headerlink" title="监控文件变化"></a>监控文件变化</h3><ol>
-<li>执行 auditctl -w $file -p wa 来监控文件，比如监控内核参数 auditctl -w &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2 -p wa，其中-p指定了监控文件的行为，支持rwxa。</li>
-<li>查看文件 cat &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2。</li>
-<li>使用vim打开文件 vim &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2。</li>
-<li>执行 ausearch -f &#x2F;proc&#x2F;sys&#x2F;net&#x2F;ipv4&#x2F;tcp_retries2 命令查看，可以看到如下的日志</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ ausearch -f /proc/sys/net/ipv4/tcp_retries1</span><br><span class="line">----</span><br><span class="line">time-&gt;Mon Mar 28 12:44:48 2022</span><br><span class="line">type=PROCTITLE msg=audit(1648442688.159:6232591): proctitle=76696D002F70726F632F7379732F6E65742F697076342F7463705F7265747269657331</span><br><span class="line">type=PATH msg=audit(1648442688.159:6232591): item=1 name=&quot;/proc/sys/net/ipv4/tcp_retries1&quot; inode=46629229 dev=00:03 mode=0100644 ouid=0 ogid=0 rdev=00:00 objtype=NORMAL cap_fp=0000000000000000 cap_fi=0000000000000000 cap_fe=0 cap_fver=0</span><br><span class="line">type=PATH msg=audit(1648442688.159:6232591): item=0 name=&quot;/proc/sys/net/ipv4/&quot; inode=8588 dev=00:03 mode=040555 ouid=0 ogid=0 rdev=00:00 objtype=PARENT cap_fp=0000000000000000 cap_fi=0000000000000000 cap_fe=0 cap_fver=0</span><br><span class="line">type=CWD msg=audit(1648442688.159:6232591):  cwd=&quot;/root&quot;</span><br><span class="line">type=SYSCALL msg=audit(1648442688.159:6232591): arch=c000003e syscall=2 success=yes exit=3 a0=11687a0 a1=241 a2=1a4 a3=7ffe33dc14e0 items=2 ppid=8375 pid=8629 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts1 ses=250225 comm=&quot;vim&quot; exe=&quot;/usr/bin/vim&quot; key=(null)</span><br></pre></td></tr></table></figure>
-
-<h3 id="监控文件夹变化"><a href="#监控文件夹变化" class="headerlink" title="监控文件夹变化"></a>监控文件夹变化</h3><p>监控文件夹同样采用跟上述文件相同的方式，但有个问题是如果文件夹下内容较多，会一起监控，从而导致audit的log内容过多。</p>
-<h3 id="监控系统定期reboot"><a href="#监控系统定期reboot" class="headerlink" title="监控系统定期reboot"></a>监控系统定期reboot</h3><p>执行如下命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">auditctl -w /bin/systemctl -p rwxa -k systemd_call</span><br><span class="line">auditctl -a always,exit -F arch=b64 -S reboot -k reboot_call</span><br></pre></td></tr></table></figure>
-
-<p>待系统重启后执行如下命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ausearch -f reboot</span><br></pre></td></tr></table></figure>
-
-<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a target="_blank" rel="noopener" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/security_guide/chap-system_auditing">RedHat auditd文档</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/shell-often/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/shell-often/" class="post-title-link" itemprop="url">常用shell命令（持续更新）</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-03-28 11:20:03" itemprop="dateCreated datePublished" datetime="2022-03-28T11:20:03+00:00">2022-03-28</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="curl"><a href="#curl" class="headerlink" title="curl"></a>curl</h2><ul>
-<li>–local-port：指定源端口号</li>
-<li>–proxy：指定本地代理，例如：<a target="_blank" rel="noopener" href="http://127.0.0.1:52114/">http://127.0.0.1:52114</a></li>
-<li>-d：指定body，如果body比较小，可以直接指定<code>-d &#39;login=emma＆password=123&#39;</code>，也可以通过指定文件的方式 <code>-d &#39;@data.txt&#39;</code></li>
-</ul>
-<h2 id="history"><a href="#history" class="headerlink" title="history"></a>history</h2><p>bash会将历史命令记录到文件.bash_history中，通过history命令可以查看到历史执行的命令。但history在默认情况下，仅会显示命令，不会展示出执行命令的时间。history命令可以根据环境变量HISTTIMEFORMAT来显示时间，要想显示时间可以执行如下的命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HISTTIMEFORMAT=&#x27;%F %T &#x27; history</span><br></pre></td></tr></table></figure>
-
-<h2 id="lrzsz"><a href="#lrzsz" class="headerlink" title="lrzsz"></a>lrzsz</h2><p>CentOS rpm包地址：<a target="_blank" rel="noopener" href="https://rpmfind.net/linux/centos/7.9.2009/os/x86_64/Packages/lrzsz-0.12.20-36.el7.x86_64.rpm">https://rpmfind.net/linux/centos/7.9.2009/os/x86_64/Packages/lrzsz-0.12.20-36.el7.x86_64.rpm</a></p>
-<h2 id="ps"><a href="#ps" class="headerlink" title="ps"></a>ps</h2><p>最常用的为<code>ps -ef</code>和<code>ps aux</code>命令，两者的输出结果差不多，其中<code>ps -ef</code>为System V Style风格，<code>ps aux</code>为BSD风格，现在ps命令两者均支持。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ps aux</span><br><span class="line">USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND</span><br><span class="line">www-data       1  0.0  0.0    212     8 ?        Ss   Apr09   0:00 /usr/bin/dumb-init -- /nginx-ingress-controller</span><br><span class="line">www-data       6  0.9  0.3 813500 100456 ?       Ssl  Apr09  67:20 /nginx-ingress-controller --publish-service</span><br><span class="line">www-data      33  0.0  0.7 458064 242252 ?       S    Apr09   0:53 nginx: master process /usr/local/nginx/sbin/nginx -c /etc/nginx/nginx.conf</span><br><span class="line">www-data   46786  0.0  0.7 459976 239996 ?       S    17:57   0:00 rollback logs/eagleeye.log interval=60 adjust=600</span><br><span class="line">www-data   46787  1.4  0.8 559120 283328 ?       Sl   17:57   2:07 nginx: worker process</span><br><span class="line">www-data   46788  1.1  0.8 558992 284772 ?       Sl   17:57   1:38 nginx: worker process</span><br><span class="line">www-data   46789  0.0  0.7 452012 237152 ?       S    17:57   0:01 nginx: cache manager process</span><br><span class="line">www-data   46790  0.0  0.8 490832 267600 ?       S    17:57   0:00 nginx: x</span><br><span class="line">www-data   47357  0.0  0.0  60052  1832 pts/2    R+   20:21   0:00 ps aux</span><br></pre></td></tr></table></figure>
-
-<p>每个列的值如下：</p>
-<ul>
-<li>%MEM：占用内存百分比</li>
-<li>VSZ: 进程使用的虚拟内存量（KB）</li>
-<li>RSS：进程占用的固定内存量，驻留在页中的（KB）</li>
-<li>STAT：进程的状态</li>
-<li>TIME：进程实际使用的cpu运行时间</li>
-</ul>
-<h2 id="pssh"><a href="#pssh" class="headerlink" title="pssh"></a>pssh</h2><p>该工具的定位是在多台主机上批量执行pssh命令。</p>
-<ol>
-<li>将文件存放到文件中 &#x2F;tmp&#x2F;hosts 中，文件格式如下：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">192.168.1.1</span><br><span class="line">192.168.1.2</span><br></pre></td></tr></table></figure></li>
-<li>批量执行shell命令：pssh -h &#x2F;tmp&#x2F;hosts -A -i ‘uptime’。</li>
-</ol>
-<p>具体参数说明如下：</p>
-<ul>
-<li>-A: 手工输入密码模式，如果未打通ssh免密，可以在执行pssh命令的时候手工输入主机密码，但要求所有主机密码必须保持一致</li>
-</ul>
-<h2 id="rsync"><a href="#rsync" class="headerlink" title="rsync"></a>rsync</h2><p>常用命令：</p>
-<ol>
-<li><code>rsync -avz -e &#39;ssh -p 50023&#39; ~/git/arkctl root@100.67.27.224:/tm</code></li>
-</ol>
-<p>常用参数：</p>
-<ul>
-<li><code>--delete</code>: 本地文件删除时，同步删除远程文件</li>
-<li><code>-e &#39;ssh -p 50023&#39;</code>: 指定 ssh 端口号</li>
-<li><code>--exclude=.git</code>: 忽略同步本地的 git 目录</li>
-</ul>
-<h2 id="scp"><a href="#scp" class="headerlink" title="scp"></a>scp</h2><ul>
-<li>-P：指定端口号</li>
-</ul>
-<h2 id="strace"><a href="#strace" class="headerlink" title="strace"></a>strace</h2><p>跟踪进程的系统调用</p>
-<ul>
-<li>-p：指定进程</li>
-<li>-s：指定输出的字符串的最大大小</li>
-<li>-f：跟踪由fork调用产生的子进程</li>
-</ul>
-<h2 id="wget"><a href="#wget" class="headerlink" title="wget"></a>wget</h2><ul>
-<li>-P: 当下载文件时，可以指定本地的下载的目录</li>
-</ul>
-<h2 id="split"><a href="#split" class="headerlink" title="split"></a>split</h2><p>split [-bl] file [prefix]</p>
-<ul>
-<li><p>-b, –bytes&#x3D;SIZE：对file进行切分，每个小文件大小为SIZE。可以指定单位b,k,m。</p>
-</li>
-<li><p>-C,–bytes&#x3D;SIZE：与-b选项类似，但是，切割时尽量维持每行的完整性。</p>
-</li>
-<li><p>prefix：分割后产生的文件名前缀。</p>
-</li>
-</ul>
-<p>拆分文件：split -b 200m ip_config.gzip ip_config.gzip</p>
-<p>文件合并：cat ip_config.gzip* &gt; ip_config.gzip</p>
-<h2 id="python"><a href="#python" class="headerlink" title="python"></a>python</h2><p>快速开启一个http server <code>python -m SimpleHTTPServer 8080</code>。</p>
-<p>在python3环境下该命令变更为：<code>python3 -m http.server 8080</code></p>
-<p>格式化 json: <code>cat 1.json | python -m json.tool</code></p>
-<h2 id="awk"><a href="#awk" class="headerlink" title="awk"></a>awk</h2><p>按照,打印出一每一列 <code>awk -F, &#39;&#123;for(i=1;i&lt;=NF;i++)&#123;print $i;&#125;&#125;&#39;</code></p>
-<h2 id="docker-registry"><a href="#docker-registry" class="headerlink" title="docker registry"></a>docker registry</h2><ul>
-<li>列出镜像：<code>curl http://127.0.0.1:5000/v2/_catalog?n=1000</code></li>
-<li>查询镜像的tag: <code>curl http://127.0.0.1:5000/v2/nginx/tags/list</code>，如果遇到镜像名类似<code>aa/bb</code>的情况，需要转移一下 <code>curl http://127.0.0.1:5000/v2/aa\/bb/tags/list</code></li>
-</ul>
-<h2 id="socat"><a href="#socat" class="headerlink" title="socat"></a>socat</h2><ul>
-<li>向本地的 socket 文件发送数据：<code>echo &quot;test&quot; | socat - unix-connect:/tmp/unix.sock</code></li>
-<li>通过交互的方式输入命令：<code>socat - UNIX-CONNECT:/var/lib/kubelet/pod-resources/kubelet.sock</code></li>
-</ul>
-<h2 id="git"><a href="#git" class="headerlink" title="git"></a>git</h2><ul>
-<li>删除远程分支 <code>git push origin --delete xxx</code></li>
-<li>强制更新远程分支：<code>git push --force-with-lease origin feature/statefulset</code></li>
-<li>删除本地分支：<code>git branch -D local-branch</code></li>
-<li>拉取远程分支并切换分支：<code>git checkout -b develop origin/remote-branch</code> develop为本地分支，origin&#x2F;remote-branch为远程分支</li>
-<li>给 Github 设置代理<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 设置代理</span><br><span class="line">git config --global http.https://github.com.proxy socks5://127.0.0.1:13659</span><br><span class="line"></span><br><span class="line"># 取消代理</span><br><span class="line">git config --global --unset http.https://github.com.proxy</span><br></pre></td></tr></table></figure></li>
-</ul>
-<h2 id="rpm"><a href="#rpm" class="headerlink" title="rpm"></a>rpm</h2><ul>
-<li><code>rpm -ivh xx.rpm</code>：用来安装一个 rpm 包</li>
-<li><code>rpm -qa</code>：查看已经安装的包</li>
-<li><code>rpm -ql</code>: 查看已经安装的 rpm 的文件内容</li>
-<li><code>rpm -qpR *.rpm</code>: 查看rpm包的依赖</li>
-<li><code>rpm -e *</code>：要删除的rpm包</li>
-</ul>
-<h2 id="cloc"><a href="#cloc" class="headerlink" title="cloc"></a>cloc</h2><p>用来统计代码行数</p>
-<ul>
-<li><code>cloc .</code>： 用来统计当前的代码行数</li>
-<li><code>cloc . --exclude-dir vendor</code>：忽略目录 vendor，<code>--exclude-dir</code> 仅能支持一级目录</li>
-<li><code>cloc . --fullpath --not-match-d=pkg/apis/</code>：用来忽略目录 pkg&#x2F;apis 下的文件</li>
-</ul>
-<h1 id="jq"><a href="#jq" class="headerlink" title="jq"></a>jq</h1><p>用来解析 json 格式</p>
-<p>key 中包含特殊字符，假设文件 data.json 格式如下：</p>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;data&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">	  <span class="attr">&quot;a.json&quot;</span><span class="punctuation">:</span> <span class="string">&quot;abc&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-<p>可以使用 <code>cat data.json | jq &#39;.data.&quot;a.json&quot;&#39;</code> 或者 <code>cat data.json | jq &#39;.data[&quot;a.json&quot;]&#39;</code>  的方式来解析其中的内容。</p>
-<p>-r 参数：<br><code>echo &#39;&quot;&#123;&#125;&quot;&#39; | jq .</code> 输出结果为 <code>&quot;&#123;&#125;&quot;</code> 即对应的格式为字符串。<code>echo -r &#39;&quot;&#123;&#125;&quot;&#39; | jq -r .</code> 输出结果为 <code>&#123;&#125;</code>，已经解析为标准的 json 格式。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/knowledge-share/knowledge-share-15/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/knowledge-share/knowledge-share-15/" class="post-title-link" itemprop="url">技术分享第15期</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-03-19 22:45:32" itemprop="dateCreated datePublished" datetime="2022-03-19T22:45:32+00:00">2022-03-19</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/knowledage-15.jpg"></p>
-<p>题图为周末的公园露营区。一周前曾经下过一场雪，地上覆盖着厚厚的一层雪，而一星期过后，上面却扎满了帐篷。城市里的人们，在捂了一个冬季后，终于迎来了阳光明媚的春天。虽内心充满着诗和远方，疫情之下，能约上三五好友，在草地上吃上一顿野餐，亦或在帐篷里美美的睡上一觉已是一件很奢侈的事情。</p>
-<h1 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h1><h2 id="1-Submariner"><a href="#1-Submariner" class="headerlink" title="1. Submariner"></a>1. <a target="_blank" rel="noopener" href="https://www.rancher.cn/submariner/">Submariner</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/how-it-works-submariner.svg"></p>
-<p>Rancher开源的一款k8s集群之间的容器网络打通的工具。k8s社区的网络插件中以overlay的网络插件居多，因为overlay的网络对底层物理网络几乎很少有依赖，通常会采用vxlan、IPIP等协议来实现。虽然overlay的网络插件用起来比较方便，但是两个k8s集群的容器网络通常是无法直接通讯，在多k8s集群的应用场景下比较受限。Submariner提供了容器网络的互通方案。 </p>
-<h2 id="2-k8e"><a href="#2-k8e" class="headerlink" title="2. k8e"></a>2. <a target="_blank" rel="noopener" href="https://github.com/xiaods/k8e">k8e</a></h2><p>k8e为Kubernetes Easy的简写。社区里有k3s和k0s项目来提供了k8s精简版，本项目在k3s的基础之上又进一步进行了裁剪，移除了一些边缘场景的特性。</p>
-<h2 id="3-Rancher-Desktop"><a href="#3-Rancher-Desktop" class="headerlink" title="3. Rancher Desktop"></a>3. <a target="_blank" rel="noopener" href="https://rancherdesktop.io/">Rancher Desktop</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/rancher-desktop.png"></p>
-<p>k8s的发行版SUSE Rancher提供的k8s的桌面客户端，目前已经发布了1.0.0版本。</p>
-<h2 id="4-nginx-config"><a href="#4-nginx-config" class="headerlink" title="4. nginx config"></a>4. <a target="_blank" rel="noopener" href="https://nginxconfig.io/">nginx config</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/nginx-config.jpg"></p>
-<p>Nginx作为最流行的负载均衡配置软件之一，有自己的一套配置语法。DigitalOcean提供的nginx config工具可以通过UI直接进行配置，并最终可以一键生成nginx的配置文件。</p>
-<h2 id="5-mizu"><a href="#5-mizu" class="headerlink" title="5. mizu"></a>5. <a target="_blank" rel="noopener" href="https://github.com/up9inc/mizu">mizu</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/mizu-ui.png"></p>
-<p>一款部署在k8s上的流量分析工具，可以认为是k8s版的tcpdump + wireshark。底层的实现也是基于libpcap抓包的方式，可以支持解析HTTP、Redis、Kafka等协议。</p>
-<h2 id="6-kube-bench"><a href="#6-kube-bench" class="headerlink" title="6. kube-bench"></a>6. <a target="_blank" rel="noopener" href="https://github.com/aquasecurity/kube-bench">kube-bench</a></h2><p>互联网安全中心（Center for Internet Security）针对k8s版本提供了一套安全检查的规范，<a target="_blank" rel="noopener" href="https://learn.cisecurity.org/benchmarks">约有200多页的pdf文档</a>，本项目为针对该规范的实现。仅需要向k8s环境中提交一个job，即可得到最终的安全结果。很多公有云厂商也有自己的实现，比如<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/207760.html">阿里云ACK的实现</a>。</p>
-<h2 id="7-virtual-kubelet"><a href="#7-virtual-kubelet" class="headerlink" title="7. virtual-kubelet"></a>7. <a target="_blank" rel="noopener" href="https://github.com/virtual-kubelet/virtual-kubelet">virtual-kubelet</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/virtual-kubelet.svg"></p>
-<p>virtual kubelet服务通过在k8s集群上创建虚拟node，当一个pod调度到虚拟node时，virtual kubelet组件以插件的形式提供了不同的实现，可以将pod创建在k8s集群之外。比如，在阿里云的场景下，可以将pod创建到弹性容器实例ECI上面，从而达到弹性的目的。该项目除了用于公有云一些弹性的场景外，还常用于边缘计算的场景。</p>
-<h2 id="8-cloudevents"><a href="#8-cloudevents" class="headerlink" title="8. cloudevents"></a>8. <a target="_blank" rel="noopener" href="https://cloudevents.io/">cloudevents</a></h2><p>CloudEvents定义了一种通用的方式描述事件数据的规范，由CNCF的Serverless工作组提出。阿里云的事件总线EventBridge基于此规范提供了比较好商业化产品。</p>
-<p>相关链接：<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/SdpMLCaRSGsFnm08PjBxEA">EventBridge 事件总线及 EDA 架构解析</a></p>
-<h2 id="9-kubectl-who-can"><a href="#9-kubectl-who-can" class="headerlink" title="9. kubectl-who-can"></a>9. <a target="_blank" rel="noopener" href="https://github.com/aquasecurity/kubectl-who-can">kubectl-who-can</a></h2><p>在k8s系统中，通常会通过RBAC的机制来配置某个账号拥有某种权限，但如果反过来要查询某个权限被哪些账号所拥有，就会麻烦很多。</p>
-<p>该工具是一个k8s的命令行小工具，可以用来解决上述需求。比如查询拥有创建namespace权限的ServiceAccount有哪些，可以直接执行 <code>kubectl-who-can create namespace</code>。</p>
-<h2 id="10-kyverno"><a href="#10-kyverno" class="headerlink" title="10. kyverno"></a>10. <a target="_blank" rel="noopener" href="https://kyverno.io/">kyverno</a></h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/knowledge/kyverno-architecture.png"></p>
-<p>Kyverno是一款基于k8s的策略引擎工具，通过抽象CRD ClusterPolicy的方式来声明策略，在运行时通过webhook的技术来执行策略。相比于opa &amp; gatekeeper，更加k8s化，但却没有编程语言的灵活性。目前该项目为CNCF的孵化项目。</p>
-<h1 id="文章"><a href="#文章" class="headerlink" title="文章"></a>文章</h1><h2 id="1-进击的Kubernetes调度系统"><a href="#1-进击的Kubernetes调度系统" class="headerlink" title="1. 进击的Kubernetes调度系统"></a>1. <a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/766273">进击的Kubernetes调度系统</a></h2><p>该系列一共三篇文档，分别讲解了如下内容：</p>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/766273">第一篇</a>：k8s 1.16版本引入的Scheduling Framework</li>
-<li><a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/766275">第二篇</a>：阿里云ACK服务基于Scheduling Framework实现的Gang scheduling</li>
-<li><a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/770336">第三篇</a>：阿里云ACK服务基于Scheduling Framework实现的支持批任务的Binpack Scheduling</li>
-</ul>
-<h2 id="2-中国的云计算革命尚未开始"><a href="#2-中国的云计算革命尚未开始" class="headerlink" title="2. 中国的云计算革命尚未开始"></a>2. <a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/TXB5lkRCW6MTUbEkby5R-w">中国的云计算革命尚未开始</a></h2><p>作者通过工业革命时代的电气化道路做类似，认为当前云计算的阶段仍然比较初级，并且首先要解决的是人的问题，而不是技术本身。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/aliyun-product/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/aliyun-product/" class="post-title-link" itemprop="url">阿里云产品分析（持续更新）</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-03-19 22:19:24" itemprop="dateCreated datePublished" datetime="2022-03-19T22:19:24+00:00">2022-03-19</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>阿里云上有众多的云产品，本文主要分析云产品的功能以及应用场景。</p>
-<h1 id="容器与中间件"><a href="#容器与中间件" class="headerlink" title="容器与中间件"></a>容器与中间件</h1><p>该部分领域与我的工作重合度较高，为重点研究领域。</p>
-<h2 id="事件总线EventBridge"><a href="#事件总线EventBridge" class="headerlink" title="事件总线EventBridge"></a>事件总线EventBridge</h2><p>很多服务会产生输出供下游的服务来消费，最常见的解决办法是数据生产者通过rpc调用的方式将消息发送给数据消费者。但假如消费者的数量不止一处，该模式下就需要数据生产者将数据重复发送给多个消费者，该方式对于生产者可配置的灵活性要求非常高。</p>
-<p>为了解决上述问题，将生产者和消费者解耦，解决办法就是引入一个中间层，这也是软件架构中最常见的解决复杂问题的方法。引入的中间层即为消息队列类的服务，比如Kafka。生成者仅负责生产数据到消息队列，消费者负责从消息队列消费数据，且可以存在多个消费者。生成者和消费者根本不用关心彼此，仅需要跟消息队列进行交互就可以了。</p>
-<p>阿里云上的某个产品新增加了一个新的操作，比如ECS主机完成了一次快照操作，都会产生事件。如果有服务要消费事件，可以使用该产品。</p>
-<p>阿里云上的很多产品会将新产生的事件发送到事件总线，另外也支持自定义事件源，通过编程的方式将事件推送到事件源上。</p>
-<p>数据的消费模块跟通常的消息队列有所不同，这里的数据消费需要由事件总线产品主动推送消息到对应的服务，具体要推送到哪些服务，则需要在创建总线的时候配置，该功能即消息路由。支持的消费端包括钉钉、消息队列、Serverless服务、HTTP Server等。可以看到数据的消费端除了HTTP Server外，基本不需要额外开发一个服务，也是阿里云的一些其他云产品。</p>
-<p>消息的规范完成遵循云原生社区CNCF的CloudEvent规则。</p>
-<p>相关链接：</p>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://cloudevents.io/">CloudEvents规范</a></li>
-</ul>
-<h2 id="弹性容器实例ECI"><a href="#弹性容器实例ECI" class="headerlink" title="弹性容器实例ECI"></a>弹性容器实例ECI</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/aliyun/eci.jpg"></p>
-<p>该产品的功能比较简单，相当于提供了管控页面来创建k8s的pod，具体pod部署在哪里用户不需要关心，提供了非常好的弹性能力，充分发挥了云的优势。</p>
-<p>具体在实现层面，实际上会以pod的形式部署在阿里云维护的公共k8s集群中，且容器的网络在用户指定的vpc中。</p>
-<p>除了给用户提供直接创建容器实例外，还有很大一部分功能是给Serverless Kubernetes（ASK）和容器服务（ACK）来提供弹性扩缩容的功能。</p>
-<h2 id="企业级分布式应用服务EDAS"><a href="#企业级分布式应用服务EDAS" class="headerlink" title="企业级分布式应用服务EDAS"></a>企业级分布式应用服务EDAS</h2><p>提供了应用托管和微服务的治理能力。</p>
-<p>在应用托管方面支持应用发布到虚拟机和k8s两种方式。</p>
-<p>微服务治理方面支持了Spring Cloud、Dubbo、HSF三种微服务框架。</p>
-<h2 id="Serverless应用引擎SAE"><a href="#Serverless应用引擎SAE" class="headerlink" title="Serverless应用引擎SAE"></a>Serverless应用引擎SAE</h2><p>提供了类似于knative的serving功能，可以支持应用的托管，用户不需要关心底层的服务器资源，可以自动将用户的应用部署在托管的k8s集群中，且具备秒级的弹性扩缩容的功能。</p>
-<h2 id="Serverless工作流SWF"><a href="#Serverless工作流SWF" class="headerlink" title="Serverless工作流SWF"></a>Serverless工作流SWF</h2>
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/work-theory/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/work-theory/" class="post-title-link" itemprop="url">工作中经常用到的理论或法则</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-03-19 00:23:24" itemprop="dateCreated datePublished" datetime="2022-03-19T00:23:24+00:00">2022-03-19</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="软件工程"><a href="#软件工程" class="headerlink" title="软件工程"></a>软件工程</h1><h2 id="康威定律"><a href="#康威定律" class="headerlink" title="康威定律"></a>康威定律</h2><p>任何一个组织在设计一个系统的时候，这个系统的结构与这个组织的沟通结构是一致的。<br>工作了这么些年对此深有感触，即“组织架构决定软件架构”。</p>
-<h2 id="布鲁克定律"><a href="#布鲁克定律" class="headerlink" title="布鲁克定律"></a>布鲁克定律</h2><p>在一个已经延期的项目中增加人手只会让项目延期更长。<br>我个人不是特别认可此定律，该定律肯定是项目而定的，这要看项目的协作复杂程度，如果是体力劳动居多的项目，那么堆人还是特别好使的。</p>
-<h2 id="帕金森定律"><a href="#帕金森定律" class="headerlink" title="帕金森定律"></a>帕金森定律</h2><p>一项工作会占用掉所有用来完成它的时间。即如果不给一个项目设置截止日期，那么该项目就永远完成不了。安排多少时间，就会有多少工作。</p>
-<h2 id="冰山谬论"><a href="#冰山谬论" class="headerlink" title="冰山谬论"></a>冰山谬论</h2><p>一款新软件的开发成本只占管理层预算的总成本的25%左右。</p>
-<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><h2 id="黄金圈法则"><a href="#黄金圈法则" class="headerlink" title="黄金圈法则"></a>黄金圈法则</h2><p>著名的营销顾问西蒙斯.涅克提出了一个“黄金圈”理论：三个同心圆，最里面的一个是Why,中间一层是How，最外面一层是What。</p>
-<p>大多数人的思维方式是想做什么（what）和怎么做（how），不太考虑为什么这么做（why）。</p>
-<p>本理论提倡的思维方式为：</p>
-<ol>
-<li>Why：最内层——为什么，做一件事的原因或目的，也可以说是理念和宗旨，属于战略层面；</li>
-<li>How：中间层——怎么做，针对这个目的或理念的计划，也即如何去做好这件事情，属于战术层面；</li>
-<li>What：最外层——是什么，最终得到什么，或者要做哪些具体的事，这基本是事情的表象，主要是执行层面的东西。</li>
-</ol>
-<p>该法则在软件行业的述职晋升等场景下非常适用。</p>
-<ol>
-<li>Why：描述为什么做这个项目？</li>
-<li>How：做这个项目遇到的挑战有哪些，是怎么解决的。挑战和解决方法可以一一对应起来。</li>
-<li>What：项目的最终结果，最好有具体的可以量化的指标。</li>
-</ol>
-<h2 id="SWOT分析法"><a href="#SWOT分析法" class="headerlink" title="SWOT分析法"></a>SWOT分析法</h2><p>常见的战略分析方法，对研究对象进行全面、系统、准确的研究。</p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/swot.jpeg"></p>
-<h2 id="金字塔原理"><a href="#金字塔原理" class="headerlink" title="金字塔原理"></a>金字塔原理</h2><p>参见《<a href="http://kuring.me/post/minto-pyramid/">金字塔原理总结</a>》</p>
-<p>成功的面试 &#x3D; 把握正确清晰的用人标准 + 挖掘真实匹配的应聘者信息 &#x3D; 以素质模型去“发问” + 用STAR方式去“追问”</p>
-<h2 id="STAR行为面试法"><a href="#STAR行为面试法" class="headerlink" title="STAR行为面试法"></a>STAR行为面试法</h2><p>STAR是业界公认的最为有效的面试方法之一，为背景（Situation）、任务（Task）、行为（Action）、结果（Result）的缩写。该方法不仅用于面试的场合，也会用于述职、晋升答辩等场景。</p>
-<p>任务（Task）描述在事情里的担任的角色和负责的任务。</p>
-<p>行为（Action）是最关键部分，要了解做了什么，展现出了哪些能力。</p>
-<p>结果（Result）部分通常需要虚实结合，且重点在实，围绕效率、效果、质量和成本四个维度量化评估。</p>
-<p>STAR方法同样适用于述职汇报或者晋升中。</p>
-<h2 id="奥克姆剃刀理论"><a href="#奥克姆剃刀理论" class="headerlink" title="奥克姆剃刀理论"></a>奥克姆剃刀理论</h2><p>如无必要，勿增实体。</p>
-<h2 id="马斯洛需求层次理论"><a href="#马斯洛需求层次理论" class="headerlink" title="马斯洛需求层次理论"></a>马斯洛需求层次理论</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/masiluo.png"></p>
-<p>心理学中重要理论，将人类的需求分为五个层级：</p>
-<ol>
-<li>生理</li>
-<li>安全</li>
-<li>社交</li>
-<li>尊重</li>
-<li>自我实现</li>
-</ol>
-<p>人类的需求为逐步递进的，在满足了基本需求后，就会去实现更高的需求和目标。</p>
-<p>在工作中，经常会用类似马斯洛需求层次理论中的金字塔结构来解释一些其他的有递进关系的场景 ，比如一个软件产品的设计目标。</p>
-<h2 id="SMART-原则"><a href="#SMART-原则" class="headerlink" title="SMART 原则"></a>SMART 原则</h2><p>确定目标的五原则，通常用在绩效考核中。</p>
-<ol>
-<li>S（Special）：目标必须是具体的</li>
-<li>M（Measurable）：目标必须是可衡量的</li>
-<li>A（Attainable）：目标必须是可实现的</li>
-<li>R（Relevant）：与其他的目标有一定的相关性</li>
-<li>T（Time-bound）：目标必须有完成的期限</li>
-</ol>
-<h1 id="常见名词"><a href="#常见名词" class="headerlink" title="常见名词"></a>常见名词</h1><p>ROI：投入产出比</p>
 
       
     </div>

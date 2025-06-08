@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">251</span>
+          <span class="site-state-item-count">256</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,557 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/docker-rm-failed/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/docker-rm-failed/" class="post-title-link" itemprop="url">kubernetes中pod无法删除的问题排查</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2019-01-30 20:51:02" itemprop="dateCreated datePublished" datetime="2019-01-30T20:51:02+00:00">2019-01-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ cat /etc/redhat-release</span><br><span class="line">CentOS Linux release 7.2.1511 (Core)</span><br><span class="line"></span><br><span class="line">$ uname -a</span><br><span class="line">Linux c3-a05-136-45-10.com 3.10.0-327.el7.x86_64 #1 SMP Thu Nov 19 22:10:57 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux</span><br><span class="line"></span><br><span class="line">$ docker info | grep &quot;Storage Driver&quot;</span><br><span class="line">Storage Driver: devicemapper</span><br></pre></td></tr></table></figure>
+
+<p>在CentOS7.2的系统上，发现有一部分pod在delete后一直处于Terminating状态</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl get pods -o wide</span><br><span class="line">NAME                                 READY     STATUS        RESTARTS   AGE       IP        NODE          NOMINATED NODE</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-25dsh   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.6   &lt;none&gt;</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-f9flb   0/1       Terminating   0          54d       &lt;none&gt;    10.136.45.4   &lt;none&gt;</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-m7sl4   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.6   &lt;none&gt;</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-pqpht   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.6   &lt;none&gt;</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-r987g   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.4   &lt;none&gt;</span><br><span class="line">httpserver-prod-1-6cb97dfbcc-zghhr   0/1       Terminating   0          54d       &lt;none&gt;    10.136.45.6   &lt;none&gt;</span><br></pre></td></tr></table></figure>
+
+<p>查看docker的日志发现有如下报错信息如下，含义为在删除pod时由于&#x2F;var&#x2F;lib&#x2F;docker&#x2F;overlay&#x2F;*&#x2F;merged目录被其他应用占用，从而导致容器无法清除。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Jan 30 14:57:47 c3-a05-136-45-4.com dockerd[1510]: time=&quot;2019-01-30T14:57:47.704641914+08:00&quot; level=error msg=&quot;Error removing mounted layer e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9: remove /var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/merged: device or resource busy&quot;</span><br><span class="line">Jan 30 14:57:47 c3-a05-136-45-4.com dockerd[1510]: time=&quot;2019-01-30T14:57:47.704772288+08:00&quot; level=error msg=&quot;Handler for DELETE /v1.31/containers/e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9 returned error: driver \&quot;overlay\&quot; failed to remove root filesystem for e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9: remove /var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/merged: device or resource busy&quot;</span><br><span class="line">Jan 30 14:57:48 c3-a05-136-45-4.com dockerd[1510]: time=&quot;2019-01-30T14:57:48.228837657+08:00&quot; level=error msg=&quot;Error removing mounted layer 2851b80d5c45d1cac3e7384116da0ad022af21701f9aa0d9ba3598efd5723030: remove /var/lib/docker/overlay/0ff0f98e1abf43c10711f2804cae3cf37efd597016d38b4753e2af19c2e27eb9/merged: device or resource busy&quot;</span><br><span class="line">Jan 30 14:57:48 c3-a05-136-45-4.com dockerd[1510]: time=&quot;2019-01-30T14:57:48.228953497+08:00&quot; level=error msg=&quot;Handler for DELETE /v1.31/containers/2851b80d5c45d1cac3e7384116da0ad022af21701f9aa0d9ba3598efd5723030 returned error: driver \&quot;overlay\&quot; failed to remove root filesystem for 2851b80d5c45d1cac3e7384116da0ad022af21701f9aa0d9ba3598efd5723030: remove /var/lib/docker/overlay/0ff0f98e1abf43c10711f2804cae3cf37efd597016d38b4753e2af19c2e27eb9/merged: device or resource busy&quot;</span><br></pre></td></tr></table></figure>
+
+<p>通过<code>docker ps -a</code>看到容器的状态为”Removal In Progress”。通过<code>docker inspect</code>可以看到容器的进程已经退出了。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># docker ps -a</span><br><span class="line">CONTAINER ID        IMAGE                                                                  COMMAND                  CREATED             STATUS                    PORTS               NAMES</span><br><span class="line">e6b7378c58a3        golang-httpserver        &quot;/bin/sh -c &#x27;go ru...&quot;   7 weeks ago         Removal In Progress                           k8s_golang-httpserver_httpserver-prod-1-6cb97dfbcc-f9flb_default_9e3d2cbb-f9d4-11e8-b61c-f01fafd10a1b_0</span><br><span class="line"></span><br><span class="line"># docker inspect e6b7378c58a3 --format &#x27;&#123;&#123;.State.Pid&#125;&#125;&#x27;</span><br><span class="line">0</span><br></pre></td></tr></table></figure>
+
+<p>使用<code>docker rm</code>命令删除容器会报错</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># docker rm e6b7378c58a3</span><br><span class="line">Error response from daemon: driver &quot;overlay&quot; failed to remove root filesystem for e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9: remove /var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/merged: device or resource busy</span><br></pre></td></tr></table></figure>
+
+<p>通过<code>kubectl delete pods</code>命令虽然可以强制删除pod，但在宿主机上仍然能看到容器的状态为”Removal In Progress”。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># kubectl delete pods  httpserver-prod-1-6cb97dfbcc-f9flb --grace-period=0 --force</span><br><span class="line">warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.</span><br><span class="line">pod &quot;httpserver-prod-1-6cb97dfbcc-f9flb&quot; force deleted</span><br></pre></td></tr></table></figure>
+
+<p>通过搜索挂载目录的信息，可以找到是哪个进程挂载了该目录。可以看到是ntpd服务挂载了该目录。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># grep -nr 98a56 /proc/*/mountinfo</span><br><span class="line">/proc/2725007/mountinfo:48:296 183 0:183 / /var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/merged rw,relatime shared:88 - overlay overlay rw,lowerdir=/var/lib/docker/overlay/5e2a5f7af24e555a5afacd6a8faa406b42c51d7f2bb4cde22adcea22e0153583/root,upperdir=/var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/upper,workdir=/var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/work</span><br><span class="line"></span><br><span class="line"># ps -ef | grep 2725007</span><br><span class="line">ntp      2725007       1  0 Jan07 ?        00:00:02 /usr/sbin/ntpd -u ntp:ntp -g</span><br><span class="line"></span><br><span class="line"># ntpd进程的启动时间在容器启动之后</span><br><span class="line"># ps -ef | grep ntpd</span><br><span class="line">root     1179644   18205  0 19:52 pts/1    00:00:00 grep --color=auto -d skip -i ntpd</span><br><span class="line">ntp      3853149       1  0 Jan07 ?        00:00:02 /usr/sbin/ntpd -u ntp:ntp -g</span><br></pre></td></tr></table></figure>
+
+<p>查看ntpd.service文件内容如下，其中<code>PrivateTmp=true</code>，该选项用于控制服务是否使用单独的tmp目录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[Unit]</span><br><span class="line">Description=Network Time Service</span><br><span class="line">After=syslog.target ntpdate.service sntp.service</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">Type=forking</span><br><span class="line">EnvironmentFile=-/etc/sysconfig/ntpd</span><br><span class="line">ExecStart=/usr/sbin/ntpd -u ntp:ntp $OPTIONS</span><br><span class="line">PrivateTmp=true</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=multi-user.target</span><br></pre></td></tr></table></figure>
+
+<h2 id="问题复现"><a href="#问题复现" class="headerlink" title="问题复现"></a>问题复现</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"># 在系统上启动一个容器，此时ntpd必须处于running状态</span><br><span class="line">$ docker run -d httpserver:1 /bin/sh -c &quot;while : ; do sleep 1000 ; done&quot;</span><br><span class="line"></span><br><span class="line"># 启动容器</span><br><span class="line">$ docker run -d httpserver:1 /bin/sh -c &quot;while : ; do sleep 1000 ; done&quot;</span><br><span class="line">200222b438aac43bbe32a6c54e31ced0848482b9dec3e519d2f847c70c1ce801</span><br><span class="line"></span><br><span class="line"># 重启ntpd</span><br><span class="line">$ systemctl restart ntpd</span><br><span class="line"></span><br><span class="line">$ docker stop 200222b438aa</span><br><span class="line"></span><br><span class="line"># 此时容器的相关信息还存在</span><br><span class="line">$ docker ps -a</span><br><span class="line">CONTAINER ID        IMAGE                                               COMMAND                  CREATED              STATUS                       PORTS               NAMES</span><br><span class="line">200222b438aa        httpserver:1    &quot;/bin/sh -c &#x27;while...&quot;   About a minute ago   Exited (137) 7 seconds ago                       hardcore_yalow</span><br><span class="line"></span><br><span class="line"># 强制删除容器失败</span><br><span class="line">$ docker rm -f 200222b438aa</span><br><span class="line">Error response from daemon: driver &quot;devicemapper&quot; failed to remove root filesystem for 200222b438aac43bbe32a6c54e31ced0848482b9dec3e519d2f847c70c1ce801: remove /var/lib/docker/devicemapper/mnt/e53342aa9cf5f43e73b6596f88939b8d3fdefaf1ca03ee95a24d867e1de6c522: device or resource busy</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 此时容器处于Removal In Progress状态</span><br><span class="line">$ docker ps -a</span><br><span class="line">CONTAINER ID        IMAGE                                               COMMAND                  CREATED             STATUS                PORTS               NAMES</span><br><span class="line">200222b438aa        httpserver:1    &quot;/bin/sh -c &#x27;while...&quot;   2 minutes ago       Removal In Progress                       hardcore_yalow</span><br><span class="line"></span><br><span class="line"># 再次重启ntpd进程</span><br><span class="line">$ systemctl restart ntpd</span><br><span class="line"></span><br><span class="line"># 强制删除成功</span><br><span class="line">$ docker rm 200222b438aa</span><br><span class="line">200222b438aa</span><br></pre></td></tr></table></figure>
+
+<p>经在如下版本的CentOS7系统实验，该问题不存在。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ uname -a</span><br><span class="line">Linux localhost.localdomain 3.10.0-862.9.1.el7.x86_64 #1 SMP Mon Jul 16 16:29:36 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux</span><br><span class="line"></span><br><span class="line">$ cat /etc/redhat-release</span><br><span class="line">CentOS Linux release 7.5.1804 (Core)</span><br><span class="line"></span><br><span class="line">$ docker info | grep &quot;Storage Driver&quot;</span><br><span class="line">Storage Driver: overlay2</span><br></pre></td></tr></table></figure>
+
+<h2 id="问题产生原因"><a href="#问题产生原因" class="headerlink" title="问题产生原因"></a>问题产生原因</h2><p>此问题为Systemd启用PrivateTmp选项后，导致mount namespace的一处内核bug。</p>
+<h2 id="处理方式"><a href="#处理方式" class="headerlink" title="处理方式"></a>处理方式</h2><p>在&#x2F;usr&#x2F;lib&#x2F;systemd&#x2F;system&#x2F;docker.service的[Service]中增加<code>MountFlags=slave</code>，并重新启动docker服务，注意重启docker后，容器会重启。</p>
+<p>当然也可以通过重启ntpd服务的方式来临时解决问题，但当下次删除容器时还需要重启ntpd。</p>
+<p>还有一种办法是修改ntpd.service中的<code>PrivateTmp=true</code>，然后重启ntpd服务。</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><p><a target="_blank" rel="noopener" href="http://blog.kissingwolf.com/2017/09/09/Docker-%E6%95%85%E9%9A%9C%EF%BC%88device-or-resource-busy%EF%BC%89/">Docker 故障（device or resource busy）</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-buffer-cache/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux-buffer-cache/" class="post-title-link" itemprop="url">Linux Buffer与Cache的含义</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2019-01-29 00:27:45" itemprop="dateCreated datePublished" datetime="2019-01-29T00:27:45+00:00">2019-01-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>Linux中的Buffer与Cache的含义通常非常容易混淆，两者翻译成中文都可以叫做缓存，都是数据在内存中的临时存储，而且网络上很多文章都是错误的。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ free -h</span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:           125G         12G        347M        9.3M        113G        113G</span><br><span class="line">Swap:            0B          0B          0B</span><br></pre></td></tr></table></figure>
+
+<p>free命令直接将buff和cache写到了一块，说明两者有很多共同点。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ vmstat 1</span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 7  1      0 364076  18664 118624552    0    0   214 11198  106  118  6  4 89  1  0</span><br><span class="line">13  1      0 349096  18664 118638192    0    0     0 1012404 171031 270124 20 13 66  2  0</span><br></pre></td></tr></table></figure>
+
+<p>而通过vmstat命令可以分别看到buffer和cache的大小，单位为KB。</p>
+<p>使用<code>man free</code>命令看到的解释如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">buffers: Memory used by kernel buffers (Buffers in /proc/meminfo)</span><br><span class="line"></span><br><span class="line">cache: Memory used by the page cache and slabs (Cached and Slab in /proc/meminfo)</span><br></pre></td></tr></table></figure>
+
+<p>查看proc的man手册结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Buffers %lu</span><br><span class="line">    Relatively temporary storage for raw disk blocks that shouldn&#x27;t get tremendously large (20MB or so).</span><br><span class="line"></span><br><span class="line">Cached %lu</span><br><span class="line">    In-memory cache for files read from the disk (the pagecache).  Doesn&#x27;t include SwapCached.</span><br><span class="line"></span><br><span class="line">SReclaimable %lu (since Linux 2.6.19)</span><br><span class="line">    Part of Slab, that might be reclaimed, such as caches.</span><br><span class="line"></span><br><span class="line">SUnreclaim %lu (since Linux 2.6.19)</span><br><span class="line">    Part of Slab, that cannot be reclaimed on memory pressure.</span><br></pre></td></tr></table></figure>
+
+<p>上述信息，文档写的并不是非常明确。</p>
+<p>可以看出buffers是磁盘数据的缓存，通常不会特别大，缓存的数据包括磁盘的写请求和读请求。内核用于将分散的写磁盘操作集中起来，批量写入磁盘。</p>
+<p>Cached是文件数据的缓存，同样可以缓存读请求和写请求。</p>
+<p>Slab包括了SReclaimalbe和Sunreclaim两部分信息，其中SReclaimable是可回收部分，SUnreclaim是不可回收部分。</p>
+<p>关于文件和磁盘的区别如下：</p>
+<p>磁盘是一个块设备，可以划分为多个分区，每个分区上可以构建不同的文件系统，文件系统挂载到目录上后，就可以对该文件系统进行读写文件操作了。</p>
+<p>读写普通文件系统中的文件时，会经过文件系统，由文件系统跟磁盘进行交互，而文件系统的缓存为cache。读写磁盘或者分区时，会跳过文件系统，直接对磁盘进行操作，而操作系统对磁盘的缓存称之为buffer。</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a target="_blank" rel="noopener" href="http://man7.org/linux/man-pages/man5/proc.5.html">Linux Programmer’s Manual PROC[5]</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/knowledge-share/knowledge-share-9/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/knowledge-share/knowledge-share-9/" class="post-title-link" itemprop="url">知识分享第9期</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2019-01-19 20:18:13" itemprop="dateCreated datePublished" datetime="2019-01-19T20:18:13+00:00">2019-01-19</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/fujishan.jpeg"></p>
+<p>富士山&amp;富士吉田市，富士山的海拔高达3776米，远在80公里外的东京都能够看到。令人称奇的是，富士山海拔3360米以上的土地并不是归日本政府所有，而是归富士山上的浅间寺所有，日本政府每年都要支付大量的租金给浅间寺。在富士山周边游览后，突然萌生了登顶富士山的想法，不知是否有志同道合的驴友，可以相约在某年的夏季去一起实现梦想。</p>
+<h2 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h2><p>1.<a target="_blank" rel="noopener" href="https://criu.org/Main_Page">CRIU</a></p>
+<p>Linux下的一款实现checkpoint&#x2F;restore功能的软件，该软件可以冻结某个正在运行的应用程序，并将应用程序的当前状态作为checkpoint存放在磁盘上的文件中，此后正在运行的应用程序会被kill。</p>
+<p>此后，可以通过读取磁盘上的文件，恢复之前冻结的应用程序继续执行，而不是从main函数开始执行。</p>
+<p>2.<a target="_blank" rel="noopener" href="https://bindfs.org/">bindfs</a></p>
+<p>将一个目录mount到另外一个目录的工具，利用该命令可以将docker中的路径挂载到宿主机上。具体操作命令类似如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">PID=$(docker inspect b991b7ad105f --format &#123;&#123;.State.Pid&#125;&#125;)</span><br><span class="line">bindfs /proc/$PID/root /tmp/root</span><br><span class="line"># 别忘了卸载目录</span><br><span class="line">umount /tmp/root</span><br></pre></td></tr></table></figure>
+
+<p>3.<a target="_blank" rel="noopener" href="https://www.msra.cn/">微软亚洲研究院-对联电脑</a></p>
+<p>微软亚洲研究院的自动对对联系统，给出上联后，可以自动给出多个下联，最终生成横批。</p>
+<p>4.<a target="_blank" rel="noopener" href="https://github.com/iovisor/bcc">bcc</a></p>
+<p>基于Linux eBPF的一系列的性能分析工具，包括IO、网络等多个方面。</p>
+<p>5.<a target="_blank" rel="noopener" href="https://github.com/tobert/pcstat">pcstat</a></p>
+<p>基于golang开发的linux下的文件缓存统计工具。</p>
+<p>6.<a target="_blank" rel="noopener" href="https://electronjs.org/">Electron</a></p>
+<p>利用前端技术（JavaScript、HTML、CSS）来构建桌面程序的框架，当前很多流行的桌面应用都是使用该技术来开发的，比如VSCode、Slack、Atom等技术。</p>
+<p>得益于ES6、V8引擎和Node.js，JavaScript技术已经横跨前端、后端、桌面端的技术栈。</p>
+<p>7.<a target="_blank" rel="noopener" href="https://github.com/y123456yz/Reading-and-comprehense-linux-Kernel-network-protocol-stack">Reading-and-comprehense-linux-Kernel-network-protocol-stack</a></p>
+<p>该项目包含了对Linux网络协议栈的源码中文注释，对阅读Linux网络协议栈的代码有一些帮助。</p>
+<h2 id="精彩文章"><a href="#精彩文章" class="headerlink" title="精彩文章"></a>精彩文章</h2><ol>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzA5OTAyNzQ2OA==&mid=2649699945&idx=1&sn=c5b32baf1ea063d908b547381d4c13da&chksm=8893090abfe4801caa8ae854b2eb2ef6f37d79a83f7147db74a5656616baac00d60c80053fdd&scene=21#wechat_redirect">Kubernetes API 与 Operator：不为人知的开发者战争（一）</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzA5OTAyNzQ2OA==&mid=2649700020&idx=1&sn=4e8b2ae1c1d9d0457eb4134b3624da96&chksm=889309d7bfe480c11030dc181a5e6c7b8998ae2850deed5637b4e4cd4a9c33339e87abab73ea&mpshare=1&scene=1&srcid=0108IZNbW8zHwqP9OH0anKe6%23rd">Kubernetes API 与 Operator：不为人知的开发者战争（二）</a></li>
+</ol>
+<h2 id="精彩语句"><a href="#精彩语句" class="headerlink" title="精彩语句"></a>精彩语句</h2><ol>
+<li><blockquote>
+<p>“不能用”“不好用”“需要定制开发”，这才是落地开源基础设施项目的三大常态。</p>
+</blockquote>
+</li>
+</ol>
+<p>– 张磊《深入剖析Kubernetes》</p>
+<p>开源项目在落地到公司内部实际使用时，会发现有这样或者那样的问题。开源项目往往是个通用项目，公司在落地时，总有其特殊需求之处，开源软件无法面面俱到，往往只能覆盖一些通用的需求。再加上靠社区来驱动，在bug方面、功能方面跟商业软件也还有较大差距。</p>
+<h2 id="娱乐"><a href="#娱乐" class="headerlink" title="娱乐"></a>娱乐</h2><p>1.《塞尔达传说-旷野之息》</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/BreathoftheWildFinalCover.jpg"></p>
+<p>任天堂Switch上的游戏神作，历时四年时间，300人的团队开发，最近一直在玩，已经深深被游戏设计的海拉鲁大陆所折服，完全开放的世界，不同于传统的闯关类游戏，该游戏的自由度非常高，有时候就单纯的在地图中瞎逛都是一种享受，随时都会有惊喜发生。</p>
+<p>曾天真的以为，一个单机游戏能好玩到哪里去，但在玩游戏的每一刻都能体会到制作团队的用心，心里总是念到这才是我想要玩的游戏。自从玩了该游戏后，手机上的游戏再也没有打开过。我甚至一度感叹，在国内快糙猛的环境下是产生不了如此细腻良心作品的。如果大家有机会，可以尝试下这款游戏，或许会发现单机游戏还可以做得如此出彩。</p>
+<p>2.<a target="_blank" rel="noopener" href="https://zeldamaps.com/">ZELDA MAPS</a></p>
+<p>同样是跟《塞尔达传说-旷野之息》相关的，由于塞尔达传说的地图实在过于庞大，包含了神庙、驿站、村庄、回忆（没错主人公Link失忆了）、各种支线任务、装备、呀哈哈、各类大小boss、迷宫等等，有玩家制作了一款在线的地图，可以在线查询地图中的各类元素，使用体验类似Google Map。还包含了账号体系，可以在地图上标记自己已经完成的任务。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/docker-entrypoint-cmd/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/docker-entrypoint-cmd/" class="post-title-link" itemprop="url">Dockerfile中的ENTRYPOINT与CMD</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2019-01-04 22:00:56" itemprop="dateCreated datePublished" datetime="2019-01-04T22:00:56+00:00">2019-01-04</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>在Dockerfile中ENTRYPOINT与CMD的功能类似，同时再加上<code>docker run</code>后面追加的容器启动参数，是极其容易混淆的。而且又掺杂着exec模式和shell模式。</p>
+<p>这里先说几个结论，有了结论再跟进下面的例子来理解会更容易一些：</p>
+<ol>
+<li>实际上docker容器进程的完整启动参数为<code>ENTRYPOINT CMD</code>，如果没有指定ENTRYPOINT，docker会提供一个隐式的值<code>/bin/sh -c</code>。</li>
+<li><code>docker run</code>后面跟的容器启动参数仅会覆盖CMD部分。</li>
+</ol>
+<h2 id="exec模式与shell模式"><a href="#exec模式与shell模式" class="headerlink" title="exec模式与shell模式"></a>exec模式与shell模式</h2><p>CMD和ENTRYPOINT两个命令均支持exec模式和shell模式。</p>
+<p>exec模式格式类似<code>CMD [ &quot;top&quot; ]</code>，当容器启动时，top命令的进程号为1。</p>
+<p>为了能够获取到环境变量，通常的写法为<code>CMD [ &quot;sh&quot;, &quot;-c&quot;, &quot;echo $HOME&quot; ]</code>，此时1号进程为sh。</p>
+<p>shell模式的写法为<code>CMD top</code>，docker会以<code>/bin/sh -c top</code>的方式来执行命令，此时容器的1号进程为sh。</p>
+<p>如果需要容器进程处理外部信号的情况下，shell模式下信号实际上时发送给了sh，而不是容器中的应用进程。</p>
+<p>因此比较推荐使用exec模式，shell模式实际使用较少。</p>
+<h2 id="CMD"><a href="#CMD" class="headerlink" title="CMD"></a>CMD</h2><ul>
+<li>CMD [“param1”, “param2”] 为ENTRYPOINT提供默认参数，需要指定ENTRYPOINT</li>
+<li>CMD [“executable”,”param1”,”param2”] exec模式</li>
+<li>CMD command param1 param2 shell模式</li>
+</ul>
+<p>CMD为容器提供默认的启动命令，如果在启动容器时通过命令行指定了的启动参数，则该启动参数会覆盖CMD默认的启动参数。</p>
+<h2 id="ENTRYPOINT"><a href="#ENTRYPOINT" class="headerlink" title="ENTRYPOINT"></a>ENTRYPOINT</h2><p>不能被<code>docker run</code>增加的参数覆盖，启动时要执行ENTRYPOINT的参数。</p>
+<ul>
+<li>ENTRYPOINT [“executable”, “param1”, “param2”] exec模式</li>
+<li>ENTRYPOINT command param1 param2 shell模式</li>
+</ul>
+<h3 id="exec模式"><a href="#exec模式" class="headerlink" title="exec模式"></a>exec模式</h3><p>当为exec模式时，容器启动时，在命令行上添加的参数会被追加到ENTRYPOINT的参数列表中。</p>
+<p>例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FROM ubuntu:latest</span><br><span class="line">ENTRYPOINT [ &quot;echo&quot;, &quot;hello&quot; ]</span><br></pre></td></tr></table></figure>
+
+<p>执行<code>docker run --rm 0d89e8d4425a world</code>，会输出<code>hello world</code></p>
+<h3 id="shell模式"><a href="#shell模式" class="headerlink" title="shell模式"></a>shell模式</h3><p>当ENTRYPOINT为shell模式时，docker run启动后追加的参数会被忽略。</p>
+<p>例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FROM ubuntu:latest</span><br><span class="line"></span><br><span class="line">ENTRYPOINT echo hello</span><br></pre></td></tr></table></figure>
+
+<p>执行<code>docker run --rm 0841e19b4d2e world</code>仅输出<code>hello</code>。</p>
+<h3 id="ENTRYPOINT命令的覆盖"><a href="#ENTRYPOINT命令的覆盖" class="headerlink" title="ENTRYPOINT命令的覆盖"></a>ENTRYPOINT命令的覆盖</h3><p>ENTRYPOINT的命令可以通过<code>docker run</code>中增加<code>--entrypoint</code>选项来使用命令行中指定的参数覆盖ENTRYPOINT的参数。</p>
+<h2 id="ENTRYPOINT与CMD的组合使用"><a href="#ENTRYPOINT与CMD的组合使用" class="headerlink" title="ENTRYPOINT与CMD的组合使用"></a>ENTRYPOINT与CMD的组合使用</h2><p>当同时指定CMD和ENTRYPOINT模式时，实际上为<code>ENTRYPOINT CMD</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">FROM ubuntu:latest</span><br><span class="line"></span><br><span class="line">ENTRYPOINT [ &quot;echo&quot;, &quot;hello&quot; ]</span><br><span class="line">CMD [ &quot;world&quot; ]</span><br></pre></td></tr></table></figure>
+
+<p><code>docker run --rm 7edf658370d9</code>会输出<code>hello world</code>，而<code>docker run --rm 7edf658370d9 kitty</code>会输出<code>hello kitty</code>。</p>
+<p>更复杂的情况可以参照下图：</p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/entrypoint-cmd.png" alt="https://docs.docker.com/engine/reference/builder/#understand-how-cmd-and-entrypoint-interact"></p>
+<h2 id="如何查看ENTRYPOINT和CMD"><a href="#如何查看ENTRYPOINT和CMD" class="headerlink" title="如何查看ENTRYPOINT和CMD"></a>如何查看ENTRYPOINT和CMD</h2><p>可以通过<code>docker history $&#123;image&#125; --no-trunc</code>来查生成镜像的所有Dockerfile命令</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.docker.com/engine/reference/builder/#entrypoint">Dockerfile reference</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/sparkdev/p/8461576.html">Dockerfile 中的 CMD 与 ENTRYPOINT</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/knowledge-share/knowledge-share-8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/knowledge-share/knowledge-share-8/" class="post-title-link" itemprop="url">知识分享第8期</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-12-20 21:51:10" itemprop="dateCreated datePublished" datetime="2018-12-20T21:51:10+00:00">2018-12-20</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/railway-museum.jpeg"></p>
+<p>题图为中国铁道博物馆东郊馆中的毛泽东号列车</p>
+<h2 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h2><p>1.<a target="_blank" rel="noopener" href="https://www.hawkular.org/">Hawkular</a></p>
+<p>Hawkular为RedHat开源的监控解决方案，实现语言为java，监控数据的底层存储引擎使用Cassandra，包含了告警功能。目前Github上的Star还较少。RedHat的OpenShift就使用了该监控方案。</p>
+<p>2.<a target="_blank" rel="noopener" href="https://konghq.com/">Kong</a></p>
+<p>基于Nginx OpenResty的API网关，支持自定义插件，支持比原生nginx更多的功能。</p>
+<p>3.<a target="_blank" rel="noopener" href="https://www.nuodb.com/">NuoDB</a></p>
+<div align=center><img src="https://www.nuodb.com/sites/all/themes/nuodb/logo.svg" width="250" align=center /></div>
+
+<p>弹性可伸缩的关系型数据库，兼容SQL标准。将数据库中的事务和存储进行了分离，存储层支持多种存储系统，比如文件系统、Amazon S3和HDFS。因为存储层可以是外部的存储，意味着NuoDB的扩展性会大大增强，使其部署到Kubernetes成为了比较容易的事情。</p>
+<p>4.Linux命令hping3</p>
+<p>hping3是一个用于生成和解析tcp&#x2F;ip协议的工具，能够对数据包进行定制，可用于端口扫描、DDOS攻击等，是一个比较常见的黑客工具。</p>
+<p>5.<a target="_blank" rel="noopener" href="https://firecracker-microvm.github.io/">Firecracker</a></p>
+<div align=center><img src="https://firecracker-microvm.github.io/img/logo-icon@3x.png" width="100" align=center /></div>
+
+<p>Amazon开源的轻量级的虚拟机软件，使用KVM来创建和管理虚拟机，整体架构类似Kata Container。容器采用cgroup和namespace来做资源隔离，但是在安全性方面却比较差，轻量级的虚拟机在做到隔离性的同时，又提供了不错的启动速度，是容器领域的一个发展方向。</p>
+<p>6.<a target="_blank" rel="noopener" href="https://nginxconfig.io/">NginxConfig.io</a></p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/nginxconfig.png"></p>
+<p>NginxConfig.io是一款在线生成nginx配置文件的工具，可以通过点点鼠标，在文本框中内容的方式轻松生成nginx的配置文件。</p>
+<p>7.<a target="_blank" rel="noopener" href="https://github.com/mholt/caddy">Caddy</a></p>
+<p>一款实用Go语言编写的负载均衡工具，默认启用HTTPS服务，可以使用Let’s Encrypt来自动签发证书。配置文件的写法也比nginx要简洁。</p>
+<p>8.<a target="_blank" rel="noopener" href="https://github.com/grafana/loki">loki</a></p>
+<p>Grafana团队最新发布的基于Go语言开发的日志聚合系统，loki不会对日志进行全文索引，而是以压缩聚合的方式进行存储，可以对日志流通过打标签的方式进行分组，页面的展示直接使用grafana。对Kubernetes Pod中的log做了特别的支持，比较适合抓取和存储Kubernetes Pod中的log。</p>
+<p>个人感觉该工具未来会很火爆，尤其是跟Grafana有着无缝的整合。很多公司会使用ES来作为日志中心的底层存储，但不见得所有的服务都有按照关键字进行匹配搜索的需求，ES作为日志中心就显得不够高效和经济。</p>
+<p>9.<a target="_blank" rel="noopener" href="https://www.jsonrpc.org/specification">JSON-RPC</a></p>
+<p>json-rpc是rpc通讯中的一种json格式标准，该协议要求request和response的内容必须为json格式，且json有固定的格式。</p>
+<p>10.<a target="_blank" rel="noopener" href="https://github.com/confluentinc/ksql">KSQL</a></p>
+<p>Apache Kafka的开源SQL引擎，可以使用SQL的形式查询kafka中的消息，该产品跟Kafka一样，同样为Confluent出品。</p>
+<h2 id="精彩文章"><a href="#精彩文章" class="headerlink" title="精彩文章"></a>精彩文章</h2><p>1.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/9XyayHJ_m_9Q-igED6jRRg">北京五环外的真实中国</a></p>
+<p>朋友圈刷屏文章，文章以gif动画的形式描述了社会底层人士的艰辛生活，他们背上扛起的不仅是压得直不起腰来的砖头，而是面对困难努力生活的勇气，有些时候为了生计确实没得选择。</p>
+<p>当我们在抱怨生活的同时，可以想想比我们更苦更累却默默承受生活之重的人们，或许心里会好受些。</p>
+<h2 id="书籍"><a href="#书籍" class="headerlink" title="书籍"></a>书籍</h2><p>1.<a target="_blank" rel="noopener" href="https://tiancaiamao.gitbooks.io/go-internals/zh/">《深入解析Go》</a></p>
+<p>从底层角度分析go语言实现，推荐所有golang开发者一看。</p>
+<p>2.<a target="_blank" rel="noopener" href="http://product.china-pub.com/8054378">深入浅出Serverless：技术原理与应用实践</a></p>
+<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/serverless-zcover.jpg" alt="http://images.china-pub.com/ebook8050001-8055000/8054378/zcover.jpg"></p>
+<p>要想能够对Serverless技术的概念和现状有所了解，该书还是挺合适的。</p>
+<p>该书介绍了公有云上的Serverless产品AWS Lambda、Azure Functions，开源项目OpenWhisk、Kubeless、Fission和OpenFasS，提供对这些技术的一站式了解。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +770,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -342,7 +893,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -443,7 +994,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -529,7 +1080,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -630,7 +1181,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -681,648 +1232,6 @@
 <p>一个生动的细节是，有黑摩的司机不爽共享单车影响他们生意，砸ofo的车。ofo后期转化了一批相当数量的司机当修车师傅，化干戈为玉帛。</p>
 </blockquote>
 <p>上述操作还是非常犀利的，说白了还是利益在作怪。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-backlog/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux-backlog/" class="post-title-link" itemprop="url">Linux TCP backlog</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-12-01 21:24:07" itemprop="dateCreated datePublished" datetime="2018-12-01T21:24:07+00:00">2018-12-01</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_connect.webp"></p>
-<p>一个正常的tcp server在处理请求时会经过如下的系统调用：socket() bind() listen() accept() read() write() close()。一个请求在被应用程序读取之前，可能处于SYN_RCVD和ESTABLISHED两种状态。</p>
-<p>第一个队列：SYN_RCVD状态是server端接收到了client端的SYN包，server端会将该连接放到半连接队列中，并向客户端发送SYN+ACK包，此时连接处于半连接状态。通常该队列被称为半连接队列。</p>
-<p>第二个队列：ESTABLISHED状态为已经完成了三次握手，但是server端的应用程序还未调用accept系统调用的情况。通常该队列被称为全连接队列。</p>
-<p>这两种情况下都需要操作系统提供相应队列来保存连接状态。</p>
-<p>backlog用来设置这两个队列的最大值，但在不同的操作系统中有不同的含义，下面的说明以linux操作系统为准。</p>
-<p>其中第一个维护SYN_RCVD状态的队列使用内核参数<code>net.ipv4.tcp_max_syn_backlog</code>来控制，如果队列超过这一阈值，连接会被拒绝。该值默认为1000.</p>
-<p>第二个维护ESTABLISHED状态的队列，该队列的长度由应用程序调用listen系统调用时指定。</p>
-<h1 id="内核参数"><a href="#内核参数" class="headerlink" title="内核参数"></a>内核参数</h1><ol>
-<li>net.ipv4.tcp_max_syn_backlog</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tcp_max_syn_backlog (integer; default: see below; since Linux 2.2)</span><br><span class="line">              The  maximum number of queued connection requests which have still not received an acknowledgement from the connecting client.  If this number is exceeded, the kernel will begin dropping requests.  The default value of 256 is increased to 1024 when the memory present in the system is adequate or greater (&gt;= 128Mb), and  reduced  to 128  for  those systems with very low memory (&lt;= 32Mb).  It is recommended that if this needs to be increased above 1024, TCP_SYNQ_HSIZE in include/net/tcp.h be modified to keep TCP_SYNQ_HSIZE*16&lt;=tcp_max_syn_backlog, and the kernel be recompiled.</span><br></pre></td></tr></table></figure>
-
-<p>用来设置 syn 队列的大小，通常也会称为半连接队列。该参数的默认值一般为 1024。如果 syn 队列满，此时 syn 报文会被丢弃，无法回复 syn + ack 报文。可以通过 <code>netstat -s</code> 命令看到 “XX SYNs to LISTEN sockets dropped”. 的报错信息。</p>
-<ol start="2">
-<li>net.ipv4.tcp_syncookies</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tcp_syncookies (Boolean; since Linux 2.2) Enable TCP syncookies. The kernel must be compiled with CONFIG_SYN_COOKIES.  Send out syncookies when the syn backlog queue of a socket overflows.  The syncookies feature attempts to protect a socket from a SYN flood attack.  This should be used as a last resort, if at all.  This is a violation of the  TCP  protocol,  and  con‐ flicts  with other areas of TCP such as TCP extensions.  It can cause problems for clients and relays.  It is not recommended as a tuning mechanism for heavily loaded servers to help with overloaded or misconfigured conditions.  For recommended alternatives see tcp_max_syn_backlog, tcp_synack_retries, and tcp_abort_on_overflow.</span><br></pre></td></tr></table></figure>
-
-<p>因为 syn 队列的存在，当客户端一直在发送 syn 包，但是不回 ack 报文时，一旦服务端的队列超过 <code>net.ipv4.tcp_max_syn_backlog</code> 设置的大小就会存在队列溢出的问题，从而导致服务端无法响应客户端的请求，这就是 syn flood 攻击。</p>
-<p>为了防止 syn flood 攻击，引入了 syn cookies 机制，该机制并非 tcp 协议的一部分。原理参见：<a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000019292140">深入浅出TCP中的SYN-Cookies</a></p>
-<p>一旦开启了 syn cookies 机制后，即使 syn 队列满，仍可以对新建的连接回复 syn + ack 报文，但是不需要进入队列。</p>
-<p>因为 syn cookies 存在部分缺陷，只有当 syn 队列满时该特性才会生效。</p>
-<ol start="3">
-<li>net.ipv4.tcp_abort_on_overflow</li>
-</ol>
-<p>在三次握手完成后，该连接会进入到 ESTABLISHED 状态，并将该连接放入到用户程序队列中。若该队列已满，默认会将该连接重新设置为 SYN_ACK 状态，相当于是服务端没有接收到客户端的 syn + ack 报文，后续可以利用客户端的重传机制重新接收报文。</p>
-<p>一旦开启了 <code>net.ipv4.tcp_abort_on_overflow</code> 选项后，会直接发送 RST 报文给到客户端，客户端会终止该连接，并报错 <code>104 Connection reset by peer</code>。</p>
-<ol start="4">
-<li>net.core.somaxconn</li>
-</ol>
-<p>全连接队列的最大值，该配置为全局默认配置。单个 socket 的全连接队列的长度选择为 Min(backlog, somaxconn)。</p>
-<h1 id="内核源码"><a href="#内核源码" class="headerlink" title="内核源码"></a>内核源码</h1><p>在整个内核模块中主要涉及到 listen() 和 accept() 系统调用，listen() 系统调用的作用是申请和初始化半连接队列和全连接队列。队列位于内核代码的 include&#x2F;net&#x2F;inet_connection_sock.h 中的如下位置:</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">inet_connection_sock</span> &#123;</span></span><br><span class="line">	<span class="comment">/* inet_sock has to be the first member! */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">inet_sock</span>	  <span class="title">icsk_inet</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">request_sock_queue</span> <span class="title">icsk_accept_queue</span>;</span> <span class="comment">// 队列</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">inet_bind_bucket</span>	  *<span class="title">icsk_bind_hash</span>;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="如何参看"><a href="#如何参看" class="headerlink" title="如何参看"></a>如何参看</h1><p>查看 tcp 状态为 SYN_RECV 的链接即为半连接状态的请求：<code>netstat -napt | grep SYN_RECV</code>。也可以通过 <code>netstat -s | grep &#39;SYNs to LISTEN&#39;</code> 查看。</p>
-<p>全连接队列可以使用 <code>ss -nlt | grep 8080</code> 的方式查看 Recv-Q 的值。<br>也可通过如下命令来查看全连接队列的溢出情况。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$</span><span class="language-bash">netstat -s | grep overflow</span></span><br><span class="line">    3255 times the listen queue of a socket overflowed</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-interrupt/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/linux-interrupt/" class="post-title-link" itemprop="url">Linux中断</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-11-30 21:09:20" itemprop="dateCreated datePublished" datetime="2018-11-30T21:09:20+00:00">2018-11-30</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h1><p>中断由硬件产生，并发送到中断控制器，中断控制器再发送中断到CPU，CPU检测到中断信号后，会中断当前的工作，每个中断都有IRQ（中断请求），基于IRQ，CPU将中断请求分发到对应的硬件驱动上通知操作系统，操作系统会对中断进行处理。</p>
-<h2 id="中断控制器"><a href="#中断控制器" class="headerlink" title="中断控制器"></a>中断控制器</h2><p>常见的中断控制器有两种：可编程中断控制器8259A和高级可编程中断控制器（APIC）。传统的8259A只适合单CPU的情况，现在都是多CPU、多核心的SMP体系，所以为了充分利用SMP体系结构，把中断传递给系统上的每个CPU以便更好实现并行和提高性能，Intel引入了高级可编程中断控制器（APIC）。</p>
-<p>光有高级可编程中断控制器的硬件支持还不够，Linux内核还必须能利用这些硬件的特质，所以只有kernel 2.4以后的版本才支持把不同的硬件中断请求（IRQs）分配到特定的CPU核心上，这个绑定技术被称为SMP IRQ Affinity。</p>
-<p>在设置网卡中断的cpu core时，有一个限制就是，IO-APIC 有两种工作模式：logic 和 physical，在 logic 模式下 IO-APIC 可以同时分布同一种 IO 中断到8颗 CPU (core) 上（受到 bitmask 寄存器的限制，因为 bitmask 只有8位长。）；在 physical 模式下不能同时分布同一中断到不同 CPU 上，比如，不能让 eth0 中断同时由 CPU0 和 CPU1 处理，这个时候只能定位 eth0 到 CPU0、eth1 到 CPU1，也就是说 eth0 中断不能像 logic 模式那样可以同时由多个 CPU 处理。</p>
-<h2 id="软中断和硬中断"><a href="#软中断和硬中断" class="headerlink" title="软中断和硬中断"></a>软中断和硬中断</h2><p>为了解决中断处理程序执行时间过长和中断丢失的问题，Linux系统将中断分为上半部和下半部。</p>
-<p>上半部在中断禁止模式下运行，用来快速处理中断，主要用来处理跟硬件密切相关的工作。</p>
-<p>下半部处理上半部未完成的工作，通常以内核线程的方式运行。</p>
-<p>以Linux接收网卡数据包为例进行说明：</p>
-<p>网卡接收到一个数据包后，会通过硬件中断的方式通知内核新的数据到了。内核会调用中断处理程序进行处理。</p>
-<p>上半部将网卡中的数据写入到内存中，并更新一下硬件寄存器的状态，最后发送一个软中断信号，通知下半部进一步的处理。</p>
-<p>下半部被软中断信号唤醒后，从内存中读到数据，按照网络协议栈对数据进行解析和处理，并发送给应用程序。</p>
-<p>上面所说的上半部即硬中断，下半部即软中断，但一些内核自定义的事件也属于软中断，比如内核调度和RCU锁等。</p>
-<p>硬中断：由外设产生，用来通知操作系统外设状态的变化。在处理中断的同时要关闭中断。特点为处理要尽可能的快。</p>
-<p>软中断：为了满足实时性要求，硬中断处理时间都比较短，将时间比较长的中断放到软中断中来完成，称为下半部。int就是软中断指令，中断向量表是中断号和中断处理程序的对应表。每个CPU对应一个软中断内核线程<code>ksoftirqd/cpu编号</code>。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@120-14-29-SH-1037-B07 ~]# ps -ef | grep ksoft</span><br><span class="line">root           3       2  0  2016 ?        01:47:12 [ksoftirqd/0]</span><br><span class="line">root          21       2  0  2016 ?        00:47:51 [ksoftirqd/1]</span><br><span class="line">root          26       2  0  2016 ?        00:47:34 [ksoftirqd/2]</span><br><span class="line">root          31       2  0  2016 ?        00:47:46 [ksoftirqd/3]</span><br></pre></td></tr></table></figure>
-
-<p>中断嵌套：硬中断可以嵌套，即新的硬中断可以打断正在执行的中断，但同种中断不可以。软中断不可嵌套，但相同类型中断可在不同的cpu上执行。</p>
-<h1 id="相关命令"><a href="#相关命令" class="headerlink" title="相关命令"></a>相关命令</h1><h2 id="mpstat"><a href="#mpstat" class="headerlink" title="mpstat"></a>mpstat</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"># 显示cpu处理的中断数量</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# mpstat -I SUM 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:27:59 PM  CPU    intr/s</span><br><span class="line">05:28:00 PM  all  61274.00</span><br><span class="line">05:28:01 PM  all  61712.00</span><br><span class="line">05:28:02 PM  all  62315.00</span><br><span class="line">05:28:03 PM  all  59280.00</span><br><span class="line">^C</span><br><span class="line">Average:     all  61145.25</span><br><span class="line"></span><br><span class="line"># 显示每个核处理的中断数量</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# mpstat -I SUM 1 -P ALL</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:30:30 PM  CPU    intr/s</span><br><span class="line">05:30:31 PM  all  61446.00</span><br><span class="line">05:30:31 PM    0  40489.00</span><br><span class="line">05:30:31 PM    1   6839.00</span><br><span class="line">05:30:31 PM    2   6935.00</span><br><span class="line">05:30:31 PM    3   7185.00</span><br><span class="line"></span><br><span class="line"># 显示更详细的信息</span><br><span class="line">[root@120-14-31-SH-1037-B07 ~]# mpstat -P ALL 1</span><br><span class="line">Linux 3.10.0-327.el7.x86_64 (120-14-31-SH-1037-B07.yidian.com)  09/10/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">01:15:09 AM  CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle</span><br><span class="line">01:15:10 AM  all    6.35    0.00   11.64    0.00    0.00    7.67    0.00    0.00    0.00   74.34</span><br><span class="line">01:15:10 AM    0    5.05    0.00   11.11    0.00    0.00    0.00    0.00    0.00    0.00   83.84</span><br><span class="line">01:15:10 AM    1    6.38    0.00   12.77    0.00    0.00    9.57    0.00    0.00    0.00   71.28</span><br><span class="line">01:15:10 AM    2    8.70    0.00   10.87    0.00    0.00   14.13    0.00    0.00    0.00   66.30</span><br><span class="line">01:15:10 AM    3    6.32    0.00   12.63    0.00    0.00    7.37    0.00    0.00    0.00   73.68</span><br></pre></td></tr></table></figure>
-
-<h2 id="lspci"><a href="#lspci" class="headerlink" title="lspci"></a>lspci</h2><p>可以来查看网卡型号，驱动等信息，内容较多</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">[root@103-17-164-sh-100-k07 ~]# lspci -vvv | more</span><br><span class="line">00:00.0 Host bridge: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DMI2 (rev 04)</span><br><span class="line">        Subsystem: Super Micro Computer Inc Device 0668</span><br><span class="line">        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-</span><br><span class="line">        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast &gt;TAbort- &lt;TAbort- &lt;MAbort- &gt;SERR- &lt;PERR- INTx-</span><br><span class="line">        Interrupt: pin A routed to IRQ 0</span><br><span class="line">        Capabilities: [90] Express (v2) Root Port (Slot-), MSI 00</span><br><span class="line">                DevCap: MaxPayload 128 bytes, PhantFunc 0</span><br><span class="line">                        ExtTag- RBE+</span><br><span class="line">                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-</span><br><span class="line">                        RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-</span><br><span class="line">                        MaxPayload 128 bytes, MaxReadReq 128 bytes</span><br><span class="line">                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-</span><br><span class="line">                LnkCap: Port #0, Speed 5GT/s, Width x4, ASPM not supported, Exit Latency L0s &lt;64ns, L1 &lt;16us</span><br><span class="line">                        ClockPM- Surprise+ LLActRep+ BwNot+</span><br><span class="line">                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- CommClk-</span><br><span class="line">                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-</span><br><span class="line">                LnkSta: Speed unknown, Width x0, TrErr- Train- SlotClk- DLActive- BWMgmt- ABWMgmt-</span><br><span class="line">                RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-</span><br><span class="line">                RootCap: CRSVisible-</span><br><span class="line">                RootSta: PME ReqID 0000, PMEStatus- PMEPending-</span><br><span class="line">                DevCap2: Completion Timeout: Range BCD, TimeoutDis+, LTR-, OBFF Not Supported ARIFwd-</span><br><span class="line">                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-, LTR-, OBFF Disabled ARIFwd-</span><br><span class="line">                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-</span><br><span class="line">                         Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-</span><br><span class="line">                         Compliance De-emphasis: -6dB</span><br><span class="line">                LnkSta2: Current De-emphasis Level: -6dB, EqualizationComplete-, EqualizationPhase1-</span><br><span class="line">                         EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-</span><br><span class="line">        Capabilities: [e0] Power Management version 3</span><br><span class="line">                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)</span><br><span class="line">                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-</span><br><span class="line">        Capabilities: [100 v1] Vendor Specific Information: ID=0002 Rev=0 Len=00c &lt;?&gt;</span><br><span class="line">        Capabilities: [144 v1] Vendor Specific Information: ID=0004 Rev=1 Len=03c &lt;?&gt;</span><br><span class="line">        Capabilities: [1d0 v1] Vendor Specific Information: ID=0003 Rev=1 Len=00a &lt;?&gt;</span><br><span class="line">        Capabilities: [280 v1] Vendor Specific Information: ID=0005 Rev=3 Len=018 &lt;?&gt;</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-
-<h2 id="ethtool"><a href="#ethtool" class="headerlink" title="ethtool"></a>ethtool</h2><p>用来查看网卡信息</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><span class="line">[root@103-17-164-sh-100-k07 ~]# ethtool eth3</span><br><span class="line">Settings for eth3:</span><br><span class="line">        Supported ports: [ FIBRE ]</span><br><span class="line">        Supported link modes:   1000baseT/Full</span><br><span class="line">                                10000baseT/Full</span><br><span class="line">        Supported pause frame use: No</span><br><span class="line">        Supports auto-negotiation: Yes</span><br><span class="line">        Advertised link modes:  1000baseT/Full</span><br><span class="line">                                10000baseT/Full</span><br><span class="line">        Advertised pause frame use: No</span><br><span class="line">        Advertised auto-negotiation: Yes</span><br><span class="line">        Speed: 10000Mb/s</span><br><span class="line">        Duplex: Full</span><br><span class="line">        Port: FIBRE</span><br><span class="line">        PHYAD: 0</span><br><span class="line">        Transceiver: external</span><br><span class="line">        Auto-negotiation: on</span><br><span class="line">        Supports Wake-on: d</span><br><span class="line">        Wake-on: d</span><br><span class="line">        Current message level: 0x00000007 (7)</span><br><span class="line">                               drv probe link</span><br><span class="line">        Link detected: yes</span><br><span class="line"></span><br><span class="line"># 可查看Ring buffer的大小</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# ethtool -g eth3</span><br><span class="line">Ring parameters for eth3:</span><br><span class="line">Pre-set maximums:</span><br><span class="line">RX:             4096</span><br><span class="line">RX Mini:        0</span><br><span class="line">RX Jumbo:       0</span><br><span class="line">TX:             4096</span><br><span class="line">Current hardware settings:</span><br><span class="line">RX:             512</span><br><span class="line">RX Mini:        0</span><br><span class="line">RX Jumbo:       0</span><br><span class="line">TX:             512</span><br><span class="line"></span><br><span class="line"># 列出信息较多，包含网卡的统计信息，包括丢包量信息</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# ethtool -S eth3 | more</span><br><span class="line">NIC statistics:</span><br><span class="line">     rx_packets: 680955795162</span><br><span class="line">     tx_packets: 27260701850</span><br><span class="line">     rx_bytes: 248285654162670</span><br><span class="line">     tx_bytes: 195321924245892</span><br><span class="line">     rx_pkts_nic: 683081802539</span><br><span class="line">     tx_pkts_nic: 27260700665</span><br><span class="line">     rx_bytes_nic: 251132784690871</span><br><span class="line">     tx_bytes_nic: 195447730645152</span><br><span class="line">     lsc_int: 11</span><br><span class="line">     tx_busy: 0</span><br><span class="line">     non_eop_descs: 1811095697</span><br><span class="line">     rx_errors: 67381</span><br><span class="line">     tx_errors: 0</span><br><span class="line">     rx_dropped: 0</span><br><span class="line">     tx_dropped: 0</span><br><span class="line">     multicast: 1025690658</span><br><span class="line">     broadcast: 206937242</span><br><span class="line">     rx_no_buffer_count: 0</span><br><span class="line">     collisions: 0</span><br><span class="line">     rx_over_errors: 0</span><br><span class="line">     rx_crc_errors: 67302</span><br><span class="line">     rx_frame_errors: 0</span><br><span class="line">     hw_rsc_aggregated: 2358414213</span><br><span class="line">     hw_rsc_flushed: 232402327</span><br><span class="line">     fdir_match: 10634169417</span><br><span class="line">     fdir_miss: 669277016191</span><br><span class="line">     fdir_overflow: 3321</span><br><span class="line">     rx_fifo_errors: 0</span><br><span class="line">     rx_missed_errors: 2538</span><br><span class="line">     tx_aborted_errors: 0</span><br><span class="line">     tx_carrier_errors: 0</span><br><span class="line">     tx_fifo_errors: 0</span><br><span class="line">     tx_heartbeat_errors: 0</span><br><span class="line">     tx_timeout_count: 0</span><br><span class="line">     tx_restart_queue: 0</span><br><span class="line">     rx_long_length_errors: 80264</span><br><span class="line">     rx_short_length_errors: 0</span><br><span class="line">     tx_flow_control_xon: 1</span><br><span class="line">     rx_flow_control_xon: 0</span><br><span class="line">     tx_flow_control_xoff: 51</span><br><span class="line">     rx_flow_control_xoff: 0</span><br><span class="line">     rx_csum_offload_errors: 0</span><br><span class="line">     alloc_rx_page_failed: 0</span><br><span class="line">     alloc_rx_buff_failed: 0</span><br><span class="line">     rx_no_dma_resources: 0</span><br><span class="line">     os2bmc_rx_by_bmc: 0</span><br><span class="line">     os2bmc_tx_by_bmc: 0</span><br><span class="line">     os2bmc_tx_by_host: 0</span><br><span class="line">     os2bmc_rx_by_host: 0</span><br><span class="line"></span><br><span class="line"># 查看网卡多队列的支持情况，当前网卡支持8个队列，使用了8个队列</span><br><span class="line">[root@103-17-6-sh-100-j11 ~]# ethtool -l eth0</span><br><span class="line">Channel parameters for eth0:</span><br><span class="line">Pre-set maximums:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       8</span><br><span class="line">Current hardware settings:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       8</span><br><span class="line"></span><br><span class="line"># 设置网卡当前使用的多队列，当前使用的网卡数量不能超过最大值8，该值跟网卡的中断数量一一对应，即/proc/interrupts中看到的eth0的中断数量</span><br><span class="line">[root@103-17-6-sh-100-j11 ~]# ethtool -L eth0 combined 2</span><br><span class="line">[root@103-17-6-sh-100-j11 ~]# ethtool -l eth0</span><br><span class="line">Channel parameters for eth0:</span><br><span class="line">Pre-set maximums:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       8</span><br><span class="line">Current hardware settings:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       2</span><br></pre></td></tr></table></figure>
-
-<h2 id="sar"><a href="#sar" class="headerlink" title="sar"></a>sar</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"># 列出网卡的接收包信息，比iftop更直观</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# sar -n DEV 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:06:12 PM     IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s</span><br><span class="line">05:06:13 PM      eth0      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:06:13 PM      eth1      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:06:13 PM      eth2      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:06:13 PM      eth3  77893.00   4328.00  31413.92  30134.16      0.00      0.00     46.00</span><br><span class="line">05:06:13 PM        lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line"></span><br><span class="line"># 可列出错误包的相关信息</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# sar -n EDEV 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:07:13 PM     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s</span><br><span class="line">05:07:14 PM      eth0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM      eth1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM      eth2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM      eth3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM        lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br></pre></td></tr></table></figure>
-
-<p>通过中断可以看到网卡包含四个中断55-58，均位于cpu0上。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">[root@103-17-164-sh-100-k07 ~]# cat /proc/interrupts</span><br><span class="line">           CPU0       CPU1       CPU2       CPU3</span><br><span class="line">  0:         44          0          0          0  IR-IO-APIC-edge      timer</span><br><span class="line">  1:          3          0          0          0  IR-IO-APIC-edge      i8042</span><br><span class="line">  8:         42          0          0          0  IR-IO-APIC-edge      rtc0</span><br><span class="line">  9:          1          0          0          0  IR-IO-APIC-fasteoi   acpi</span><br><span class="line"> 12:          4          0          0          0  IR-IO-APIC-edge      i8042</span><br><span class="line"> 16:         99          0          0          0  IR-IO-APIC-fasteoi   ehci_hcd:usb1</span><br><span class="line"> 18:          0          0          0          0  IR-IO-APIC-fasteoi   i801_smbus</span><br><span class="line"> 23:         83          0          0          0  IR-IO-APIC-fasteoi   ehci_hcd:usb2</span><br><span class="line"> 37:   12019917          0          0          0  IR-PCI-MSI-edge      0000:00:1f.2</span><br><span class="line"> 48:          0          0          0          0  DMAR_MSI-edge      dmar0</span><br><span class="line"> 55:  746827548          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-0</span><br><span class="line"> 56: 2674693551          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-1</span><br><span class="line"> 57: 2341522223          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-2</span><br><span class="line"> 58: 3587929355          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-3</span><br><span class="line"> 59:       3334          0          0          0  IR-PCI-MSI-edge      eth3</span><br><span class="line"> 61:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 63:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 64:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 65:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 66:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 67:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 68:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 69:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line">NMI:    1100069     693493     635982     615953   Non-maskable interrupts</span><br><span class="line">LOC: 1120358899  146726541 4134846029  168005659   Local timer interrupts</span><br><span class="line">SPU:          0          0          0          0   Spurious interrupts</span><br><span class="line">PMI:    1100069     693493     635982     615953   Performance monitoring interrupts</span><br><span class="line">IWI:   57255892  115292160  113458706  112987848   IRQ work interrupts</span><br><span class="line">RTR:          0          0          0          0   APIC ICR read retries</span><br><span class="line">RES:  525229423 2791640970  427214674 1986396041   Rescheduling interrupts</span><br><span class="line">CAL: 4294536344 4294488238 4294478163 4294552026   Function call interrupts</span><br><span class="line">TLB:   65239533   57937650   55104990   52690662   TLB shootdowns</span><br><span class="line">TRM:          0          0          0          0   Thermal event interrupts</span><br><span class="line">THR:          0          0          0          0   Threshold APIC interrupts</span><br><span class="line">MCE:          0          0          0          0   Machine check exceptions</span><br><span class="line">MCP:     160132     160132     160132     160132   Machine check polls</span><br><span class="line">ERR:          0</span><br><span class="line">MIS:          0</span><br></pre></td></tr></table></figure>
-
-<h2 id="修改中断的cpu分配"><a href="#修改中断的cpu分配" class="headerlink" title="修改中断的cpu分配"></a>修改中断的cpu分配</h2><p>echo “2” &gt; &#x2F;proc&#x2F;irq&#x2F;49&#x2F;smp_affinity</p>
-<p>其中2表示cpu1, 49表示中断号。</p>
-<h2 id="查看软中断"><a href="#查看软中断" class="headerlink" title="查看软中断"></a>查看软中断</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@120-14-31-SH-1037-B07 ~]# cat /proc/softirqs</span><br><span class="line">                    CPU0       CPU1       CPU2       CPU3</span><br><span class="line">          HI:          1          3          0          1</span><br><span class="line">       TIMER: 1795378091 3617740778 2674553229 1524071492</span><br><span class="line">      NET_TX:  202188392   22218135   17427628   17205883</span><br><span class="line">      NET_RX: 3388060179   60871361   68145291   38670323</span><br><span class="line">       BLOCK:    4741950       2422       1309       1489</span><br><span class="line">BLOCK_IOPOLL:          0          0          0          0</span><br><span class="line">     TASKLET: 2102131738    3720214    3104944    1942912</span><br><span class="line">       SCHED:  526046585  612421231  496815061  456047989</span><br><span class="line">     HRTIMER:          0          0          0          0</span><br><span class="line">         RCU: 3147020579 4237695975 3820083676 3267816268</span><br></pre></td></tr></table></figure>
-
-<p>软中断包括10个类别，NET_RX（网络接收中断）、NET_TX（网络发送中断）</p>
-<h2 id="查看数据包统计"><a href="#查看数据包统计" class="headerlink" title="查看数据包统计"></a>查看数据包统计</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br></pre></td><td class="code"><pre><span class="line">[root@c1-g08-120-166-30 ~]# netstat -s</span><br><span class="line">Ip:</span><br><span class="line">    7586513384 total packets received</span><br><span class="line">    0 forwarded</span><br><span class="line">    741 with unknown protocol</span><br><span class="line">    0 incoming packets discarded</span><br><span class="line">    7586512643 incoming packets delivered</span><br><span class="line">    7948370396 requests sent out</span><br><span class="line">Icmp:</span><br><span class="line">    23 ICMP messages received</span><br><span class="line">    0 input ICMP message failed.</span><br><span class="line">    ICMP input histogram:</span><br><span class="line">        destination unreachable: 1</span><br><span class="line">        echo requests: 19</span><br><span class="line">        echo replies: 3</span><br><span class="line">    46 ICMP messages sent</span><br><span class="line">    0 ICMP messages failed</span><br><span class="line">    ICMP output histogram:</span><br><span class="line">        destination unreachable: 9</span><br><span class="line">        echo request: 18</span><br><span class="line">        echo replies: 19</span><br><span class="line">IcmpMsg:</span><br><span class="line">        InType0: 3</span><br><span class="line">        InType3: 1</span><br><span class="line">        InType8: 19</span><br><span class="line">        OutType0: 19</span><br><span class="line">        OutType3: 9</span><br><span class="line">        OutType8: 18</span><br><span class="line">Tcp:</span><br><span class="line">    561299810 active connections openings</span><br><span class="line">    2005002 passive connection openings</span><br><span class="line">    8 failed connection attempts</span><br><span class="line">    282644949 connection resets received</span><br><span class="line">    725 connections established</span><br><span class="line">    7585817181 segments received</span><br><span class="line">    13957880471 segments send out</span><br><span class="line">    1742807 segments retransmited</span><br><span class="line">    136 bad segments received.</span><br><span class="line">    523811266 resets sent</span><br><span class="line">Udp:</span><br><span class="line">    445457 packets received</span><br><span class="line">    3 packets to unknown port received.</span><br><span class="line">    0 packet receive errors</span><br><span class="line">    553840367 packets sent</span><br><span class="line">    0 receive buffer errors</span><br><span class="line">    0 send buffer errors</span><br><span class="line">UdpLite:</span><br><span class="line">    InErrors: 3</span><br><span class="line">TcpExt:</span><br><span class="line">    341304 invalid SYN cookies received</span><br><span class="line">    1 resets received for embryonic SYN_RECV sockets</span><br><span class="line">    1 ICMP packets dropped because they were out-of-window</span><br><span class="line">    1997421 TCP sockets finished time wait in fast timer</span><br><span class="line">    222787 delayed acks sent</span><br><span class="line">    1819 delayed acks further delayed because of locked socket</span><br><span class="line">    Quick ack mode was activated 178186 times</span><br><span class="line">    13 packets directly queued to recvmsg prequeue.</span><br><span class="line">    3280604069 packet headers predicted</span><br><span class="line">    1972740996 acknowledgments not containing data payload received</span><br><span class="line">    798190042 predicted acknowledgments</span><br><span class="line">    642444 times recovered from packet loss by selective acknowledgements</span><br><span class="line">    Detected reordering 23 times using FACK</span><br><span class="line">    Detected reordering 1618 times using SACK</span><br><span class="line">    59 congestion windows fully recovered without slow start</span><br><span class="line">    16 congestion windows partially recovered using Hoe heuristic</span><br><span class="line">    17089 congestion windows recovered without slow start by DSACK</span><br><span class="line">    9594 congestion windows recovered without slow start after partial ack</span><br><span class="line">    TCPLostRetransmit: 2849</span><br><span class="line">    4926 timeouts after SACK recovery</span><br><span class="line">    672451 fast retransmits</span><br><span class="line">    28946 forward retransmits</span><br><span class="line">    680 retransmits in slow start</span><br><span class="line">    5024 other TCP timeouts</span><br><span class="line">    TCPLossProbes: 1390602</span><br><span class="line">    TCPLossProbeRecovery: 997235</span><br><span class="line">    4723 SACK retransmits failed</span><br><span class="line">    178189 DSACKs sent for old packets</span><br><span class="line">    979863 DSACKs received</span><br><span class="line">    62 DSACKs for out of order packets received</span><br><span class="line">    282645553 connections reset due to unexpected data</span><br><span class="line">    9 connections reset due to early user close</span><br><span class="line">    TCPDSACKIgnoredNoUndo: 936061</span><br><span class="line">    TCPSpuriousRTOs: 5150</span><br><span class="line">    TCPSackShifted: 233309</span><br><span class="line">    TCPSackMerged: 733778</span><br><span class="line">    TCPSackShiftFallback: 1768422</span><br><span class="line">    IPReversePathFilter: 1</span><br><span class="line">    TCPRetransFail: 11</span><br><span class="line">    TCPRcvCoalesce: 1290965687</span><br><span class="line">    TCPOFOQueue: 1753072</span><br><span class="line">    TCPChallengeACK: 136</span><br><span class="line">    TCPSYNChallenge: 136</span><br><span class="line">    TCPSpuriousRtxHostQueues: 73</span><br><span class="line">    TCPAutoCorking: 272452106</span><br><span class="line">    TCPSynRetrans: 4538</span><br><span class="line">    TCPOrigDataSent: 9260789170</span><br><span class="line">    TCPHystartTrainDetect: 3721895</span><br><span class="line">    TCPHystartTrainCwnd: 64417412</span><br><span class="line">    TCPHystartDelayDetect: 80</span><br><span class="line">    TCPHystartDelayCwnd: 2579</span><br><span class="line">    TCPACKSkippedSynRecv: 4</span><br><span class="line">IpExt:</span><br><span class="line">    InMcastPkts: 249744</span><br><span class="line">    OutMcastPkts: 83317</span><br><span class="line">    InBcastPkts: 226</span><br><span class="line">    InOctets: 12312144006244</span><br><span class="line">    OutOctets: 12449967070063</span><br><span class="line">    InMcastOctets: 22309104</span><br><span class="line">    OutMcastOctets: 9664620</span><br><span class="line">    InBcastOctets: 104240</span><br><span class="line">    InNoECTPkts: 7586513474</span><br><span class="line">    InECT0Pkts: 47</span><br></pre></td></tr></table></figure>
-
-<h1 id="irqbalance"><a href="#irqbalance" class="headerlink" title="irqbalance"></a>irqbalance</h1><p>查看是否运行：systemctl status irqbalance</p>
-<p>irqbalance根据系统中断负载的情况，自动迁移中断保持中断的平衡，同时会考虑到省电因素等等。 但是在实时系统中会导致中断自动漂移，对性能造成不稳定因素，在高性能的场合建议关闭。</p>
-<p>irqbalance用于优化中断分配，它会自动收集系统数据以分析使用模式，并依据系统负载状况将工作状态置于 Performance mode 或 Power-save mode。处于Performance mode 时，irqbalance 会将中断尽可能均匀地分发给各个 CPU core，以充分利用 CPU 多核，提升性能。<br>处于Power-save mode 时，irqbalance 会将中断集中分配给第一个 CPU，以保证其它空闲 CPU 的睡眠时间，降低能耗。</p>
-<h1 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h1><ul>
-<li><a target="_blank" rel="noopener" href="http://www.vpsee.com/2010/07/load-balancing-with-irq-smp-affinity/">Linux 多核下绑定硬件中断到不同 CPU（IRQ Affinity）</a></li>
-<li><a target="_blank" rel="noopener" href="http://blog.yufeng.info/archives/2422">深度剖析告诉你irqbalance有用吗？</a></li>
-<li><a target="_blank" rel="noopener" href="https://time.geekbang.org/column/article/71868">怎么理解Linux软中断？</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/micro-service/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/micro-service/" class="post-title-link" itemprop="url">从0开始学习微服务阅读笔记</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-11-25 20:27:17" itemprop="dateCreated datePublished" datetime="2018-11-25T20:27:17+00:00">2018-11-25</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>本文为极客时间专栏从0开始学习微服务的阅读笔记。</p>
-<p>在了解微服务之前，先来了解一下单体应用。</p>
-<p>在上学那会，做过一些企业站，技术往往是基于LAMP（Linux + Apache + MySQL + PHP），这种业务较为简单的企业站，就是单体应用。所有的业务代码都是放在一个PHP程序中，代码只需要我自己来维护就可以了，测试、上线、运维全部搞定。</p>
-<p>但这种单体应用要是放到稍微有点规模的互联网公司中必然是行不通的。一个公司里有很多的人，不可能公司这么多技术人员共同维护一套代码，这样子团队的写作必然是个问题。系统的健壮性也会比较差，一旦单体应用中的一个模块出问题后往往会影响到其他的模块，导致整个系统不可用，比如PHP的服务业界通常使用php-fpm来管理，而php-fpm处理连接的方式一个请求一个线程，当一部分请求因为延时高时会消耗过多的线程资源，导致其他请求没有可用的线程可以处理。</p>
-<p>单体应用的其他缺点不再罗列，比如代码膨胀过度、发布较慢、系统高可用性差、团队协作成本高等。</p>
-<p>为了解决单体应用的这些缺点，方法只有一个就是将单体应用拆分为多个服务即服务化，服务之间通过RPC的方式相互调用。</p>
-<p>即服务化后，业界又提出了微服务的概念。</p>
-<p>维基百科中有如下定义：</p>
-<blockquote>
-<p>2014年，Martin Fowler 与 James Lewis 共同提出了微服务的概念，定义了微服务是由以单一应用程序构成的小服务，自己拥有自己的行程与轻量化处理，服务依业务功能设计，以全自动的方式部署，与其他服务使用 HTTP API 通讯。同时服务会使用最小的规模的集中管理 (例如 Docker) 能力，服务可以用不同的编程语言与数据库等元件实作。</p>
-</blockquote>
-<p>但看这个定义，看的我一脸懵逼，实在太过抽象。其实微服务也没有一个特别明确的定义。</p>
-<p>那么服务化和微服务之间有什么不同之处呢？</p>
-<ol>
-<li>服务拆分粒度更细。</li>
-<li>每个微服务都独立部署和维护。</li>
-<li>微服务需要服务治理。由于微服务会将服务变多，势必需要一个服务管理平台来对微服务进行管理。</li>
-</ol>
-<p>将单体应用向微服务拆分的方式可以分为纵向拆分和横向拆分。这里以一点资讯app为例来解释纵向拆分和横向拆分。</p>
-<p>一点资讯分为信息流、正文页等模块，而这些功能都依赖于用户信息获取模块，纵向拆分即将信息流、正文页拆分为微服务，横向拆分即将信息流、正文页都依赖的用户信息获取模块拆分为单独的服务。</p>
-<h2 id="微服务架构"><a href="#微服务架构" class="headerlink" title="微服务架构"></a>微服务架构</h2><p>采用微服务后会带来一系列复杂的问题，新技术在解决了一部分问题的同时，总会带来一些新的问题，比如服务怎么定义接口、服务的发布方式和服务发现、服务的监控、服务的治理（包括依赖关系梳理、熔断机制等）、故障快速定位等。</p>
-<p>那么一个标准的微服务架构应该长什么样子呢？</p>
-<p>服务提供方在服务启动时向服务注册中心注册服务，声明自己能够提供的服务及当前服务的地址等信息。</p>
-<p>服务调用者请求注册中心，查询所要调用服务的地址，并通过约定好的协议向服务提供者发起请求，获取到结果后按照数据协议格式将数据进行反序列化。</p>
-<p>在整个服务的调用过程中，服务的请求耗时、调用量、调用成功与否等信息都会作为监控记录下来，服务的调用关系会通过trace系统记录下来，以便用于后续的故障定位和追踪。如果服务调用失败，则需要服务治理的方式来保证调用方的正常运行。</p>
-<h2 id="服务的接口定义"><a href="#服务的接口定义" class="headerlink" title="服务的接口定义"></a>服务的接口定义</h2><p>需要解决的问题是服务的接口有哪些？每个接口的输入什么？每个接口的输出是什么？</p>
-<h3 id="RESTful-API"><a href="#RESTful-API" class="headerlink" title="RESTful API"></a>RESTful API</h3><p>HTTP协议的接口定义通常使用该协议，常见Wiki或者Swagger的方式来管理。</p>
-<h3 id="IDL文件"><a href="#IDL文件" class="headerlink" title="IDL文件"></a>IDL文件</h3><p>IDL（interface description language）用于描述接口，使得不同的编程语言不同的平台服务之间可以相互通讯。常见实现包括Thrift和protobuf，protobuf作为序列化方式的一种，通常会使用gRPC进行通讯。</p>
-<h3 id="XML文件方式"><a href="#XML文件方式" class="headerlink" title="XML文件方式"></a>XML文件方式</h3><p>服务提供者将接口描述信息保存在xml配置文件，服务启动后会加载配置文件，将服务暴露出去。</p>
-<p>服务消费者将要调用的接口信息写在xml配置文件中，进程启动后加载xml配置文件。</p>
-<h3 id="坑"><a href="#坑" class="headerlink" title="坑"></a>坑</h3><p>服务提供者通常需要提供服务的超时时间等参数，而消费者端也需要该信息，为了让消费者端能看到生产者端的配置，可以将信息放在配置中心中，但这却增大了配置中心的内容，当一旦配置变化需要同步时，同步的数据会变多。</p>
-<h2 id="注册中心"><a href="#注册中心" class="headerlink" title="注册中心"></a>注册中心</h2><p>要想实现服务之间的调用，通常会使用反向代理和服务注册中心的方法。</p>
-<p>反向代理的方法业界一般使用较多的包括nginx、haproxy以及业界新秀envoy等。</p>
-<p>在微服务架构中更多提及的方案为采用服务注册中心的方法，而注册中心的稳定性就显得尤其重要。</p>
-<p>业界注册中心采用较多的方案为zookeeper、etcd、consul、eureka。这些注册中心的存储数结构要么是树状接口，要么是key-value形式，其中k-v形式的可以变更key的值以实现类似树状结构。</p>
-<h3 id="注册中心的设计"><a href="#注册中心的设计" class="headerlink" title="注册中心的设计"></a>注册中心的设计</h3><h4 id="注册中心API及功能"><a href="#注册中心API及功能" class="headerlink" title="注册中心API及功能"></a>注册中心API及功能</h4><p>注册中心需要提供以下api以供服务提供方和服务调用方使用。</p>
-<ol>
-<li>服务注册接口，提供服务提供方使用</li>
-<li>服务反注册接口，提供服务提供方以便销毁服务</li>
-<li>心跳汇报接口，服务提供方通过心跳汇报服务是存活状态的。一旦当服务出现异常时，服务注册中心应该立即将服务从注册中心剔除。</li>
-<li>服务订阅接口，服务调用方用于获取服务提供方的实例列表</li>
-<li>服务变更接口，服务调用方用于获取最新可用服务。一旦注册中心探测到有新的服务实例或者实例减少，应该立即通知所有订阅该服务的服务调用者更新本地的节点信息。</li>
-</ol>
-<h4 id="注册中心存储哪些服务信息"><a href="#注册中心存储哪些服务信息" class="headerlink" title="注册中心存储哪些服务信息"></a>注册中心存储哪些服务信息</h4><p>通常可以按照“服务名-分组-节点信息”三层结构来存储，其中节点信息包括：节点ip地址、节点端口号、请求失败时重试次数、请求结果是否压缩。</p>
-<p>分组的划分原则包括：</p>
-<ol>
-<li>按照业务的核心程度</li>
-<li>按照机房维度</li>
-<li>线上环境、测试环境</li>
-</ol>
-<h4 id="注册中心如何工作"><a href="#注册中心如何工作" class="headerlink" title="注册中心如何工作"></a>注册中心如何工作</h4><h5 id="服务提供者注册节点"><a href="#服务提供者注册节点" class="headerlink" title="服务提供者注册节点"></a>服务提供者注册节点</h5><ol>
-<li>查看注册节点是否在白名单内，即是否可以向注册中心注册</li>
-<li>查看注册的服务名、服务分组是否存在</li>
-<li>将节点信息添加到对应的存储位置</li>
-</ol>
-<h5 id="服务提供者反注册"><a href="#服务提供者反注册" class="headerlink" title="服务提供者反注册"></a>服务提供者反注册</h5><ol>
-<li>查看服务名、服务分组对应的服务是否存在</li>
-<li>将节点删除</li>
-</ol>
-<h5 id="服务消费者查询节点信息"><a href="#服务消费者查询节点信息" class="headerlink" title="服务消费者查询节点信息"></a>服务消费者查询节点信息</h5><ol>
-<li>从本机内存中查找服务信息</li>
-<li>如果有本地快照存储可以从中查找</li>
-</ol>
-<h5 id="服务消费者订阅服务变更"><a href="#服务消费者订阅服务变更" class="headerlink" title="服务消费者订阅服务变更"></a>服务消费者订阅服务变更</h5><ol>
-<li>消费者获取到服务信息后，在本地保留cluster的sign值</li>
-<li>每个一段时间从注册中心获取cluster的sign值，如果不一致，就从注册中心拉取服务节点，并更新内存环境和本地快照</li>
-</ol>
-<h2 id="服务框架"><a href="#服务框架" class="headerlink" title="服务框架"></a>服务框架</h2><p>完整的服务框架包括：通讯框架、通讯协议、序列化和反序列化。</p>
-<h3 id="开源RPC框架"><a href="#开源RPC框架" class="headerlink" title="开源RPC框架"></a>开源RPC框架</h3><p>跟语言相关的框架：Dubbo、Motan（微博）、Tars（腾讯）、Spring Cloud</p>
-<p>跨平台的开源RPC框架：gRPC、Thrift</p>
-<h2 id="服务监控"><a href="#服务监控" class="headerlink" title="服务监控"></a>服务监控</h2><p>常用的开源监控软件包括：ELK、Graphite、TICK、Prometheus</p>
-<h2 id="服务追踪"><a href="#服务追踪" class="headerlink" title="服务追踪"></a>服务追踪</h2><p>使用分布式会话跟踪技术，利用traceid</p>
-<p>开源方案包括OpenZipkin、jaeger等</p>
-<h2 id="服务治理"><a href="#服务治理" class="headerlink" title="服务治理"></a>服务治理</h2><p>通过一系列的手段保证在意外情况下，服务仍然能够正常运行。</p>
-<h3 id="节点管理"><a href="#节点管理" class="headerlink" title="节点管理"></a>节点管理</h3><p>服务调用失败可能是服务提供者自身出现了问题，也可能是网络问题导致。</p>
-<p>1.注册中心自动摘除机制</p>
-<p>服务提供者和注册中心之间保持心跳，当超时后注册中心自动摘除服务提供者。</p>
-<p>2.服务消费者摘除</p>
-<p>将服务提供者的探活机制放到消费者端，消费者在探测到服务提供者失败后自动摘除服务提供者。这种情况可以避免服务提供者和注册中心之间网络出现异常，但是服务提供者和服务消费者之间可以通讯的情况。</p>
-<h3 id="负载均衡"><a href="#负载均衡" class="headerlink" title="负载均衡"></a>负载均衡</h3><p>常用的包括随机算法、轮询、加权轮询算法、最少活跃调用、一致性hash算法（可以配合着静态注册中心达到比较好的效果）</p>
-<p><strong>自适应最优选择算法</strong>：在客户端维护一份每一个服务节点的性能统计快照，每隔一段时间去更新快照。在发起请求时，根据二八原则，将服务节点分成两部分，找出20%的那部分响应最慢的节点并降低权重。也可称为动态加权轮询算法。1分钟的更新时间间隔是个不错的选择。</p>
-<p>个人感觉<strong>自适应最优选择算</strong>是个不错的选择，但还可以针对业务场景继续优化，比如权重进行动态调整。</p>
-<h3 id="服务路由"><a href="#服务路由" class="headerlink" title="服务路由"></a>服务路由</h3><p>用于限定服务消费者可选择服务提供者节点的范围。</p>
-<p>应用场景：分组调用（组的划分可以按照机房等维度）、灰度发布、流量切换（比如机房故障后，用于机房之间的流量调度）、读写分离（读接口部署在一起，写接口部署在一起）。</p>
-<h5 id="规则的写法"><a href="#规则的写法" class="headerlink" title="规则的写法"></a>规则的写法</h5><p>A.条件路由</p>
-<ul>
-<li>某个ip的消费者仅访问某个ip的服务提供者</li>
-<li>排除某个服务节点（所有的服务消费者都不能访问某个服务提供者）</li>
-<li>白名单和黑名单</li>
-<li>机房级别的隔离（可以基于ip地址的规则来做）</li>
-<li>读写分离（所有get类方法仅访问某些节点等）</li>
-</ul>
-<p>B.脚本路由</p>
-<p>使用脚本语言的形式来描述</p>
-<h4 id="路由的获取方式"><a href="#路由的获取方式" class="headerlink" title="路由的获取方式"></a>路由的获取方式</h4><ul>
-<li>本地配置：存储在服务消费者本地</li>
-<li>配置中心配置，可以修改规则后动态下发</li>
-</ul>
-<h3 id="服务容错"><a href="#服务容错" class="headerlink" title="服务容错"></a>服务容错</h3><p>手段包括超时、重试、双发、熔断等。</p>
-<p>双发的思路为服务调用者在发起一次服务调用后，在给定的时间内（该时间要比服务超时的时间短）没有得到结果，再发起另外一个请求。</p>
-<p>熔断的思路为在某一个时间内如果服务调用失败次数超过一定值，则触发熔断，不再向服务提供者发起请求。</p>
-<p>断路器中的状态包括：Closed、Open、Half Open（半打开状态，用于探测后端服务是否已经正常）</p>
-<p>Hystrix是最出名的熔断器，计算服务调用的失败率是通过滑动窗口来实现，滑动窗口内包含10个桶，每个桶为1秒内的服务调用情况。</p>
-<p>FailOver，失败自动切换。消费者调用失败后，自动从可以节点中选择下一个节点重新调用，可设置失败的次数。通常适合只读的场景。</p>
-<p>FailBack，失败通知。调用失败后，不能重试，而是根据失败的信息来决定后续的执行策略。通常用于写场景。</p>
-<p>FailCache，失败缓存。调用失败后，隔一段时间后再重试。</p>
-<p>FailFast，快速失败。调用失败后不再重试。</p>
-<h3 id="如何识别服务节点是否存活"><a href="#如何识别服务节点是否存活" class="headerlink" title="如何识别服务节点是否存活"></a>如何识别服务节点是否存活</h3><p>如果注册中心为zk，在服务节点变化的时候，注册中心会向服务调用方推送服务节点变化的通知。但当网络抖动的时候，可能会存在节点的状态频繁变化的问题，导致服务消费者频繁收到节点变更通知，或者导致注册中心获取到的服务节点过少。可通过以下手段来避免该问题。</p>
-<h3 id="服务端故障时的应对策略"><a href="#服务端故障时的应对策略" class="headerlink" title="服务端故障时的应对策略"></a>服务端故障时的应对策略</h3><p>故障包括：集群故障、单个idc故障、单机故障</p>
-<h4 id="集群故障"><a href="#集群故障" class="headerlink" title="集群故障"></a>集群故障</h4><p>比如触发bug、突发流量等</p>
-<p>限流：限制超出接口阈值的部分请求</p>
-<p>降级：一种思路为通过开关来实现。具体可以分为多种等级：一级降级对业务影响比较小，可以设置为自动降级；二级降级对业务有一定影响，设置为手工降级；三级降级需要谨慎操作。</p>
-<h4 id="单idc故障"><a href="#单idc故障" class="headerlink" title="单idc故障"></a>单idc故障</h4><p>基于dns的流量切换：延时稍高，比较适合入口流量。</p>
-<p>基于rpc的分组流量切换：将之前单个机房内访问的流量切换为多个机房访问。</p>
-<h4 id="单机故障"><a href="#单机故障" class="headerlink" title="单机故障"></a>单机故障</h4><p>可以通过自动重启服务的手段来解决。但要避免一次性重启服务过多的问题。</p>
-<h4 id="动态注册中心的保护机制"><a href="#动态注册中心的保护机制" class="headerlink" title="动态注册中心的保护机制"></a>动态注册中心的保护机制</h4><ol>
-<li>心跳开关保护机制，给注册中心设置一个开关，当开发打开时，即使网络频繁抖动，注册中心也不会通知消费者节点变更，后者设置一定的百分比打开该开关。正常情况下该开关可以不打开。</li>
-<li>服务节点摘除保护机制，设定一个阈值比例，在出现网络抖动的情况下，注册中心也不会将超过这个阈值的节点给下掉，防止一下子下掉过多节点。该机制正常情况下，应该开启。</li>
-</ol>
-<h4 id="静态注册中心的保护机制"><a href="#静态注册中心的保护机制" class="headerlink" title="静态注册中心的保护机制"></a>静态注册中心的保护机制</h4><p>在服务消费者端来判断是否服务提供者是否存活。服务消费者调用某一个节点失败超过一定次数就将节点标记为不可用。并隔一段时间后再去探测该节点是否存活。</p>
-<p>注册中心的服务正常情况下不改变的，只有当服务在发布的时候才去修改注册中心中的节点。注册中心中的节点变化后仍然通知服务消费者，只是在网络出现抖动的时候，不再去通知。</p>
-<p><strong>个人感觉这个思路更靠谱。</strong></p>
-<h3 id="服务治理平台"><a href="#服务治理平台" class="headerlink" title="服务治理平台"></a>服务治理平台</h3><p>1.服务管理 包括服务上下线、节点添加和删除、服务查询、服务节点查询等</p>
-<p>2.服务治理 限流、降级、切流量</p>
-<p>3.服务监控 可以包含服务的tracing监控等</p>
-<p>4.问题定位</p>
-<p>5.日志查询</p>
-<p>6.服务运维 发布部署和扩缩容</p>
-<h2 id="配置中心"><a href="#配置中心" class="headerlink" title="配置中心"></a>配置中心</h2><p>业内采用的开源配置中心包括:</p>
-<ul>
-<li>Spring Cloud 功能相对较弱，变更配置需要通过git操作</li>
-<li>Apollo 对Spring Boot的支持比较好</li>
-</ul>
-<h2 id="进阶内容"><a href="#进阶内容" class="headerlink" title="进阶内容"></a>进阶内容</h2><h3 id="做好容量规划"><a href="#做好容量规划" class="headerlink" title="做好容量规划"></a>做好容量规划</h3><p>包括容量评估和调度决策两方面。</p>
-<p>压测服务的单机最大容量可以采用区间加权的方式来计算，比如0 ~ 10ms区间权重为1，10 ~ 50ms区间权重为2,500ms以上权重为32，通过累加的方式计算出单机的权重，从而评估出单机最大容量。(<strong>该评估容量的方式非常实用</strong>)</p>
-<p>调度策略可以根据水位线来做决定，一条是安全线，一条是致命线。当水位线处于致命线需要立即扩容，当水位线回到安全线以上时可以进行缩容。（<strong>水位线的方式很赞</strong>）</p>
-<p>缩容的思路是采用逐步缩容，每隔5分钟判断一次水位线是否在致命线以上，并按照10%、30%的比例进行缩容。</p>
-<p>为了防止水位线的抖动，可以一分钟采集一个点，当5个点中的3个点都满足条件时才进行缩容。</p>
-<h3 id="多机房部署"><a href="#多机房部署" class="headerlink" title="多机房部署"></a>多机房部署</h3><p>1.主从架构</p>
-<p>所有的写请求都发给主机房，主机房更新本机房的缓存和数据库，其他机房的缓存和数据库从主机房同步。主机房出现问题后，就没法更新了。</p>
-<p>2.独立机房架构</p>
-<p>缓存层，每个机房都有写请求，每个机房的写请求通过消息同步组件将写请求同步给另外一个机房。数据库mysql只有一个主库，另外机房的mysql同步数据到该机房。</p>
-<p>以上缓存消息同步组件的实现大概如下：</p>
-<p>包括两个模块reship和collector，reship负责将本机房的写请求发一份给别的机房，collector负责从别的机房读取写请求，并发给本机房的处理服务器。</p>
-<p>可以通过消息队列和rpc调用来实现reship和collector的通讯。</p>
-<p>3.多机房的数据一致性</p>
-<p>可通过消息对账机制来保证一致性，原理为通过一个单独的程序后面来验证是否一个写请求是否已经被所有的机房都处理，如果没有处理，则重新发送写请求。</p>
-<h3 id="混合云部署"><a href="#混合云部署" class="headerlink" title="混合云部署"></a>混合云部署</h3><p>公有云上为了安全往往不部署数据库</p>
-<h3 id="DevOps实践"><a href="#DevOps实践" class="headerlink" title="DevOps实践"></a>DevOps实践</h3><p>持续集成：确保每一次代码的merge request都通过，分为四个阶段：build（开发分支代码的编译与单元测试）、package（开发分支代码打包成docker镜像）、deploy（开发分支代码部署到测试环境）、test（集成测试）。包括了代码检查和单元测试环节。</p>
-<p>持续交付：代码merge request到develop分支后，develop分支的代码能够在生产环境中测试通过，并进行小流量灰度验证，可以随时上线。分为五个阶段：build（develop分支的代码编译与单元测试）、package（develop分支代码打包）、deploy、test、canary（develop分支代码的小流量灰度验证）。</p>
-<p>持续部署：合并develop代码到master分支，并打包成docker镜像，并可随时上线。包括：build、package、clear、production。</p>
-<h3 id="Service-Mesh"><a href="#Service-Mesh" class="headerlink" title="Service Mesh"></a>Service Mesh</h3><p>Service Mesh技术以轻量级网络代理的方式与应用代码部署在一起，主要有两个关键点技术。</p>
-<p>SideCar用于转发服务之间的调用，在服务消费者端SideCar用于将请求转发到服务提供者端的SideCar中，在服务提供者端的SideCar在接收到请求后转发给本机上的服务提供者。</p>
-<p>SideCar实现方式有基于ipstables的网络拦截和直接转发请求两种方式。</p>
-<p>Control plane用于基于SideCar的服务调用的治理，用来取代微服务中需要服务框架干的事情，包括服务发现、负载均衡、请求路由、故障处理、安全认证、监控上报、日志记录、配额限制等。</p>
-<h3 id="Istio"><a href="#Istio" class="headerlink" title="Istio"></a>Istio</h3><p>Pilot主要用于流量控制，包括Rules API（提供API，用于流量控制）、Envoy API（给Envoy提供API，获取服务注册信息、流量控制信息等）、抽象模型（对服务注册信息、流量控制进行抽象）、平台适配层（适配k8s、Mesos等多个平台，将平台特定的注册信息转换成平台无关的抽象模型）。</p>
-<p>Pilot的流量控制功能包括服务发现和负载均衡、请求路由、超时重试、故障注入。</p>
-<p>Mixer实现策略控制和监控日志收集等功能，理论上Envoy发起的每次请求都会发送到Mixer，可以异步发送。</p>
-<p>Mixer的策略控制包括对服务的访问频率限制和访问控制。</p>
-<p>Citadel用于保证服务之间的安全，需要Envoy的配合。Citadel中存储了秘钥和证书，通过Pilot将授权策略和安全命名信息分发给Envoy，Envoy和Envoy之间通过双向TLS证书来进行通讯，由Mixer来管理授权和审计。</p>
-<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><p><a target="_blank" rel="noopener" href="http://www.infoq.com/cn/articles/micro-service-technology-stack">微服务架构技术栈选型手册
-</a></p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/nagle/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/nagle/" class="post-title-link" itemprop="url">TCP协议中的Nagle算法</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-11-23 20:31:04" itemprop="dateCreated datePublished" datetime="2018-11-23T20:31:04+00:00">2018-11-23</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>Nagle算法为了避免网络中存在太多的小数据包，尽可能发送大的数据包。定义为在任意时刻，最多只有一个未被确认的小段。小段为小于MSS尺寸的数据块，未被确认是指数据发出去后未收到对端的ack。</p>
-<p>Nagle算法是在网速较慢的时代的产物，目前的网络环境已经不太需要该机制，该算法在linux系统中默认关闭。</p>
-<p>延时ACK机制: 在接收到对端的报文后，并不会立即发送ack，而是等待一段时间发送ack，以便将ack和要发送的数据一块发送。当然ack不能无限延长，否则对端会认为包超时而造成报文重传。linux采用动态调节算法来确定延时的时间。</p>
-<p>可以举例来描述一下，client连续向server端发送两个小于MSS的数据包。client发送第一个数据包，根据Nagle算法，此时没有未确认的数据段，该数据包可以直接发送。server端接收到数据包后，由于延时ACK机制，并不会立即发送ack，而是需要等到延时ack机制超时后再发送第二个数据包。此时client端由于Nagle算法， 存在一个未被确认的数据包，不能向server端发送第二个数据包。</p>
-<p>在延时要求尽量小的情况下，并不适合用Nagle算法，比如SSH会话。可以通过设置<code>TCP_NODELAY</code>来完成。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/container-java/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/container-java/" class="post-title-link" itemprop="url">部署java应用到容器</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-11-17 20:16:02" itemprop="dateCreated datePublished" datetime="2018-11-17T20:16:02+00:00">2018-11-17</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>java 8u131之后的版本开始支持容器特性，之前的版本中并不支持容器相关的特性。</p>
-<h2 id="java基础知识"><a href="#java基础知识" class="headerlink" title="java基础知识"></a>java基础知识</h2><p>JVM默认的最大堆内存大小为系统内存的1&#x2F;4，可以使用参数<code>-XX:MaxRAMFraction=1</code>表示将所有可用内存作为最大堆。</p>
-<p>cgroup的限制在docker中能够看到，通过查看&#x2F;sys&#x2F;fs&#x2F;cgroup目录下的文件可以获取。</p>
-<p>JVM的用户地址空间分为JVM数据区和direct memory。JVM数据区由heap、stack等组成，GC是操作的这一片内存。direct memory是额外划分出来的一片内存空间，需要手工管理内存的申请和释放。</p>
-<p>direct memory使用<code>Unsafe.allocateMemory</code>和<code>Unsafe.setMemory</code>来申请和设置内存，是直接使用了C语言中的malloc来申请内存。由jvm参数<code>MaxDirectMemorySize</code>来限制direct memory可使用的内存大小。</p>
-<h2 id="java-lt-8u131"><a href="#java-lt-8u131" class="headerlink" title="java &lt; 8u131"></a>java &lt; 8u131</h2><p>没有对容器的任何支持，对cpu和内存的限制需要通过jvm的参数来配置。</p>
-<p>java中并不能看到内存资源的限制，会存在使用内存超过限制而被OOM的问题。可通过在程序中设置<code>-Xmx</code>来解决该问题。</p>
-<p>JVM GC（垃圾对象回收）对Java程序执行性能有一定的影响。默认的JVM使用公式“ParallelGCThreads &#x3D; (ncpus &lt;&#x3D; 8) ? ncpus : 3 + ((ncpus * 5) &#x2F; 8)” 来计算做并行GC的线程数，其中ncpus是JVM发现的系统CPU个数。一旦容器中JVM发现了宿主机的CPU个数（通常比容器实际CPU限制多很多），这就会导致JVM启动过多的GC线程，直接的结果就导致GC性能下降。Java服务的感受就是延时增加，TP监控曲线突刺增加，吞吐量下降。</p>
-<p>显式的传递JVM启动参数<code>-XX:ParallelGCThreads</code>告诉JVM应该启动几个并行GC线程。它的缺点是需要业务感知，为不同配置的容器传不同的JVM参数。</p>
-<h2 id="java9-and-java-gt-x3D-8u131"><a href="#java9-and-java-gt-x3D-8u131" class="headerlink" title="java9 and java &gt;&#x3D; 8u131"></a>java9 and java &gt;&#x3D; 8u131</h2><p>增加了<code>XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code>参数来检查内存限制。JVM中可以看到cgroup中的内存限制。</p>
-<p>可以根据容器中的cpu限制来动态设置GC线程数，不再需要单独设置<code>-XX:ParallelGCThreads</code>。</p>
-<h2 id="java10"><a href="#java10" class="headerlink" title="java10"></a>java10</h2><p>jvm参数<code>XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code>已经默认开启，但新增加<code>-XX:-UseContainerSupport</code>参数来更好支持容器，支持内存和cpu。</p>
-<p>在开启<code>-XX:-UseContainerSupport</code>的同时，<code>XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code>会被关闭。</p>
-<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://blogs.oracle.com/java-platform-group/java-se-support-for-docker-cpu-and-memory-limits">Java SE support for Docker CPU and memory limits</a></li>
-<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&mid=2651749434&idx=1&sn=92dcd59d05984eaa036e7fa804fccf20&chksm=bd12a5778a652c61f4a181c1967dbcf120dd16a47f63a5779fbf931b476e6e712e02d7c7e3a3&mpshare=1&scene=1&srcid=1115JtuwzXeezCv5UkmOcrFw%23rd">美团容器平台架构及容器技术实践</a></li>
-</ul>
 
       
     </div>

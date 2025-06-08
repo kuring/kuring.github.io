@@ -146,7 +146,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">251</span>
+          <span class="site-state-item-count">256</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -174,6 +174,648 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-backlog/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux-backlog/" class="post-title-link" itemprop="url">Linux TCP backlog</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-12-01 21:24:07" itemprop="dateCreated datePublished" datetime="2018-12-01T21:24:07+00:00">2018-12-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/tcp_connect.webp"></p>
+<p>一个正常的tcp server在处理请求时会经过如下的系统调用：socket() bind() listen() accept() read() write() close()。一个请求在被应用程序读取之前，可能处于SYN_RCVD和ESTABLISHED两种状态。</p>
+<p>第一个队列：SYN_RCVD状态是server端接收到了client端的SYN包，server端会将该连接放到半连接队列中，并向客户端发送SYN+ACK包，此时连接处于半连接状态。通常该队列被称为半连接队列。</p>
+<p>第二个队列：ESTABLISHED状态为已经完成了三次握手，但是server端的应用程序还未调用accept系统调用的情况。通常该队列被称为全连接队列。</p>
+<p>这两种情况下都需要操作系统提供相应队列来保存连接状态。</p>
+<p>backlog用来设置这两个队列的最大值，但在不同的操作系统中有不同的含义，下面的说明以linux操作系统为准。</p>
+<p>其中第一个维护SYN_RCVD状态的队列使用内核参数<code>net.ipv4.tcp_max_syn_backlog</code>来控制，如果队列超过这一阈值，连接会被拒绝。该值默认为1000.</p>
+<p>第二个维护ESTABLISHED状态的队列，该队列的长度由应用程序调用listen系统调用时指定。</p>
+<h1 id="内核参数"><a href="#内核参数" class="headerlink" title="内核参数"></a>内核参数</h1><ol>
+<li>net.ipv4.tcp_max_syn_backlog</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tcp_max_syn_backlog (integer; default: see below; since Linux 2.2)</span><br><span class="line">              The  maximum number of queued connection requests which have still not received an acknowledgement from the connecting client.  If this number is exceeded, the kernel will begin dropping requests.  The default value of 256 is increased to 1024 when the memory present in the system is adequate or greater (&gt;= 128Mb), and  reduced  to 128  for  those systems with very low memory (&lt;= 32Mb).  It is recommended that if this needs to be increased above 1024, TCP_SYNQ_HSIZE in include/net/tcp.h be modified to keep TCP_SYNQ_HSIZE*16&lt;=tcp_max_syn_backlog, and the kernel be recompiled.</span><br></pre></td></tr></table></figure>
+
+<p>用来设置 syn 队列的大小，通常也会称为半连接队列。该参数的默认值一般为 1024。如果 syn 队列满，此时 syn 报文会被丢弃，无法回复 syn + ack 报文。可以通过 <code>netstat -s</code> 命令看到 “XX SYNs to LISTEN sockets dropped”. 的报错信息。</p>
+<ol start="2">
+<li>net.ipv4.tcp_syncookies</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tcp_syncookies (Boolean; since Linux 2.2) Enable TCP syncookies. The kernel must be compiled with CONFIG_SYN_COOKIES.  Send out syncookies when the syn backlog queue of a socket overflows.  The syncookies feature attempts to protect a socket from a SYN flood attack.  This should be used as a last resort, if at all.  This is a violation of the  TCP  protocol,  and  con‐ flicts  with other areas of TCP such as TCP extensions.  It can cause problems for clients and relays.  It is not recommended as a tuning mechanism for heavily loaded servers to help with overloaded or misconfigured conditions.  For recommended alternatives see tcp_max_syn_backlog, tcp_synack_retries, and tcp_abort_on_overflow.</span><br></pre></td></tr></table></figure>
+
+<p>因为 syn 队列的存在，当客户端一直在发送 syn 包，但是不回 ack 报文时，一旦服务端的队列超过 <code>net.ipv4.tcp_max_syn_backlog</code> 设置的大小就会存在队列溢出的问题，从而导致服务端无法响应客户端的请求，这就是 syn flood 攻击。</p>
+<p>为了防止 syn flood 攻击，引入了 syn cookies 机制，该机制并非 tcp 协议的一部分。原理参见：<a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000019292140">深入浅出TCP中的SYN-Cookies</a></p>
+<p>一旦开启了 syn cookies 机制后，即使 syn 队列满，仍可以对新建的连接回复 syn + ack 报文，但是不需要进入队列。</p>
+<p>因为 syn cookies 存在部分缺陷，只有当 syn 队列满时该特性才会生效。</p>
+<ol start="3">
+<li>net.ipv4.tcp_abort_on_overflow</li>
+</ol>
+<p>在三次握手完成后，该连接会进入到 ESTABLISHED 状态，并将该连接放入到用户程序队列中。若该队列已满，默认会将该连接重新设置为 SYN_ACK 状态，相当于是服务端没有接收到客户端的 syn + ack 报文，后续可以利用客户端的重传机制重新接收报文。</p>
+<p>一旦开启了 <code>net.ipv4.tcp_abort_on_overflow</code> 选项后，会直接发送 RST 报文给到客户端，客户端会终止该连接，并报错 <code>104 Connection reset by peer</code>。</p>
+<ol start="4">
+<li>net.core.somaxconn</li>
+</ol>
+<p>全连接队列的最大值，该配置为全局默认配置。单个 socket 的全连接队列的长度选择为 Min(backlog, somaxconn)。</p>
+<h1 id="内核源码"><a href="#内核源码" class="headerlink" title="内核源码"></a>内核源码</h1><p>在整个内核模块中主要涉及到 listen() 和 accept() 系统调用，listen() 系统调用的作用是申请和初始化半连接队列和全连接队列。队列位于内核代码的 include&#x2F;net&#x2F;inet_connection_sock.h 中的如下位置:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">inet_connection_sock</span> &#123;</span></span><br><span class="line">	<span class="comment">/* inet_sock has to be the first member! */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">inet_sock</span>	  <span class="title">icsk_inet</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">request_sock_queue</span> <span class="title">icsk_accept_queue</span>;</span> <span class="comment">// 队列</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">inet_bind_bucket</span>	  *<span class="title">icsk_bind_hash</span>;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="如何参看"><a href="#如何参看" class="headerlink" title="如何参看"></a>如何参看</h1><p>查看 tcp 状态为 SYN_RECV 的链接即为半连接状态的请求：<code>netstat -napt | grep SYN_RECV</code>。也可以通过 <code>netstat -s | grep &#39;SYNs to LISTEN&#39;</code> 查看。</p>
+<p>全连接队列可以使用 <code>ss -nlt | grep 8080</code> 的方式查看 Recv-Q 的值。<br>也可通过如下命令来查看全连接队列的溢出情况。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$</span><span class="language-bash">netstat -s | grep overflow</span></span><br><span class="line">    3255 times the listen queue of a socket overflowed</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux-interrupt/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/linux-interrupt/" class="post-title-link" itemprop="url">Linux中断</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-11-30 21:09:20" itemprop="dateCreated datePublished" datetime="2018-11-30T21:09:20+00:00">2018-11-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h1><p>中断由硬件产生，并发送到中断控制器，中断控制器再发送中断到CPU，CPU检测到中断信号后，会中断当前的工作，每个中断都有IRQ（中断请求），基于IRQ，CPU将中断请求分发到对应的硬件驱动上通知操作系统，操作系统会对中断进行处理。</p>
+<h2 id="中断控制器"><a href="#中断控制器" class="headerlink" title="中断控制器"></a>中断控制器</h2><p>常见的中断控制器有两种：可编程中断控制器8259A和高级可编程中断控制器（APIC）。传统的8259A只适合单CPU的情况，现在都是多CPU、多核心的SMP体系，所以为了充分利用SMP体系结构，把中断传递给系统上的每个CPU以便更好实现并行和提高性能，Intel引入了高级可编程中断控制器（APIC）。</p>
+<p>光有高级可编程中断控制器的硬件支持还不够，Linux内核还必须能利用这些硬件的特质，所以只有kernel 2.4以后的版本才支持把不同的硬件中断请求（IRQs）分配到特定的CPU核心上，这个绑定技术被称为SMP IRQ Affinity。</p>
+<p>在设置网卡中断的cpu core时，有一个限制就是，IO-APIC 有两种工作模式：logic 和 physical，在 logic 模式下 IO-APIC 可以同时分布同一种 IO 中断到8颗 CPU (core) 上（受到 bitmask 寄存器的限制，因为 bitmask 只有8位长。）；在 physical 模式下不能同时分布同一中断到不同 CPU 上，比如，不能让 eth0 中断同时由 CPU0 和 CPU1 处理，这个时候只能定位 eth0 到 CPU0、eth1 到 CPU1，也就是说 eth0 中断不能像 logic 模式那样可以同时由多个 CPU 处理。</p>
+<h2 id="软中断和硬中断"><a href="#软中断和硬中断" class="headerlink" title="软中断和硬中断"></a>软中断和硬中断</h2><p>为了解决中断处理程序执行时间过长和中断丢失的问题，Linux系统将中断分为上半部和下半部。</p>
+<p>上半部在中断禁止模式下运行，用来快速处理中断，主要用来处理跟硬件密切相关的工作。</p>
+<p>下半部处理上半部未完成的工作，通常以内核线程的方式运行。</p>
+<p>以Linux接收网卡数据包为例进行说明：</p>
+<p>网卡接收到一个数据包后，会通过硬件中断的方式通知内核新的数据到了。内核会调用中断处理程序进行处理。</p>
+<p>上半部将网卡中的数据写入到内存中，并更新一下硬件寄存器的状态，最后发送一个软中断信号，通知下半部进一步的处理。</p>
+<p>下半部被软中断信号唤醒后，从内存中读到数据，按照网络协议栈对数据进行解析和处理，并发送给应用程序。</p>
+<p>上面所说的上半部即硬中断，下半部即软中断，但一些内核自定义的事件也属于软中断，比如内核调度和RCU锁等。</p>
+<p>硬中断：由外设产生，用来通知操作系统外设状态的变化。在处理中断的同时要关闭中断。特点为处理要尽可能的快。</p>
+<p>软中断：为了满足实时性要求，硬中断处理时间都比较短，将时间比较长的中断放到软中断中来完成，称为下半部。int就是软中断指令，中断向量表是中断号和中断处理程序的对应表。每个CPU对应一个软中断内核线程<code>ksoftirqd/cpu编号</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@120-14-29-SH-1037-B07 ~]# ps -ef | grep ksoft</span><br><span class="line">root           3       2  0  2016 ?        01:47:12 [ksoftirqd/0]</span><br><span class="line">root          21       2  0  2016 ?        00:47:51 [ksoftirqd/1]</span><br><span class="line">root          26       2  0  2016 ?        00:47:34 [ksoftirqd/2]</span><br><span class="line">root          31       2  0  2016 ?        00:47:46 [ksoftirqd/3]</span><br></pre></td></tr></table></figure>
+
+<p>中断嵌套：硬中断可以嵌套，即新的硬中断可以打断正在执行的中断，但同种中断不可以。软中断不可嵌套，但相同类型中断可在不同的cpu上执行。</p>
+<h1 id="相关命令"><a href="#相关命令" class="headerlink" title="相关命令"></a>相关命令</h1><h2 id="mpstat"><a href="#mpstat" class="headerlink" title="mpstat"></a>mpstat</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"># 显示cpu处理的中断数量</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# mpstat -I SUM 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:27:59 PM  CPU    intr/s</span><br><span class="line">05:28:00 PM  all  61274.00</span><br><span class="line">05:28:01 PM  all  61712.00</span><br><span class="line">05:28:02 PM  all  62315.00</span><br><span class="line">05:28:03 PM  all  59280.00</span><br><span class="line">^C</span><br><span class="line">Average:     all  61145.25</span><br><span class="line"></span><br><span class="line"># 显示每个核处理的中断数量</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# mpstat -I SUM 1 -P ALL</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:30:30 PM  CPU    intr/s</span><br><span class="line">05:30:31 PM  all  61446.00</span><br><span class="line">05:30:31 PM    0  40489.00</span><br><span class="line">05:30:31 PM    1   6839.00</span><br><span class="line">05:30:31 PM    2   6935.00</span><br><span class="line">05:30:31 PM    3   7185.00</span><br><span class="line"></span><br><span class="line"># 显示更详细的信息</span><br><span class="line">[root@120-14-31-SH-1037-B07 ~]# mpstat -P ALL 1</span><br><span class="line">Linux 3.10.0-327.el7.x86_64 (120-14-31-SH-1037-B07.yidian.com)  09/10/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">01:15:09 AM  CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle</span><br><span class="line">01:15:10 AM  all    6.35    0.00   11.64    0.00    0.00    7.67    0.00    0.00    0.00   74.34</span><br><span class="line">01:15:10 AM    0    5.05    0.00   11.11    0.00    0.00    0.00    0.00    0.00    0.00   83.84</span><br><span class="line">01:15:10 AM    1    6.38    0.00   12.77    0.00    0.00    9.57    0.00    0.00    0.00   71.28</span><br><span class="line">01:15:10 AM    2    8.70    0.00   10.87    0.00    0.00   14.13    0.00    0.00    0.00   66.30</span><br><span class="line">01:15:10 AM    3    6.32    0.00   12.63    0.00    0.00    7.37    0.00    0.00    0.00   73.68</span><br></pre></td></tr></table></figure>
+
+<h2 id="lspci"><a href="#lspci" class="headerlink" title="lspci"></a>lspci</h2><p>可以来查看网卡型号，驱动等信息，内容较多</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">[root@103-17-164-sh-100-k07 ~]# lspci -vvv | more</span><br><span class="line">00:00.0 Host bridge: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DMI2 (rev 04)</span><br><span class="line">        Subsystem: Super Micro Computer Inc Device 0668</span><br><span class="line">        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-</span><br><span class="line">        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast &gt;TAbort- &lt;TAbort- &lt;MAbort- &gt;SERR- &lt;PERR- INTx-</span><br><span class="line">        Interrupt: pin A routed to IRQ 0</span><br><span class="line">        Capabilities: [90] Express (v2) Root Port (Slot-), MSI 00</span><br><span class="line">                DevCap: MaxPayload 128 bytes, PhantFunc 0</span><br><span class="line">                        ExtTag- RBE+</span><br><span class="line">                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-</span><br><span class="line">                        RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-</span><br><span class="line">                        MaxPayload 128 bytes, MaxReadReq 128 bytes</span><br><span class="line">                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-</span><br><span class="line">                LnkCap: Port #0, Speed 5GT/s, Width x4, ASPM not supported, Exit Latency L0s &lt;64ns, L1 &lt;16us</span><br><span class="line">                        ClockPM- Surprise+ LLActRep+ BwNot+</span><br><span class="line">                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- CommClk-</span><br><span class="line">                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-</span><br><span class="line">                LnkSta: Speed unknown, Width x0, TrErr- Train- SlotClk- DLActive- BWMgmt- ABWMgmt-</span><br><span class="line">                RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-</span><br><span class="line">                RootCap: CRSVisible-</span><br><span class="line">                RootSta: PME ReqID 0000, PMEStatus- PMEPending-</span><br><span class="line">                DevCap2: Completion Timeout: Range BCD, TimeoutDis+, LTR-, OBFF Not Supported ARIFwd-</span><br><span class="line">                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-, LTR-, OBFF Disabled ARIFwd-</span><br><span class="line">                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-</span><br><span class="line">                         Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-</span><br><span class="line">                         Compliance De-emphasis: -6dB</span><br><span class="line">                LnkSta2: Current De-emphasis Level: -6dB, EqualizationComplete-, EqualizationPhase1-</span><br><span class="line">                         EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-</span><br><span class="line">        Capabilities: [e0] Power Management version 3</span><br><span class="line">                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)</span><br><span class="line">                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-</span><br><span class="line">        Capabilities: [100 v1] Vendor Specific Information: ID=0002 Rev=0 Len=00c &lt;?&gt;</span><br><span class="line">        Capabilities: [144 v1] Vendor Specific Information: ID=0004 Rev=1 Len=03c &lt;?&gt;</span><br><span class="line">        Capabilities: [1d0 v1] Vendor Specific Information: ID=0003 Rev=1 Len=00a &lt;?&gt;</span><br><span class="line">        Capabilities: [280 v1] Vendor Specific Information: ID=0005 Rev=3 Len=018 &lt;?&gt;</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<h2 id="ethtool"><a href="#ethtool" class="headerlink" title="ethtool"></a>ethtool</h2><p>用来查看网卡信息</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><span class="line">[root@103-17-164-sh-100-k07 ~]# ethtool eth3</span><br><span class="line">Settings for eth3:</span><br><span class="line">        Supported ports: [ FIBRE ]</span><br><span class="line">        Supported link modes:   1000baseT/Full</span><br><span class="line">                                10000baseT/Full</span><br><span class="line">        Supported pause frame use: No</span><br><span class="line">        Supports auto-negotiation: Yes</span><br><span class="line">        Advertised link modes:  1000baseT/Full</span><br><span class="line">                                10000baseT/Full</span><br><span class="line">        Advertised pause frame use: No</span><br><span class="line">        Advertised auto-negotiation: Yes</span><br><span class="line">        Speed: 10000Mb/s</span><br><span class="line">        Duplex: Full</span><br><span class="line">        Port: FIBRE</span><br><span class="line">        PHYAD: 0</span><br><span class="line">        Transceiver: external</span><br><span class="line">        Auto-negotiation: on</span><br><span class="line">        Supports Wake-on: d</span><br><span class="line">        Wake-on: d</span><br><span class="line">        Current message level: 0x00000007 (7)</span><br><span class="line">                               drv probe link</span><br><span class="line">        Link detected: yes</span><br><span class="line"></span><br><span class="line"># 可查看Ring buffer的大小</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# ethtool -g eth3</span><br><span class="line">Ring parameters for eth3:</span><br><span class="line">Pre-set maximums:</span><br><span class="line">RX:             4096</span><br><span class="line">RX Mini:        0</span><br><span class="line">RX Jumbo:       0</span><br><span class="line">TX:             4096</span><br><span class="line">Current hardware settings:</span><br><span class="line">RX:             512</span><br><span class="line">RX Mini:        0</span><br><span class="line">RX Jumbo:       0</span><br><span class="line">TX:             512</span><br><span class="line"></span><br><span class="line"># 列出信息较多，包含网卡的统计信息，包括丢包量信息</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# ethtool -S eth3 | more</span><br><span class="line">NIC statistics:</span><br><span class="line">     rx_packets: 680955795162</span><br><span class="line">     tx_packets: 27260701850</span><br><span class="line">     rx_bytes: 248285654162670</span><br><span class="line">     tx_bytes: 195321924245892</span><br><span class="line">     rx_pkts_nic: 683081802539</span><br><span class="line">     tx_pkts_nic: 27260700665</span><br><span class="line">     rx_bytes_nic: 251132784690871</span><br><span class="line">     tx_bytes_nic: 195447730645152</span><br><span class="line">     lsc_int: 11</span><br><span class="line">     tx_busy: 0</span><br><span class="line">     non_eop_descs: 1811095697</span><br><span class="line">     rx_errors: 67381</span><br><span class="line">     tx_errors: 0</span><br><span class="line">     rx_dropped: 0</span><br><span class="line">     tx_dropped: 0</span><br><span class="line">     multicast: 1025690658</span><br><span class="line">     broadcast: 206937242</span><br><span class="line">     rx_no_buffer_count: 0</span><br><span class="line">     collisions: 0</span><br><span class="line">     rx_over_errors: 0</span><br><span class="line">     rx_crc_errors: 67302</span><br><span class="line">     rx_frame_errors: 0</span><br><span class="line">     hw_rsc_aggregated: 2358414213</span><br><span class="line">     hw_rsc_flushed: 232402327</span><br><span class="line">     fdir_match: 10634169417</span><br><span class="line">     fdir_miss: 669277016191</span><br><span class="line">     fdir_overflow: 3321</span><br><span class="line">     rx_fifo_errors: 0</span><br><span class="line">     rx_missed_errors: 2538</span><br><span class="line">     tx_aborted_errors: 0</span><br><span class="line">     tx_carrier_errors: 0</span><br><span class="line">     tx_fifo_errors: 0</span><br><span class="line">     tx_heartbeat_errors: 0</span><br><span class="line">     tx_timeout_count: 0</span><br><span class="line">     tx_restart_queue: 0</span><br><span class="line">     rx_long_length_errors: 80264</span><br><span class="line">     rx_short_length_errors: 0</span><br><span class="line">     tx_flow_control_xon: 1</span><br><span class="line">     rx_flow_control_xon: 0</span><br><span class="line">     tx_flow_control_xoff: 51</span><br><span class="line">     rx_flow_control_xoff: 0</span><br><span class="line">     rx_csum_offload_errors: 0</span><br><span class="line">     alloc_rx_page_failed: 0</span><br><span class="line">     alloc_rx_buff_failed: 0</span><br><span class="line">     rx_no_dma_resources: 0</span><br><span class="line">     os2bmc_rx_by_bmc: 0</span><br><span class="line">     os2bmc_tx_by_bmc: 0</span><br><span class="line">     os2bmc_tx_by_host: 0</span><br><span class="line">     os2bmc_rx_by_host: 0</span><br><span class="line"></span><br><span class="line"># 查看网卡多队列的支持情况，当前网卡支持8个队列，使用了8个队列</span><br><span class="line">[root@103-17-6-sh-100-j11 ~]# ethtool -l eth0</span><br><span class="line">Channel parameters for eth0:</span><br><span class="line">Pre-set maximums:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       8</span><br><span class="line">Current hardware settings:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       8</span><br><span class="line"></span><br><span class="line"># 设置网卡当前使用的多队列，当前使用的网卡数量不能超过最大值8，该值跟网卡的中断数量一一对应，即/proc/interrupts中看到的eth0的中断数量</span><br><span class="line">[root@103-17-6-sh-100-j11 ~]# ethtool -L eth0 combined 2</span><br><span class="line">[root@103-17-6-sh-100-j11 ~]# ethtool -l eth0</span><br><span class="line">Channel parameters for eth0:</span><br><span class="line">Pre-set maximums:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       8</span><br><span class="line">Current hardware settings:</span><br><span class="line">RX:             0</span><br><span class="line">TX:             0</span><br><span class="line">Other:          1</span><br><span class="line">Combined:       2</span><br></pre></td></tr></table></figure>
+
+<h2 id="sar"><a href="#sar" class="headerlink" title="sar"></a>sar</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"># 列出网卡的接收包信息，比iftop更直观</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# sar -n DEV 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:06:12 PM     IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s</span><br><span class="line">05:06:13 PM      eth0      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:06:13 PM      eth1      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:06:13 PM      eth2      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:06:13 PM      eth3  77893.00   4328.00  31413.92  30134.16      0.00      0.00     46.00</span><br><span class="line">05:06:13 PM        lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line"></span><br><span class="line"># 可列出错误包的相关信息</span><br><span class="line">[root@103-17-164-sh-100-k07 ~]# sar -n EDEV 1</span><br><span class="line">Linux 3.10.0-327.10.1.el7.x86_64 (103-17-164-sh-100-k07.yidian.com)     09/09/2017      _x86_64_        (4 CPU)</span><br><span class="line"></span><br><span class="line">05:07:13 PM     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s</span><br><span class="line">05:07:14 PM      eth0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM      eth1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM      eth2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM      eth3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">05:07:14 PM        lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br></pre></td></tr></table></figure>
+
+<p>通过中断可以看到网卡包含四个中断55-58，均位于cpu0上。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">[root@103-17-164-sh-100-k07 ~]# cat /proc/interrupts</span><br><span class="line">           CPU0       CPU1       CPU2       CPU3</span><br><span class="line">  0:         44          0          0          0  IR-IO-APIC-edge      timer</span><br><span class="line">  1:          3          0          0          0  IR-IO-APIC-edge      i8042</span><br><span class="line">  8:         42          0          0          0  IR-IO-APIC-edge      rtc0</span><br><span class="line">  9:          1          0          0          0  IR-IO-APIC-fasteoi   acpi</span><br><span class="line"> 12:          4          0          0          0  IR-IO-APIC-edge      i8042</span><br><span class="line"> 16:         99          0          0          0  IR-IO-APIC-fasteoi   ehci_hcd:usb1</span><br><span class="line"> 18:          0          0          0          0  IR-IO-APIC-fasteoi   i801_smbus</span><br><span class="line"> 23:         83          0          0          0  IR-IO-APIC-fasteoi   ehci_hcd:usb2</span><br><span class="line"> 37:   12019917          0          0          0  IR-PCI-MSI-edge      0000:00:1f.2</span><br><span class="line"> 48:          0          0          0          0  DMAR_MSI-edge      dmar0</span><br><span class="line"> 55:  746827548          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-0</span><br><span class="line"> 56: 2674693551          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-1</span><br><span class="line"> 57: 2341522223          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-2</span><br><span class="line"> 58: 3587929355          0          0          0  IR-PCI-MSI-edge      eth3-TxRx-3</span><br><span class="line"> 59:       3334          0          0          0  IR-PCI-MSI-edge      eth3</span><br><span class="line"> 61:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 63:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 64:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 65:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 66:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 67:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 68:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line"> 69:          2          0          0          0  IR-PCI-MSI-edge      ioat-msix</span><br><span class="line">NMI:    1100069     693493     635982     615953   Non-maskable interrupts</span><br><span class="line">LOC: 1120358899  146726541 4134846029  168005659   Local timer interrupts</span><br><span class="line">SPU:          0          0          0          0   Spurious interrupts</span><br><span class="line">PMI:    1100069     693493     635982     615953   Performance monitoring interrupts</span><br><span class="line">IWI:   57255892  115292160  113458706  112987848   IRQ work interrupts</span><br><span class="line">RTR:          0          0          0          0   APIC ICR read retries</span><br><span class="line">RES:  525229423 2791640970  427214674 1986396041   Rescheduling interrupts</span><br><span class="line">CAL: 4294536344 4294488238 4294478163 4294552026   Function call interrupts</span><br><span class="line">TLB:   65239533   57937650   55104990   52690662   TLB shootdowns</span><br><span class="line">TRM:          0          0          0          0   Thermal event interrupts</span><br><span class="line">THR:          0          0          0          0   Threshold APIC interrupts</span><br><span class="line">MCE:          0          0          0          0   Machine check exceptions</span><br><span class="line">MCP:     160132     160132     160132     160132   Machine check polls</span><br><span class="line">ERR:          0</span><br><span class="line">MIS:          0</span><br></pre></td></tr></table></figure>
+
+<h2 id="修改中断的cpu分配"><a href="#修改中断的cpu分配" class="headerlink" title="修改中断的cpu分配"></a>修改中断的cpu分配</h2><p>echo “2” &gt; &#x2F;proc&#x2F;irq&#x2F;49&#x2F;smp_affinity</p>
+<p>其中2表示cpu1, 49表示中断号。</p>
+<h2 id="查看软中断"><a href="#查看软中断" class="headerlink" title="查看软中断"></a>查看软中断</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@120-14-31-SH-1037-B07 ~]# cat /proc/softirqs</span><br><span class="line">                    CPU0       CPU1       CPU2       CPU3</span><br><span class="line">          HI:          1          3          0          1</span><br><span class="line">       TIMER: 1795378091 3617740778 2674553229 1524071492</span><br><span class="line">      NET_TX:  202188392   22218135   17427628   17205883</span><br><span class="line">      NET_RX: 3388060179   60871361   68145291   38670323</span><br><span class="line">       BLOCK:    4741950       2422       1309       1489</span><br><span class="line">BLOCK_IOPOLL:          0          0          0          0</span><br><span class="line">     TASKLET: 2102131738    3720214    3104944    1942912</span><br><span class="line">       SCHED:  526046585  612421231  496815061  456047989</span><br><span class="line">     HRTIMER:          0          0          0          0</span><br><span class="line">         RCU: 3147020579 4237695975 3820083676 3267816268</span><br></pre></td></tr></table></figure>
+
+<p>软中断包括10个类别，NET_RX（网络接收中断）、NET_TX（网络发送中断）</p>
+<h2 id="查看数据包统计"><a href="#查看数据包统计" class="headerlink" title="查看数据包统计"></a>查看数据包统计</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br></pre></td><td class="code"><pre><span class="line">[root@c1-g08-120-166-30 ~]# netstat -s</span><br><span class="line">Ip:</span><br><span class="line">    7586513384 total packets received</span><br><span class="line">    0 forwarded</span><br><span class="line">    741 with unknown protocol</span><br><span class="line">    0 incoming packets discarded</span><br><span class="line">    7586512643 incoming packets delivered</span><br><span class="line">    7948370396 requests sent out</span><br><span class="line">Icmp:</span><br><span class="line">    23 ICMP messages received</span><br><span class="line">    0 input ICMP message failed.</span><br><span class="line">    ICMP input histogram:</span><br><span class="line">        destination unreachable: 1</span><br><span class="line">        echo requests: 19</span><br><span class="line">        echo replies: 3</span><br><span class="line">    46 ICMP messages sent</span><br><span class="line">    0 ICMP messages failed</span><br><span class="line">    ICMP output histogram:</span><br><span class="line">        destination unreachable: 9</span><br><span class="line">        echo request: 18</span><br><span class="line">        echo replies: 19</span><br><span class="line">IcmpMsg:</span><br><span class="line">        InType0: 3</span><br><span class="line">        InType3: 1</span><br><span class="line">        InType8: 19</span><br><span class="line">        OutType0: 19</span><br><span class="line">        OutType3: 9</span><br><span class="line">        OutType8: 18</span><br><span class="line">Tcp:</span><br><span class="line">    561299810 active connections openings</span><br><span class="line">    2005002 passive connection openings</span><br><span class="line">    8 failed connection attempts</span><br><span class="line">    282644949 connection resets received</span><br><span class="line">    725 connections established</span><br><span class="line">    7585817181 segments received</span><br><span class="line">    13957880471 segments send out</span><br><span class="line">    1742807 segments retransmited</span><br><span class="line">    136 bad segments received.</span><br><span class="line">    523811266 resets sent</span><br><span class="line">Udp:</span><br><span class="line">    445457 packets received</span><br><span class="line">    3 packets to unknown port received.</span><br><span class="line">    0 packet receive errors</span><br><span class="line">    553840367 packets sent</span><br><span class="line">    0 receive buffer errors</span><br><span class="line">    0 send buffer errors</span><br><span class="line">UdpLite:</span><br><span class="line">    InErrors: 3</span><br><span class="line">TcpExt:</span><br><span class="line">    341304 invalid SYN cookies received</span><br><span class="line">    1 resets received for embryonic SYN_RECV sockets</span><br><span class="line">    1 ICMP packets dropped because they were out-of-window</span><br><span class="line">    1997421 TCP sockets finished time wait in fast timer</span><br><span class="line">    222787 delayed acks sent</span><br><span class="line">    1819 delayed acks further delayed because of locked socket</span><br><span class="line">    Quick ack mode was activated 178186 times</span><br><span class="line">    13 packets directly queued to recvmsg prequeue.</span><br><span class="line">    3280604069 packet headers predicted</span><br><span class="line">    1972740996 acknowledgments not containing data payload received</span><br><span class="line">    798190042 predicted acknowledgments</span><br><span class="line">    642444 times recovered from packet loss by selective acknowledgements</span><br><span class="line">    Detected reordering 23 times using FACK</span><br><span class="line">    Detected reordering 1618 times using SACK</span><br><span class="line">    59 congestion windows fully recovered without slow start</span><br><span class="line">    16 congestion windows partially recovered using Hoe heuristic</span><br><span class="line">    17089 congestion windows recovered without slow start by DSACK</span><br><span class="line">    9594 congestion windows recovered without slow start after partial ack</span><br><span class="line">    TCPLostRetransmit: 2849</span><br><span class="line">    4926 timeouts after SACK recovery</span><br><span class="line">    672451 fast retransmits</span><br><span class="line">    28946 forward retransmits</span><br><span class="line">    680 retransmits in slow start</span><br><span class="line">    5024 other TCP timeouts</span><br><span class="line">    TCPLossProbes: 1390602</span><br><span class="line">    TCPLossProbeRecovery: 997235</span><br><span class="line">    4723 SACK retransmits failed</span><br><span class="line">    178189 DSACKs sent for old packets</span><br><span class="line">    979863 DSACKs received</span><br><span class="line">    62 DSACKs for out of order packets received</span><br><span class="line">    282645553 connections reset due to unexpected data</span><br><span class="line">    9 connections reset due to early user close</span><br><span class="line">    TCPDSACKIgnoredNoUndo: 936061</span><br><span class="line">    TCPSpuriousRTOs: 5150</span><br><span class="line">    TCPSackShifted: 233309</span><br><span class="line">    TCPSackMerged: 733778</span><br><span class="line">    TCPSackShiftFallback: 1768422</span><br><span class="line">    IPReversePathFilter: 1</span><br><span class="line">    TCPRetransFail: 11</span><br><span class="line">    TCPRcvCoalesce: 1290965687</span><br><span class="line">    TCPOFOQueue: 1753072</span><br><span class="line">    TCPChallengeACK: 136</span><br><span class="line">    TCPSYNChallenge: 136</span><br><span class="line">    TCPSpuriousRtxHostQueues: 73</span><br><span class="line">    TCPAutoCorking: 272452106</span><br><span class="line">    TCPSynRetrans: 4538</span><br><span class="line">    TCPOrigDataSent: 9260789170</span><br><span class="line">    TCPHystartTrainDetect: 3721895</span><br><span class="line">    TCPHystartTrainCwnd: 64417412</span><br><span class="line">    TCPHystartDelayDetect: 80</span><br><span class="line">    TCPHystartDelayCwnd: 2579</span><br><span class="line">    TCPACKSkippedSynRecv: 4</span><br><span class="line">IpExt:</span><br><span class="line">    InMcastPkts: 249744</span><br><span class="line">    OutMcastPkts: 83317</span><br><span class="line">    InBcastPkts: 226</span><br><span class="line">    InOctets: 12312144006244</span><br><span class="line">    OutOctets: 12449967070063</span><br><span class="line">    InMcastOctets: 22309104</span><br><span class="line">    OutMcastOctets: 9664620</span><br><span class="line">    InBcastOctets: 104240</span><br><span class="line">    InNoECTPkts: 7586513474</span><br><span class="line">    InECT0Pkts: 47</span><br></pre></td></tr></table></figure>
+
+<h1 id="irqbalance"><a href="#irqbalance" class="headerlink" title="irqbalance"></a>irqbalance</h1><p>查看是否运行：systemctl status irqbalance</p>
+<p>irqbalance根据系统中断负载的情况，自动迁移中断保持中断的平衡，同时会考虑到省电因素等等。 但是在实时系统中会导致中断自动漂移，对性能造成不稳定因素，在高性能的场合建议关闭。</p>
+<p>irqbalance用于优化中断分配，它会自动收集系统数据以分析使用模式，并依据系统负载状况将工作状态置于 Performance mode 或 Power-save mode。处于Performance mode 时，irqbalance 会将中断尽可能均匀地分发给各个 CPU core，以充分利用 CPU 多核，提升性能。<br>处于Power-save mode 时，irqbalance 会将中断集中分配给第一个 CPU，以保证其它空闲 CPU 的睡眠时间，降低能耗。</p>
+<h1 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h1><ul>
+<li><a target="_blank" rel="noopener" href="http://www.vpsee.com/2010/07/load-balancing-with-irq-smp-affinity/">Linux 多核下绑定硬件中断到不同 CPU（IRQ Affinity）</a></li>
+<li><a target="_blank" rel="noopener" href="http://blog.yufeng.info/archives/2422">深度剖析告诉你irqbalance有用吗？</a></li>
+<li><a target="_blank" rel="noopener" href="https://time.geekbang.org/column/article/71868">怎么理解Linux软中断？</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/micro-service/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/micro-service/" class="post-title-link" itemprop="url">从0开始学习微服务阅读笔记</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-11-25 20:27:17" itemprop="dateCreated datePublished" datetime="2018-11-25T20:27:17+00:00">2018-11-25</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>本文为极客时间专栏从0开始学习微服务的阅读笔记。</p>
+<p>在了解微服务之前，先来了解一下单体应用。</p>
+<p>在上学那会，做过一些企业站，技术往往是基于LAMP（Linux + Apache + MySQL + PHP），这种业务较为简单的企业站，就是单体应用。所有的业务代码都是放在一个PHP程序中，代码只需要我自己来维护就可以了，测试、上线、运维全部搞定。</p>
+<p>但这种单体应用要是放到稍微有点规模的互联网公司中必然是行不通的。一个公司里有很多的人，不可能公司这么多技术人员共同维护一套代码，这样子团队的写作必然是个问题。系统的健壮性也会比较差，一旦单体应用中的一个模块出问题后往往会影响到其他的模块，导致整个系统不可用，比如PHP的服务业界通常使用php-fpm来管理，而php-fpm处理连接的方式一个请求一个线程，当一部分请求因为延时高时会消耗过多的线程资源，导致其他请求没有可用的线程可以处理。</p>
+<p>单体应用的其他缺点不再罗列，比如代码膨胀过度、发布较慢、系统高可用性差、团队协作成本高等。</p>
+<p>为了解决单体应用的这些缺点，方法只有一个就是将单体应用拆分为多个服务即服务化，服务之间通过RPC的方式相互调用。</p>
+<p>即服务化后，业界又提出了微服务的概念。</p>
+<p>维基百科中有如下定义：</p>
+<blockquote>
+<p>2014年，Martin Fowler 与 James Lewis 共同提出了微服务的概念，定义了微服务是由以单一应用程序构成的小服务，自己拥有自己的行程与轻量化处理，服务依业务功能设计，以全自动的方式部署，与其他服务使用 HTTP API 通讯。同时服务会使用最小的规模的集中管理 (例如 Docker) 能力，服务可以用不同的编程语言与数据库等元件实作。</p>
+</blockquote>
+<p>但看这个定义，看的我一脸懵逼，实在太过抽象。其实微服务也没有一个特别明确的定义。</p>
+<p>那么服务化和微服务之间有什么不同之处呢？</p>
+<ol>
+<li>服务拆分粒度更细。</li>
+<li>每个微服务都独立部署和维护。</li>
+<li>微服务需要服务治理。由于微服务会将服务变多，势必需要一个服务管理平台来对微服务进行管理。</li>
+</ol>
+<p>将单体应用向微服务拆分的方式可以分为纵向拆分和横向拆分。这里以一点资讯app为例来解释纵向拆分和横向拆分。</p>
+<p>一点资讯分为信息流、正文页等模块，而这些功能都依赖于用户信息获取模块，纵向拆分即将信息流、正文页拆分为微服务，横向拆分即将信息流、正文页都依赖的用户信息获取模块拆分为单独的服务。</p>
+<h2 id="微服务架构"><a href="#微服务架构" class="headerlink" title="微服务架构"></a>微服务架构</h2><p>采用微服务后会带来一系列复杂的问题，新技术在解决了一部分问题的同时，总会带来一些新的问题，比如服务怎么定义接口、服务的发布方式和服务发现、服务的监控、服务的治理（包括依赖关系梳理、熔断机制等）、故障快速定位等。</p>
+<p>那么一个标准的微服务架构应该长什么样子呢？</p>
+<p>服务提供方在服务启动时向服务注册中心注册服务，声明自己能够提供的服务及当前服务的地址等信息。</p>
+<p>服务调用者请求注册中心，查询所要调用服务的地址，并通过约定好的协议向服务提供者发起请求，获取到结果后按照数据协议格式将数据进行反序列化。</p>
+<p>在整个服务的调用过程中，服务的请求耗时、调用量、调用成功与否等信息都会作为监控记录下来，服务的调用关系会通过trace系统记录下来，以便用于后续的故障定位和追踪。如果服务调用失败，则需要服务治理的方式来保证调用方的正常运行。</p>
+<h2 id="服务的接口定义"><a href="#服务的接口定义" class="headerlink" title="服务的接口定义"></a>服务的接口定义</h2><p>需要解决的问题是服务的接口有哪些？每个接口的输入什么？每个接口的输出是什么？</p>
+<h3 id="RESTful-API"><a href="#RESTful-API" class="headerlink" title="RESTful API"></a>RESTful API</h3><p>HTTP协议的接口定义通常使用该协议，常见Wiki或者Swagger的方式来管理。</p>
+<h3 id="IDL文件"><a href="#IDL文件" class="headerlink" title="IDL文件"></a>IDL文件</h3><p>IDL（interface description language）用于描述接口，使得不同的编程语言不同的平台服务之间可以相互通讯。常见实现包括Thrift和protobuf，protobuf作为序列化方式的一种，通常会使用gRPC进行通讯。</p>
+<h3 id="XML文件方式"><a href="#XML文件方式" class="headerlink" title="XML文件方式"></a>XML文件方式</h3><p>服务提供者将接口描述信息保存在xml配置文件，服务启动后会加载配置文件，将服务暴露出去。</p>
+<p>服务消费者将要调用的接口信息写在xml配置文件中，进程启动后加载xml配置文件。</p>
+<h3 id="坑"><a href="#坑" class="headerlink" title="坑"></a>坑</h3><p>服务提供者通常需要提供服务的超时时间等参数，而消费者端也需要该信息，为了让消费者端能看到生产者端的配置，可以将信息放在配置中心中，但这却增大了配置中心的内容，当一旦配置变化需要同步时，同步的数据会变多。</p>
+<h2 id="注册中心"><a href="#注册中心" class="headerlink" title="注册中心"></a>注册中心</h2><p>要想实现服务之间的调用，通常会使用反向代理和服务注册中心的方法。</p>
+<p>反向代理的方法业界一般使用较多的包括nginx、haproxy以及业界新秀envoy等。</p>
+<p>在微服务架构中更多提及的方案为采用服务注册中心的方法，而注册中心的稳定性就显得尤其重要。</p>
+<p>业界注册中心采用较多的方案为zookeeper、etcd、consul、eureka。这些注册中心的存储数结构要么是树状接口，要么是key-value形式，其中k-v形式的可以变更key的值以实现类似树状结构。</p>
+<h3 id="注册中心的设计"><a href="#注册中心的设计" class="headerlink" title="注册中心的设计"></a>注册中心的设计</h3><h4 id="注册中心API及功能"><a href="#注册中心API及功能" class="headerlink" title="注册中心API及功能"></a>注册中心API及功能</h4><p>注册中心需要提供以下api以供服务提供方和服务调用方使用。</p>
+<ol>
+<li>服务注册接口，提供服务提供方使用</li>
+<li>服务反注册接口，提供服务提供方以便销毁服务</li>
+<li>心跳汇报接口，服务提供方通过心跳汇报服务是存活状态的。一旦当服务出现异常时，服务注册中心应该立即将服务从注册中心剔除。</li>
+<li>服务订阅接口，服务调用方用于获取服务提供方的实例列表</li>
+<li>服务变更接口，服务调用方用于获取最新可用服务。一旦注册中心探测到有新的服务实例或者实例减少，应该立即通知所有订阅该服务的服务调用者更新本地的节点信息。</li>
+</ol>
+<h4 id="注册中心存储哪些服务信息"><a href="#注册中心存储哪些服务信息" class="headerlink" title="注册中心存储哪些服务信息"></a>注册中心存储哪些服务信息</h4><p>通常可以按照“服务名-分组-节点信息”三层结构来存储，其中节点信息包括：节点ip地址、节点端口号、请求失败时重试次数、请求结果是否压缩。</p>
+<p>分组的划分原则包括：</p>
+<ol>
+<li>按照业务的核心程度</li>
+<li>按照机房维度</li>
+<li>线上环境、测试环境</li>
+</ol>
+<h4 id="注册中心如何工作"><a href="#注册中心如何工作" class="headerlink" title="注册中心如何工作"></a>注册中心如何工作</h4><h5 id="服务提供者注册节点"><a href="#服务提供者注册节点" class="headerlink" title="服务提供者注册节点"></a>服务提供者注册节点</h5><ol>
+<li>查看注册节点是否在白名单内，即是否可以向注册中心注册</li>
+<li>查看注册的服务名、服务分组是否存在</li>
+<li>将节点信息添加到对应的存储位置</li>
+</ol>
+<h5 id="服务提供者反注册"><a href="#服务提供者反注册" class="headerlink" title="服务提供者反注册"></a>服务提供者反注册</h5><ol>
+<li>查看服务名、服务分组对应的服务是否存在</li>
+<li>将节点删除</li>
+</ol>
+<h5 id="服务消费者查询节点信息"><a href="#服务消费者查询节点信息" class="headerlink" title="服务消费者查询节点信息"></a>服务消费者查询节点信息</h5><ol>
+<li>从本机内存中查找服务信息</li>
+<li>如果有本地快照存储可以从中查找</li>
+</ol>
+<h5 id="服务消费者订阅服务变更"><a href="#服务消费者订阅服务变更" class="headerlink" title="服务消费者订阅服务变更"></a>服务消费者订阅服务变更</h5><ol>
+<li>消费者获取到服务信息后，在本地保留cluster的sign值</li>
+<li>每个一段时间从注册中心获取cluster的sign值，如果不一致，就从注册中心拉取服务节点，并更新内存环境和本地快照</li>
+</ol>
+<h2 id="服务框架"><a href="#服务框架" class="headerlink" title="服务框架"></a>服务框架</h2><p>完整的服务框架包括：通讯框架、通讯协议、序列化和反序列化。</p>
+<h3 id="开源RPC框架"><a href="#开源RPC框架" class="headerlink" title="开源RPC框架"></a>开源RPC框架</h3><p>跟语言相关的框架：Dubbo、Motan（微博）、Tars（腾讯）、Spring Cloud</p>
+<p>跨平台的开源RPC框架：gRPC、Thrift</p>
+<h2 id="服务监控"><a href="#服务监控" class="headerlink" title="服务监控"></a>服务监控</h2><p>常用的开源监控软件包括：ELK、Graphite、TICK、Prometheus</p>
+<h2 id="服务追踪"><a href="#服务追踪" class="headerlink" title="服务追踪"></a>服务追踪</h2><p>使用分布式会话跟踪技术，利用traceid</p>
+<p>开源方案包括OpenZipkin、jaeger等</p>
+<h2 id="服务治理"><a href="#服务治理" class="headerlink" title="服务治理"></a>服务治理</h2><p>通过一系列的手段保证在意外情况下，服务仍然能够正常运行。</p>
+<h3 id="节点管理"><a href="#节点管理" class="headerlink" title="节点管理"></a>节点管理</h3><p>服务调用失败可能是服务提供者自身出现了问题，也可能是网络问题导致。</p>
+<p>1.注册中心自动摘除机制</p>
+<p>服务提供者和注册中心之间保持心跳，当超时后注册中心自动摘除服务提供者。</p>
+<p>2.服务消费者摘除</p>
+<p>将服务提供者的探活机制放到消费者端，消费者在探测到服务提供者失败后自动摘除服务提供者。这种情况可以避免服务提供者和注册中心之间网络出现异常，但是服务提供者和服务消费者之间可以通讯的情况。</p>
+<h3 id="负载均衡"><a href="#负载均衡" class="headerlink" title="负载均衡"></a>负载均衡</h3><p>常用的包括随机算法、轮询、加权轮询算法、最少活跃调用、一致性hash算法（可以配合着静态注册中心达到比较好的效果）</p>
+<p><strong>自适应最优选择算法</strong>：在客户端维护一份每一个服务节点的性能统计快照，每隔一段时间去更新快照。在发起请求时，根据二八原则，将服务节点分成两部分，找出20%的那部分响应最慢的节点并降低权重。也可称为动态加权轮询算法。1分钟的更新时间间隔是个不错的选择。</p>
+<p>个人感觉<strong>自适应最优选择算</strong>是个不错的选择，但还可以针对业务场景继续优化，比如权重进行动态调整。</p>
+<h3 id="服务路由"><a href="#服务路由" class="headerlink" title="服务路由"></a>服务路由</h3><p>用于限定服务消费者可选择服务提供者节点的范围。</p>
+<p>应用场景：分组调用（组的划分可以按照机房等维度）、灰度发布、流量切换（比如机房故障后，用于机房之间的流量调度）、读写分离（读接口部署在一起，写接口部署在一起）。</p>
+<h5 id="规则的写法"><a href="#规则的写法" class="headerlink" title="规则的写法"></a>规则的写法</h5><p>A.条件路由</p>
+<ul>
+<li>某个ip的消费者仅访问某个ip的服务提供者</li>
+<li>排除某个服务节点（所有的服务消费者都不能访问某个服务提供者）</li>
+<li>白名单和黑名单</li>
+<li>机房级别的隔离（可以基于ip地址的规则来做）</li>
+<li>读写分离（所有get类方法仅访问某些节点等）</li>
+</ul>
+<p>B.脚本路由</p>
+<p>使用脚本语言的形式来描述</p>
+<h4 id="路由的获取方式"><a href="#路由的获取方式" class="headerlink" title="路由的获取方式"></a>路由的获取方式</h4><ul>
+<li>本地配置：存储在服务消费者本地</li>
+<li>配置中心配置，可以修改规则后动态下发</li>
+</ul>
+<h3 id="服务容错"><a href="#服务容错" class="headerlink" title="服务容错"></a>服务容错</h3><p>手段包括超时、重试、双发、熔断等。</p>
+<p>双发的思路为服务调用者在发起一次服务调用后，在给定的时间内（该时间要比服务超时的时间短）没有得到结果，再发起另外一个请求。</p>
+<p>熔断的思路为在某一个时间内如果服务调用失败次数超过一定值，则触发熔断，不再向服务提供者发起请求。</p>
+<p>断路器中的状态包括：Closed、Open、Half Open（半打开状态，用于探测后端服务是否已经正常）</p>
+<p>Hystrix是最出名的熔断器，计算服务调用的失败率是通过滑动窗口来实现，滑动窗口内包含10个桶，每个桶为1秒内的服务调用情况。</p>
+<p>FailOver，失败自动切换。消费者调用失败后，自动从可以节点中选择下一个节点重新调用，可设置失败的次数。通常适合只读的场景。</p>
+<p>FailBack，失败通知。调用失败后，不能重试，而是根据失败的信息来决定后续的执行策略。通常用于写场景。</p>
+<p>FailCache，失败缓存。调用失败后，隔一段时间后再重试。</p>
+<p>FailFast，快速失败。调用失败后不再重试。</p>
+<h3 id="如何识别服务节点是否存活"><a href="#如何识别服务节点是否存活" class="headerlink" title="如何识别服务节点是否存活"></a>如何识别服务节点是否存活</h3><p>如果注册中心为zk，在服务节点变化的时候，注册中心会向服务调用方推送服务节点变化的通知。但当网络抖动的时候，可能会存在节点的状态频繁变化的问题，导致服务消费者频繁收到节点变更通知，或者导致注册中心获取到的服务节点过少。可通过以下手段来避免该问题。</p>
+<h3 id="服务端故障时的应对策略"><a href="#服务端故障时的应对策略" class="headerlink" title="服务端故障时的应对策略"></a>服务端故障时的应对策略</h3><p>故障包括：集群故障、单个idc故障、单机故障</p>
+<h4 id="集群故障"><a href="#集群故障" class="headerlink" title="集群故障"></a>集群故障</h4><p>比如触发bug、突发流量等</p>
+<p>限流：限制超出接口阈值的部分请求</p>
+<p>降级：一种思路为通过开关来实现。具体可以分为多种等级：一级降级对业务影响比较小，可以设置为自动降级；二级降级对业务有一定影响，设置为手工降级；三级降级需要谨慎操作。</p>
+<h4 id="单idc故障"><a href="#单idc故障" class="headerlink" title="单idc故障"></a>单idc故障</h4><p>基于dns的流量切换：延时稍高，比较适合入口流量。</p>
+<p>基于rpc的分组流量切换：将之前单个机房内访问的流量切换为多个机房访问。</p>
+<h4 id="单机故障"><a href="#单机故障" class="headerlink" title="单机故障"></a>单机故障</h4><p>可以通过自动重启服务的手段来解决。但要避免一次性重启服务过多的问题。</p>
+<h4 id="动态注册中心的保护机制"><a href="#动态注册中心的保护机制" class="headerlink" title="动态注册中心的保护机制"></a>动态注册中心的保护机制</h4><ol>
+<li>心跳开关保护机制，给注册中心设置一个开关，当开发打开时，即使网络频繁抖动，注册中心也不会通知消费者节点变更，后者设置一定的百分比打开该开关。正常情况下该开关可以不打开。</li>
+<li>服务节点摘除保护机制，设定一个阈值比例，在出现网络抖动的情况下，注册中心也不会将超过这个阈值的节点给下掉，防止一下子下掉过多节点。该机制正常情况下，应该开启。</li>
+</ol>
+<h4 id="静态注册中心的保护机制"><a href="#静态注册中心的保护机制" class="headerlink" title="静态注册中心的保护机制"></a>静态注册中心的保护机制</h4><p>在服务消费者端来判断是否服务提供者是否存活。服务消费者调用某一个节点失败超过一定次数就将节点标记为不可用。并隔一段时间后再去探测该节点是否存活。</p>
+<p>注册中心的服务正常情况下不改变的，只有当服务在发布的时候才去修改注册中心中的节点。注册中心中的节点变化后仍然通知服务消费者，只是在网络出现抖动的时候，不再去通知。</p>
+<p><strong>个人感觉这个思路更靠谱。</strong></p>
+<h3 id="服务治理平台"><a href="#服务治理平台" class="headerlink" title="服务治理平台"></a>服务治理平台</h3><p>1.服务管理 包括服务上下线、节点添加和删除、服务查询、服务节点查询等</p>
+<p>2.服务治理 限流、降级、切流量</p>
+<p>3.服务监控 可以包含服务的tracing监控等</p>
+<p>4.问题定位</p>
+<p>5.日志查询</p>
+<p>6.服务运维 发布部署和扩缩容</p>
+<h2 id="配置中心"><a href="#配置中心" class="headerlink" title="配置中心"></a>配置中心</h2><p>业内采用的开源配置中心包括:</p>
+<ul>
+<li>Spring Cloud 功能相对较弱，变更配置需要通过git操作</li>
+<li>Apollo 对Spring Boot的支持比较好</li>
+</ul>
+<h2 id="进阶内容"><a href="#进阶内容" class="headerlink" title="进阶内容"></a>进阶内容</h2><h3 id="做好容量规划"><a href="#做好容量规划" class="headerlink" title="做好容量规划"></a>做好容量规划</h3><p>包括容量评估和调度决策两方面。</p>
+<p>压测服务的单机最大容量可以采用区间加权的方式来计算，比如0 ~ 10ms区间权重为1，10 ~ 50ms区间权重为2,500ms以上权重为32，通过累加的方式计算出单机的权重，从而评估出单机最大容量。(<strong>该评估容量的方式非常实用</strong>)</p>
+<p>调度策略可以根据水位线来做决定，一条是安全线，一条是致命线。当水位线处于致命线需要立即扩容，当水位线回到安全线以上时可以进行缩容。（<strong>水位线的方式很赞</strong>）</p>
+<p>缩容的思路是采用逐步缩容，每隔5分钟判断一次水位线是否在致命线以上，并按照10%、30%的比例进行缩容。</p>
+<p>为了防止水位线的抖动，可以一分钟采集一个点，当5个点中的3个点都满足条件时才进行缩容。</p>
+<h3 id="多机房部署"><a href="#多机房部署" class="headerlink" title="多机房部署"></a>多机房部署</h3><p>1.主从架构</p>
+<p>所有的写请求都发给主机房，主机房更新本机房的缓存和数据库，其他机房的缓存和数据库从主机房同步。主机房出现问题后，就没法更新了。</p>
+<p>2.独立机房架构</p>
+<p>缓存层，每个机房都有写请求，每个机房的写请求通过消息同步组件将写请求同步给另外一个机房。数据库mysql只有一个主库，另外机房的mysql同步数据到该机房。</p>
+<p>以上缓存消息同步组件的实现大概如下：</p>
+<p>包括两个模块reship和collector，reship负责将本机房的写请求发一份给别的机房，collector负责从别的机房读取写请求，并发给本机房的处理服务器。</p>
+<p>可以通过消息队列和rpc调用来实现reship和collector的通讯。</p>
+<p>3.多机房的数据一致性</p>
+<p>可通过消息对账机制来保证一致性，原理为通过一个单独的程序后面来验证是否一个写请求是否已经被所有的机房都处理，如果没有处理，则重新发送写请求。</p>
+<h3 id="混合云部署"><a href="#混合云部署" class="headerlink" title="混合云部署"></a>混合云部署</h3><p>公有云上为了安全往往不部署数据库</p>
+<h3 id="DevOps实践"><a href="#DevOps实践" class="headerlink" title="DevOps实践"></a>DevOps实践</h3><p>持续集成：确保每一次代码的merge request都通过，分为四个阶段：build（开发分支代码的编译与单元测试）、package（开发分支代码打包成docker镜像）、deploy（开发分支代码部署到测试环境）、test（集成测试）。包括了代码检查和单元测试环节。</p>
+<p>持续交付：代码merge request到develop分支后，develop分支的代码能够在生产环境中测试通过，并进行小流量灰度验证，可以随时上线。分为五个阶段：build（develop分支的代码编译与单元测试）、package（develop分支代码打包）、deploy、test、canary（develop分支代码的小流量灰度验证）。</p>
+<p>持续部署：合并develop代码到master分支，并打包成docker镜像，并可随时上线。包括：build、package、clear、production。</p>
+<h3 id="Service-Mesh"><a href="#Service-Mesh" class="headerlink" title="Service Mesh"></a>Service Mesh</h3><p>Service Mesh技术以轻量级网络代理的方式与应用代码部署在一起，主要有两个关键点技术。</p>
+<p>SideCar用于转发服务之间的调用，在服务消费者端SideCar用于将请求转发到服务提供者端的SideCar中，在服务提供者端的SideCar在接收到请求后转发给本机上的服务提供者。</p>
+<p>SideCar实现方式有基于ipstables的网络拦截和直接转发请求两种方式。</p>
+<p>Control plane用于基于SideCar的服务调用的治理，用来取代微服务中需要服务框架干的事情，包括服务发现、负载均衡、请求路由、故障处理、安全认证、监控上报、日志记录、配额限制等。</p>
+<h3 id="Istio"><a href="#Istio" class="headerlink" title="Istio"></a>Istio</h3><p>Pilot主要用于流量控制，包括Rules API（提供API，用于流量控制）、Envoy API（给Envoy提供API，获取服务注册信息、流量控制信息等）、抽象模型（对服务注册信息、流量控制进行抽象）、平台适配层（适配k8s、Mesos等多个平台，将平台特定的注册信息转换成平台无关的抽象模型）。</p>
+<p>Pilot的流量控制功能包括服务发现和负载均衡、请求路由、超时重试、故障注入。</p>
+<p>Mixer实现策略控制和监控日志收集等功能，理论上Envoy发起的每次请求都会发送到Mixer，可以异步发送。</p>
+<p>Mixer的策略控制包括对服务的访问频率限制和访问控制。</p>
+<p>Citadel用于保证服务之间的安全，需要Envoy的配合。Citadel中存储了秘钥和证书，通过Pilot将授权策略和安全命名信息分发给Envoy，Envoy和Envoy之间通过双向TLS证书来进行通讯，由Mixer来管理授权和审计。</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><p><a target="_blank" rel="noopener" href="http://www.infoq.com/cn/articles/micro-service-technology-stack">微服务架构技术栈选型手册
+</a></p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/nagle/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/nagle/" class="post-title-link" itemprop="url">TCP协议中的Nagle算法</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-11-23 20:31:04" itemprop="dateCreated datePublished" datetime="2018-11-23T20:31:04+00:00">2018-11-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>Nagle算法为了避免网络中存在太多的小数据包，尽可能发送大的数据包。定义为在任意时刻，最多只有一个未被确认的小段。小段为小于MSS尺寸的数据块，未被确认是指数据发出去后未收到对端的ack。</p>
+<p>Nagle算法是在网速较慢的时代的产物，目前的网络环境已经不太需要该机制，该算法在linux系统中默认关闭。</p>
+<p>延时ACK机制: 在接收到对端的报文后，并不会立即发送ack，而是等待一段时间发送ack，以便将ack和要发送的数据一块发送。当然ack不能无限延长，否则对端会认为包超时而造成报文重传。linux采用动态调节算法来确定延时的时间。</p>
+<p>可以举例来描述一下，client连续向server端发送两个小于MSS的数据包。client发送第一个数据包，根据Nagle算法，此时没有未确认的数据段，该数据包可以直接发送。server端接收到数据包后，由于延时ACK机制，并不会立即发送ack，而是需要等到延时ack机制超时后再发送第二个数据包。此时client端由于Nagle算法， 存在一个未被确认的数据包，不能向server端发送第二个数据包。</p>
+<p>在延时要求尽量小的情况下，并不适合用Nagle算法，比如SSH会话。可以通过设置<code>TCP_NODELAY</code>来完成。</p>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/container-java/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="404频道">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | 404频道">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/post/container-java/" class="post-title-link" itemprop="url">部署java应用到容器</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2018-11-17 20:16:02" itemprop="dateCreated datePublished" datetime="2018-11-17T20:16:02+00:00">2018-11-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>java 8u131之后的版本开始支持容器特性，之前的版本中并不支持容器相关的特性。</p>
+<h2 id="java基础知识"><a href="#java基础知识" class="headerlink" title="java基础知识"></a>java基础知识</h2><p>JVM默认的最大堆内存大小为系统内存的1&#x2F;4，可以使用参数<code>-XX:MaxRAMFraction=1</code>表示将所有可用内存作为最大堆。</p>
+<p>cgroup的限制在docker中能够看到，通过查看&#x2F;sys&#x2F;fs&#x2F;cgroup目录下的文件可以获取。</p>
+<p>JVM的用户地址空间分为JVM数据区和direct memory。JVM数据区由heap、stack等组成，GC是操作的这一片内存。direct memory是额外划分出来的一片内存空间，需要手工管理内存的申请和释放。</p>
+<p>direct memory使用<code>Unsafe.allocateMemory</code>和<code>Unsafe.setMemory</code>来申请和设置内存，是直接使用了C语言中的malloc来申请内存。由jvm参数<code>MaxDirectMemorySize</code>来限制direct memory可使用的内存大小。</p>
+<h2 id="java-lt-8u131"><a href="#java-lt-8u131" class="headerlink" title="java &lt; 8u131"></a>java &lt; 8u131</h2><p>没有对容器的任何支持，对cpu和内存的限制需要通过jvm的参数来配置。</p>
+<p>java中并不能看到内存资源的限制，会存在使用内存超过限制而被OOM的问题。可通过在程序中设置<code>-Xmx</code>来解决该问题。</p>
+<p>JVM GC（垃圾对象回收）对Java程序执行性能有一定的影响。默认的JVM使用公式“ParallelGCThreads &#x3D; (ncpus &lt;&#x3D; 8) ? ncpus : 3 + ((ncpus * 5) &#x2F; 8)” 来计算做并行GC的线程数，其中ncpus是JVM发现的系统CPU个数。一旦容器中JVM发现了宿主机的CPU个数（通常比容器实际CPU限制多很多），这就会导致JVM启动过多的GC线程，直接的结果就导致GC性能下降。Java服务的感受就是延时增加，TP监控曲线突刺增加，吞吐量下降。</p>
+<p>显式的传递JVM启动参数<code>-XX:ParallelGCThreads</code>告诉JVM应该启动几个并行GC线程。它的缺点是需要业务感知，为不同配置的容器传不同的JVM参数。</p>
+<h2 id="java9-and-java-gt-x3D-8u131"><a href="#java9-and-java-gt-x3D-8u131" class="headerlink" title="java9 and java &gt;&#x3D; 8u131"></a>java9 and java &gt;&#x3D; 8u131</h2><p>增加了<code>XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code>参数来检查内存限制。JVM中可以看到cgroup中的内存限制。</p>
+<p>可以根据容器中的cpu限制来动态设置GC线程数，不再需要单独设置<code>-XX:ParallelGCThreads</code>。</p>
+<h2 id="java10"><a href="#java10" class="headerlink" title="java10"></a>java10</h2><p>jvm参数<code>XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code>已经默认开启，但新增加<code>-XX:-UseContainerSupport</code>参数来更好支持容器，支持内存和cpu。</p>
+<p>在开启<code>-XX:-UseContainerSupport</code>的同时，<code>XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code>会被关闭。</p>
+<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://blogs.oracle.com/java-platform-group/java-se-support-for-docker-cpu-and-memory-limits">Java SE support for Docker CPU and memory limits</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&mid=2651749434&idx=1&sn=92dcd59d05984eaa036e7fa804fccf20&chksm=bd12a5778a652c61f4a181c1967dbcf120dd16a47f63a5779fbf931b476e6e712e02d7c7e3a3&mpshare=1&scene=1&srcid=1115JtuwzXeezCv5UkmOcrFw%23rd">美团容器平台架构及容器技术实践</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -219,7 +861,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -337,7 +979,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -426,7 +1068,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -513,7 +1155,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -630,7 +1272,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
+      <time title="Modified: 2025-06-08 12:45:01" itemprop="dateModified" datetime="2025-06-08T12:45:01+00:00">2025-06-08</time>
     </span>
 
   
@@ -681,604 +1323,6 @@
 <p>早期的终端设备为电传打字机(Teletype)，该设备价格比较低廉，通过键盘输入，并将输出内容打印出来。图中的设备为ASR-33，在YouTube上可以可以看到<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=MikoF6KZjm0">视频</a>。</p>
 <p>有意思的是，实际上Teletype的出现要早于计算机，原本用于在电报线路上发送电报，但是后来计算机出现后直接拿来作为计算机的终端设备。</p>
 <p>在linux操作系统中设计了tty子系统用于支持tty设备，并将具体的硬件设备放到&#x2F;dev&#x2F;tty*目录下，这里的tty设备即Teletype。不过后来随着其他终端设备的引入，tty这个名字仍旧保留了下来，tty目前已基本代表终端的总称。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/knowledge-share/knowledge-share-3/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/knowledge-share/knowledge-share-3/" class="post-title-link" itemprop="url">知识分享第3期</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-09-26 00:01:27" itemprop="dateCreated datePublished" datetime="2018-09-26T00:01:27+00:00">2018-09-26</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/yudushan.jpeg" alt="玉渡山"></p>
-<p>题图为北京玉渡山风景区中的盘山公路，旁边有个观景台，在观景台上可以鸟瞰官厅水库。</p>
-<h2 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h2><p>1.<a target="_blank" rel="noopener" href="https://www.intel.cn/content/www/cn/zh/architecture-and-technology/resource-director-technology.html">Intel RDT</a></p>
-<p>Intel RDT(Resource Director Technology)资源调配技术框架，包括高速缓存监控技术（CMT）、高速缓存分配技术（CAT）、内存带宽监控（MBM）和代码和数据优先级（CDP），容器技术的runc项目中使用到了CAT技术来解决cgroup下的CPU的三级缓存隔离性问题。</p>
-<p>在linux 4.10以上内核中通过资源控制文件系统的方式来提供给用户接口，类似cgroup的管理方式。</p>
-<p>感兴趣的可以了解下<a target="_blank" rel="noopener" href="https://github.com/opencontainers/runc/blob/master/libcontainer/intelrdt/intelrdt.go">runc项目源码</a>。</p>
-<p>2.<a target="_blank" rel="noopener" href="https://github.com/improbable-eng/thanos">Thanos</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/Thanos-logo_fullmedium.png" alt="Thanos"></p>
-<p>Prometheus作为Google内部监控系统Borgmon的开源实现版本，存在高可用和历史数据存储两个致命的缺点，Thanos利用Sidecar等技术来解决Prometheus的缺点。</p>
-<p>3.<a target="_blank" rel="noopener" href="https://github.com/nicolaka/netshoot">netshoot</a></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">                    dP            dP                           dP</span><br><span class="line">                    88            88                           88</span><br><span class="line">88d888b. .d8888b. d8888P .d8888b. 88d888b. .d8888b. .d8888b. d8888P</span><br><span class="line">88&#x27;  `88 88ooood8   88   Y8ooooo. 88&#x27;  `88 88&#x27;  `88 88&#x27;  `88   88</span><br><span class="line">88    88 88.  ...   88         88 88    88 88.  .88 88.  .88   88</span><br><span class="line">dP    dP `88888P&#x27;   dP   `88888P&#x27; dP    dP `88888P&#x27; `88888P&#x27;   dP</span><br></pre></td></tr></table></figure>
-
-<p>用于排查docker网络问题的工具，以容器的方式运行在跟要排查问题的容器同一个网络命名空间中，该容器中已经具备了较为丰富的网络命令行工具，用于排查容器中的网络问题。</p>
-<p>4.<a target="_blank" rel="noopener" href="https://github.com/sharkdp/bat">bat</a></p>
-<p>用来替代cat的命令行工具，支持语法高亮、自动分页。mac下可直接使用<code>brew install bat</code>来安装。</p>
-<p><img src="https://camo.githubusercontent.com/9d3d89364f2cc83ace8f29646a6236bc15ea1da0/68747470733a2f2f696d6775722e636f6d2f724773646e44652e706e67" alt="image"></p>
-<p>5.<a target="_blank" rel="noopener" href="http://asciiflow.com/">asciiflow</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/asciiflow.png" alt="asciiflow"></p>
-<p>写博客的往往都比较痛恨图片的存储问题，尤其是使用markdown语法写作的，图片往往需要图床来存储，常常跟文章不在一起存储。asciiflow是较为小众的一款ascii图形工具，可以应付较为简单的图形绘制，直接以文字的形式呈现简单图形，省去了存储图片的繁琐。</p>
-<p>6.<a target="_blank" rel="noopener" href="https://www.processon.com/">processon</a></p>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/processon.gif" alt="processon"></p>
-<p>免费的在线图行绘制协作工具，支持流程图、思维导图等多种图形，有类似visio的使用体验，同时是web版的，支持多人协作。我目前在使用，不过免费版有使用限制。</p>
-<h2 id="精彩文章"><a href="#精彩文章" class="headerlink" title="精彩文章"></a>精彩文章</h2><p>1.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzI3MTI2NzkxMA==&mid=2247486254&idx=1&sn=c78b509e84a64cb921280a5e1e111bb7&chksm=eac52a07ddb2a311c2a21a3decf26c8ab5d9b0d6c9ff8701a8db3e369d76fe9c6045e34808f1&mpshare=1&scene=1&srcid=0915GAFGR2dEjnoRI1ngfo8f%23rd">手把手教你打造高效的 Kubernetes 命令行终端
-</a></p>
-<p>文中汇总了各种可以取代kubernetes的命令行kubectl的工具，以便提供更方便的操作，比如更完善的自动补全。</p>
-<p>2.<a target="_blank" rel="noopener" href="http://pierrchen.blogspot.com/2018/08/understand-container-index.html">Understand Container - Index Page</a></p>
-<p>学习容器的cgroup和namespace的系列文章。</p>
-<p>3.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzA5OTAyNzQ2OA==&mid=2649698847&idx=1&sn=b1ffce56c1397b3f60f8c776aff0ae85&chksm=88930d7cbfe4846a14fe50e9824e8a81abce19097717b1fbd3834101b21872f5ccdb6aab9366&mpshare=1&scene=1&srcid=0919nVdgzYLK9dtdRUsf2ifa%23rd">gVisor是什么？可以解决什么问题？</a></p>
-<p>docker容器技术基于cgroup和namespace来实现，但系统调用仍是调用宿主机的系统调用，比如在其中一个容器中通过系统调用修改了当前系统时间，在其他容器中看到的时间也已经修改过了，这显然不是符合期望的，通常可以通过Seccomp来限制容器中的系统调用。</p>
-<p>gVisor为Google开源的容器Runtime，通过pstrace技术来截获系统调用，从而保证系统的安全。目前还不成熟，单就凭Google的开源项目，该项目还是非常值得关注的。</p>
-<p>4.<a target="_blank" rel="noopener" href="https://docs.docker.com/develop/develop-images/multistage-build/">Use multi-stage builds</a></p>
-<p>Dockerfile的多阶段构建技术，对于解决编译型语言的发布非常有帮助，可以在其中一个image中编译源码，另外一个image用于将编译完成后的二进制文件复制过来后打包成单独的线上运行镜像。而这两部操作可以合并到一个Dockerfile中来完成。</p>
-<p>5.<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzA5OTAyNzQ2OA==&mid=2649698903&idx=1&sn=6392175b0cf62825e4981b08acc85fda&chksm=88930d34bfe48422ee85d50037489868e2432b6aa4c7bef6dc46b8eaa3852f91bd5da14c5da1&mpshare=1&scene=1&srcid=09255FcTm8fVdN6r5OqWkTvK%23rd">唯品会Noah云平台实现内幕披露</a></p>
-<p>唯品会内部云平台的实践，涉及到大量的干货，值的花时间一读。</p>
-<h2 id="App推荐"><a href="#App推荐" class="headerlink" title="App推荐"></a>App推荐</h2><p>1.Nike Training</p>
-<p>健身类app我用过keep、火辣健身、FitTime（以收费课程居多），偶然间在AppStore上看到了Nike Training，如果厌倦了国内的健身类app，不防尝试一下。</p>
-<h2 id="新奇"><a href="#新奇" class="headerlink" title="新奇"></a>新奇</h2><p>1.手机QQ扫一扫</p>
-<p>用手机QQ扫一扫100元人民币正面，可以出现浮动的凤凰图案，并会跳转到人民币鉴别真伪的视频页面，视频效果确实不错，忍不住会多扫描几遍。</p>
-<p>2.kubeadm</p>
-<p>kubernetes的组件非常多，部署起来非常复杂，因此社区就推出了kubeadm工具来简化集群的部署，将除了kubelet外的其他组件都部署在容器中。令人惊奇的是，kubeadm几乎完全是一个芬兰高中生Lucas KaIdstrom的作品，是他在17岁时利用业余时间完成的一个社区项目。</p>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/capability/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/capability/" class="post-title-link" itemprop="url">linux capability</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-09-23 21:42:36" itemprop="dateCreated datePublished" datetime="2018-09-23T21:42:36+00:00">2018-09-23</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>传统的unix权限模型将进程分为root用户进程（有效用户id为0）和普通用户进程。普通用户需要root权限的某些功能，通常通过setuid系统调用实现。但普通用户并不需要root的所有权限，可能仅仅需要修改系统时间的权限而已。这种粗放的权限管理方式势必会带来一定的安全隐患。</p>
-<p>linux内核中引入了capability，用于消除需要执行某些操作的程序对root权限的依赖。</p>
-<p>capability用于分割root用户的权限，将root的权限分割为不同的能力，每一种能力代表一定的特权操作。例如，CAP_SYS_MODULE用于表示用户加载内核模块的特权操作。根据进程具有的能力来进行特权操作的访问控制。</p>
-<p>只有进程和可执行文件才有能力，每个进程拥有以下几组能力集(set)。</p>
-<ul>
-<li>cap_effective: 进程当前可用的能力集</li>
-<li>cap_inheritable: 进程可以传递给子进程的能力集</li>
-<li>cap_permitted: 进程可拥有的最大能力集</li>
-<li>cap_ambient: Linux 4.3后引入的能力集，</li>
-<li>cap_bounding: 用于进一步限制能力的获取</li>
-</ul>
-<p>可以通过&#x2F;proc&#x2F;${pid}&#x2F;status文件中的CapInh CapPrm CapEff CapBnd CapAmb来表示，每个字段为8个字节即64bit，每个比特表示一种能力，这几个字段存放在进程的内核数据结构task_struct中，由此可见capability的最小单位为线程，而不是进程。</p>
-<h2 id="example-1-设置进程能力"><a href="#example-1-设置进程能力" class="headerlink" title="example 1 设置进程能力"></a>example 1 设置进程能力</h2><p>在执行下面程序之前需要安装<code>yum install libcap-devel</code></p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">undef</span> _POSIX_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/capability.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="type">int</span> errno;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">whoami</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;uid=%i  euid=%i  gid=%i\n&quot;</span>, getuid(), geteuid(), getgid());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">listCaps</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">cap_t</span> caps = cap_get_proc();</span><br><span class="line">    <span class="type">ssize_t</span> y = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;The process %d was give capabilities %s\n&quot;</span>,(<span class="type">int</span>) getpid(), cap_to_text(caps, &amp;y));</span><br><span class="line">    fflush(<span class="number">0</span>);</span><br><span class="line">    cap_free(caps);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> **argv)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> stat;</span><br><span class="line">    whoami();</span><br><span class="line">    stat = setuid(geteuid());</span><br><span class="line">    <span class="type">pid_t</span> parentPid = getpid();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(!parentPid)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    <span class="type">cap_t</span> caps = cap_init();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 给进程增加5中能力</span></span><br><span class="line">    <span class="type">cap_value_t</span> capList[<span class="number">5</span>] =&#123; CAP_NET_RAW, CAP_NET_BIND_SERVICE , CAP_SETUID, CAP_SETGID,CAP_SETPCAP &#125; ;</span><br><span class="line">    <span class="type">unsigned</span> num_caps = <span class="number">5</span>;</span><br><span class="line">    cap_set_flag(caps, CAP_EFFECTIVE, num_caps, capList, CAP_SET);</span><br><span class="line">    cap_set_flag(caps, CAP_INHERITABLE, num_caps, capList, CAP_SET);</span><br><span class="line">    cap_set_flag(caps, CAP_PERMITTED, num_caps, capList, CAP_SET);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (cap_set_proc(caps)) &#123;</span><br><span class="line">        perror(<span class="string">&quot;capset()&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> EXIT_FAILURE;</span><br><span class="line">    &#125;</span><br><span class="line">    listCaps();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 将进程的能力清除</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;dropping caps\n&quot;</span>);</span><br><span class="line">    cap_clear(caps);  <span class="comment">// resetting caps storage</span></span><br><span class="line">    <span class="keyword">if</span> (cap_set_proc(caps)) &#123;</span><br><span class="line">        perror(<span class="string">&quot;capset()&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> EXIT_FAILURE;</span><br><span class="line">    &#125;</span><br><span class="line">    listCaps();</span><br><span class="line"></span><br><span class="line">    cap_free(caps);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>并执行如下操作：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">gcc capability.c -lcap -o capability</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">需要使用root执行，因为普通用户不能给进程设置能力</span></span><br><span class="line">sudo ./capability</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">输出如下内容</span></span><br><span class="line">uid=0  euid=0  gid=0</span><br><span class="line">The process 5044 was give capabilities = cap_setgid,cap_setuid,cap_setpcap,cap_net_bind_service,cap_net_raw+eip</span><br><span class="line">dropping caps</span><br><span class="line">The process 5044 was give capabilities =</span><br></pre></td></tr></table></figure>
-
-<h2 id="example-2-获取进程能力"><a href="#example-2-获取进程能力" class="headerlink" title="example 2 获取进程能力"></a>example 2 获取进程能力</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">undef</span> _POSIX_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/capability.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;errno.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> __<span class="title">user_cap_header_struct</span> <span class="title">cap_header_data</span>;</span></span><br><span class="line">    <span class="type">cap_user_header_t</span> cap_header = &amp;cap_header_data;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> __<span class="title">user_cap_data_struct</span> <span class="title">cap_data_data</span>;</span></span><br><span class="line">    <span class="type">cap_user_data_t</span> cap_data = &amp;cap_data_data;</span><br><span class="line"></span><br><span class="line">    cap_header-&gt;pid = getpid();</span><br><span class="line">    cap_header-&gt;version = _LINUX_CAPABILITY_VERSION_1;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (capget(cap_header, cap_data) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;Failed capget&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Cap data 0x%x, 0x%x, 0x%x\n&quot;</span>, cap_data-&gt;effective,cap_data-&gt;permitted, cap_data-&gt;inheritable);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以通过capget命令获取进程的能力</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[vagrant@localhost tmp]$ gcc get_capability.c -lcap -o get_capability</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">普通用户默认情况下没有任何能力</span></span><br><span class="line">[vagrant@localhost tmp]$ ./get_capability</span><br><span class="line">Cap data 0x0, 0x0, 0x0</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">root用户默认拥有所有的能力</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo ./get_capability</span><br><span class="line">Cap data 0xffffffff, 0xffffffff, 0x0</span><br></pre></td></tr></table></figure>
-
-<h2 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h2><ol>
-<li>getcap用于获取程序文件所具有的能力。</li>
-<li>getpcaps用于获取进程所具有的能力。</li>
-<li>setcap用于设置程序文件所具有的能力。</li>
-<li>capsh 查看和设置程序的能力</li>
-</ol>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">将<span class="built_in">chown</span>命令授权给普通用户也具备更改文件owner的能力</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">其中eip分别代表cap_effective(e) cap_inheritable(i) cap_permitted(p)</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo setcap cap_chown=eip /usr/bin/chown</span><br><span class="line">[vagrant@localhost tmp]$ getcap /usr/bin/chown</span><br><span class="line">/usr/bin/chown = cap_chown+eip</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">使用root创建测试文件</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo touch /tmp/aa</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">普通用户也可以修改root用户创建文件的owner了</span></span><br><span class="line">[vagrant@localhost tmp]$ chown vagrant:vagrant /tmp/aa</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">清除<span class="built_in">chown</span>的能力</span></span><br><span class="line">[vagrant@localhost tmp]$ sudo setcap -r /usr/bin/chown</span><br><span class="line">[vagrant@localhost tmp]$ getcap /usr/bin/chown</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">获取到进程的 capability</span></span><br><span class="line">[vagrant@localhost tmp]$ cat /proc/95373/status | grep Cap</span><br><span class="line">CapInh:	0000000000000000</span><br><span class="line">CapPrm:	0000000000000000</span><br><span class="line">CapEff:	0000000000000000</span><br><span class="line">CapBnd:	0000003fffffffff</span><br><span class="line">CapAmb:	0000000000000000</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">对上述 capability 进行解码</span></span><br><span class="line">[vagrant@localhost tmp]$ capsh --decode=0000003fffffffff</span><br><span class="line">0x0000003fffffffff=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,35,36,37</span><br></pre></td></tr></table></figure>
-
-<h2 id="runc项目中的应用"><a href="#runc项目中的应用" class="headerlink" title="runc项目中的应用"></a>runc项目中的应用</h2><p>runc的容器配置文件<code>spec.Process.Capabilities</code>可以定义各个能力集的能力，用来限制容器的能力。</p>
-<h2 id="docker中的应用"><a href="#docker中的应用" class="headerlink" title="docker中的应用"></a>docker中的应用</h2><p>docker默认情况下给容器去掉了一些比较危险的capabilities，比如<code>cap_sys_admin</code>。</p>
-<p>例如在docker中使用gdb命令默认是不允许的，这是因为docker已经将SYS_PTRACE相关的能力给去掉了。</p>
-<p>在docker中使用<code>--cap-add</code>和<code>--cap-drop</code>命令来增加和删除capabilities，</p>
-<p>可以使用<code>--privileged</code>赋予容器所有的capabilities，该操作谨慎使用。</p>
-<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/wangpengqi/article/details/9821227">Linux的capability深入分析(1)</a></li>
-<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/wangpengqi/article/details/9821231">Linux的capability深入分析(2)</a></li>
-<li><a target="_blank" rel="noopener" href="http://man7.org/linux/man-pages/man7/capabilities.7.html">Linux Programmer’s Manual CAPABILITIES</a></li>
-<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzI0NjI4MDg5MQ==&mid=2715292188&idx=1&sn=2b7f26203aa594027550e324460bc901&chksm=cd6d15c8fa1a9cde757868fd34c8336433c4877d3e7689ed0a2bd90eb1ef6271bda97aa3bb03&mpshare=1&scene=1&srcid=12045vIwpmKLu97HvFOssitt%23rd">如何在Docker内部使用gdb调试器</a></li>
-<li><a target="_blank" rel="noopener" href="https://docs.docker.com/engine/reference/commandline/run/">docker run</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/namespace_user/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/namespace_user/" class="post-title-link" itemprop="url">docker基础知识之user namespace</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-09-23 19:13:16" itemprop="dateCreated datePublished" datetime="2018-09-23T19:13:16+00:00">2018-09-23</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>user namespace是所有namespace中实现最复杂的一个，也是最晚引入的一个，是在linux2.6版本中才引入。因为涉及到权限机制，跟capability有着比较密切的关系。</p>
-<h2 id="创建user-namespace"><a href="#创建user-namespace" class="headerlink" title="创建user namespace"></a>创建user namespace</h2><p>在clone或者unshare系统调用使用CLONE_NEWUSER参数后，在子进程中看到的uid和gid跟父进程中的不一样，子进程中找不到uid时，会显示最大的uid 65534（在&#x2F;proc&#x2F;sys&#x2F;kernel&#x2F;overflowuid中设置）。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">vagrant@ubuntu-xenial:/tmp$ id</span><br><span class="line">uid=1000(vagrant) gid=1000(vagrant) groups=1000(vagrant)</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ readlink /proc/$$/ns/user</span><br><span class="line">user:[4026531837]</span><br><span class="line"></span><br><span class="line"># 使用unshare命令创建新的user namespace</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ unshare --user /bin/bash</span><br><span class="line">nobody@ubuntu-xenial:/tmp$ readlink /proc/$$/ns/user</span><br><span class="line">user:[4026532145]</span><br><span class="line"># 新的user namespace没有映射关系，默认使用/proc/sys/kernel/overflowuid中定义的user id和/proc/sys/kernel/overflowgid中的group id</span><br><span class="line">nobody@ubuntu-xenial:/tmp$ id</span><br><span class="line">uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)</span><br><span class="line"></span><br><span class="line">#--------------------------第二个shell窗口----------------------</span><br><span class="line"># 在父user namespace上创建文件夹，可以看到用户为vagrant</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ mkdir test</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ ll /tmp | grep test</span><br><span class="line">drwxrwxr-x  2 vagrant vagrant  4096 Sep 23 17:11 test/</span><br><span class="line"></span><br><span class="line">#--------------------------第一个shell窗口----------------------</span><br><span class="line"># 在新创建的user namespace下用户显示为nobody</span><br><span class="line">nobody@ubuntu-xenial:/tmp$ ll /tmp | grep test</span><br><span class="line">drwxrwxr-x  2 nobody nogroup  4096 Sep 23 17:11 test/</span><br></pre></td></tr></table></figure>
-
-<h2 id="映射user-id和group-id到新的user-namespace"><a href="#映射user-id和group-id到新的user-namespace" class="headerlink" title="映射user id和group id到新的user namespace"></a>映射user id和group id到新的user namespace</h2><p>创建完新的user namespace后，通常会先映射user id和group id，方法为添加映射关系到&#x2F;proc&#x2F;${pid}&#x2F;uid_map和&#x2F;proc&#x2F;${pid}&#x2F;gid_map中。</p>
-<p>user namespace被创建以后，第一个进程被赋予了该namespace的所有权限，但该进程并不拥有父namespace的任何权限。利用该机制可以做到一个用户在父user namespace中是普通用户，在子user namespace中是超级用户的功能。</p>
-<p>为了将容器中的uid和父user namespace上的uid和gid进行 关联起来，可通过&#x2F;proc&#x2F;<pid>&#x2F;uid_map和&#x2F;proc&#x2F;<pid>&#x2F;gid_map来进行映射的。这两个文件的格式为：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ID-inside-ns ID-outside-ns length</span><br></pre></td></tr></table></figure>
-
-<p>第一个字段ID-inside-ns表示在容器显示的UID或GID，<br>第二个字段ID-outside-ns表示容器外映射的真实的UID或GID。<br>第三个字段表示映射的范围，一般填1，表示一一对应。</p>
-<p><code>0 1000 256</code>这个配置的含义为父user namespace的1000-1256映射到新user namespace的0-256.</p>
-<p>创建子进程在没有指定CLONE_NEWUSER时文件内容如下，子进程跟父进程的用户完全一致：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># 表示把namespace内部从0开始的uid映射到外部从0开始的uid，其最大范围是无符号32位整形</span><br><span class="line">[root@centos7 1325]# cat uid_map</span><br><span class="line">         0          0 4294967295</span><br></pre></td></tr></table></figure>
-
-<p>要想实现以普通用户运行程序，在子进程中以root用户执行，仅需要将uid_map文件修改为普通用户映射到子进程中的0即可，因为uid为0表示root用户。</p>
-<p>那么谁拥有写入该文件的权限呢？</p>
-<p>&#x2F;proc&#x2F;${pid}&#x2F;[u|g]id的拥有者为创建新user namespace的用户，拥有map文件写入权限的仅有两个用户：和该用户在同一个user namespace中的root用户，创建新的user namespace的用户。创建新的user namespace有没有写入map文件的权限，还要取决于capability中的CAP_SETUID和CAP_SETGID两个权限。</p>
-<p>为了方便写入&#x2F;proc&#x2F;${pid}&#x2F;uid_map和&#x2F;proc&#x2F;${pid}&#x2F;gid_map文件，可以使用newuidmap和newgidmap命令来完成。</p>
-<p>继续上述例子</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">#--------------------------第一个shell窗口----------------------</span><br><span class="line"># 在新user namespace中获取当前的进程号</span><br><span class="line">nobody@ubuntu-xenial:/tmp$ echo $$</span><br><span class="line">13226</span><br><span class="line"></span><br><span class="line">#--------------------------第二个shell窗口----------------------</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ ll /proc/13226/uid_map  /proc/13226/gid_map</span><br><span class="line">-rw-r--r-- 1 vagrant vagrant 0 Sep 23 17:31 /proc/13226/gid_map</span><br><span class="line">-rw-r--r-- 1 vagrant vagrant 0 Sep 23 17:31 /proc/13226/uid_map</span><br><span class="line"># 提示当前进程没有权限写入</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ echo &#x27;0 1000 100&#x27; &gt; /proc/13226/uid_map</span><br><span class="line">-bash: echo: write error: Operation not permitted</span><br><span class="line"></span><br><span class="line"># 查看当前bash没有任何capability</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ cat /proc/$$/status | egrep &#x27;Cap(Inh|Prm|Eff)&#x27;</span><br><span class="line">CapInh:	0000000000000000</span><br><span class="line">CapPrm:	0000000000000000</span><br><span class="line">CapEff:	0000000000000000</span><br><span class="line"></span><br><span class="line"># 使用root权限给/bin/bash可执行文件增加cap_setgid和cap_setuid</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ sudo setcap cap_setgid,cap_setuid+ep /bin/bash</span><br><span class="line"># 启动新的bash后capability会生效</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ bash</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ cat /proc/$$/status | egrep &#x27;Cap(Inh|Prm|Eff)&#x27;</span><br><span class="line">CapInh:	0000000000000000</span><br><span class="line">CapPrm:	00000000000000c0</span><br><span class="line">CapEff:	00000000000000c0</span><br><span class="line"></span><br><span class="line"># 重新写入</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ echo &#x27;0 1000 100&#x27; &gt; /proc/13226/uid_map</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ echo &#x27;0 1000 100&#x27; &gt; /proc/13226/gid_map</span><br><span class="line"></span><br><span class="line"># 第二次再写入会失败，仅允许写入一次</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ echo &#x27;0 1000 100&#x27; &gt; /proc/13226/uid_map</span><br><span class="line">bash: echo: write error: Operation not permitted</span><br><span class="line"></span><br><span class="line"># 将刚才设置的capability取消</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ sudo setcap cap_setgid,cap_setuid-ep /bin/bash</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ getcap /bin/bash</span><br><span class="line">/bin/bash =</span><br><span class="line">vagrant@ubuntu-xenial:/tmp$ exit</span><br><span class="line">exit</span><br><span class="line"></span><br><span class="line">#--------------------------第一个shell窗口----------------------</span><br><span class="line"># 第一个窗口中userid已经变更为0了</span><br><span class="line">nobody@ubuntu-xenial:/tmp$ id</span><br><span class="line">uid=0(root) gid=0(root) groups=0(root)</span><br><span class="line"># 重新执行一个新的bash，会发现提示符已经变更为root了</span><br><span class="line">nobody@ubuntu-xenial:/tmp$ bash</span><br><span class="line">root@ubuntu-xenial:/tmp#</span><br><span class="line"></span><br><span class="line"># 可以看到新的bash已经拥有的所有的capability，但也仅限于当前的user namespace中</span><br><span class="line">root@ubuntu-xenial:/tmp# cat /proc/$$/status | egrep &#x27;Cap(Inh|Prm|Eff)&#x27;</span><br><span class="line">CapInh:	0000000000000000</span><br><span class="line">CapPrm:	0000003fffffffff</span><br><span class="line">CapEff:	0000003fffffffff</span><br></pre></td></tr></table></figure>
-
-<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>user namespace在linux3.8内核版本上才实现，存在一定的安全问题。在redhat和centos系统下，user namespace作为了一个实验feature，默认情况下未开启。</p>
-<p>执行如下命令<code>sudo grubby --args=&quot;user_namespace.enable=1&quot; --update-kernel=&quot;$(grubby --default-kernel)&quot;</code>并重启系统后可以就可以打开user namespace feature了。执行<code>grubby --remove-args=&quot;user_namespace.enable=1&quot; --update-kernel=&quot;$(grubby --default-kernel)&quot;</code>可关闭user namespace feature。</p>
-<p>经实验，上述操作未生效，后续待查该问题。</p>
-<h2 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://rhelblog.redhat.com/2015/07/07/whats-next-for-containers-user-namespaces/#comment-6796">What’s Next for Containers? User Namespaces
-</a></li>
-<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000006913195">Linux Namespace系列（07）：user namespace (CLONE_NEWUSER) (第一部分)</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/namespace_mount/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/namespace_mount/" class="post-title-link" itemprop="url">docker基础知识之mount namespace</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-09-15 01:52:17" itemprop="dateCreated datePublished" datetime="2018-09-15T01:52:17+00:00">2018-09-15</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>Mount Namespace 是 Linux 下的一种挂载隔离机制，可以实现不同的进程拥有独立的挂载视图，各挂载点之间相互不受影响。</p>
-<h1 id="mount-namespace-基本用法"><a href="#mount-namespace-基本用法" class="headerlink" title="mount namespace 基本用法"></a>mount namespace 基本用法</h1><p>Linux 启动时会创建一个默认的 mount namespace，在使用 clone() 或者 unshare() 系统调用通过 CLONE_NEWNS 会创建出新的 mount namespace。因为是第一个加入到 Linux 内核的中的 namespace，CLONE_NEWNS 的取名并不是太合理。</p>
-<p>每个进程的挂载信息保存在了 <code>/proc/&lt;pid&gt;/&#123;mountinfo,mounts,mountstats&#125;</code> 中。</p>
-<p>使用如下命令可以看到一个进程对应的 mount namespace 名称。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#ll /proc/$$/ns/mnt</span><br><span class="line">lrwxrwxrwx 1 root root 0 Aug 30 00:02 /proc/94832/ns/mnt -&gt; mnt:[4026531840]</span><br></pre></td></tr></table></figure>
-
-<p>可以使用 unshare 命令来创建一个新的命名空间，执行如下命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># 创建新的命名空间，此时会继承当前 mount namespace 的挂载点信息</span><br><span class="line">unshare --mount --fork --pid --mount-proc /bin/bash</span><br><span class="line"># 创建新的挂载点并挂载，执行完成后可以看到新的挂载点存在</span><br><span class="line">mkdir /mnt/new_mount</span><br><span class="line">mount -t tmpfs tmpfs /mnt/new_mount</span><br><span class="line"># 查看新的挂载点</span><br><span class="line">df -h | grep new_mount</span><br></pre></td></tr></table></figure>
-
-<p>新打开一个终端，切换回原始的命名空间，可以看到挂载点并不存在。</p>
-<h1 id="mount-namespace-的-shared-subtree"><a href="#mount-namespace-的-shared-subtree" class="headerlink" title="mount namespace 的 shared subtree"></a>mount namespace 的 shared subtree</h1><p>mount namespace 实现了挂载点的隔离，但在很多创建下又希望能够在不同的 namespace 下共享挂载点。<a target="_blank" rel="noopener" href="https://www.kernel.org/doc/Documentation/filesystems/sharedsubtree.txt">shared subtree</a> 机制允许在 mount namespace 之间自动的或者受控的传播  mount 和 umount 事件。</p>
-<blockquote>
-<p>注意：该处理解起来比较绕。在创建 mount namespace 和挂载目录的时候分别可以指定参数。</p>
-</blockquote>
-<p>在做单个目录挂载的时候通过指定传播类型来指定的不同隔离行为，支持如下的值：</p>
-<ul>
-<li>private：挂载点不会传播到其他命名空间，默认类型。</li>
-<li>shared：挂载点会传播到共享这个挂载点的其他命名空间。</li>
-<li>slave：挂载点不会传播到另一个命名空间，但其他命名空间的传播会影响到这个挂载点。</li>
-<li>unbindable：挂载点不能被移动。</li>
-<li>rprivate：递归地将挂载点及其子挂载点设置为 private。</li>
-<li>rshared：递归地将挂载点及其子挂载点设置为 shared。</li>
-<li>rslave：递归地将挂载点及其子挂载点设置为 slave。</li>
-</ul>
-<p>mount 在挂载目录的时候可以指定如下参数：</p>
-<ol>
-<li>–make-rshared：将挂载方式设置为 rshared。</li>
-<li>–make-rslave：将挂载方式设置为 rslave。</li>
-<li>–make-rprivate：将挂载方式设置为 rprivate。</li>
-<li>–make-runbindable：将挂载方式设置为不可移动。</li>
-</ol>
-<p>可以通过 <code>findmnt -o TARGET,PROPAGATION</code> 命令查看到当前 mount namespace 下的挂载点的 shared subtree 属性。但该命令无法区分出 shared 和 rshared 属性。</p>
-<p>unshare 命令在创建新的 mount namespace 时通过选项 <code>--propagation</code>来指定新创建的 mount namespace 中所有挂载点的共享方式。支持如下值：</p>
-<ol>
-<li>private：新创建的 mount namespace 中的所有挂载点的 shared subtrees 属性全部为 private。默认值。</li>
-<li>shared：新创建的 mount namespace 中的挂载点的 shared subtrees 属性全部为 share。</li>
-<li>slave：新创建的 mount namespace 中的挂载点的 shared subtrees 属性全部为 slave。</li>
-<li>unchanged：新创建的 mount namespace 中的挂载点的 shared subtrees 属性保持不变。</li>
-</ol>
-<p>在上面的例子中可以通过指定为 rshared 的模式来查看效果。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># 创建新的命名空间</span><br><span class="line">unshare --mount --fork --pid --mount-proc /bin/bash</span><br><span class="line"></span><br><span class="line"># 创建新的挂载点并挂载，执行完成后可以看到新的挂载点存在</span><br><span class="line">mount --make-rshared /</span><br><span class="line"></span><br><span class="line"># 查看新的挂载点</span><br><span class="line">df -h | grep new_mount</span><br></pre></td></tr></table></figure>
-
-<h1 id="mount-namespace-在容器技术中的应用"><a href="#mount-namespace-在容器技术中的应用" class="headerlink" title="mount namespace 在容器技术中的应用"></a>mount namespace 在容器技术中的应用</h1><p>在容器技术中，在容器中不应该看到宿主机上挂载的目录。在Linux中使用chroot技术来实现，在容器中将<code>/</code>挂载到指定目录，这样在容器中就看不到宿主机上的其他挂载项。在容器技术中，chroot所使用的目录即容器镜像的目录。容器镜像中并不包含操作系统的内核。</p>
-<h2 id="Docker-Volume"><a href="#Docker-Volume" class="headerlink" title="Docker Volume"></a>Docker Volume</h2><p>为了解决容器中能够访问宿主机上文件的问题，docker引入了Volume机制，将宿主机上指定的文件或者目录挂载到容器中。而整个的docker Volume机制跟mount namespace的关系不太大。</p>
-<p>Volume用到的技术为Linux的绑定挂载机制，该机制将一个指定的目录或者文件挂载到一个指定的目录上。</p>
-<p>容器启动顺序如下：</p>
-<ol>
-<li>创建新的mount namespace</li>
-<li>dockerinit根据容器镜像准备好rootfs</li>
-<li>dockerinit使用绑定挂载机制将一个指定的目录挂载到rootfs的某个目录上</li>
-<li>dockerinit调用chroot</li>
-</ol>
-<p>容器启动时需要创建新的mount namespace，根据容器镜像准备好rootfs，调用chroot。docker volume的挂载时机是在rootfs准备好之后，调用chroot之前完成。</p>
-<p>上文提到进入新的mount namespace后，mount namespace会继承父mount namespace的挂载, docker volume一定是在新的mount namespce中执行，否则会影响到宿主机上的mount。在调用chroot之后已经看不到宿主机上的文件系统，无法进行挂载。</p>
-<p>执行这一操作的进程为docker的容器进程dockerinit，该进程会负责完成根目录的准备、挂载设备和目录、配置hostname等一系列需要在容器内进行的初始化操作。在初始化完成后，会调用execv()系统调用，用容器中的ENTRYPOINT进程取代，成为容器中的1号进程。</p>
-<p>volume挂载的目录是挂载在读写层，由于使用了mount namespace，在宿主机上看不到挂载目录的信息，因此docker commit操作不会将挂载的目录提交。</p>
-<p>下面使用例子来演示docker volume的用法</p>
-<p>在宿主机上使用<code>docker run -d -v /test ubuntu sleep 10000</code>创建新的容器，并创建docker容器中的挂载点&#x2F;test，该命令会自动在容器中创建目录，并将宿主机上指定目录下的随机目录挂载到容器中的&#x2F;test目录下。</p>
-<p>可在宿主机上通过如下命令查看到volume的情况</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># 列出当前docker在使用的所有volume</span><br><span class="line">[root@localhost vagrant]# docker volume ls</span><br><span class="line">DRIVER              VOLUME NAME</span><br><span class="line">local               4ad97e6356707b66cd1cacc4a2e223d9c79d11eca26fe12b1becc9dd664fc5c6</span><br><span class="line"></span><br><span class="line"># 查看volume在宿主机上的挂载点</span><br><span class="line">[root@localhost vagrant]# docker volume inspect 4ad97e6356707b66cd1cacc4a2e223d9c79d11eca26fe12b1becc9dd664fc5c6</span><br><span class="line">[</span><br><span class="line">    &#123;</span><br><span class="line">        &quot;CreatedAt&quot;: &quot;2018-09-15T23:36:09+08:00&quot;,</span><br><span class="line">        &quot;Driver&quot;: &quot;local&quot;,</span><br><span class="line">        &quot;Labels&quot;: null,</span><br><span class="line">        &quot;Mountpoint&quot;: &quot;/var/lib/docker/volumes/4ad97e6356707b66cd1cacc4a2e223d9c79d11eca26fe12b1becc9dd664fc5c6/_data&quot;,</span><br><span class="line">        &quot;Name&quot;: &quot;4ad97e6356707b66cd1cacc4a2e223d9c79d11eca26fe12b1becc9dd664fc5c6&quot;,</span><br><span class="line">        &quot;Options&quot;: &#123;&#125;,</span><br><span class="line">        &quot;Scope&quot;: &quot;local&quot;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-
-<h2 id="docker文件系统"><a href="#docker文件系统" class="headerlink" title="docker文件系统"></a>docker文件系统</h2><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/docker_fs.png"></p>
-<p>rootfs在最下层为docker镜像的只读层。</p>
-<p>rootfs之上为dockerinit进程自己添加的init层，用来存放dockerinit添加或者修改的&#x2F;etc&#x2F;hostname等文件。</p>
-<p>rootfs的最上层为可读写层，以Copy-On-Write的方式存放任何对只读层的修改，容器声明的volume挂载点也出现这一层。</p>
-<h1 id="mount-namespace-在-k8s-中应用"><a href="#mount-namespace-在-k8s-中应用" class="headerlink" title="mount namespace 在 k8s 中应用"></a>mount namespace 在 k8s 中应用</h1><p>在 k8s 中可以通过 volumeMounts 中的参数 mountPropagation 来指定挂载的参数。</p>
-<h2 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h2><ul>
-<li>极客时间-深入剖析Kubernetes-08</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/namespace_network/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/post/namespace_network/" class="post-title-link" itemprop="url">docker基础知识之network namespace</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-09-15 00:40:49" itemprop="dateCreated datePublished" datetime="2018-09-15T00:40:49+00:00">2018-09-15</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-02-06 16:13:26" itemprop="dateModified" datetime="2025-02-06T16:13:26+00:00">2025-02-06</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>network namespace用来隔离Linux系统的网络设备、ip地址、端口号、路由表、防火墙等网络资源。用户可以随意将虚拟网络设备分配到自定义的networknamespace里，而连接真实硬件的物理设备则只能放在系统的根networknamesapce中。</p>
-<p>一个物理的网络设备最多存在于一个network namespace，可以通过创建veth pair在不同的network namespace之间创建通道，来达到通讯的目的。</p>
-<p>容器的bridge模式的实现思路为创建一个veth pair，一端放置在新的namespace，通常命名为eth0，另外一端放在原先的namespace中连接物理网络设备，以此实现网络通信。</p>
-<p>docker daemon负责在宿主机上创建veth pair，把一端绑定到docker0网桥，另一端到新建的network namespace进程中。建立的过程中，docker daemon和dockerinit通过pipe进行通讯。</p>
-<h2 id="一、测试例子"><a href="#一、测试例子" class="headerlink" title="一、测试例子"></a>一、测试例子</h2><p>测试network namespace的过程比较复杂。</p>
-<p>docker默认采用的为bridge模式，在容器所在的宿主机上看到的网卡情况如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost software]# ip link show</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">2: enp0s3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">3: enp0s8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff</span><br><span class="line">4: docker0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default</span><br><span class="line">    link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">18: veth71f2650@if17: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default</span><br><span class="line">    link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br></pre></td></tr></table></figure>
-
-<p>其中的enp0s3和enp0s8可以忽略，为虚拟机使用的网卡。docker0和veth71f2650@if17是需要关注的网卡。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost software]# brctl show</span><br><span class="line">bridge name	bridge id		STP enabled	interfaces</span><br><span class="line">docker0		8000.0242a3750016	no		veth71f2650</span><br></pre></td></tr></table></figure>
-
-<p>下面的操作为在已经运行docker的虚拟机上的，以便于跟docker进行比较。</p>
-<p>以下命令根据coolshell中的步骤进行配置，并对执行命令的顺序进行了调整。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br></pre></td><td class="code"><pre><span class="line"># 增加network namespace ns1</span><br><span class="line">[root@localhost software]# ip netns add ns1</span><br><span class="line">[root@localhost software]# ip netns</span><br><span class="line">ns1</span><br><span class="line"></span><br><span class="line"># 激活namespace ns1中的lo设备</span><br><span class="line">[root@localhost software]# ip netns exec ns1   ip link set dev lo up</span><br><span class="line"></span><br><span class="line"># 创建veth pair</span><br><span class="line">[root@localhost software]# ip link add veth-ns1 type veth peer name lxcbr0.1</span><br><span class="line"># 多出了lxcbr0.1@veth-ns1和veth-ns1@lxcbr0.1两个设备</span><br><span class="line"># 后面的操作步骤中将lxcbr0.1位于主网络命名空间中，veth-ns1位于ns1命名空间中</span><br><span class="line">[root@localhost software]# ip link</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">2: enp0s3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">3: enp0s8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff</span><br><span class="line">4: docker0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default</span><br><span class="line">    link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">18: veth71f2650@if17: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default</span><br><span class="line">    link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br><span class="line">19: lxcbr0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether c6:b7:4d:7f:f8:90 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">20: lxcbr0.1@veth-ns1: &lt;BROADCAST,MULTICAST,M-DOWN&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether c6:8a:26:3d:ba:de brd ff:ff:ff:ff:ff:ff</span><br><span class="line">21: veth-ns1@lxcbr0.1: &lt;BROADCAST,MULTICAST,M-DOWN&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff</span><br><span class="line"></span><br><span class="line"># 将设备veth-ns1放入到ns1命名空间中</span><br><span class="line">[root@localhost software]# ip link set veth-ns1 netns ns1</span><br><span class="line"># 可以看到veth-ns1设备在当前命名空间消失了</span><br><span class="line">[root@localhost software]# ip link</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">2: enp0s3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">3: enp0s8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff</span><br><span class="line">4: docker0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default</span><br><span class="line">    link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">18: veth71f2650@if17: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default</span><br><span class="line">    link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br><span class="line">19: lxcbr0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether c6:b7:4d:7f:f8:90 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">20: lxcbr0.1@if21: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether c6:8a:26:3d:ba:de brd ff:ff:ff:ff:ff:ff link-netnsid 1</span><br><span class="line"># 同时在命名空间ns1中看到了设备veth-ns1，同时可以看到veth-ns1设备的状态为DOWN</span><br><span class="line">[root@localhost software]# ip netns exec ns1  ip link</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">21: veth-ns1@if20: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br><span class="line"></span><br><span class="line"># 将ns1中的veth-ns1设备更名为eth0</span><br><span class="line">[root@localhost software]# ip netns exec ns1  ip link set dev veth-ns1 name eth0</span><br><span class="line">[root@localhost software]# ip netns exec ns1  ip link</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">21: eth0@if20: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br><span class="line"></span><br><span class="line"># 为容器中的网卡分配一个IP地址，并激活它</span><br><span class="line">[root@localhost software]# ip netns exec ns1 ifconfig eth0 192.168.10.11/24 up</span><br><span class="line"># 可以看到eth0网卡上有ip地址</span><br><span class="line">[root@localhost software]# ip netns exec ns1  ifconfig</span><br><span class="line">eth0: flags=4099&lt;UP,BROADCAST,MULTICAST&gt;  mtu 1500</span><br><span class="line">        inet 192.168.10.11  netmask 255.255.255.0  broadcast 192.168.10.255</span><br><span class="line">        ether f2:03:22:93:d6:f4  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line"></span><br><span class="line">lo: flags=73&lt;UP,LOOPBACK,RUNNING&gt;  mtu 65536</span><br><span class="line">        inet 127.0.0.1  netmask 255.0.0.0</span><br><span class="line">        inet6 ::1  prefixlen 128  scopeid 0x10&lt;host&gt;</span><br><span class="line">        loop  txqueuelen 1000  (Local Loopback)</span><br><span class="line">        RX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line"></span><br><span class="line"># 添加一个网桥lxcbr0，类似于docker中的docker0</span><br><span class="line">[root@localhost software]# brctl addbr lxcbr0</span><br><span class="line">[root@localhost software]# brctl show</span><br><span class="line">bridge name	bridge id		STP enabled	interfaces</span><br><span class="line">docker0		8000.0242a3750016	no		veth71f2650</span><br><span class="line">lxcbr0		8000.000000000000	no</span><br><span class="line"></span><br><span class="line"># 关闭生成树协议，默认该协议为关闭状态</span><br><span class="line">[root@localhost software]# brctl stp lxcbr0 off</span><br><span class="line">[root@localhost software]# brctl show</span><br><span class="line">bridge name	bridge id		STP enabled	interfaces</span><br><span class="line">docker0		8000.0242a3750016	no		veth71f2650</span><br><span class="line">lxcbr0		8000.000000000000	no</span><br><span class="line"></span><br><span class="line"># 为网桥配置ip地址</span><br><span class="line">ifconfig lxcbr0 192.168.10.1/24 up</span><br><span class="line">[root@localhost software]# ifconfig lxcbr0</span><br><span class="line">lxcbr0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500</span><br><span class="line">        inet 192.168.10.1  netmask 255.255.255.0  broadcast 192.168.10.255</span><br><span class="line">        inet6 fe80::c4b7:4dff:fe7f:f890  prefixlen 64  scopeid 0x20&lt;link&gt;</span><br><span class="line">        ether c6:b7:4d:7f:f8:90  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 8  bytes 648 (648.0 B)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line"></span><br><span class="line"># 将veth设备中的其中一个lxcbr0.1添加到网桥lxcbr0上</span><br><span class="line">[root@localhost software]# brctl addif lxcbr0 lxcbr0.1</span><br><span class="line"># 可以看到网桥lxcbr0中已经包含了设备lxcbr0.1</span><br><span class="line">[root@localhost software]# brctl show</span><br><span class="line">bridge name	bridge id		STP enabled	interfaces</span><br><span class="line">docker0		8000.0242a3750016	no		veth71f2650</span><br><span class="line">lxcbr0		8000.c68a263dbade	no		lxcbr0.1</span><br><span class="line"></span><br><span class="line"># 为网络空间ns1增加默认路由规则，出口为网桥ip地址</span><br><span class="line">[root@localhost software]# ip netns exec ns1     ip route add default via 192.168.10.1</span><br><span class="line">[root@localhost software]# ip netns exec ns1 ip route</span><br><span class="line">default via 192.168.10.1 dev eth0</span><br><span class="line">192.168.10.0/24 dev eth0 proto kernel scope link src 192.168.10.11</span><br><span class="line"></span><br><span class="line"># 为ns1增加resolv.conf</span><br><span class="line">[root@localhost software]# mkdir -p /etc/netns/ns1</span><br><span class="line">[root@localhost software]# echo &quot;nameserver 8.8.8.8&quot; &gt; /etc/netns/ns1/resolv.conf</span><br></pre></td></tr></table></figure>
-
-<h2 id="二、常用命令"><a href="#二、常用命令" class="headerlink" title="二、常用命令"></a>二、常用命令</h2><h3 id="1-列出当前的network-namespace"><a href="#1-列出当前的network-namespace" class="headerlink" title="1. 列出当前的network namespace"></a>1. 列出当前的network namespace</h3><h4 id="1-1-使用lsns命令"><a href="#1-1-使用lsns命令" class="headerlink" title="1.1 使用lsns命令"></a>1.1 使用<code>lsns</code>命令</h4><p>lsns命令通过读取&#x2F;proc&#x2F;${pid}&#x2F;ns目录下进程所属的命名空间来实现，如果是通过<code>ip netns add</code>场景的命名空间，但是没有使用该命名空间的进程，该命令是看不到的。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># lsns -t net</span><br><span class="line">        NS TYPE NPROCS   PID USER  COMMAND</span><br><span class="line">4026531956 net     383     1 root  /usr/lib/systemd/systemd --switched-root --system --deserialize 21</span><br><span class="line">4026532490 net       1  1026 rtkit /usr/libexec/rtkit-daemon</span><br><span class="line">4026532762 net       2 24872 root  /pause</span><br><span class="line">4026532866 net      20 25817 root  /pause</span><br><span class="line">4026532965 net       3 30763 root  /pause</span><br><span class="line">4026533059 net       3  2794 root  /bin/sh -c python /usr/src/app/clean.py &quot;$&#123;endpoints&#125;&quot; &quot;$&#123;expire&#125;&quot;</span><br><span class="line">4026533163 net       2  1122 102   /docker-java-home/jre/bin/java -Xms2g -Xmx2g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupan</span><br><span class="line">4026533266 net       4 13920 root  /pause</span><br><span class="line">4026533371 net       2  1844 root  /pause</span><br><span class="line">4026533559 net       3  1067 root  sleep 4</span><br></pre></td></tr></table></figure>
-
-<h4 id="1-2-通过ip-netns命令"><a href="#1-2-通过ip-netns命令" class="headerlink" title="1.2 通过ip netns命令"></a>1.2 通过<code>ip netns</code>命令</h4><p>该命令仅会列出有名字的namespace，对于未命名的不能显示。</p>
-<ul>
-<li><code>ip netns identify $&#123;pid&#125;</code> 可以找到进程所属的网络命名空间</li>
-<li><code>ip netns list</code>: 显示所有有名字的namespace</li>
-</ul>
-<h3 id="2-通过pid进入具体的network-namespace"><a href="#2-通过pid进入具体的network-namespace" class="headerlink" title="2. 通过pid进入具体的network namespace"></a>2. 通过pid进入具体的network namespace</h3><h4 id="2-1-通过nsenter命令"><a href="#2-1-通过nsenter命令" class="headerlink" title="2.1 通过nsenter命令"></a>2.1 通过nsenter命令</h4><p><code>nsenter --target $PID --net</code>可以进入到对应的命名空间</p>
-<h4 id="2-2-docker-net参数"><a href="#2-2-docker-net参数" class="headerlink" title="2.2 docker --net参数"></a>2.2 docker <code>--net</code>参数</h4><p>docker提供了<code>--net</code>参数用于加入另一个容器的网络命名空间<code>docker run -it --net container:7835490487c1 busybox ifconfig</code>。</p>
-<h4 id="2-3-setns系统调用"><a href="#2-3-setns系统调用" class="headerlink" title="2.3 setns系统调用"></a>2.3 setns系统调用</h4><p>一个进程可以通过setns()系统调用来进入到另外一个namespace中。</p>
-<p>编写setns.c程序，该程序会进入到进程id所在的网络命令空间，并使用<code>gcc setns.c -o setns</code>进行编译，编译完成后执行<code>./setns /proc/4913/ns/net ifconfig</code>可以看到网卡的信息为容器中的网卡信息。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span> &#123;</span><br><span class="line">  <span class="type">int</span> fd = open(argv[<span class="number">1</span>], O_RDONLY);</span><br><span class="line">  <span class="keyword">if</span> (setns(fd, <span class="number">0</span>) == <span class="number">-1</span>) &#123;</span><br><span class="line">    perror(<span class="string">&quot;setns&quot;</span>);</span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  execvp(argv[<span class="number">2</span>], &amp;argv[<span class="number">2</span>]);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;execvp exit\n&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>如果执行<code>./setns /proc/4913/ns/net /bin/bash</code>，在宿主机上查看docker进程和&#x2F;bin&#x2F;bash进程的网络命名空间&#x2F;proc&#x2F;${pid}&#x2F;ns&#x2F;net，会发现都指向<code>lrwxrwxrwx 1 root root 0 Sep 14 14:42 net -&gt; net:[4026532133]</code>同一个位置。</p>
-<h3 id="3-pid的获取方式"><a href="#3-pid的获取方式" class="headerlink" title="3. pid的获取方式"></a>3. pid的获取方式</h3><p>最简单的方式上文第1点中的PID列</p>
-<h4 id="3-1-proc-pid-ns"><a href="#3-1-proc-pid-ns" class="headerlink" title="3.1 /proc/[pid]/ns"></a>3.1 <code>/proc/[pid]/ns</code></h4><p>可以使用如下命令查看当前容器在宿主机上的进程id。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker inspect --format &#x27;&#123;&#123;.State.Pid&#125;&#125;&#x27; a1bf0119d891</span><br></pre></td></tr></table></figure>
-
-<p>每个进程在&#x2F;proc&#x2F;${pid}&#x2F;ns&#x2F;目录下都会创建其对应的虚拟文件，并链接到一个真实的namespace文件上，如果两个进程下的链接文件链接到同一个地方，说明两个进程同属于一个namespace。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost runc]# ls -l /proc/4913/ns/</span><br><span class="line">total 0</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:21 ipc -&gt; ipc:[4026532130]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:21 mnt -&gt; mnt:[4026532128]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:18 net -&gt; net:[4026532133]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:21 pid -&gt; pid:[4026532131]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:21 user -&gt; user:[4026531837]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:21 uts -&gt; uts:[4026532129]</span><br></pre></td></tr></table></figure>
-
-<h2 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://coolshell.cn/articles/17029.html">DOCKER基础技术：LINUX NAMESPACE（下）</a></li>
-<li>极客时间-深入剖析Kubernetes</li>
-<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/bakari/p/10443484.html">一文搞懂 Linux network namespace</a></li>
-</ul>
 
       
     </div>
