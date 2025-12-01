@@ -6,19 +6,19 @@ date: 2022-01-18
 
 本文记录常用的kubectl命令，不定期更新。
 
-## 1. 统计k8s node上的污点信息
+## 0.1 统计k8s node上的污点信息
 
 ```
 kubectl get nodes -o=custom-columns=NodeName:.metadata.name,TaintKey:.spec.taints[*].key,TaintValue:.spec.taints[*].value,TaintEffect:.spec.taints[*].effect
 ```
 
-## 2. 查看不ready的pod
+## 0.2 查看不ready的pod
 
 ```
 kubectl get pod --all-namespaces -o wide -w | grep -vE "Com|NAME|Running|1/1|2/2|3/3|4/4"
 ```
 
-## 3. pod按照重启次数排序
+## 0.3 pod按照重启次数排序
 
 ```
 kubectl get pods -A  --sort-by='.status.containerStatuses[0].restartCount' | tail
@@ -26,7 +26,7 @@ kubectl get pods -A  --sort-by='.status.containerStatuses[0].restartCount' | tai
 kubectl get pod -A  --no-headers  | sort -k5 -nr | head
 ```
 
-## 4. kubectl proxy命令代理k8s apiserver
+## 0.4 kubectl proxy命令代理k8s apiserver
 
 该命令经常用在开发的场景下，用来测试k8s api的结果。执行如下命令即可在本地127.0.0.1开启10999端口。
 
@@ -36,7 +36,7 @@ kubectl proxy --port=10999
 
 在本地即可通过curl的方式来访问k8s的apiserver，而无需考虑鉴权问题。例如，`curl http://127.0.0.1:10999/apis/batch/v1`，即可直接返回结果。
 
-## 5. `--raw`命令
+## 0.5 `--raw`命令
 
 该命令经常用在开发的场景下，用来测试k8s api的结果。执行如下的命令，即可返回json格式的结果。
 
@@ -44,7 +44,7 @@ kubectl proxy --port=10999
 kubectl get --raw /apis/batch/v1
 ```
 
-## 6. 查看集群中的pod的request和limit情况
+## 0.6 查看集群中的pod的request和limit情况
 
 ```
 kubectl get pod -n kube-system  -o=custom-columns=NAME:.metadata.name,NAMESPACE:.metadata.namespace,PHASE:.status.phase,Request-cpu:.spec.containers\[0\].resources.requests.cpu,Request-memory:.spec.containers\[0\].resources.requests.memory,Limit-cpu:.spec.containers\[0\].resources.limits.cpu,Limit-memory:.spec.containers\[0\].resources.limits.memory
@@ -60,7 +60,7 @@ coredns-6c6664b94-djxch                           kube-system   Failed      100m
 coredns-6c6664b94-khvrb                           kube-system   Running     100m          70Mi             <none>      170Mi
 ```
 
-## 7. 修改对象的status
+## 0.7 修改对象的status
 
 因为status资源实际上为对象的subResource资源，实际上无法通过kubectl来完成，但该操作还是放到了该文档中。
 
@@ -82,13 +82,13 @@ TOKEN变量可以直接使用kube-system下的admin账号。
 
 obj变量为要修改的service对象名称。
 
-## 8. 查看 secret 内容
+## 0.8 查看 secret 内容
 
 ```
 kubectl get secret -n ark-system ark.cmdb.https.origin.tls -o jsonpath='{.data.ca\.pem}' | base64 -d
 ```
 
-## 9. 修改 secret 或 cm 的内容
+## 0.9 修改 secret 或 cm 的内容
 
 很多场景下使用 `kubectl edit` 修改不能完全满足需求，比如某个 key 对应的 value 非常长且包含空格，很难直接编辑。可以通过导出 key 对应的 value 到文件，然后再重新 apply 的方式合入。
 
@@ -104,13 +104,13 @@ kubectl get cm -n kube-system  networkpolicy-config -o jsonpath='{.data.config\.
 kubectl create --save-config cm  networkpolicy-config -n kube-system --from-file /tmp/config.yaml -o yaml --dry-run | kubectl apply -f -
 ```
 
-## 9. 删除所有 pod（或特定状态 pod）
+## 0.10 删除所有 pod（或特定状态 pod）
 
 ```
 kubectl get pods --all-namespaces -o wide --no-headers | grep -v Running | awk '{print $1 " " $2}' | while read AA BB; do kubectl get pod -n $AA $BB --no-headers; done
 ```
 
-## 10. kubectl debug
+## 0.11 kubectl debug
 
 常用于网络问题排查，其中镜像 netshoot 中包含了丰富的网络命令。
 
@@ -124,13 +124,13 @@ kubectl exec -it nginx-statefulset-0 bash
 kubectl debug node/${node} -it --image=nicolaka/netshoot
 ```
 
-## 11. kubectl patch
+## 0.12 kubectl patch
 
 ```
 kubectl patch -p '{"spec":{"filed1": "value1"}}' --type=merge xxx -n yyy
 ```
 
-## 12. 查询对象的 labels
+## 0.13 查询对象的 labels
 
 ```
 # 查看所有 k8s 节点及其 label

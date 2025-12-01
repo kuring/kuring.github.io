@@ -136,7 +136,70 @@ title: 领域驱动设计 DDD
 - **日志记录实现：** `ILogger` 接口的具体实现（如 Log4Net, Serilog）。
 - **身份认证/授权实现：** 与 Auth0、OAuth2 服务器等集成的具体代码。
 - **框架集成：** ORM (Entity Framework, Hibernate), Web 框架 (ASP.NET Core, Spring Boot) 的特定配置和粘合代码。
-# 3 项目实战
+## 2.4 各层的数据对象
+每一层都有特定的数据：
+1. VO（View Object）：视图对象。
+2. DTO（Data Transfer Object）：数据传输对象，主要用于远程调用等需要大量传输对象的地方。比如我们一张表有100个字段，那么对应的PO就有100个属性。但是我们界面上只要显示10个字段，客户端用WEB service来获取数据，没有必要把整个PO对象传递到客户端，这时我们就可以用只有这10个属性的DTO来传递结果到客户端，这样也不会暴露服务端表结构。
+3. DO（Domain Object）：领域对象，就是从现实世界中抽象出来的有形或无形的业务实体。
+4. PO（Persistent Object）：持久化对象，它跟持久层（通常是关系型数据库）的数据结构形成一一对应的映射关系，如果持久层是关系型数据库，那么，数据表中的每个字段（或若干个）就对应PO的一个（或若干个）属性。
+# 3 DDD 架构的好处
+## 3.1 传统的贫血模型
+在 [MVC 模型](/architecture/mvc/)中，后端很容易分裂出 Repository层（数据访问）、Service层（业务逻辑）、Controller层（暴露接口）。很容易分裂出贫血模型
+```java
+////////// Controller+VO(View Object) //////////
+public class UserController {
+  private UserService userService; //通过构造函数或者IOC框架注入
+  
+  public UserVo getUserById(Long userId) {
+    UserBo userBo = userService.getUserById(userId);
+    UserVo userVo = [...convert userBo to userVo...];
+    return userVo;
+  }
+}
+
+public class UserVo {//省略其他属性、get/set/construct方法
+  private Long id;
+  private String name;
+  private String cellphone;
+}
+
+////////// Service+BO(Business Object) //////////
+public class UserService {
+  private UserRepository userRepository; //通过构造函数或者IOC框架注入
+  
+  public UserBo getUserById(Long userId) {
+    UserEntity userEntity = userRepository.getUserById(userId);
+    UserBo userBo = [...convert userEntity to userBo...];
+    return userBo;
+  }
+}
+
+public class UserBo {//省略其他属性、get/set/construct方法
+  private Long id;
+  private String name;
+  private String cellphone;
+}
+
+////////// Repository+Entity //////////
+public class UserRepository {
+  public UserEntity getUserById(Long userId) { //... }
+}
+
+public class UserEntity {//省略其他属性、get/set/construct方法
+  private Long id;
+  private String name;
+  private String cellphone;
+}
+```
+
+在上述示例中，UserBo 只包含数据，不包含任何业务逻辑，业务逻辑集中在UserService中。Service层的数据和业务逻辑，被分割为BO和Service两个类中。像UserBo这样，只包含数据，不包含业务逻辑的类，就叫作贫血模型（Anemic Domain Model）。
+
+这种贫血模型将数据与操作分离，破坏了面向对象的封装特性，是一种典型的面向过程的编程风格。
+
+几乎所有的 Web 类项目都是按照贫血模型来开发的。
+## 3.2 基于 DDD 的充血模型
+在充血模型中数据和对应的业务逻辑被封装到同一个类中。在充血模型中，Service层包含Service类和Domain类两部分。Domain就相当于贫血模型中的BO。不过，Domain与BO的区别在于它是基于充血模型开发的，既包含数据，也包含业务逻辑。而Service类变得非常单薄。
+# 4 项目实战
 下面是一个订单管理系统的代码示例。
 
 目录结构如下:
@@ -162,8 +225,8 @@ order-ddd/
     └── OrderController.java
 ```
 
-## 3.1 领域层
-### 3.1.1 领域模型层
+## 4.1 领域层
+### 4.1.1 领域模型层
 `Order.java` 聚合根
 ```java
 package com.example.order.domain.model;
@@ -244,7 +307,7 @@ public enum OrderStatus {
     CANCELLED
 }
 ```
-### 3.1.2 领域仓储层
+### 4.1.2 领域仓储层
  `OrderRepository.java` - 领域层仓储接口
 ```java
 package com.example.order.domain.repository;
@@ -257,7 +320,7 @@ public interface OrderRepository {
     Order update(Order order);
 }
 ```
-### 3.1.3 领域服务层
+### 4.1.3 领域服务层
 OrderDomainService.java
 ```java
 package com.example.order.domain.service;
@@ -296,7 +359,7 @@ public class OrderDomainService {
     }
 }
 ```
-## 3.2 应用层
+## 4.2 应用层
 `OrderApplicationService.java`
 ```java
 package com.example.order.application;
@@ -334,7 +397,7 @@ public class OrderApplicationService {
 }
 ```
 
-## 3.3 基础设施层（infrastructure）
+## 4.3 基础设施层（infrastructure）
 `OrderRepositoryImpl.java` - 模拟数据库操作
 ```java
 package com.example.order.infrastructure.persistence;
@@ -380,7 +443,7 @@ public class OrderEventPublisher {
 }
 ```
 
-## 3.4 接口层
+## 4.4 接口层
 `OrderController.java` - 简单的控制层
 ```java
 package com.example.order.interfaces;
@@ -408,5 +471,7 @@ public class OrderController {
 }
 ```
 
-# 4 参考资料
+# 5 参考资料
 - [领域驱动设计：从理论到实践，一文带你掌握DDD！](https://mp.weixin.qq.com/s/x4HjK8t6mPAg1vQWa3PrSg)
+- [极客时间 - 设计模式之美 - 业务开发常用的基于贫血模型的MVC架构违背OOP吗？](https://time.geekbang.org/column/article/169600?utm_campaign=geektime_search&utm_content=geektime_search&utm_medium=geektime_search&utm_source=geektime_search&utm_term=geektime_search)
+- [awesome-ddd](https://github.com/heynickc/awesome-ddd)
