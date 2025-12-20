@@ -38,8 +38,8 @@ http://192.168.31.1/cgi-bin/luci/;stok=221bcd3ba09b3e4597b0308cc1df18a2/api/misy
 
 在终端中执行如下的命令，用来设置 root 密码，开启并固化 ssh 服务：
 ```
-# 修改 root 密码
-echo -e 'wangss19881.\nwangss19881.' | passwd root
+# 修改 root 密码，其中 xxx 为要修改的密码
+echo -e 'xxx\nxxx' | passwd root
 
 # 开启 ssh 服务
 nvram set ssh_en=1
@@ -74,6 +74,7 @@ mtd erase crash
 reboot
 ```
 在终端中执行 `ssh -o HostkeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa  root@192.168.31.1`即可 ssh 连接到路由器。
+> 需要注意的是，每次重启路由器后 ssh key 会刷新，需要在本地执行 ssh-keygen -R 192.168.31.1 命令。
 
 进入到系统后我们可以看到系统为基于 Linux 5.4 内核版本的 XiaoQiang 系统，至于名字为什么叫 XiaoQiang 我还不得而知。
 
@@ -108,7 +109,7 @@ CPU:  0.3% usr  1.3% sys  0.0% nic 97.8% idle  0.0% io  0.0% irq  0.4% sirq
 Load average: 1.05 1.06 1.12 2/147 28107
 ```
 
-# 资料
+# 1 资料
 [https://www.youtube.com/watch?v=u5Qg4zqj_V0](https://www.youtube.com/watch?v=u5Qg4zqj_V0)
 [https://uzbox.com/tech/openwrt/ax6000.html](https://uzbox.com/tech/openwrt/ax6000.html)
 [https://github.com/kjfx/AX6000/releases/tag/RedmiAX6000](https://github.com/kjfx/AX6000/releases/tag/RedmiAX6000)
