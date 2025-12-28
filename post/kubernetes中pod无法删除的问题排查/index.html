@@ -1,0 +1,205 @@
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content='现象 1 2 3 4 5 6 7 8 $ cat /etc/redhat-release CentOS Linux release 7.2.1511 (Core) $ uname -a Linux c3-a05-136-45-10.com 3.10.0-327.el7.x86_64 #1 SMP Thu Nov 19 22:10:57 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux $ docker info | grep "Storage Driver" Storage Driver: devicemapper 在CentOS7.2的系统上，发现有一部分pod在delete后一直处于Terminating状态\n'><title>kubernetes中pod无法删除的问题排查</title><link rel=canonical href=https://kuring.me/post/kubernetes%E4%B8%ADpod%E6%97%A0%E6%B3%95%E5%88%A0%E9%99%A4%E7%9A%84%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="kubernetes中pod无法删除的问题排查"><meta property='og:description' content='现象 1 2 3 4 5 6 7 8 $ cat /etc/redhat-release CentOS Linux release 7.2.1511 (Core) $ uname -a Linux c3-a05-136-45-10.com 3.10.0-327.el7.x86_64 #1 SMP Thu Nov 19 22:10:57 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux $ docker info | grep "Storage Driver" Storage Driver: devicemapper 在CentOS7.2的系统上，发现有一部分pod在delete后一直处于Terminating状态\n'><meta property='og:url' content='https://kuring.me/post/kubernetes%E4%B8%ADpod%E6%97%A0%E6%B3%95%E5%88%A0%E9%99%A4%E7%9A%84%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:published_time' content='2019-01-30T20:51:02+00:00'><meta property='article:modified_time' content='2019-01-30T20:51:02+00:00'><meta name=twitter:title content="kubernetes中pod无法删除的问题排查"><meta name=twitter:description content='现象 1 2 3 4 5 6 7 8 $ cat /etc/redhat-release CentOS Linux release 7.2.1511 (Core) $ uname -a Linux c3-a05-136-45-10.com 3.10.0-327.el7.x86_64 #1 SMP Thu Nov 19 22:10:57 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux $ docker info | grep "Storage Driver" Storage Driver: devicemapper 在CentOS7.2的系统上，发现有一部分pod在delete后一直处于Terminating状态\n'><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#现象>现象</a></li><li><a href=#问题复现>问题复现</a></li><li><a href=#问题产生原因>问题产生原因</a></li><li><a href=#处理方式>处理方式</a></li><li><a href=#ref>ref</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/kubernetes%E4%B8%ADpod%E6%97%A0%E6%B3%95%E5%88%A0%E9%99%A4%E7%9A%84%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5/>kubernetes中pod无法删除的问题排查</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2019-01-30T20:51:02Z>2019-01-30</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 3 分钟</time></div></footer></div></header><section class=article-content><h2 id=现象>现象</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ cat /etc/redhat-release
+</span></span><span class=line><span class=cl>CentOS Linux release 7.2.1511 (Core)
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>$ uname -a
+</span></span><span class=line><span class=cl>Linux c3-a05-136-45-10.com 3.10.0-327.el7.x86_64 #1 SMP Thu Nov 19 22:10:57 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>$ docker info | grep &#34;Storage Driver&#34;
+</span></span><span class=line><span class=cl>Storage Driver: devicemapper
+</span></span></code></pre></td></tr></table></div></div><p>在CentOS7.2的系统上，发现有一部分pod在delete后一直处于Terminating状态</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ kubectl get pods -o wide
+</span></span><span class=line><span class=cl>NAME                                 READY     STATUS        RESTARTS   AGE       IP        NODE          NOMINATED NODE
+</span></span><span class=line><span class=cl>httpserver-prod-1-6cb97dfbcc-25dsh   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.6   &lt;none&gt;
+</span></span><span class=line><span class=cl>httpserver-prod-1-6cb97dfbcc-f9flb   0/1       Terminating   0          54d       &lt;none&gt;    10.136.45.4   &lt;none&gt;
+</span></span><span class=line><span class=cl>httpserver-prod-1-6cb97dfbcc-m7sl4   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.6   &lt;none&gt;
+</span></span><span class=line><span class=cl>httpserver-prod-1-6cb97dfbcc-pqpht   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.6   &lt;none&gt;
+</span></span><span class=line><span class=cl>httpserver-prod-1-6cb97dfbcc-r987g   0/1       Terminating   0          55d       &lt;none&gt;    10.136.45.4   &lt;none&gt;
+</span></span><span class=line><span class=cl>httpserver-prod-1-6cb97dfbcc-zghhr   0/1       Terminating   0          54d       &lt;none&gt;    10.136.45.6   &lt;none&gt;
+</span></span></code></pre></td></tr></table></div></div><p>查看docker的日志发现有如下报错信息如下，含义为在删除pod时由于/var/lib/docker/overlay/*/merged目录被其他应用占用，从而导致容器无法清除。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>Jan</span> <span class=mi>30</span> <span class=mi>14</span><span class=p>:</span><span class=mi>57</span><span class=p>:</span><span class=mi>47</span> <span class=n>c3</span><span class=o>-</span><span class=n>a05</span><span class=o>-</span><span class=mi>136</span><span class=o>-</span><span class=mi>45</span><span class=o>-</span><span class=mf>4.</span><span class=n>com</span> <span class=n>dockerd</span><span class=p>[</span><span class=mi>1510</span><span class=p>]:</span> <span class=n>time</span><span class=o>=</span><span class=s2>&#34;2019-01-30T14:57:47.704641914+08:00&#34;</span> <span class=n>level</span><span class=o>=</span><span class=n>error</span> <span class=n>msg</span><span class=o>=</span><span class=s2>&#34;Error removing mounted layer e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9: remove /var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/merged: device or resource busy&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>Jan</span> <span class=mi>30</span> <span class=mi>14</span><span class=p>:</span><span class=mi>57</span><span class=p>:</span><span class=mi>47</span> <span class=n>c3</span><span class=o>-</span><span class=n>a05</span><span class=o>-</span><span class=mi>136</span><span class=o>-</span><span class=mi>45</span><span class=o>-</span><span class=mf>4.</span><span class=n>com</span> <span class=n>dockerd</span><span class=p>[</span><span class=mi>1510</span><span class=p>]:</span> <span class=n>time</span><span class=o>=</span><span class=s2>&#34;2019-01-30T14:57:47.704772288+08:00&#34;</span> <span class=n>level</span><span class=o>=</span><span class=n>error</span> <span class=n>msg</span><span class=o>=</span><span class=s2>&#34;Handler for DELETE /v1.31/containers/e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9 returned error: driver </span><span class=se>\&#34;</span><span class=s2>overlay</span><span class=se>\&#34;</span><span class=s2> failed to remove root filesystem for e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9: remove /var/lib/docker/overlay/98a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36/merged: device or resource busy&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>Jan</span> <span class=mi>30</span> <span class=mi>14</span><span class=p>:</span><span class=mi>57</span><span class=p>:</span><span class=mi>48</span> <span class=n>c3</span><span class=o>-</span><span class=n>a05</span><span class=o>-</span><span class=mi>136</span><span class=o>-</span><span class=mi>45</span><span class=o>-</span><span class=mf>4.</span><span class=n>com</span> <span class=n>dockerd</span><span class=p>[</span><span class=mi>1510</span><span class=p>]:</span> <span class=n>time</span><span class=o>=</span><span class=s2>&#34;2019-01-30T14:57:48.228837657+08:00&#34;</span> <span class=n>level</span><span class=o>=</span><span class=n>error</span> <span class=n>msg</span><span class=o>=</span><span class=s2>&#34;Error removing mounted layer 2851b80d5c45d1cac3e7384116da0ad022af21701f9aa0d9ba3598efd5723030: remove /var/lib/docker/overlay/0ff0f98e1abf43c10711f2804cae3cf37efd597016d38b4753e2af19c2e27eb9/merged: device or resource busy&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>Jan</span> <span class=mi>30</span> <span class=mi>14</span><span class=p>:</span><span class=mi>57</span><span class=p>:</span><span class=mi>48</span> <span class=n>c3</span><span class=o>-</span><span class=n>a05</span><span class=o>-</span><span class=mi>136</span><span class=o>-</span><span class=mi>45</span><span class=o>-</span><span class=mf>4.</span><span class=n>com</span> <span class=n>dockerd</span><span class=p>[</span><span class=mi>1510</span><span class=p>]:</span> <span class=n>time</span><span class=o>=</span><span class=s2>&#34;2019-01-30T14:57:48.228953497+08:00&#34;</span> <span class=n>level</span><span class=o>=</span><span class=n>error</span> <span class=n>msg</span><span class=o>=</span><span class=s2>&#34;Handler for DELETE /v1.31/containers/2851b80d5c45d1cac3e7384116da0ad022af21701f9aa0d9ba3598efd5723030 returned error: driver </span><span class=se>\&#34;</span><span class=s2>overlay</span><span class=se>\&#34;</span><span class=s2> failed to remove root filesystem for 2851b80d5c45d1cac3e7384116da0ad022af21701f9aa0d9ba3598efd5723030: remove /var/lib/docker/overlay/0ff0f98e1abf43c10711f2804cae3cf37efd597016d38b4753e2af19c2e27eb9/merged: device or resource busy&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>通过<code>docker ps -a</code>看到容器的状态为"Removal In Progress"。通过<code>docker inspect</code>可以看到容器的进程已经退出了。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># docker ps -a
+</span></span><span class=line><span class=cl>CONTAINER ID        IMAGE                                                                  COMMAND                  CREATED             STATUS                    PORTS               NAMES
+</span></span><span class=line><span class=cl>e6b7378c58a3        golang-httpserver        &#34;/bin/sh -c &#39;go ru...&#34;   7 weeks ago         Removal In Progress                           k8s_golang-httpserver_httpserver-prod-1-6cb97dfbcc-f9flb_default_9e3d2cbb-f9d4-11e8-b61c-f01fafd10a1b_0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># docker inspect e6b7378c58a3 --format &#39;{{.State.Pid}}&#39;
+</span></span><span class=line><span class=cl>0
+</span></span></code></pre></td></tr></table></div></div><p>使用<code>docker rm</code>命令删除容器会报错</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># docker rm e6b7378c58a3</span>
+</span></span><span class=line><span class=cl><span class=n>Error</span> <span class=n>response</span> <span class=n>from</span> <span class=n>daemon</span><span class=p>:</span> <span class=n>driver</span> <span class=s2>&#34;overlay&#34;</span> <span class=n>failed</span> <span class=n>to</span> <span class=n>remove</span> <span class=n>root</span> <span class=n>filesystem</span> <span class=k>for</span> <span class=n>e6b7378c58a34cb42c6fa7924f7a52b7a19a64b2166d7a56f363e73ecba6e5a9</span><span class=p>:</span> <span class=n>remove</span> <span class=o>/</span><span class=k>var</span><span class=o>/</span><span class=n>lib</span><span class=o>/</span><span class=n>docker</span><span class=o>/</span><span class=n>overlay</span><span class=o>/</span><span class=mi>98</span><span class=n>a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36</span><span class=o>/</span><span class=n>merged</span><span class=p>:</span> <span class=n>device</span> <span class=ow>or</span> <span class=n>resource</span> <span class=n>busy</span>
+</span></span></code></pre></td></tr></table></div></div><p>通过<code>kubectl delete pods</code>命令虽然可以强制删除pod，但在宿主机上仍然能看到容器的状态为"Removal In Progress"。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># kubectl delete pods  httpserver-prod-1-6cb97dfbcc-f9flb --grace-period=0 --force
+</span></span><span class=line><span class=cl>warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+</span></span><span class=line><span class=cl>pod &#34;httpserver-prod-1-6cb97dfbcc-f9flb&#34; force deleted
+</span></span></code></pre></td></tr></table></div></div><p>通过搜索挂载目录的信息，可以找到是哪个进程挂载了该目录。可以看到是ntpd服务挂载了该目录。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># grep -nr 98a56 /proc/*/mountinfo</span>
+</span></span><span class=line><span class=cl><span class=o>/</span><span class=n>proc</span><span class=o>/</span><span class=mi>2725007</span><span class=o>/</span><span class=n>mountinfo</span><span class=p>:</span><span class=mi>48</span><span class=p>:</span><span class=mi>296</span> <span class=mi>183</span> <span class=mi>0</span><span class=p>:</span><span class=mi>183</span> <span class=o>/</span> <span class=o>/</span><span class=k>var</span><span class=o>/</span><span class=n>lib</span><span class=o>/</span><span class=n>docker</span><span class=o>/</span><span class=n>overlay</span><span class=o>/</span><span class=mi>98</span><span class=n>a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36</span><span class=o>/</span><span class=n>merged</span> <span class=n>rw</span><span class=p>,</span><span class=n>relatime</span> <span class=n>shared</span><span class=p>:</span><span class=mi>88</span> <span class=o>-</span> <span class=n>overlay</span> <span class=n>overlay</span> <span class=n>rw</span><span class=p>,</span><span class=n>lowerdir</span><span class=o>=/</span><span class=k>var</span><span class=o>/</span><span class=n>lib</span><span class=o>/</span><span class=n>docker</span><span class=o>/</span><span class=n>overlay</span><span class=o>/</span><span class=mf>5e2</span><span class=n>a5f7af24e555a5afacd6a8faa406b42c51d7f2bb4cde22adcea22e0153583</span><span class=o>/</span><span class=n>root</span><span class=p>,</span><span class=n>upperdir</span><span class=o>=/</span><span class=k>var</span><span class=o>/</span><span class=n>lib</span><span class=o>/</span><span class=n>docker</span><span class=o>/</span><span class=n>overlay</span><span class=o>/</span><span class=mi>98</span><span class=n>a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36</span><span class=o>/</span><span class=n>upper</span><span class=p>,</span><span class=n>workdir</span><span class=o>=/</span><span class=k>var</span><span class=o>/</span><span class=n>lib</span><span class=o>/</span><span class=n>docker</span><span class=o>/</span><span class=n>overlay</span><span class=o>/</span><span class=mi>98</span><span class=n>a56d695c9e3d0b6a9f3b5e0e60abf7cdb3ce73e976b00e36ca59028e585a36</span><span class=o>/</span><span class=n>work</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># ps -ef | grep 2725007</span>
+</span></span><span class=line><span class=cl><span class=n>ntp</span>      <span class=mi>2725007</span>       <span class=mi>1</span>  <span class=mi>0</span> <span class=n>Jan07</span> <span class=err>?</span>        <span class=mi>00</span><span class=p>:</span><span class=mi>00</span><span class=p>:</span><span class=mi>02</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>sbin</span><span class=o>/</span><span class=n>ntpd</span> <span class=o>-</span><span class=n>u</span> <span class=n>ntp</span><span class=p>:</span><span class=n>ntp</span> <span class=o>-</span><span class=n>g</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># ntpd进程的启动时间在容器启动之后</span>
+</span></span><span class=line><span class=cl><span class=c1># ps -ef | grep ntpd</span>
+</span></span><span class=line><span class=cl><span class=n>root</span>     <span class=mi>1179644</span>   <span class=mi>18205</span>  <span class=mi>0</span> <span class=mi>19</span><span class=p>:</span><span class=mi>52</span> <span class=n>pts</span><span class=o>/</span><span class=mi>1</span>    <span class=mi>00</span><span class=p>:</span><span class=mi>00</span><span class=p>:</span><span class=mi>00</span> <span class=n>grep</span> <span class=o>--</span><span class=n>color</span><span class=o>=</span><span class=n>auto</span> <span class=o>-</span><span class=n>d</span> <span class=n>skip</span> <span class=o>-</span><span class=n>i</span> <span class=n>ntpd</span>
+</span></span><span class=line><span class=cl><span class=n>ntp</span>      <span class=mi>3853149</span>       <span class=mi>1</span>  <span class=mi>0</span> <span class=n>Jan07</span> <span class=err>?</span>        <span class=mi>00</span><span class=p>:</span><span class=mi>00</span><span class=p>:</span><span class=mi>02</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>sbin</span><span class=o>/</span><span class=n>ntpd</span> <span class=o>-</span><span class=n>u</span> <span class=n>ntp</span><span class=p>:</span><span class=n>ntp</span> <span class=o>-</span><span class=n>g</span>
+</span></span></code></pre></td></tr></table></div></div><p>查看ntpd.service文件内容如下，其中<code>PrivateTmp=true</code>，该选项用于控制服务是否使用单独的tmp目录：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[Unit]
+</span></span><span class=line><span class=cl>Description=Network Time Service
+</span></span><span class=line><span class=cl>After=syslog.target ntpdate.service sntp.service
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>[Service]
+</span></span><span class=line><span class=cl>Type=forking
+</span></span><span class=line><span class=cl>EnvironmentFile=-/etc/sysconfig/ntpd
+</span></span><span class=line><span class=cl>ExecStart=/usr/sbin/ntpd -u ntp:ntp $OPTIONS
+</span></span><span class=line><span class=cl>PrivateTmp=true
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>[Install]
+</span></span><span class=line><span class=cl>WantedBy=multi-user.target
+</span></span></code></pre></td></tr></table></div></div><h2 id=问题复现>问题复现</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># 在系统上启动一个容器，此时ntpd必须处于running状态</span>
+</span></span><span class=line><span class=cl><span class=o>$</span> <span class=n>docker</span> <span class=n>run</span> <span class=o>-</span><span class=n>d</span> <span class=n>httpserver</span><span class=p>:</span><span class=mi>1</span> <span class=o>/</span><span class=n>bin</span><span class=o>/</span><span class=n>sh</span> <span class=o>-</span><span class=n>c</span> <span class=s2>&#34;while : ; do sleep 1000 ; done&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 启动容器</span>
+</span></span><span class=line><span class=cl><span class=o>$</span> <span class=n>docker</span> <span class=n>run</span> <span class=o>-</span><span class=n>d</span> <span class=n>httpserver</span><span class=p>:</span><span class=mi>1</span> <span class=o>/</span><span class=n>bin</span><span class=o>/</span><span class=n>sh</span> <span class=o>-</span><span class=n>c</span> <span class=s2>&#34;while : ; do sleep 1000 ; done&#34;</span>
+</span></span><span class=line><span class=cl><span class=mi>200222</span><span class=n>b438aac43bbe32a6c54e31ced0848482b9dec3e519d2f847c70c1ce801</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 重启ntpd</span>
+</span></span><span class=line><span class=cl><span class=o>$</span> <span class=n>systemctl</span> <span class=n>restart</span> <span class=n>ntpd</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=o>$</span> <span class=n>docker</span> <span class=n>stop</span> <span class=mi>200222</span><span class=n>b438aa</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 此时容器的相关信息还存在</span>
+</span></span><span class=line><span class=cl><span class=o>$</span> <span class=n>docker</span> <span class=n>ps</span> <span class=o>-</span><span class=n>a</span>
+</span></span><span class=line><span class=cl><span class=n>CONTAINER</span> <span class=n>ID</span>        <span class=n>IMAGE</span>                                               <span class=n>COMMAND</span>                  <span class=n>CREATED</span>              <span class=n>STATUS</span>                       <span class=n>PORTS</span>               <span class=n>NAMES</span>
+</span></span><span class=line><span class=cl><span class=mi>200222</span><span class=n>b438aa</span>        <span class=n>httpserver</span><span class=p>:</span><span class=mi>1</span>    <span class=s2>&#34;/bin/sh -c &#39;while...&#34;</span>   <span class=n>About</span> <span class=n>a</span> <span class=n>minute</span> <span class=n>ago</span>   <span class=n>Exited</span> <span class=p>(</span><span class=mi>137</span><span class=p>)</span> <span class=mi>7</span> <span class=n>seconds</span> <span class=n>ago</span>                       <span class=n>hardcore_yalow</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 强制删除容器失败</span>
+</span></span><span class=line><span class=cl><span class=o>$</span> <span class=n>docker</span> <span class=n>rm</span> <span class=o>-</span><span class=n>f</span> <span class=mi>200222</span><span class=n>b438aa</span>
+</span></span><span class=line><span class=cl><span class=n>Error</span> <span class=n>response</span> <span class=n>from</span> <span class=n>daemon</span><span class=p>:</span> <span class=n>driver</span> <span class=s2>&#34;devicemapper&#34;</span> <span class=n>failed</span> <span class=n>to</span> <span class=n>remove</span> <span class=n>root</span> <span class=n>filesystem</span> <span class=k>for</span> <span class=mi>200222</span><span class=n>b438aac43bbe32a6c54e31ced0848482b9dec3e519d2f847c70c1ce801</span><span class=p>:</span> <span class=n>remove</span> <span class=o>/</span><span class=k>var</span><span class=o>/</span><span class=n>lib</span><span class=o>/</span><span class=n>docker</span><span class=o>/</span><span class=n>devicemapper</span><span class=o>/</span><span class=n>mnt</span><span class=o>/</span><span class=n>e53342aa9cf5f43e73b6596f88939b8d3fdefaf1ca03ee95a24d867e1de6c522</span><span class=p>:</span> <span class=n>device</span> <span class=ow>or</span> <span class=n>resource</span> <span class=n>busy</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 此时容器处于Removal In Progress状态</span>
+</span></span><span class=line><span class=cl><span class=o>$</span> <span class=n>docker</span> <span class=n>ps</span> <span class=o>-</span><span class=n>a</span>
+</span></span><span class=line><span class=cl><span class=n>CONTAINER</span> <span class=n>ID</span>        <span class=n>IMAGE</span>                                               <span class=n>COMMAND</span>                  <span class=n>CREATED</span>             <span class=n>STATUS</span>                <span class=n>PORTS</span>               <span class=n>NAMES</span>
+</span></span><span class=line><span class=cl><span class=mi>200222</span><span class=n>b438aa</span>        <span class=n>httpserver</span><span class=p>:</span><span class=mi>1</span>    <span class=s2>&#34;/bin/sh -c &#39;while...&#34;</span>   <span class=mi>2</span> <span class=n>minutes</span> <span class=n>ago</span>       <span class=n>Removal</span> <span class=n>In</span> <span class=n>Progress</span>                       <span class=n>hardcore_yalow</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 再次重启ntpd进程</span>
+</span></span><span class=line><span class=cl><span class=o>$</span> <span class=n>systemctl</span> <span class=n>restart</span> <span class=n>ntpd</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 强制删除成功</span>
+</span></span><span class=line><span class=cl><span class=o>$</span> <span class=n>docker</span> <span class=n>rm</span> <span class=mi>200222</span><span class=n>b438aa</span>
+</span></span><span class=line><span class=cl><span class=mi>200222</span><span class=n>b438aa</span>
+</span></span></code></pre></td></tr></table></div></div><p>经在如下版本的CentOS7系统实验，该问题不存在。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ uname -a
+</span></span><span class=line><span class=cl>Linux localhost.localdomain 3.10.0-862.9.1.el7.x86_64 #1 SMP Mon Jul 16 16:29:36 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>$ cat /etc/redhat-release
+</span></span><span class=line><span class=cl>CentOS Linux release 7.5.1804 (Core)
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>$ docker info | grep &#34;Storage Driver&#34;
+</span></span><span class=line><span class=cl>Storage Driver: overlay2
+</span></span></code></pre></td></tr></table></div></div><h2 id=问题产生原因>问题产生原因</h2><p>此问题为Systemd启用PrivateTmp选项后，导致mount namespace的一处内核bug。</p><h2 id=处理方式>处理方式</h2><p>在/usr/lib/systemd/system/docker.service的[Service]中增加<code>MountFlags=slave</code>，并重新启动docker服务，注意重启docker后，容器会重启。</p><p>当然也可以通过重启ntpd服务的方式来临时解决问题，但当下次删除容器时还需要重启ntpd。</p><p>还有一种办法是修改ntpd.service中的<code>PrivateTmp=true</code>，然后重启ntpd服务。</p><h2 id=ref>ref</h2><p><a class=link href=http://blog.kissingwolf.com/2017/09/09/Docker-%E6%95%85%E9%9A%9C%EF%BC%88device-or-resource-busy%EF%BC%89/ target=_blank rel=noopener>Docker 故障（device or resource busy）</a></p></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

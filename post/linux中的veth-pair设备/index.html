@@ -1,0 +1,233 @@
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="veth pair是一对虚拟的网络设备，两个网络设备彼此连接。常用于两个network namespace之间的连接，如果在同一个命名空间下有很多的限制。\n"><title>Linux中的veth pair设备</title><link rel=canonical href=https://kuring.me/post/linux%E4%B8%AD%E7%9A%84veth-pair%E8%AE%BE%E5%A4%87/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="Linux中的veth pair设备"><meta property='og:description' content="veth pair是一对虚拟的网络设备，两个网络设备彼此连接。常用于两个network namespace之间的连接，如果在同一个命名空间下有很多的限制。\n"><meta property='og:url' content='https://kuring.me/post/linux%E4%B8%AD%E7%9A%84veth-pair%E8%AE%BE%E5%A4%87/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:published_time' content='2020-01-29T21:21:06+00:00'><meta property='article:modified_time' content='2020-01-29T21:21:06+00:00'><meta name=twitter:title content="Linux中的veth pair设备"><meta name=twitter:description content="veth pair是一对虚拟的网络设备，两个网络设备彼此连接。常用于两个network namespace之间的连接，如果在同一个命名空间下有很多的限制。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#实战>实战</a><ol><li><a href=#veth设备的ping测试>veth设备的ping测试</a></li><li><a href=#1-只给一个veth设备配置ip的情况测试>1. 只给一个veth设备配置ip的情况测试</a></li></ol></li><li><a href=#veth-pair设备的删除>veth pair设备的删除</a></li><li><a href=#container与host-veth-pair的关系>container与host veth pair的关系</a><ol><li><a href=#在容器中找到eth0的iflink>在容器中找到eth0的iflink</a></li><li><a href=#host-network-namespace中找到对应ifindex值的veth-pair设备>host network namespace中找到对应ifindex值的veth pair设备</a></li></ol></li><li><a href=#reference>reference</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/linux%E4%B8%AD%E7%9A%84veth-pair%E8%AE%BE%E5%A4%87/>Linux中的veth pair设备</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2020-01-29T21:21:06Z>2020-01-29</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 4 分钟</time></div></footer></div></header><section class=article-content><p>veth pair是一对虚拟的网络设备，两个网络设备彼此连接。常用于两个network namespace之间的连接，如果在同一个命名空间下有很多的限制。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌──────────────────────────────────────────────────────────────────────────────┐
+</span></span><span class=line><span class=cl>│                                                                              │
+</span></span><span class=line><span class=cl>│                                                                              │
+</span></span><span class=line><span class=cl>│                               network protocol                               │
+</span></span><span class=line><span class=cl>│                                                                              │
+</span></span><span class=line><span class=cl>│                                                                              │
+</span></span><span class=line><span class=cl>└────────────────────▲─────────────────────────▲──────────────────────▲────────┘
+</span></span><span class=line><span class=cl>                     │                         │                      │
+</span></span><span class=line><span class=cl>                     │                         │                      │
+</span></span><span class=line><span class=cl>                     │                         │                      │
+</span></span><span class=line><span class=cl>                     │                         │                      │
+</span></span><span class=line><span class=cl>                     │                         │                      │
+</span></span><span class=line><span class=cl>               ┌─────▼────┐              ┌─────▼────┐           ┌─────▼────┐
+</span></span><span class=line><span class=cl>               │          │              │          │           │          │
+</span></span><span class=line><span class=cl>               │   eth0   │              │  veth0   ◀───────────▶  veth1   │
+</span></span><span class=line><span class=cl>               │          │              │          │           │          │
+</span></span><span class=line><span class=cl>               └─────▲────┘              └──────────┘           └──────────┘
+</span></span><span class=line><span class=cl>                     │
+</span></span><span class=line><span class=cl>                     │
+</span></span><span class=line><span class=cl>                     │
+</span></span><span class=line><span class=cl>                     │
+</span></span><span class=line><span class=cl>                     │
+</span></span><span class=line><span class=cl>                     ▼
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>             physical network
+</span></span></code></pre></td></tr></table></div></div><h2 id=实战>实战</h2><h3 id=veth设备的ping测试>veth设备的ping测试</h3><h3 id=1-只给一个veth设备配置ip的情况测试>1. 只给一个veth设备配置ip的情况测试</h3><p>给veth0配置ip 192.168.100.10，可以看到主机的路由表中增加了目的地为192.168.100.0的记录</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[root@localhost vagrant]# ip link add veth0 type veth peer name veth1
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip addr add 192.168.100.10/24 dev veth0
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip addr add 192.168.100.11/24 dev veth1
+</span></span><span class=line><span class=cl>## 因为veth创建完后默认不启用，此时还没有路由
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# route
+</span></span><span class=line><span class=cl>Kernel IP routing table
+</span></span><span class=line><span class=cl>Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+</span></span><span class=line><span class=cl>default         gateway         0.0.0.0         UG    100    0        0 eth0
+</span></span><span class=line><span class=cl>10.0.2.0        0.0.0.0         255.255.255.0   U     100    0        0 eth0
+</span></span><span class=line><span class=cl>192.168.33.0    0.0.0.0         255.255.255.0   U     101    0        0 eth1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>## 启用veth0后增加路由
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip link set veth0 up
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# route
+</span></span><span class=line><span class=cl>Kernel IP routing table
+</span></span><span class=line><span class=cl>Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+</span></span><span class=line><span class=cl>default         gateway         0.0.0.0         UG    100    0        0 eth0
+</span></span><span class=line><span class=cl>10.0.2.0        0.0.0.0         255.255.255.0   U     100    0        0 eth0
+</span></span><span class=line><span class=cl>192.168.33.0    0.0.0.0         255.255.255.0   U     101    0        0 eth1
+</span></span><span class=line><span class=cl>192.168.100.0   0.0.0.0         255.255.255.0   U     0      0        0 veth0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>## 启用veth1后居然又增加了一条路由信息
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip link set veth1 up
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip addr
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+</span></span><span class=line><span class=cl>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span class=line><span class=cl>    inet 127.0.0.1/8 scope host lo
+</span></span><span class=line><span class=cl>       valid_lft forever preferred_lft forever
+</span></span><span class=line><span class=cl>    inet6 ::1/128 scope host
+</span></span><span class=line><span class=cl>       valid_lft forever preferred_lft forever
+</span></span><span class=line><span class=cl>2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether 52:54:00:26:10:60 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>    inet 10.0.2.15/24 brd 10.0.2.255 scope global noprefixroute dynamic eth0
+</span></span><span class=line><span class=cl>       valid_lft 86214sec preferred_lft 86214sec
+</span></span><span class=line><span class=cl>    inet6 fe80::5054:ff:fe26:1060/64 scope link
+</span></span><span class=line><span class=cl>       valid_lft forever preferred_lft forever
+</span></span><span class=line><span class=cl>3: eth1: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether 08:00:27:98:06:20 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>    inet 192.168.33.11/24 brd 192.168.33.255 scope global noprefixroute eth1
+</span></span><span class=line><span class=cl>       valid_lft forever preferred_lft forever
+</span></span><span class=line><span class=cl>    inet6 fe80::a00:27ff:fe98:620/64 scope link
+</span></span><span class=line><span class=cl>       valid_lft forever preferred_lft forever
+</span></span><span class=line><span class=cl>4: veth1@veth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether e2:15:95:0a:1f:da brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>    inet 192.168.100.11/24 scope global veth1
+</span></span><span class=line><span class=cl>       valid_lft forever preferred_lft forever
+</span></span><span class=line><span class=cl>    inet6 fe80::e015:95ff:fe0a:1fda/64 scope link
+</span></span><span class=line><span class=cl>       valid_lft forever preferred_lft forever
+</span></span><span class=line><span class=cl>5: veth0@veth1: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether b2:2c:f6:e4:74:c5 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>    inet 192.168.100.10/24 scope global veth0
+</span></span><span class=line><span class=cl>       valid_lft forever preferred_lft forever
+</span></span><span class=line><span class=cl>    inet6 fe80::b02c:f6ff:fee4:74c5/64 scope link
+</span></span><span class=line><span class=cl>       valid_lft forever preferred_lft forever
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# route
+</span></span><span class=line><span class=cl>Kernel IP routing table
+</span></span><span class=line><span class=cl>Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+</span></span><span class=line><span class=cl>default         gateway         0.0.0.0         UG    100    0        0 eth0
+</span></span><span class=line><span class=cl>10.0.2.0        0.0.0.0         255.255.255.0   U     100    0        0 eth0
+</span></span><span class=line><span class=cl>192.168.33.0    0.0.0.0         255.255.255.0   U     101    0        0 eth1
+</span></span><span class=line><span class=cl>192.168.100.0   0.0.0.0         255.255.255.0   U     0      0        0 veth0
+</span></span><span class=line><span class=cl>192.168.100.0   0.0.0.0         255.255.255.0   U     0      0        0 veth1
+</span></span></code></pre></td></tr></table></div></div><p>默认情况下arp表如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># arp
+</span></span><span class=line><span class=cl>Address                  HWtype  HWaddress           Flags Mask            Iface
+</span></span><span class=line><span class=cl>localhost.localdomain            (incomplete)                              veth0
+</span></span><span class=line><span class=cl>192.168.33.1             ether   0a:00:27:00:00:00   C                     eth1
+</span></span><span class=line><span class=cl>gateway                  ether   52:54:00:12:35:02   C                     eth0
+</span></span><span class=line><span class=cl>10.0.2.3                 ether   52:54:00:12:35:03   C                     eth0
+</span></span></code></pre></td></tr></table></div></div><p>使用ping命令<code>ping -I veth0 192.168.100.11 -c 2</code>，默认情况下veth1和veth0会接收到arp报文，但并没有arp的响应报文。这是因为默认情况下有些arp内核参数的限制。执行如下命令解决arp的限制。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>echo 1 &gt; /proc/sys/net/ipv4/conf/veth1/accept_local
+</span></span><span class=line><span class=cl>echo 1 &gt; /proc/sys/net/ipv4/conf/veth0/accept_local
+</span></span><span class=line><span class=cl>echo 0 &gt; /proc/sys/net/ipv4/conf/all/rp_filter
+</span></span><span class=line><span class=cl>echo 0 &gt; /proc/sys/net/ipv4/conf/veth0/rp_filter
+</span></span><span class=line><span class=cl>echo 0 &gt; /proc/sys/net/ipv4/conf/veth1/rp_filter
+</span></span></code></pre></td></tr></table></div></div><h2 id=veth-pair设备的删除>veth pair设备的删除</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 删除veth0后会自动删除veth1
+</span></span><span class=line><span class=cl>$ ip link delete veth0
+</span></span></code></pre></td></tr></table></div></div><h2 id=container与host-veth-pair的关系>container与host veth pair的关系</h2><p>veth pair的其中一个设备位于container中备位于container中，另外一个设备位于host network namespace中，如何知道container中的eth0和host network namesapce中的veth设备的对应关系呢？</p><p>原理为veth pair设备都有一个ifindex和iflink值，，容器中的eth0设备的ifindex值跟host network namespace中的对应veth pair设备的iflink值相等，反之亦然。</p><h3 id=在容器中找到eth0的iflink>在容器中找到eth0的iflink</h3><p>方法一</p><p>获取iflink值：<code>cat /sys/class/net/eth0/iflink</code></p><p>也可用此方法获取ifindex值：<code>cat /sys/class/net/eth0/ifindex</code></p><p>方法二</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ ip link show eth0
+</span></span><span class=line><span class=cl>3: eth0@if18: &lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt; mtu 1500 qdisc noqueue state UP
+</span></span><span class=line><span class=cl>    link/ether 96:5f:80:a3:a3:01 brd ff:ff:ff:ff:ff:ff
+</span></span></code></pre></td></tr></table></div></div><p>其中的3为eth0的ifindex。18为eth0的iflink，即对应的veth pair的另外一个设备的ifindex。</p><h3 id=host-network-namespace中找到对应ifindex值的veth-pair设备>host network namespace中找到对应ifindex值的veth pair设备</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ ip addr 
+</span></span><span class=line><span class=cl>18: veth0e09999e@if3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master br0 state UP group default
+</span></span><span class=line><span class=cl>    link/ether de:b0:74:89:e8:3e brd ff:ff:ff:ff:ff:ff link-netnsid 4
+</span></span><span class=line><span class=cl>    inet6 fe80::dcb0:74ff:fe89:e83e/64 scope link
+</span></span><span class=line><span class=cl>       valid_lft forever preferred_lft forever
+</span></span></code></pre></td></tr></table></div></div><p>其中的18为ifindex，3为对应的veth pair的ifindex。</p><h2 id=reference>reference</h2><ul><li><a class=link href=https://www.cnblogs.com/bakari/p/10613710.html target=_blank rel=noopener>Linux 虚拟网络设备 veth-pair 详解，看这一篇就够了</a></li><li><a class=link href=https://segmentfault.com/a/1190000009251098 target=_blank rel=noopener>Linux虚拟网络设备之veth</a></li></ul></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

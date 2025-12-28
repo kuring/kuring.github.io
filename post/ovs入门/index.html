@@ -1,0 +1,257 @@
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="控制器向上提供接口，用来供应用程序调用，此接口成为北向接口；控制器向下调用接口，控制网络设备，此接口成为南向接口。\nOpenFlow是控制器和网络设备之间互通的南向协议，OpenvSwitch 用于创建软件的虚拟交换机。\n"><title>ovs入门</title><link rel=canonical href=https://kuring.me/post/ovs%E5%85%A5%E9%97%A8/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="ovs入门"><meta property='og:description' content="控制器向上提供接口，用来供应用程序调用，此接口成为北向接口；控制器向下调用接口，控制网络设备，此接口成为南向接口。\nOpenFlow是控制器和网络设备之间互通的南向协议，OpenvSwitch 用于创建软件的虚拟交换机。\n"><meta property='og:url' content='https://kuring.me/post/ovs%E5%85%A5%E9%97%A8/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:published_time' content='2020-02-10T23:52:22+00:00'><meta property='article:modified_time' content='2020-02-10T23:52:22+00:00'><meta name=twitter:title content="ovs入门"><meta name=twitter:description content="控制器向上提供接口，用来供应用程序调用，此接口成为北向接口；控制器向下调用接口，控制网络设备，此接口成为南向接口。\nOpenFlow是控制器和网络设备之间互通的南向协议，OpenvSwitch 用于创建软件的虚拟交换机。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#原理>原理</a></li><li><a href=#install-openvswitch-on-centos-7>install OpenvSwitch on CentOS 7</a></li><li><a href=#vlan实验>vlan实验</a></li><li><a href=#flow-table试验-1>flow table试验 1</a><ol><li><a href=#多table>多table</a></li><li><a href=#group-table>group table</a></li><li><a href=#清理操作>清理操作</a></li></ol></li><li><a href=#常用操作>常用操作</a></li><li><a href=#reference>reference</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/ovs%E5%85%A5%E9%97%A8/>ovs入门</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2020-02-10T23:52:22Z>2020-02-10</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 4 分钟</time></div></footer></div></header><section class=article-content><p>控制器向上提供接口，用来供应用程序调用，此接口成为北向接口；控制器向下调用接口，控制网络设备，此接口成为南向接口。</p><p>OpenFlow是控制器和网络设备之间互通的南向协议，OpenvSwitch 用于创建软件的虚拟交换机。</p><h2 id=原理>原理</h2><p><img src=https://kuring.oss-cn-beijing.aliyuncs.com/common/ovs.jpg loading=lazy alt=https://static001.geekbang.org/resource/image/d8/14/d870e5bfcad8ec45d146c3226cdccb14.jpg></p><p>用户态进程</p><ul><li>ovsdb：本地数据库，存储ovs的配置信息</li><li>vswitchd：ovs-ofctl用来跟该命令通讯，下发流表规则</li></ul><h2 id=install-openvswitch-on-centos-7>install OpenvSwitch on CentOS 7</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># 安装依赖</span>
+</span></span><span class=line><span class=cl><span class=n>yum</span> <span class=n>install</span> <span class=n>openssl</span><span class=o>-</span><span class=n>devel</span>  <span class=n>python</span><span class=o>-</span><span class=n>sphinx</span> <span class=n>gcc</span> <span class=n>make</span> <span class=n>python</span><span class=o>-</span><span class=n>devel</span> <span class=n>openssl</span><span class=o>-</span><span class=n>devel</span> <span class=n>kernel</span><span class=o>-</span><span class=n>devel</span> <span class=n>graphviz</span> <span class=n>kernel</span><span class=o>-</span><span class=n>debug</span><span class=o>-</span><span class=n>devel</span> <span class=n>autoconf</span> <span class=n>automake</span> <span class=n>rpm</span><span class=o>-</span><span class=n>build</span> <span class=n>redhat</span><span class=o>-</span><span class=n>rpm</span><span class=o>-</span><span class=n>config</span> <span class=n>libtool</span> <span class=n>python</span><span class=o>-</span><span class=n>twisted</span><span class=o>-</span><span class=n>core</span> <span class=n>python</span><span class=o>-</span><span class=n>zope</span><span class=o>-</span><span class=n>interface</span> <span class=n>PyQt4</span> <span class=n>desktop</span><span class=o>-</span><span class=n>file</span><span class=o>-</span><span class=n>utils</span> <span class=n>libcap</span><span class=o>-</span><span class=n>ng</span><span class=o>-</span><span class=n>devel</span> <span class=n>groff</span> <span class=n>checkpolicy</span> <span class=n>selinux</span><span class=o>-</span><span class=n>policy</span><span class=o>-</span><span class=n>devel</span> <span class=n>gcc</span><span class=o>-</span><span class=n>c</span><span class=o>++</span> <span class=n>python</span><span class=o>-</span><span class=n>six</span> <span class=n>unbound</span> <span class=n>unbound</span><span class=o>-</span><span class=n>devel</span> <span class=o>-</span><span class=n>y</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>mkdir</span> <span class=o>-</span><span class=n>p</span> <span class=o>~/</span><span class=n>rpmbuild</span><span class=o>/</span><span class=n>SOURCES</span> <span class=o>&amp;&amp;</span> <span class=n>cd</span> <span class=o>~/</span><span class=n>rpmbuild</span><span class=o>/</span><span class=n>SOURCES</span>
+</span></span><span class=line><span class=cl><span class=c1># 下载ovs源码</span>
+</span></span><span class=line><span class=cl><span class=n>wget</span> <span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>www</span><span class=o>.</span><span class=n>openvswitch</span><span class=o>.</span><span class=n>org</span><span class=o>/</span><span class=n>releases</span><span class=o>/</span><span class=n>openvswitch</span><span class=o>-</span><span class=mf>2.12</span><span class=o>.</span><span class=mf>0.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>tar</span> <span class=n>zvxf</span> <span class=n>openvswitch</span><span class=o>-</span><span class=mf>2.12</span><span class=o>.</span><span class=mf>0.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span>
+</span></span><span class=line><span class=cl><span class=c1># 构建rpm包</span>
+</span></span><span class=line><span class=cl><span class=n>rpmbuild</span> <span class=o>-</span><span class=n>bb</span> <span class=o>--</span><span class=n>nocheck</span> <span class=n>openvswitch</span><span class=o>-</span><span class=mf>2.12</span><span class=o>.</span><span class=mi>0</span><span class=o>/</span><span class=n>rhel</span><span class=o>/</span><span class=n>openvswitch</span><span class=o>-</span><span class=n>fedora</span><span class=o>.</span><span class=n>spec</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 安装rpm包</span>
+</span></span><span class=line><span class=cl><span class=n>yum</span> <span class=n>localinstall</span> <span class=o>/</span><span class=n>root</span><span class=o>/</span><span class=n>rpmbuild</span><span class=o>/</span><span class=n>RPMS</span><span class=o>/</span><span class=n>x86_64</span><span class=o>/</span><span class=n>openvswitch</span><span class=o>-</span><span class=mf>2.12</span><span class=o>.</span><span class=mi>0</span><span class=o>-</span><span class=mf>1.</span><span class=n>el7</span><span class=o>.</span><span class=n>x86_64</span><span class=o>.</span><span class=n>rpm</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>systemctl</span> <span class=n>start</span> <span class=n>openvswitch</span><span class=o>.</span><span class=n>service</span>
+</span></span></code></pre></td></tr></table></div></div><p>在编译的时候有如下报错：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>  File &#34;/usr/lib64/python2.7/site-packages/jinja2/sandbox.py&#34;, line 22, in &lt;module&gt;
+</span></span><span class=line><span class=cl>    from markupsafe import EscapeFormatter
+</span></span><span class=line><span class=cl>ImportError: cannot import name EscapeFormatter
+</span></span></code></pre></td></tr></table></div></div><p>是因为markupsafe的版本不对导致的，解决方法为安装合适的版本：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>pip uninstall markupsafe
+</span></span><span class=line><span class=cl>pip install markupsafe==0.23
+</span></span></code></pre></td></tr></table></div></div><h2 id=vlan实验>vlan实验</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 创建虚拟交换机ovs_br
+</span></span><span class=line><span class=cl>ovs-vsctl add-br ovs_br
+</span></span><span class=line><span class=cl>ovs-vsctl add-port ovs_br first_port
+</span></span></code></pre></td></tr></table></div></div><h2 id=flow-table试验-1>flow table试验 1</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 创建namespace
+</span></span><span class=line><span class=cl>ip netns add ns1
+</span></span><span class=line><span class=cl>ip netns add ns2
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 创建veth pair设备
+</span></span><span class=line><span class=cl>ip link add veth1 type veth peer name veth1_br
+</span></span><span class=line><span class=cl>ip link add veth2 type veth peer name veth2_br
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 设置veth pair设备的namespace
+</span></span><span class=line><span class=cl>ip link set veth1 netns ns1
+</span></span><span class=line><span class=cl>ip link set veth2 netns ns2
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 创建OVS网桥
+</span></span><span class=line><span class=cl>ovs-vsctl add-br ovs1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 将veth pair设备另一端绑到网桥ovs1
+</span></span><span class=line><span class=cl>ovs-vsctl add-port ovs1 veth1_br
+</span></span><span class=line><span class=cl>ovs-vsctl add-port ovs1 veth2_br
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 启动veth pair
+</span></span><span class=line><span class=cl>ip netns exec ns1 ip link set veth1 up
+</span></span><span class=line><span class=cl>ip netns exec ns2 ip link set veth2 up
+</span></span><span class=line><span class=cl>ip link set veth1_br up
+</span></span><span class=line><span class=cl>ip link set veth2_br up
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 设置veth1和veth2的ip地址
+</span></span><span class=line><span class=cl>ip netns exec ns1 ip addr add 192.168.1.100 dev veth1
+</span></span><span class=line><span class=cl>ip netns exec ns2 ip addr add 192.168.1.200 dev veth2
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 配置路由
+</span></span><span class=line><span class=cl>ip netns exec ns1 route add -net 192.168.1.0 netmask 255.255.255.0 dev veth1
+</span></span><span class=line><span class=cl>ip netns exec ns2 route add -net 192.168.1.0 netmask 255.255.255.0 dev veth2
+</span></span></code></pre></td></tr></table></div></div><p>可以使用如下命令来查看刚才的操作：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 可以看到刚才创建的网桥
+</span></span><span class=line><span class=cl>$ ovs-vsctl list-br
+</span></span><span class=line><span class=cl>ovs1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 查看网桥的端口
+</span></span><span class=line><span class=cl>$ ovs-vsctl list-ports ovs1
+</span></span><span class=line><span class=cl>veth1_br
+</span></span><span class=line><span class=cl>veth2_br
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 查看网桥的状态
+</span></span><span class=line><span class=cl>$ ovs-vsctl show
+</span></span><span class=line><span class=cl>4ec35070-a763-4748-878a-c3784b5938a4
+</span></span><span class=line><span class=cl>    Bridge &#34;ovs1&#34;
+</span></span><span class=line><span class=cl>        Port &#34;veth1_br&#34;
+</span></span><span class=line><span class=cl>            Interface &#34;veth1_br&#34;
+</span></span><span class=line><span class=cl>        Port &#34;ovs1&#34;
+</span></span><span class=line><span class=cl>            Interface &#34;ovs1&#34;
+</span></span><span class=line><span class=cl>                type: internal
+</span></span><span class=line><span class=cl>        Port &#34;veth2_br&#34;
+</span></span><span class=line><span class=cl>            Interface &#34;veth2_br&#34;
+</span></span><span class=line><span class=cl>    ovs_version: &#34;2.12.0&#34;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 查看interface的状态，跟port是一一对应的
+</span></span><span class=line><span class=cl>$ ovs-vsctl list interface veth1_br
+</span></span><span class=line><span class=cl>...
+</span></span><span class=line><span class=cl>mac                 : []
+</span></span><span class=line><span class=cl>mac_in_use          : &#34;32:13:6b:99:91:2b&#34;
+</span></span><span class=line><span class=cl>mtu                 : 1500
+</span></span><span class=line><span class=cl>mtu_request         : []
+</span></span><span class=line><span class=cl>name                : &#34;veth1_br&#34;
+</span></span><span class=line><span class=cl>ofport              : 1 # ovs port编号
+</span></span><span class=line><span class=cl>...
+</span></span></code></pre></td></tr></table></div></div><p>接下来测试一下网络的连通性是没问题的。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>ip netns exec ns1 ping 192.168.1.200
+</span></span></code></pre></td></tr></table></div></div><p>查看当前流表，可以看到有一条默认的规则，该条规则用来实现交换机的基本动作。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ ovs-ofctl dump-flows ovs1
+</span></span><span class=line><span class=cl> cookie=0x0, duration=1428.955s, table=0, n_packets=22, n_bytes=1676, priority=0 actions=NORMAL
+</span></span></code></pre></td></tr></table></div></div><p>将上述规则删除，再执行ping命令发现已经不通。说明该默认规则会将流量在端口之间进行转发。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>ovs-ofctl del-flows ovs1
+</span></span></code></pre></td></tr></table></div></div><p>新增加如下两条规则，用来表示将port 1的流量转发到port 3，将port 3的流量转发到port 1。其中的1和3分别为port编号，使用<code>ovs-vsctl list interface veth1_br</code>命令中的ofport可以看到。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>ovs-ofctl add-flow ovs1 &#34;priority=1,in_port=1,actions=output:3&#34;
+</span></span><span class=line><span class=cl>ovs-ofctl add-flow ovs1 &#34;priority=2,in_port=3,actions=output:1&#34;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>$ ovs-ofctl dump-flows ovs1
+</span></span><span class=line><span class=cl> cookie=0x0, duration=69.378s, table=0, n_packets=4, n_bytes=280, priority=1,in_port=&#34;veth1_br&#34; actions=output:&#34;veth2_br&#34;
+</span></span><span class=line><span class=cl> cookie=0x0, duration=69.063s, table=0, n_packets=4, n_bytes=280, priority=2,in_port=&#34;veth2_br&#34; actions=output:&#34;veth1_br&#34;
+</span></span></code></pre></td></tr></table></div></div><p>再执行ping命令，发现可以ping通了。</p><p>重新增加一条优先级更高的规则，将port 1的数据drop掉。此时再ping发现已经不通了。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>ovs-ofctl add-flow ovs1 &#34;priority=3,in_port=1,actions=drop&#34;
+</span></span></code></pre></td></tr></table></div></div><h3 id=多table>多table</h3><p>接下来清理掉规则，并将规则重新写入到table1中，默认规则是写入到table0中的</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>ovs-ofctl del-flows ovs1
+</span></span><span class=line><span class=cl>ovs-ofctl add-flow ovs1 &#34;table=1,priority=1,in_port=1,actions=output:3&#34;
+</span></span><span class=line><span class=cl>ovs-ofctl add-flow ovs1 &#34;table=1,priority=2,in_port=3,actions=output:1&#34;
+</span></span></code></pre></td></tr></table></div></div><p>此时再执行ping命令，发现网络是不通的。因为table0中没有匹配成功，包被drop掉了。</p><p>再增加如下规则，即将table 0的规则发送到table 1处理，此时可以ping通。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>ovs-ofctl add-flow ovs1 &#34;table=0,actions=goto_table=1&#34;
+</span></span></code></pre></td></tr></table></div></div><h3 id=group-table>group table</h3><p>执行<code>ovs-ofctl del-flows ovs1</code>重新清理掉规则，执行下面命令查看group table内容，可以看到内容为空。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># ovs-ofctl -O OpenFlow13 dump-groups ovs1
+</span></span><span class=line><span class=cl>OFPST_GROUP_DESC reply (OF1.3) (xid=0x2):
+</span></span></code></pre></td></tr></table></div></div><p>执行如下命令，完成数据包从table0 -> group table -> table1的过程，真正数据处理在table1中。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 创建一个group table，其作用为将数据包发送到table 1
+</span></span><span class=line><span class=cl>ovs-ofctl add-group ovs1 &#34;group_id=1,type=select,bucket=resubmit(,1)&#34;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 将port 1和3 的数据发往group table 1
+</span></span><span class=line><span class=cl>ovs-ofctl add-flow ovs1 &#34;table=0,in_port=1,actions=group:1&#34;
+</span></span><span class=line><span class=cl>ovs-ofctl add-flow ovs1 &#34;table=0,in_port=3,actions=group:1&#34;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># table 1为真正要处理数据的逻辑
+</span></span><span class=line><span class=cl>ovs-ofctl add-flow ovs1 &#34;table=1,priority=1,in_port=1,actions=output:3&#34;
+</span></span><span class=line><span class=cl>ovs-ofctl add-flow ovs1 &#34;table=1,priority=2,in_port=3,actions=output:1&#34;
+</span></span></code></pre></td></tr></table></div></div><p>此时再执行ping命令，发现是可以ping通的。</p><h3 id=清理操作>清理操作</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 删除网桥
+</span></span><span class=line><span class=cl>ovs-vsctl del-br ovs1
+</span></span><span class=line><span class=cl>ip link delete veth1_br
+</span></span><span class=line><span class=cl>ip link delete veth2_br
+</span></span><span class=line><span class=cl>ip netns del ns1
+</span></span><span class=line><span class=cl>ip netns del ns2
+</span></span></code></pre></td></tr></table></div></div><h2 id=常用操作>常用操作</h2><ul><li><code>ovs-appctl fdb/show ovs1</code>: 查看mac地址表</li><li><code>ovs-ofctl show ovs1</code>: 可以查看网桥的端口号</li><li><code>ovs-vsctl set bridge ovs1 stp_enable=false</code>: 开启网桥的生成树协议</li><li><code>ovs-appctl ofproto/trace ovs1 in_port=1,dl_dst=7a:42:0a:ca:04:65</code>: 可用来验证一个包到达网桥后的处理流程</li></ul><h2 id=reference>reference</h2><ul><li><a class=link href=https://zhuanlan.zhihu.com/p/63114462 target=_blank rel=noopener>CentOS 7 安装 Open vSwitch</a></li><li><a class=link href=https://zpzhou.com/archives/ovs_flow.html target=_blank rel=noopener>OpenvSwitch初探 - FLOW篇</a></li><li><a class=link href="https://kb.juniper.net/InfoCenter/index?page=content&amp;id=KB32283&amp;actp=METADATA" target=_blank rel=noopener>Open vSwitch (OVS) commands for troubleshooting</a></li></ul></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Cursor on 404频道</title><link>https://kuring.me/tags/cursor/</link><description>Recent content in Cursor on 404频道</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>kuring</copyright><lastBuildDate>Sun, 28 Dec 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://kuring.me/tags/cursor/index.xml" rel="self" type="application/rss+xml"/><item><title>使用 Cursor AI 完成 Hexo 到 Hugo 博客迁移实践</title><link>https://kuring.me/post/hexo-to-hugo-migration-with-cursor/</link><pubDate>Sun, 28 Dec 2025 00:00:00 +0000</pubDate><guid>https://kuring.me/post/hexo-to-hugo-migration-with-cursor/</guid><description>&lt;h2 id="背景"&gt;背景
+&lt;/h2&gt;&lt;p&gt;我的个人博客从 2013 年开始使用 Hexo 搭建，至今已有 256 篇发布的文章和 33 篇草稿。随着时间推移，我逐渐发现 Hugo 在构建速度和功能上的一些优势，因此决定将博客迁移到 Hugo。&lt;/p&gt;
+&lt;p&gt;迁移工作涉及：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;256 篇已发布文章&lt;/li&gt;
+&lt;li&gt;33 篇草稿文章&lt;/li&gt;
+&lt;li&gt;静态资源文件（图片、参考文档等）&lt;/li&gt;
+&lt;li&gt;保持原有 URL 结构不变（SEO 友好）&lt;/li&gt;
+&lt;li&gt;配置 GitHub Actions 自动部署&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;这是一个典型的代码迁移任务，非常适合使用 AI 辅助工具来完成。我选择了 Cursor，这是一款基于 AI 的代码编辑器，能够理解上下文并执行复杂的代码重构任务。&lt;/p&gt;
+&lt;h2 id="为什么选择-cursor"&gt;为什么选择 Cursor
+&lt;/h2&gt;&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;上下文理解能力强&lt;/strong&gt;：Cursor 能够理解整个项目的结构和需求，而不仅仅是单个文件&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;计划模式&lt;/strong&gt;：可以先制定详细的迁移计划，让 AI 理解整体目标后再执行&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;批量处理能力&lt;/strong&gt;：可以一次性处理大量文件的格式转换&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;错误修复&lt;/strong&gt;：遇到问题时，AI 能够快速定位并修复&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id="迁移步骤"&gt;迁移步骤
+&lt;/h2&gt;&lt;h3 id="1-需求分析和计划制定"&gt;1. 需求分析和计划制定
+&lt;/h3&gt;&lt;p&gt;首先，我向 Cursor 描述了完整的迁移需求：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;我想将我的博客从 hexo 迁移到 hugo，请帮我完成整体的迁移。
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;hexo 博客系统的信息：
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1. 本地目录：/Users/kuring/github/kuring/kuring.github.io
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;hugo 博客系统为全新创建：
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1. 本地目录：/Users/kuring/github/kuring/hugo
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;2. hugo 博客系统的主题可以先采用默认的
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;3. 我期望将该项目同步到 github 的 kuring/hugo 的 main 分支上
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4. 当 kuring/hugo 的 main 分支提交后自动构建博客，并使用 github actions发布到 kuring/kuring.github.io 的 gh-pages 分支。
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;Cursor 在 Plan Mode 下分析了需求，并提出了几个关键问题：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;主题选择（我选择了 Stack 主题）&lt;/li&gt;
+&lt;li&gt;URL 格式保持策略（我选择保持原格式）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="2-项目初始化"&gt;2. 项目初始化
+&lt;/h3&gt;&lt;p&gt;Cursor 自动执行了以下步骤：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 初始化 Hugo 项目&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;hugo new site . --force
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 安装 Stack 主题&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;git submodule add git@github.com:CaiJimmy/hugo-theme-stack.git themes/hugo-theme-stack
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id="3-配置文件迁移"&gt;3. 配置文件迁移
+&lt;/h3&gt;&lt;p&gt;Cursor 分析了 Hexo 的 &lt;code&gt;_config.yml&lt;/code&gt;，并创建了对应的 &lt;code&gt;hugo.yaml&lt;/code&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;站点基本信息（标题、语言等）&lt;/li&gt;
+&lt;li&gt;URL 格式配置（保持 &lt;code&gt;/post/:title/&lt;/code&gt; 格式）&lt;/li&gt;
+&lt;li&gt;Giscus 评论系统配置&lt;/li&gt;
+&lt;li&gt;分页、标签、分类等设置&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="4-内容迁移"&gt;4. 内容迁移
+&lt;/h3&gt;&lt;p&gt;这是最复杂的部分，Cursor 处理了：&lt;/p&gt;
+&lt;h4 id="41-文章迁移"&gt;4.1 文章迁移
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;将所有 markdown 文件从 &lt;code&gt;source/_posts&lt;/code&gt; 复制到 &lt;code&gt;content/post&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;保持原有的目录结构（k8s/、ai/、knowledge-share/ 等）&lt;/li&gt;
+&lt;li&gt;处理 front matter 格式转换：
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;url:&lt;/code&gt; → &lt;code&gt;slug:&lt;/code&gt;（Hugo 使用 slug 字段）&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;tags: value&lt;/code&gt; → &lt;code&gt;tags: [value]&lt;/code&gt;（转换为列表格式）&lt;/li&gt;
+&lt;li&gt;统一 &lt;code&gt;Tags:&lt;/code&gt; 为 &lt;code&gt;tags:&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="42-草稿迁移"&gt;4.2 草稿迁移
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;复制 &lt;code&gt;source/_drafts&lt;/code&gt; 到 &lt;code&gt;content/draft&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;为所有草稿文件添加 &lt;code&gt;draft: true&lt;/code&gt; 标记&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="43-静态资源迁移"&gt;4.3 静态资源迁移
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;source/images/&lt;/code&gt; → &lt;code&gt;static/images/&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;source/ref/&lt;/code&gt; → &lt;code&gt;static/ref/&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;source/draw.io/&lt;/code&gt; → &lt;code&gt;static/draw.io/&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;source/CNAME&lt;/code&gt; → &lt;code&gt;static/CNAME&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="5-格式修复"&gt;5. 格式修复
+&lt;/h3&gt;&lt;p&gt;迁移过程中发现了一些格式问题，Cursor 自动创建了 Python 脚本来批量修复：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-python" data-lang="python"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 修复 tags 格式的脚本示例&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;fix_front_matter&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;content&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;# 将 url: 转换为 slug:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;# 将 tags: value 转换为 tags: [value]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;# 统一 Tags: 为 tags:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="o"&gt;...&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;总共修复了 177 篇发布文章和 4 篇草稿的格式问题。&lt;/p&gt;
+&lt;h3 id="6-github-actions-配置"&gt;6. GitHub Actions 配置
+&lt;/h3&gt;&lt;p&gt;Cursor 创建了 &lt;code&gt;.github/workflows/deploy.yml&lt;/code&gt;，实现了：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;当 main 分支有 push 时自动触发&lt;/li&gt;
+&lt;li&gt;使用 Hugo 构建静态站点&lt;/li&gt;
+&lt;li&gt;跨仓库部署到 &lt;code&gt;kuring/kuring.github.io&lt;/code&gt; 的 gh-pages 分支&lt;/li&gt;
+&lt;li&gt;使用 Personal Access Token 实现跨仓库权限&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="7-url-兼容性保证"&gt;7. URL 兼容性保证
+&lt;/h3&gt;&lt;p&gt;这是迁移中最关键的部分。Cursor 确保了：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;使用 &lt;code&gt;permalinks.post: /post/:slug/&lt;/code&gt; 保持 URL 格式&lt;/li&gt;
+&lt;li&gt;对于有 &lt;code&gt;url:&lt;/code&gt; 字段的文章，转换为 &lt;code&gt;slug:&lt;/code&gt; 字段&lt;/li&gt;
+&lt;li&gt;所有文章的 URL 与 Hexo 版本完全一致&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="使用-cursor-的技巧"&gt;使用 Cursor 的技巧
+&lt;/h2&gt;&lt;h3 id="1-明确表达需求"&gt;1. 明确表达需求
+&lt;/h3&gt;&lt;p&gt;在 Plan Mode 下，详细描述你的需求，包括：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;源系统和目标系统&lt;/li&gt;
+&lt;li&gt;需要保持的特性（如 URL 格式）&lt;/li&gt;
+&lt;li&gt;部署流程要求&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="2-分阶段执行"&gt;2. 分阶段执行
+&lt;/h3&gt;&lt;p&gt;不要一次性要求完成所有任务，而是：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;先让 AI 制定计划&lt;/li&gt;
+&lt;li&gt;确认计划后再执行&lt;/li&gt;
+&lt;li&gt;每个阶段完成后验证结果&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="3-利用批量处理"&gt;3. 利用批量处理
+&lt;/h3&gt;&lt;p&gt;对于格式转换这类重复性工作，让 AI 创建脚本批量处理，而不是逐个文件修改。&lt;/p&gt;
+&lt;h3 id="4-及时反馈问题"&gt;4. 及时反馈问题
+&lt;/h3&gt;&lt;p&gt;当遇到错误时（如 tags 格式问题），直接告诉 AI 错误信息，它会：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;分析问题原因&lt;/li&gt;
+&lt;li&gt;创建修复脚本&lt;/li&gt;
+&lt;li&gt;验证修复结果&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="5-验证关键点"&gt;5. 验证关键点
+&lt;/h3&gt;&lt;p&gt;在迁移过程中，我特别强调了：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;URL 必须保持不变&lt;/li&gt;
+&lt;li&gt;目录结构需要保留&lt;/li&gt;
+&lt;li&gt;草稿需要正确标记&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Cursor 在每次修改后都会验证这些关键点。&lt;/p&gt;
+&lt;h2 id="迁移结果"&gt;迁移结果
+&lt;/h2&gt;&lt;p&gt;最终迁移成果：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;✅ 256 篇发布文章全部迁移，URL 保持不变&lt;/li&gt;
+&lt;li&gt;✅ 33 篇草稿文章迁移，正确标记为 draft&lt;/li&gt;
+&lt;li&gt;✅ 所有静态资源迁移完成&lt;/li&gt;
+&lt;li&gt;✅ GitHub Actions 自动部署配置完成&lt;/li&gt;
+&lt;li&gt;✅ 本地测试通过，站点正常运行&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="经验总结"&gt;经验总结
+&lt;/h2&gt;&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;AI 辅助工具适合复杂迁移任务&lt;/strong&gt;：能够理解上下文，处理大量重复性工作&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;计划模式很重要&lt;/strong&gt;：先制定计划，确认后再执行，避免返工&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;关键需求要明确&lt;/strong&gt;：URL 兼容性、目录结构等关键需求要在一开始就明确&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;分阶段验证&lt;/strong&gt;：每个阶段完成后都要验证，及时发现问题&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;利用脚本批量处理&lt;/strong&gt;：对于格式转换等重复工作，让 AI 生成脚本更高效&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id="后续工作"&gt;后续工作
+&lt;/h2&gt;&lt;p&gt;迁移完成后，还需要：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;创建 GitHub Personal Access Token 并配置到仓库 Secrets&lt;/li&gt;
+&lt;li&gt;推送代码到 GitHub&lt;/li&gt;
+&lt;li&gt;验证自动部署流程&lt;/li&gt;
+&lt;li&gt;对比新旧站点，确保内容一致&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id="结语"&gt;结语
+&lt;/h2&gt;&lt;p&gt;使用 Cursor 完成这次迁移，让我深刻体会到 AI 辅助编程的效率。原本需要数天的手工迁移工作，在 AI 的帮助下，几个小时就完成了。更重要的是，AI 能够理解整体需求，确保迁移的完整性和正确性。&lt;/p&gt;
+&lt;p&gt;对于类似的代码迁移、重构任务，我强烈推荐使用 Cursor 这样的 AI 辅助工具。它不仅能提高效率，还能减少人为错误，确保迁移质量。&lt;/p&gt;</description></item></channel></rss>

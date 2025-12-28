@@ -1,0 +1,142 @@
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="macvlan的原理是在宿主机物理网卡上虚拟出多个子接口，每个子接口有独立的mac地址，通过不同的MAC地址在数据链路层（Data Link Layer）进行网络数据转发的。达到的效果类似，一块物理网卡上有多个IP地址，多个IP地址有自己的mac地址。\n"><title>Linux macvlan network</title><link rel=canonical href=https://kuring.me/post/linux-macvlan-network/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="Linux macvlan network"><meta property='og:description' content="macvlan的原理是在宿主机物理网卡上虚拟出多个子接口，每个子接口有独立的mac地址，通过不同的MAC地址在数据链路层（Data Link Layer）进行网络数据转发的。达到的效果类似，一块物理网卡上有多个IP地址，多个IP地址有自己的mac地址。\n"><meta property='og:url' content='https://kuring.me/post/linux-macvlan-network/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='docker macvlan'><meta property='article:published_time' content='2018-08-13T23:29:58+00:00'><meta property='article:modified_time' content='2018-08-13T23:29:58+00:00'><meta name=twitter:title content="Linux macvlan network"><meta name=twitter:description content="macvlan的原理是在宿主机物理网卡上虚拟出多个子接口，每个子接口有独立的mac地址，通过不同的MAC地址在数据链路层（Data Link Layer）进行网络数据转发的。达到的效果类似，一块物理网卡上有多个IP地址，多个IP地址有自己的mac地址。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#四种模式>四种模式</a><ol><li><a href=#vepa>VEPA</a></li><li><a href=#bridge>bridge</a></li><li><a href=#private>Private</a></li><li><a href=#passthru>Passthru</a></li></ol></li><li><a href=#手工创建实践>手工创建实践</a></li><li><a href=#在docker上的实践>在docker上的实践</a></li><li><a href=#reference>reference</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/linux-macvlan-network/>Linux macvlan network</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2018-08-13T23:29:58Z>2018-08-13</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 3 分钟</time></div></footer></div></header><section class=article-content><p>macvlan的原理是在宿主机物理网卡上虚拟出多个子接口，每个子接口有独立的mac地址，通过不同的MAC地址在数据链路层（Data Link Layer）进行网络数据转发的。达到的效果类似，一块物理网卡上有多个IP地址，多个IP地址有自己的mac地址。</p><p>它是比较新的网络虚拟化技术，需要较新的内核支持（Linux kernel v3.9–3.19 and 4.0+）。</p><p>macvlan设备跟物理设备之间并不直接互通。</p><p>macvlan不以交换机端口来划分vlan，一个交换机端口可接收来自多个mac地址的数据。</p><p>一个交换机端口要处理多个vlan的数据，需要开启trunk模式。</p><h2 id=四种模式>四种模式</h2><p>以下四种模式为每个macvlan设备单独配置，而不是一个物理设备就只有一个配置。</p><h3 id=vepa>VEPA</h3><p>所有发送出去的报文都经过交换机，交换机再发送到对应的目标地址。默认模式。物理网卡接收到macvlan设备的数据后，总是将数据发送出去，即使是发往本设备上其他macvlan设备的数据包。这样在交换机设备上可以看到所有网络的流量。如果是本机的macvlan设备流量仍然是发往本机的macvlan设备，可能会被交换机的生成树协议阻止。需要交换机开启hairpin模式或者reflective relay模式，该模式在目前的交换机上未广泛支持，vepa模式的应用较少。</p><p>linux的网桥支持hairpin模式。</p><h3 id=bridge>bridge</h3><p>最常用，同一个物理设备上的不同macvlan设备间的通讯可以直接转发，不再需要经过外部的交换机。转发非常快速，macvlan设备相对固定，不需要生成树协议。</p><h3 id=private>Private</h3><p>本质上是VEPA模式，但同一个物理设备上的macvlan设备之间无法直接通讯，不常用。</p><h3 id=passthru>Passthru</h3><p>后来增加的模式，比较少用</p><p>vepa和passthru都会将不同macvlan接口之间的数据发送到交换机，然后发回，对性能的影响比较明显。</p><p>物理网卡收到包后，根据包的mac地址来判断这个包交给哪个虚拟接口。</p><p><img src=https://kuring.oss-cn-beijing.aliyuncs.com/images/macvlan-workmode-1.png loading=lazy alt=image></p><h2 id=手工创建实践>手工创建实践</h2><p>以下实验为在virturalbox虚拟机下</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 创建两个network namespace net1和net2
+</span></span><span class=line><span class=cl>ip netns add net1
+</span></span><span class=line><span class=cl>ip netns add net2
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 创建macvlan接口
+</span></span><span class=line><span class=cl># enp0s8相当于物理网卡eth0
+</span></span><span class=line><span class=cl>ip link add link enp0s8 mac1 type macvlan
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 可以看到创建了接口mac1@enp0s8
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip link
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span class=line><span class=cl>2: enp0s3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
+</span></span><span class=line><span class=cl>    link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>3: enp0s8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
+</span></span><span class=line><span class=cl>    link/ether 08:00:27:cf:b0:b4 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>4: docker_gwbridge: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc noqueue state DOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/ether 02:42:8e:cf:a9:da brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>5: br-b3e83aa45886: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc noqueue state DOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/ether 02:42:bf:b4:e5:36 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>6: docker0: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc noqueue state DOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/ether 02:42:25:e7:40:32 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>19: br-ec6c4e77321d: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc noqueue state DOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/ether 02:42:e0:d8:38:6d brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>24: mac1@enp0s8: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/ether 3e:b8:e9:1d:3b:c8 brd ff:ff:ff:ff:ff:ff
+</span></span></code></pre></td></tr></table></div></div><p>创建macvlan接口的格式为：<code>ip link add link &lt;PARENT> &lt;NAME> type macvlan</code>， <parent>是macvlan接口的父接口名称，name是新创建的macvlan接口名称。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 将mac1放入到net1 namespace中
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip link set mac1 netns net1
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip netns exec net1 ip link
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK&gt; mtu 65536 qdisc noop state DOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span class=line><span class=cl>24: mac1@if3: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/ether 3e:b8:e9:1d:3b:c8 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 在net1中将mac1接口命名为eth0
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip netns exec net1 ip link set mac1 name eth0
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip netns exec net1 ip link
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK&gt; mtu 65536 qdisc noop state DOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span class=line><span class=cl>24: eth0@if3: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/ether 3e:b8:e9:1d:3b:c8 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 在net1中分配eth0网卡的ip地址为192.168.8.120
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip netns exec net1 ip addr add 192.168.8.120/24 dev eth0
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip netns exec net1 ip link set eth0 up
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# ip netns exec net1 ip link
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK&gt; mtu 65536 qdisc noop state DOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span class=line><span class=cl>24: eth0@if3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT
+</span></span><span class=line><span class=cl>    link/ether 3e:b8:e9:1d:3b:c8 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+</span></span></code></pre></td></tr></table></div></div><h2 id=在docker上的实践>在docker上的实践</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[root@localhost vagrant]# docker network create -d macvlan --subnet=10.0.2.100/24 --gateway=10.0.2.2 -o parent=enp0s3 mcv
+</span></span><span class=line><span class=cl>5c637798d559471bd8d1036cdd947d3949e1973f724568da066d9c60c00fb5e6
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# docker network ls
+</span></span><span class=line><span class=cl>NETWORK ID          NAME                DRIVER              SCOPE
+</span></span><span class=line><span class=cl>b6a128f1730e        bridge              bridge              local
+</span></span><span class=line><span class=cl>a65957cd6c3f        docker_gwbridge     bridge              local
+</span></span><span class=line><span class=cl>540bb390028a        host                host                local
+</span></span><span class=line><span class=cl>b3e83aa45886        isolated_nw         bridge              local
+</span></span><span class=line><span class=cl>ec6c4e77321d        local_alias         bridge              local
+</span></span><span class=line><span class=cl>5c637798d559        mcv                 macvlan             local
+</span></span><span class=line><span class=cl>3d247d0414d0        none                null                local
+</span></span></code></pre></td></tr></table></div></div><h2 id=reference>reference</h2><p><a class=link href=https://backreference.org/2014/03/20/some-notes-on-macvlanmacvtap/ target=_blank rel=noopener>Some notes on macvlan/macvtap</a>
+<a class=link href=http://backreference.org/2014/03/20/some-notes-on-macvlanmacvtap/ target=_blank rel=noopener></a></p></section><footer class=article-footer><section class=article-tags><a href=/tags/docker-macvlan/>Docker Macvlan</a></section></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
