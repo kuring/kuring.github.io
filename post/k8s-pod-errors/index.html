@@ -1,399 +1,103 @@
-<!DOCTYPE html>
-<html lang="zh-Hans">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="pod状态1. 前置检查在排查异常状态的pod错误之前，可以先检查一下node状态，执行kubectl get node查看是否所有的node状态都正常。 2. pod状态为CrashLoopBackOff如果pod状态为CrashLoopBackOff状态，查看pod日志来定位原因，或者describe pod看一下。 3. pod状态为Pendingpod状态为Pending状态，说明调度失败">
-<meta property="og:type" content="article">
-<meta property="og:title" content="k8s pod异常状态分析">
-<meta property="og:url" content="http://kuring.me/post/k8s-pod-errors/index.html">
-<meta property="og:site_name" content="404频道">
-<meta property="og:description" content="pod状态1. 前置检查在排查异常状态的pod错误之前，可以先检查一下node状态，执行kubectl get node查看是否所有的node状态都正常。 2. pod状态为CrashLoopBackOff如果pod状态为CrashLoopBackOff状态，查看pod日志来定位原因，或者describe pod看一下。 3. pod状态为Pendingpod状态为Pending状态，说明调度失败">
-<meta property="og:locale">
-<meta property="article:published_time" content="2022-03-17T15:54:47.000Z">
-<meta property="article:modified_time" content="2025-12-20T16:59:52.689Z">
-<meta name="twitter:card" content="summary">
-
-
-<link rel="canonical" href="http://kuring.me/post/k8s-pod-errors/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/k8s-pod-errors/","path":"post/k8s-pod-errors/","title":"k8s pod异常状态分析"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>k8s pod异常状态分析 | 404频道</title>
-  
-
-
-
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">404频道</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">学习笔记</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="Searching..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          Table of Contents
-        </li>
-        <li class="sidebar-nav-overview">
-          Overview
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#pod%E7%8A%B6%E6%80%81"><span class="nav-number">1.</span> <span class="nav-text">pod状态</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%89%8D%E7%BD%AE%E6%A3%80%E6%9F%A5"><span class="nav-number">1.1.</span> <span class="nav-text">1. 前置检查</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-pod%E7%8A%B6%E6%80%81%E4%B8%BACrashLoopBackOff"><span class="nav-number">1.2.</span> <span class="nav-text">2. pod状态为CrashLoopBackOff</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-pod%E7%8A%B6%E6%80%81%E4%B8%BAPending"><span class="nav-number">1.3.</span> <span class="nav-text">3. pod状态为Pending</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-pod%E7%8A%B6%E6%80%81%E4%B8%BAInit-0-x2F-1"><span class="nav-number">1.4.</span> <span class="nav-text">4. pod状态为Init:0&#x2F;1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-pod%E7%8A%B6%E6%80%81%E4%B8%BATerminating"><span class="nav-number">1.5.</span> <span class="nav-text">5. pod状态为Terminating</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-pod%E7%8A%B6%E6%80%81%E4%B8%BAEvicted"><span class="nav-number">1.6.</span> <span class="nav-text">6. pod状态为Evicted</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-pod%E7%8A%B6%E6%80%81%E4%B8%BAUnknown"><span class="nav-number">1.7.</span> <span class="nav-text">7. pod状态为Unknown</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-pod%E4%B8%BArunning%EF%BC%8C%E4%BD%86%E6%98%AFNot-Ready%E7%8A%B6%E6%80%81"><span class="nav-number">1.8.</span> <span class="nav-text">8. pod为running，但是Not Ready状态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#9-pod%E4%B8%BAContainerCreating%E7%8A%B6%E6%80%81"><span class="nav-number">1.9.</span> <span class="nav-text">9. pod为ContainerCreating状态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#10-Init-CrashLoopBackOff"><span class="nav-number">1.10.</span> <span class="nav-text">10. Init:CrashLoopBackOff</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#11-PodInitializing"><span class="nav-number">1.11.</span> <span class="nav-text">11. PodInitializing</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#12-MatchNodeSelector"><span class="nav-number">1.12.</span> <span class="nav-text">12. MatchNodeSelector</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">2.</span> <span class="nav-text">参考</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name"></p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">256</span>
-          <span class="site-state-item-name">posts</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">36</span>
-        <span class="site-state-item-name">tags</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/k8s-pod-errors/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="k8s pod异常状态分析 | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          k8s pod异常状态分析
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-03-17 15:54:47" itemprop="dateCreated datePublished" datetime="2022-03-17T15:54:47+00:00">2022-03-17</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-20 16:59:52" itemprop="dateModified" datetime="2025-12-20T16:59:52+00:00">2025-12-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><h1 id="pod状态"><a href="#pod状态" class="headerlink" title="pod状态"></a>pod状态</h1><h2 id="1-前置检查"><a href="#1-前置检查" class="headerlink" title="1. 前置检查"></a>1. 前置检查</h2><p>在排查异常状态的pod错误之前，可以先检查一下node状态，执行<code>kubectl get node</code>查看是否所有的node状态都正常。</p>
-<h2 id="2-pod状态为CrashLoopBackOff"><a href="#2-pod状态为CrashLoopBackOff" class="headerlink" title="2. pod状态为CrashLoopBackOff"></a>2. pod状态为CrashLoopBackOff</h2><p>如果pod状态为CrashLoopBackOff状态，查看pod日志来定位原因，或者describe pod看一下。</p>
-<h2 id="3-pod状态为Pending"><a href="#3-pod状态为Pending" class="headerlink" title="3. pod状态为Pending"></a>3. pod状态为Pending</h2><p>pod状态为Pending状态，说明调度失败，通常跟污点、标签、cpu、内存、磁盘等资源相关。</p>
-<p>可以通过<code>kubectl describe pod -n &#123;NAMESPACE&#125; &#123;POD_NAME&#125;</code>，可以在最后的Event部分找到原因。</p>
-<h2 id="4-pod状态为Init-0-x2F-1"><a href="#4-pod状态为Init-0-x2F-1" class="headerlink" title="4. pod状态为Init:0&#x2F;1"></a>4. pod状态为Init:0&#x2F;1</h2><p>有些pod会有Init Containers，这些container是在pod的containers执行之前先执行。如果Init Container出现未执行完成的情况，此时pod处于Init状态。</p>
-<p>通过<code>kubectl get pod -n &#123;NAMESPACE&#125; &#123;POD_NAME&#125; -o yaml</code> 找到pod的Init Containers，并找到其中的name字段。执行<code>kubectl logs -n &#123;NAMESPACE&#125; &#123;POD_NAME&#125; -c &#123;INIT_CONTAINER_NAME&#125;</code>可以查看Init Container的日志来分析原因。</p>
-<h2 id="5-pod状态为Terminating"><a href="#5-pod状态为Terminating" class="headerlink" title="5. pod状态为Terminating"></a>5. pod状态为Terminating</h2><p>pod处于此种状态的原因大致可分为：<br>1、pod或其控制器被删除。<br>解决方法：查看pod控制器类型和控制器名称，查看其控制器是否正常。如果正常pod将会被重建，如果pod没有被重建，查看controller-manager是否正常。<br>2、pod所在节点状态NotReady导致。<br>解决方法：检查该节点的网络，cpu，内存，磁盘空间等资源是否正常。检查该节点的kubelet、docker服务是否正常。检查该节点的网络插件pod是否正常。</p>
-<p>最常见的pod处于Terminating状态的解决办法为强制删除 <code>kubectl delete pods -n $&#123;namespace&#125; $&#123;name&#125; --grace-period=0 --force</code></p>
-<h2 id="6-pod状态为Evicted"><a href="#6-pod状态为Evicted" class="headerlink" title="6. pod状态为Evicted"></a>6. pod状态为Evicted</h2><p>pod处于Evicted的原因大致可分为：<br>1、kubelet服务启动时存在驱逐限制当节点资源可用量达到指定阈值（magefs.available&lt;15%,memory.available&lt;300Mi,nodefs.available&lt;10%,nodefs.inodesFree&lt;5%）<br>会优先驱逐Qos级别低的pod以保障Qos级别高的pod可用。<br>解决方法：增加节点资源或将被驱逐的pod迁移到其他空闲资源充足的节点上。<br>2、pod所在节点上被打上了NoExecute的污点，此种污点会将该节点上无法容忍此污点的pod进行驱逐。<br>解决方法：查看该节点上的NoExecute污点是否必要。或者pod是否可以迁移到其他节点。<br>3、pod所在的节点为NotReady状态</p>
-<p>通常可以通过<code>kubectl describe pods $&#123;pod&#125; -n $&#123;namespace&#125;</code>的底部的Events信息来找到一些问题的原因。例如下面例子中可以看到DiskPressure信息，说明跟磁盘相关。</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">Events:</span></span><br><span class="line">  <span class="string">Type</span>     <span class="string">Reason</span>     <span class="string">Age</span>        <span class="string">From</span>                 <span class="string">Message</span></span><br><span class="line">  <span class="string">----</span>     <span class="string">------</span>     <span class="string">----</span>       <span class="string">----</span>                 <span class="string">-------</span></span><br><span class="line">  <span class="string">Warning</span>  <span class="string">Evicted</span>    <span class="string">61s</span>        <span class="string">kubelet,</span> <span class="attr">acs.deploy  The node had condition:</span> [<span class="string">DiskPressure</span>]<span class="string">.</span></span><br><span class="line">  <span class="string">Normal</span>   <span class="string">Scheduled</span>  <span class="string">&lt;invalid&gt;</span>  <span class="string">default-scheduler</span>    <span class="string">Successfully</span> <span class="string">assigned</span> <span class="string">ark-system/bridge-console-bridge-console-554d57bb87-nh2vd</span> <span class="string">to</span> <span class="string">acs.deploy</span></span><br></pre></td></tr></table></figure>
-<p>或者根据pod的Message字段来找到原因</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Name:           tiller-deploy-7f6456894f-22vgr</span><br><span class="line">Namespace:      kube-system</span><br><span class="line">Priority:       0</span><br><span class="line">Node:           a36e04001.cloud.e04.amtest17/</span><br><span class="line">Start Time:     Mon, 08 Jun 2020 12:17:26 +0800</span><br><span class="line">Labels:         app=helm</span><br><span class="line">                name=tiller</span><br><span class="line">                pod-template-hash=7f6456894f</span><br><span class="line">Annotations:    &lt;none&gt;</span><br><span class="line">Status:         Failed</span><br><span class="line">Reason:         Evicted</span><br><span class="line">Message:        Pod The node had condition: [DiskPressure].</span><br></pre></td></tr></table></figure>
-<p>由于pod驱逐的原因排查跟时间点相关，需要根据pod被驱逐的时间来分析当时的状态。<br>4、批量删除状态Evicted的pod，此操作会删除集群里面所有状态为Evicted的pod</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ns=`kubectl get ns | awk &#x27;NR&gt;1 &#123;print $1&#125;&#x27;`</span><br><span class="line">for i in $ns;do  kubectl get pods -n $i  | grep Evicted| awk &#x27;&#123;print $1&#125;&#x27; | xargs  kubectl delete pods -n $i ;done</span><br></pre></td></tr></table></figure>
-<h2 id="7-pod状态为Unknown"><a href="#7-pod状态为Unknown" class="headerlink" title="7. pod状态为Unknown"></a>7. pod状态为Unknown</h2><p>通常该状态为pod对应节点的为NotReady，通过查看 kubectl get node 来查看node是否为NotReady。</p>
-<h2 id="8-pod为running，但是Not-Ready状态"><a href="#8-pod为running，但是Not-Ready状态" class="headerlink" title="8. pod为running，但是Not Ready状态"></a>8. pod为running，但是Not Ready状态</h2><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">argo-ui-56f4d67b69-8gshr</span>   <span class="number">0</span><span class="string">/1</span>     <span class="string">Running</span>     <span class="number">0</span>          <span class="string">10h</span></span><br></pre></td></tr></table></figure>
-<p>类似上面这种状态，此时说明pod的readiness健康检查没过导致的，需要先从pod的健康检查本身来排查问题。可以通过 <code>kubectl get pods -n $&#123;namespace&#125; $&#123;name&#125; -o yaml</code> 找到pod的健康检查部分，关键字为readiness，然后进入pod中执行对应的健康检查命令来测试健康检查的准确性。</p>
-<p>例如readiness的配置如下，需要进入pod中执行<code>curl http://127.0.0.1/api/status</code>，也可以在pod对应的node节点上执行<code>curl [http://$&#123;pod_ip&#125;/api/status](http://127.0.0.1/api/status)</code></p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">livenessProbe:</span></span><br><span class="line">  <span class="attr">failureThreshold:</span> <span class="number">3</span></span><br><span class="line">  <span class="attr">httpGet:</span></span><br><span class="line">    <span class="attr">path:</span> <span class="string">/api/status</span></span><br><span class="line">    <span class="attr">port:</span> <span class="string">http</span></span><br><span class="line">    <span class="attr">scheme:</span> <span class="string">HTTP</span></span><br><span class="line">  <span class="attr">initialDelaySeconds:</span> <span class="number">120</span></span><br><span class="line">  <span class="attr">periodSeconds:</span> <span class="number">10</span></span><br><span class="line">  <span class="attr">successThreshold:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">timeoutSeconds:</span> <span class="number">1</span></span><br></pre></td></tr></table></figure>
-<h2 id="9-pod为ContainerCreating状态"><a href="#9-pod为ContainerCreating状态" class="headerlink" title="9. pod为ContainerCreating状态"></a>9. pod为ContainerCreating状态</h2><p>通过<code>kubectl describe pods -n $&#123;namespace&#125; $&#123;name&#125;</code>的Events部分来分析原因，可能的原因如下：</p>
-<ul>
-<li>网络分配ip地址失败</li>
-</ul>
-<h2 id="10-Init-CrashLoopBackOff"><a href="#10-Init-CrashLoopBackOff" class="headerlink" title="10. Init:CrashLoopBackOff"></a>10. Init:CrashLoopBackOff</h2><ol>
-<li>通过<code>kubectl get pod -n &#123;NAMESPACE&#125; &#123;POD_NAME&#125; -o yaml</code> 找到pod的Init Containers，并找到其中的name字段。</li>
-<li>执行<code>kubectl logs -n &#123;NAMESPACE&#125; &#123;POD_NAME&#125; -c &#123;INIT_CONTAINER_NAME&#125;</code>可以查看Init Container的日志来分析原因。</li>
-</ol>
-<h2 id="11-PodInitializing"><a href="#11-PodInitializing" class="headerlink" title="11. PodInitializing"></a>11. PodInitializing</h2><p>需要查看initContainer的日志</p>
-<h2 id="12-MatchNodeSelector"><a href="#12-MatchNodeSelector" class="headerlink" title="12. MatchNodeSelector"></a>12. MatchNodeSelector</h2><p>查看pod的status信息可以看到如下信息：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">status:</span><br><span class="line">  message: Pod Predicate MatchNodeSelector failed</span><br><span class="line">  phase: Failed</span><br><span class="line">  reason: MatchNodeSelector</span><br><span class="line">  startTime: &quot;2022-03-15T05:07:57Z&quot;</span><br></pre></td></tr></table></figure>
-
-<p>说明该pod没有调度成功，在predicate的MatchNodeSelector阶段失败了，没有匹配上node节点。</p>
-<p>在k8s 1.21之前的版本，存在bug，节点重启后可能遇到过问题，将pod delete后重新调度可以解决。<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/issues/92067">https://github.com/kubernetes/kubernetes/issues/92067</a></p>
-<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
-<li><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/412618.html#section-7gv-3tf-paf">常见的Pod异常状态及处理方式</a></li>
-</ul>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/post/grafana-dashboard-k8s/" rel="prev" title="用来排查k8s问题的常用grafana dashboard">
-                  <i class="fa fa-angle-left"></i> 用来排查k8s问题的常用grafana dashboard
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/post/work-theory/" rel="next" title="工作中经常用到的理论或法则">
-                  工作中经常用到的理论或法则 <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    
-  
-  <div class="comments giscus-container">
-  </div>
-  
-  
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder"></span>
-  </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-
-
-  
-
-
-
-
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
-
-<script>
-document.addEventListener('page:loaded', () => {
-  if (!CONFIG.page.comments) return;
-
-  NexT.utils.loadComments('.giscus-container')
-    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
-      attributes: {
-        async                   : true,
-        crossOrigin             : 'anonymous',
-        'data-repo'             : CONFIG.giscus.repo,
-        'data-repo-id'          : CONFIG.giscus.repo_id,
-        'data-category'         : CONFIG.giscus.category,
-        'data-category-id'      : CONFIG.giscus.category_id,
-        'data-mapping'          : CONFIG.giscus.mapping,
-        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
-        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
-        'data-theme'            : CONFIG.giscus.theme,
-        'data-lang'             : CONFIG.giscus.lang,
-        'data-input-position'   : CONFIG.giscus.input_position,
-        'data-loading'          : CONFIG.giscus.loading
-      },
-      parentNode: document.querySelector('.giscus-container')
-    }));
-});
-</script>
-
-</body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="title: k8s pod异常状态分析 date: 2022-03-17 15:54:47 tags: author: pod状态 1. 前置检查 在排查异常状态的pod错误之前，可以先检查一下node状态，执行kubectl get node查看是否所有的node状态都正常。\n"><title></title><link rel=canonical href=https://kuring.me/post/k8s-pod-errors/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content><meta property='og:description' content="title: k8s pod异常状态分析 date: 2022-03-17 15:54:47 tags: author: pod状态 1. 前置检查 在排查异常状态的pod错误之前，可以先检查一下node状态，执行kubectl get node查看是否所有的node状态都正常。\n"><meta property='og:url' content='https://kuring.me/post/k8s-pod-errors/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta name=twitter:title content><meta name=twitter:description content="title: k8s pod异常状态分析 date: 2022-03-17 15:54:47 tags: author: pod状态 1. 前置检查 在排查异常状态的pod错误之前，可以先检查一下node状态，执行kubectl get node查看是否所有的node状态都正常。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#author>title: k8s pod异常状态分析
+date: 2022-03-17 15:54:47
+tags:
+author:</a></li></ol><ol><li><a href=#1-前置检查>1. 前置检查</a></li><li><a href=#2-pod状态为crashloopbackoff>2. pod状态为CrashLoopBackOff</a></li><li><a href=#3-pod状态为pending>3. pod状态为Pending</a></li><li><a href=#4-pod状态为init01>4. pod状态为Init:0/1</a></li><li><a href=#5-pod状态为terminating>5. pod状态为Terminating</a></li><li><a href=#6-pod状态为evicted>6. pod状态为Evicted</a></li><li><a href=#7-pod状态为unknown>7. pod状态为Unknown</a></li><li><a href=#8-pod为running但是not-ready状态>8. pod为running，但是Not Ready状态</a></li><li><a href=#9-pod为containercreating状态>9. pod为ContainerCreating状态</a></li><li><a href=#10initcrashloopbackoff>10. Init:CrashLoopBackOff</a></li><li><a href=#11-podinitializing>11. PodInitializing</a></li><li><a href=#12-matchnodeselector>12. MatchNodeSelector</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/k8s-pod-errors/></a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 5 分钟</time></div></footer></div></header><section class=article-content><h2 id=author>title: k8s pod异常状态分析
+date: 2022-03-17 15:54:47
+tags:
+author:</h2><h1 id=pod状态>pod状态</h1><h2 id=1-前置检查>1. 前置检查</h2><p>在排查异常状态的pod错误之前，可以先检查一下node状态，执行<code>kubectl get node</code>查看是否所有的node状态都正常。</p><h2 id=2-pod状态为crashloopbackoff>2. pod状态为CrashLoopBackOff</h2><p>如果pod状态为CrashLoopBackOff状态，查看pod日志来定位原因，或者describe pod看一下。</p><h2 id=3-pod状态为pending>3. pod状态为Pending</h2><p>pod状态为Pending状态，说明调度失败，通常跟污点、标签、cpu、内存、磁盘等资源相关。</p><p>可以通过<code>kubectl describe pod -n {NAMESPACE} {POD_NAME}</code>，可以在最后的Event部分找到原因。</p><h2 id=4-pod状态为init01>4. pod状态为Init:0/1</h2><p>有些pod会有Init Containers，这些container是在pod的containers执行之前先执行。如果Init Container出现未执行完成的情况，此时pod处于Init状态。</p><p>通过<code>kubectl get pod -n {NAMESPACE} {POD_NAME} -o yaml</code> 找到pod的Init Containers，并找到其中的name字段。执行<code>kubectl logs -n {NAMESPACE} {POD_NAME} -c {INIT_CONTAINER_NAME}</code>可以查看Init Container的日志来分析原因。</p><h2 id=5-pod状态为terminating>5. pod状态为Terminating</h2><p>pod处于此种状态的原因大致可分为：
+1、pod或其控制器被删除。
+解决方法：查看pod控制器类型和控制器名称，查看其控制器是否正常。如果正常pod将会被重建，如果pod没有被重建，查看controller-manager是否正常。
+2、pod所在节点状态NotReady导致。
+解决方法：检查该节点的网络，cpu，内存，磁盘空间等资源是否正常。检查该节点的kubelet、docker服务是否正常。检查该节点的网络插件pod是否正常。</p><p>最常见的pod处于Terminating状态的解决办法为强制删除 <code>kubectl delete pods -n ${namespace} ${name} --grace-period=0 --force</code></p><h2 id=6-pod状态为evicted>6. pod状态为Evicted</h2><p>pod处于Evicted的原因大致可分为：
+1、kubelet服务启动时存在驱逐限制当节点资源可用量达到指定阈值（magefs.available&lt;15%,memory.available&lt;300Mi,nodefs.available&lt;10%,nodefs.inodesFree&lt;5%）
+会优先驱逐Qos级别低的pod以保障Qos级别高的pod可用。
+解决方法：增加节点资源或将被驱逐的pod迁移到其他空闲资源充足的节点上。
+2、pod所在节点上被打上了NoExecute的污点，此种污点会将该节点上无法容忍此污点的pod进行驱逐。
+解决方法：查看该节点上的NoExecute污点是否必要。或者pod是否可以迁移到其他节点。
+3、pod所在的节点为NotReady状态</p><p>通常可以通过<code>kubectl describe pods ${pod} -n ${namespace}</code>的底部的Events信息来找到一些问题的原因。例如下面例子中可以看到DiskPressure信息，说明跟磁盘相关。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>Events</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=l>Type     Reason     Age        From                 Message</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>---- <span class=w>    </span>------ <span class=w>    </span>---- <span class=w>      </span>---- <span class=w>                </span>-------<span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>Warning  Evicted    61s        kubelet, acs.deploy  The node had condition</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>DiskPressure].</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=l>Normal   Scheduled  &lt;invalid&gt;  default-scheduler    Successfully assigned ark-system/bridge-console-bridge-console-554d57bb87-nh2vd to acs.deploy</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>或者根据pod的Message字段来找到原因</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Name:           tiller-deploy-7f6456894f-22vgr
+</span></span><span class=line><span class=cl>Namespace:      kube-system
+</span></span><span class=line><span class=cl>Priority:       0
+</span></span><span class=line><span class=cl>Node:           a36e04001.cloud.e04.amtest17/
+</span></span><span class=line><span class=cl>Start Time:     Mon, 08 Jun 2020 12:17:26 +0800
+</span></span><span class=line><span class=cl>Labels:         app=helm
+</span></span><span class=line><span class=cl>                name=tiller
+</span></span><span class=line><span class=cl>                pod-template-hash=7f6456894f
+</span></span><span class=line><span class=cl>Annotations:    &lt;none&gt;
+</span></span><span class=line><span class=cl>Status:         Failed
+</span></span><span class=line><span class=cl>Reason:         Evicted
+</span></span><span class=line><span class=cl>Message:        Pod The node had condition: [DiskPressure].
+</span></span></code></pre></td></tr></table></div></div><p>由于pod驱逐的原因排查跟时间点相关，需要根据pod被驱逐的时间来分析当时的状态。
+4、批量删除状态Evicted的pod，此操作会删除集群里面所有状态为Evicted的pod</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl><span class=nv>ns</span><span class=o>=</span><span class=sb>`</span>kubectl get ns <span class=p>|</span> awk <span class=s1>&#39;NR&gt;1 {print $1}&#39;</span><span class=sb>`</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> i in <span class=nv>$ns</span><span class=p>;</span><span class=k>do</span>  kubectl get pods -n <span class=nv>$i</span>  <span class=p>|</span> grep Evicted<span class=p>|</span> awk <span class=s1>&#39;{print $1}&#39;</span> <span class=p>|</span> xargs  kubectl delete pods -n <span class=nv>$i</span> <span class=p>;</span><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=7-pod状态为unknown>7. pod状态为Unknown</h2><p>通常该状态为pod对应节点的为NotReady，通过查看 kubectl get node 来查看node是否为NotReady。</p><h2 id=8-pod为running但是not-ready状态>8. pod为running，但是Not Ready状态</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=l>argo-ui-56f4d67b69-8gshr   0/1     Running     0          10h</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>类似上面这种状态，此时说明pod的readiness健康检查没过导致的，需要先从pod的健康检查本身来排查问题。可以通过 <code>kubectl get pods -n ${namespace} ${name} -o yaml</code> 找到pod的健康检查部分，关键字为readiness，然后进入pod中执行对应的健康检查命令来测试健康检查的准确性。</p><p>例如readiness的配置如下，需要进入pod中执行<code>curl http://127.0.0.1/api/status</code>，也可以在pod对应的node节点上执行<code>curl [http://${pod_ip}/api/status](http://127.0.0.1/api/status)</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=w>    </span><span class=nt>livenessProbe</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>failureThreshold</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>httpGet</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/api/status</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=l>http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>scheme</span><span class=p>:</span><span class=w> </span><span class=l>HTTP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>initialDelaySeconds</span><span class=p>:</span><span class=w> </span><span class=m>120</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>periodSeconds</span><span class=p>:</span><span class=w> </span><span class=m>10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>successThreshold</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>timeoutSeconds</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=9-pod为containercreating状态>9. pod为ContainerCreating状态</h2><p>通过<code>kubectl describe pods -n ${namespace} ${name}</code>的Events部分来分析原因，可能的原因如下：</p><ul><li>网络分配ip地址失败</li></ul><h2 id=10initcrashloopbackoff>10. Init:CrashLoopBackOff</h2><ol><li>通过<code>kubectl get pod -n {NAMESPACE} {POD_NAME} -o yaml</code> 找到pod的Init Containers，并找到其中的name字段。</li><li>执行<code>kubectl logs -n {NAMESPACE} {POD_NAME} -c {INIT_CONTAINER_NAME}</code>可以查看Init Container的日志来分析原因。</li></ol><h2 id=11-podinitializing>11. PodInitializing</h2><p>需要查看initContainer的日志</p><h2 id=12-matchnodeselector>12. MatchNodeSelector</h2><p>查看pod的status信息可以看到如下信息：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>status:
+</span></span><span class=line><span class=cl>  message: Pod Predicate MatchNodeSelector failed
+</span></span><span class=line><span class=cl>  phase: Failed
+</span></span><span class=line><span class=cl>  reason: MatchNodeSelector
+</span></span><span class=line><span class=cl>  startTime: &#34;2022-03-15T05:07:57Z&#34;
+</span></span></code></pre></td></tr></table></div></div><p>说明该pod没有调度成功，在predicate的MatchNodeSelector阶段失败了，没有匹配上node节点。</p><p>在k8s 1.21之前的版本，存在bug，节点重启后可能遇到过问题，将pod delete后重新调度可以解决。https://github.com/kubernetes/kubernetes/issues/92067</p><h1 id=参考>参考</h1><ul><li><a class=link href=https://help.aliyun.com/document_detail/412618.html#section-7gv-3tf-paf target=_blank rel=noopener>常见的Pod异常状态及处理方式</a></li></ul></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

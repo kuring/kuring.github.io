@@ -1,376 +1,52 @@
-<!DOCTYPE html>
-<html lang="zh-Hans">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="在k8s的运维过程中，经常会有根据pid获取到pod名称的需求。比如某个pid占用cpu特别高，想知道是哪个pod里面的进程。 操作步骤查看进程的cgroup信息 12345678910111213$ cat &#x2F;proc&#x2F;5760&#x2F;cgroup 11:rdma:&#x2F;10:hugetlb:&#x2F;apsara_k8s&#x2F;kubepods&#x2F;burstable&#x2F;podf87c35b4-c170-4e1c-a726">
-<meta property="og:type" content="article">
-<meta property="og:title" content="根据pid获取到pod名称">
-<meta property="og:url" content="http://kuring.me/post/get_pod_by_pid/index.html">
-<meta property="og:site_name" content="404频道">
-<meta property="og:description" content="在k8s的运维过程中，经常会有根据pid获取到pod名称的需求。比如某个pid占用cpu特别高，想知道是哪个pod里面的进程。 操作步骤查看进程的cgroup信息 12345678910111213$ cat &#x2F;proc&#x2F;5760&#x2F;cgroup 11:rdma:&#x2F;10:hugetlb:&#x2F;apsara_k8s&#x2F;kubepods&#x2F;burstable&#x2F;podf87c35b4-c170-4e1c-a726">
-<meta property="og:locale">
-<meta property="article:published_time" content="2022-05-06T14:45:20.000Z">
-<meta property="article:modified_time" content="2025-12-20T16:59:52.687Z">
-<meta name="twitter:card" content="summary">
-
-
-<link rel="canonical" href="http://kuring.me/post/get_pod_by_pid/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/get_pod_by_pid/","path":"post/get_pod_by_pid/","title":"根据pid获取到pod名称"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>根据pid获取到pod名称 | 404频道</title>
-  
-
-
-
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">404频道</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">学习笔记</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="Searching..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          Table of Contents
-        </li>
-        <li class="sidebar-nav-overview">
-          Overview
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E6%AD%A5%E9%AA%A4"><span class="nav-number">1.</span> <span class="nav-text">操作步骤</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">2.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name"></p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">256</span>
-          <span class="site-state-item-name">posts</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">36</span>
-        <span class="site-state-item-name">tags</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/get_pod_by_pid/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="根据pid获取到pod名称 | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          根据pid获取到pod名称
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-05-06 14:45:20" itemprop="dateCreated datePublished" datetime="2022-05-06T14:45:20+00:00">2022-05-06</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-20 16:59:52" itemprop="dateModified" datetime="2025-12-20T16:59:52+00:00">2025-12-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p>在k8s的运维过程中，经常会有根据pid获取到pod名称的需求。比如某个pid占用cpu特别高，想知道是哪个pod里面的进程。</p>
-<h1 id="操作步骤"><a href="#操作步骤" class="headerlink" title="操作步骤"></a>操作步骤</h1><p>查看进程的cgroup信息</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ cat /proc/5760/cgroup </span><br><span class="line">11:rdma:/</span><br><span class="line">10:hugetlb:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">9:freezer:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">8:pids:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">7:perf_event:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">6:blkio:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">5:devices:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">4:memory:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">3:cpuset,cpu,cpuacct:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">2:net_cls,net_prio:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line">1:name=systemd:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>其中的 <code>17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</code> 即为容器的id，可以如下的命令直接获取到容器的pid</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CID=$(cat /proc/5760/cgroup | awk -F &#x27;/&#x27; &#x27;&#123;print $6&#125;&#x27;)</span><br><span class="line">echo $&#123;CID:0:8&#125;</span><br></pre></td></tr></table></figure>
-
-<p>继续执行如下命令查看docker的label</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker  inspect 17e15f --format &quot;&#123;&#123;json .Config.Labels&#125;&#125;&quot; </span><br></pre></td></tr></table></figure>
-
-<p>其中io.kubernetes.pod.namespace为pod所在的namespace，io.kubernetes.pod.name为pod的name。</p>
-<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
-<li><a target="_blank" rel="noopener" href="https://icloudnative.io/posts/find-kubernetes-pod-info-from-process-id/">Kubernetes 教程：根据 PID 获取 Pod 名称</a></li>
-</ul>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/post/cuelang/" rel="prev" title="cue语言（个人笔记）">
-                  <i class="fa fa-angle-left"></i> cue语言（个人笔记）
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/post/flux/" rel="next" title="Flux（学习笔记）">
-                  Flux（学习笔记） <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    
-  
-  <div class="comments giscus-container">
-  </div>
-  
-  
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder"></span>
-  </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-
-
-  
-
-
-
-
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
-
-<script>
-document.addEventListener('page:loaded', () => {
-  if (!CONFIG.page.comments) return;
-
-  NexT.utils.loadComments('.giscus-container')
-    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
-      attributes: {
-        async                   : true,
-        crossOrigin             : 'anonymous',
-        'data-repo'             : CONFIG.giscus.repo,
-        'data-repo-id'          : CONFIG.giscus.repo_id,
-        'data-category'         : CONFIG.giscus.category,
-        'data-category-id'      : CONFIG.giscus.category_id,
-        'data-mapping'          : CONFIG.giscus.mapping,
-        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
-        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
-        'data-theme'            : CONFIG.giscus.theme,
-        'data-lang'             : CONFIG.giscus.lang,
-        'data-input-position'   : CONFIG.giscus.input_position,
-        'data-loading'          : CONFIG.giscus.loading
-      },
-      parentNode: document.querySelector('.giscus-container')
-    }));
-});
-</script>
-
-</body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="title: 根据pid获取到pod名称 date: 2022-05-06 14:45:20 tags: author: 在k8s的运维过程中，经常会有根据pid获取到pod名称的需求。比如某个pid占用cpu特别高，想知道是哪个pod里面的进程。\n"><title></title><link rel=canonical href=https://kuring.me/post/get_pod_by_pid/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content><meta property='og:description' content="title: 根据pid获取到pod名称 date: 2022-05-06 14:45:20 tags: author: 在k8s的运维过程中，经常会有根据pid获取到pod名称的需求。比如某个pid占用cpu特别高，想知道是哪个pod里面的进程。\n"><meta property='og:url' content='https://kuring.me/post/get_pod_by_pid/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta name=twitter:title content><meta name=twitter:description content="title: 根据pid获取到pod名称 date: 2022-05-06 14:45:20 tags: author: 在k8s的运维过程中，经常会有根据pid获取到pod名称的需求。比如某个pid占用cpu特别高，想知道是哪个pod里面的进程。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#author>title: 根据pid获取到pod名称
+date: 2022-05-06 14:45:20
+tags:
+author:</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/get_pod_by_pid/></a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 1 分钟</time></div></footer></div></header><section class=article-content><h2 id=author>title: 根据pid获取到pod名称
+date: 2022-05-06 14:45:20
+tags:
+author:</h2><p>在k8s的运维过程中，经常会有根据pid获取到pod名称的需求。比如某个pid占用cpu特别高，想知道是哪个pod里面的进程。</p><h1 id=操作步骤>操作步骤</h1><p>查看进程的cgroup信息</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ cat /proc/5760/cgroup 
+</span></span><span class=line><span class=cl>11:rdma:/
+</span></span><span class=line><span class=cl>10:hugetlb:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3
+</span></span><span class=line><span class=cl>9:freezer:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3
+</span></span><span class=line><span class=cl>8:pids:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3
+</span></span><span class=line><span class=cl>7:perf_event:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3
+</span></span><span class=line><span class=cl>6:blkio:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3
+</span></span><span class=line><span class=cl>5:devices:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3
+</span></span><span class=line><span class=cl>4:memory:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3
+</span></span><span class=line><span class=cl>3:cpuset,cpu,cpuacct:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3
+</span></span><span class=line><span class=cl>2:net_cls,net_prio:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3
+</span></span><span class=line><span class=cl>1:name=systemd:/apsara_k8s/kubepods/burstable/podf87c35b4-c170-4e1c-a726-d839e2fe6bea/17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3
+</span></span></code></pre></td></tr></table></div></div><p>其中的 <code>17e15f78a43b2ddc7caff93bcc03d5ca7f5249fbee4c2ade5c3c96a7279af0a3</code> 即为容器的id，可以如下的命令直接获取到容器的pid</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>CID=$(cat /proc/5760/cgroup | awk -F &#39;/&#39; &#39;{print $6}&#39;)
+</span></span><span class=line><span class=cl>echo ${CID:0:8}
+</span></span></code></pre></td></tr></table></div></div><p>继续执行如下命令查看docker的label</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>docker  inspect 17e15f --format &#34;{{json .Config.Labels}}&#34; 
+</span></span></code></pre></td></tr></table></div></div><p>其中io.kubernetes.pod.namespace为pod所在的namespace，io.kubernetes.pod.name为pod的name。</p><h1 id=参考资料>参考资料</h1><ul><li><a class=link href=https://icloudnative.io/posts/find-kubernetes-pod-info-from-process-id/ target=_blank rel=noopener>Kubernetes 教程：根据 PID 获取 Pod 名称</a></li></ul></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

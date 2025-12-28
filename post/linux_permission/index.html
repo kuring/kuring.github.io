@@ -1,424 +1,107 @@
-<!DOCTYPE html>
-<html lang="zh-Hans">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="[TOC] 在Linux操作系统中，每个文件都有一组9个权限位来控制谁能够读写和执行该文件的内容。这组权限对于文件的意义非常容易理解。但是对于目录而言就不是那么容易理解了。要想搞明白权限机制需要了解文件系统中的inode节点和block等概念，并大致了解文件系统的内部实现原理。 文件的权限这部分比较容易理解。比较容易搞错的为： w位：包含对文件的添加、修改该文件内容的权限，但不包含删除文件或移动该">
-<meta property="og:type" content="article">
-<meta property="og:title" content="Linux难点之权限类型">
-<meta property="og:url" content="http://kuring.me/post/linux_permission/index.html">
-<meta property="og:site_name" content="404频道">
-<meta property="og:description" content="[TOC] 在Linux操作系统中，每个文件都有一组9个权限位来控制谁能够读写和执行该文件的内容。这组权限对于文件的意义非常容易理解。但是对于目录而言就不是那么容易理解了。要想搞明白权限机制需要了解文件系统中的inode节点和block等概念，并大致了解文件系统的内部实现原理。 文件的权限这部分比较容易理解。比较容易搞错的为： w位：包含对文件的添加、修改该文件内容的权限，但不包含删除文件或移动该">
-<meta property="og:locale">
-<meta property="article:published_time" content="2014-03-08T00:00:00.000Z">
-<meta property="article:modified_time" content="2025-12-20T16:59:52.693Z">
-<meta name="twitter:card" content="summary">
-
-
-<link rel="canonical" href="http://kuring.me/post/linux_permission/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/linux_permission/","path":"post/linux_permission/","title":"Linux难点之权限类型"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>Linux难点之权限类型 | 404频道</title>
-  
-
-
-
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">404频道</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">学习笔记</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="Searching..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          Table of Contents
-        </li>
-        <li class="sidebar-nav-overview">
-          Overview
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%9A%84%E6%9D%83%E9%99%90"><span class="nav-number">1.</span> <span class="nav-text">文件的权限</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%9A%84%E6%9D%83%E9%99%90"><span class="nav-number">2.</span> <span class="nav-text">目录的权限</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90%E4%B8%80"><span class="nav-number">2.1.</span> <span class="nav-text">例子一</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90%E4%BA%8C"><span class="nav-number">2.2.</span> <span class="nav-text">例子二</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%94%A8%E6%88%B7ID"><span class="nav-number">3.</span> <span class="nav-text">进程用户ID</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#set-uid"><span class="nav-number">4.</span> <span class="nav-text">set uid</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#set-gid"><span class="nav-number">5.</span> <span class="nav-text">set gid</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%B2%98%E9%99%84%E4%BD%8D%EF%BC%88sticky-bit%EF%BC%89"><span class="nav-number">6.</span> <span class="nav-text">粘附位（sticky bit）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A1%A8%E7%A4%BA%E6%96%B9%E6%B3%95"><span class="nav-number">7.</span> <span class="nav-text">表示方法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9D%83%E9%99%90%E8%AE%BE%E5%AE%9A%E6%96%B9%E5%BC%8F"><span class="nav-number">8.</span> <span class="nav-text">权限设定方式</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E6%A1%A3"><span class="nav-number">9.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name"></p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">256</span>
-          <span class="site-state-item-name">posts</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">36</span>
-        <span class="site-state-item-name">tags</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/linux_permission/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="Linux难点之权限类型 | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          Linux难点之权限类型
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2014-03-08 00:00:00" itemprop="dateCreated datePublished" datetime="2014-03-08T00:00:00+00:00">2014-03-08</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-20 16:59:52" itemprop="dateModified" datetime="2025-12-20T16:59:52+00:00">2025-12-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p>[TOC]</p>
-<p>在Linux操作系统中，每个文件都有一组9个权限位来控制谁能够读写和执行该文件的内容。这组权限对于文件的意义非常容易理解。但是对于目录而言就不是那么容易理解了。要想搞明白权限机制需要了解文件系统中的inode节点和block等概念，并大致了解文件系统的内部实现原理。</p>
-<h1 id="文件的权限"><a href="#文件的权限" class="headerlink" title="文件的权限"></a>文件的权限</h1><p>这部分比较容易理解。比较容易搞错的为：</p>
-<p>w位：包含对文件的添加、修改该文件内容的权限，但不包含删除文件或移动该文件的权限，因为文件的文件名信息存储在父目录的block中，而不是在该文件的inode节点中。父目录的block中包含该文件的inode节点和文件名信息，通过父目录中的inode节点找到该文件。</p>
-<h1 id="目录的权限"><a href="#目录的权限" class="headerlink" title="目录的权限"></a>目录的权限</h1><p>r位：表示具有读取该目录列表的权限。</p>
-<p>w位：对该文件夹下创建新的文件或目录进行增加、删除、修改操作。</p>
-<p>x位：这个稍微难以理解。表示用户能否进入该目录成为工作目录，即是否可以cd到该目录。通常和r位组合一块使用。</p>
-<h2 id="例子一"><a href="#例子一" class="headerlink" title="例子一"></a>例子一</h2><p>假设root用户对testing目录和testing目录下的testing文件拥有的如下权限：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost tmp]# ls -ald testing/ testing/testing</span><br><span class="line">drwxr--r--. 2 root root 4096 3月   1 11:44 testing/</span><br><span class="line">-rw-------. 1 root root    0 3月   1 11:44 testing/testing</span><br></pre></td></tr></table></figure>
-
-<p>kuring用户拥有对该文件夹的读权限，但是没有x权限。当kuring用户访问时会提示如下内容：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">// 拥有r的权限可以查询文件名，但是没有x权限，不能读取除文件名外的其他信息，产生了问号。</span><br><span class="line">[kuring@localhost tmp]$ ll testing/</span><br><span class="line">ls: 无法访问testing/testing: 权限不够</span><br><span class="line">总用量 0</span><br><span class="line">-????????? ? ? ? ?            ? testing    </span><br><span class="line"></span><br><span class="line">// 没有x权限，不能进入该目录</span><br><span class="line">[kuring@localhost tmp]$ cd testing/</span><br><span class="line">bash: cd: testing/: 权限不够</span><br></pre></td></tr></table></figure>
-
-<h2 id="例子二"><a href="#例子二" class="headerlink" title="例子二"></a>例子二</h2><p>在上述例子中，给kuring用户增加对目录testing的rwx权限，却只拥有testing目录下的testing文件的r权限。权限情况如下所示：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[kuring@localhost tmp]$ ls -ald testing testing/testing</span><br><span class="line">drwxr--rwx. 2 root root 4096 3月   1 13:29 testing</span><br><span class="line">-rw-r--r--. 1 root root    0 3月   1 13:29 testing/testing</span><br></pre></td></tr></table></figure>
-
-<p>kuring用户执行如下操作：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">// 当对文件进行更改时由于没有对文件的w权限，操作失败</span><br><span class="line">[kuring@localhost tmp]$ echo &quot;world&quot; &gt;&gt; testing/testing</span><br><span class="line">bash: testing/testing: 权限不够</span><br><span class="line"></span><br><span class="line">// 当对文件进行删除操作时却可以删除该文件，这是因为文件删除操作的权限是由该文件所在目录的w位决定的</span><br><span class="line">// 文件删除操作会修改父目录中block节点中的文件名内容，而父目录的权限为rx，不可写。</span><br><span class="line">[kuring@localhost tmp]$ rm testing/testing</span><br><span class="line">rm：是否删除有写保护的普通文件 &quot;testing/testing&quot;？y</span><br><span class="line">[kuring@localhost tmp]$ ls testing/</span><br><span class="line">[kuring@localhost tmp]$</span><br></pre></td></tr></table></figure>
-
-<p>只有了解了原理，就可以理解在多级目录并且目录的权限不一致的情况下相应的权限问题了。</p>
-<hr>
-<h1 id="进程用户ID"><a href="#进程用户ID" class="headerlink" title="进程用户ID"></a>进程用户ID</h1><p>要讲解set uid和set gid，就涉及到进程的用户ID概念。用户ID又可以分为两部分：</p>
-<ul>
-<li><p>实际用户ID和实际组ID：标识了究竟是哪个用户执行了该程序，跟命令行中的登录用户一致，可以通过id命令查看。</p>
-</li>
-<li><p>有效用户ID和有效组ID：系统通过有效用户ID、有效组ID和附加组ID来决定进行对系统资源的访问权限。在Linux系统中一个用户可以属于多个组，在&#x2F;etc&#x2F;passwd文件中一个用户仅能标识出隶属于一个组ID，该组ID叫做默认的组ID。在&#x2F;etc&#x2F;group为文件中可以标识出一个用户隶属于多个组，这多个组中除去默认的组ID叫做附加组ID。</p>
-</li>
-</ul>
-<h1 id="set-uid"><a href="#set-uid" class="headerlink" title="set uid"></a>set uid</h1><ul>
-<li>该权限位仅对二进制文件有效</li>
-<li>执行者对该程序需要具有x的权限</li>
-<li>该权限仅在执行该程序过程中有效</li>
-<li>执行者将具有该程序拥有者的权限</li>
-</ul>
-<p>以&#x2F;usr&#x2F;bin&#x2F;passwd命令为例，该程序的权限为：rwsr-xr-x。普通用户可以调用该程序修改自己的密码，而密码文件&#x2F;etc&#x2F;shadow未设置任何权限，即只有root用户可以操作该文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost tmp]# ll /usr/bin/passwd</span><br><span class="line">-rwsr-xr-x. 1 root root 30768 2月  22 2012 /usr/bin/passwd</span><br><span class="line">[root@localhost tmp]# ll /etc/shadow</span><br><span class="line">----------. 1 root root 1248 11月 30 10:50 /etc/shadow</span><br></pre></td></tr></table></figure>
-
-<p>passwd文件的s标志表明setuid位被设置。</p>
-<p>passwd的拥有者为root；当普通用户执行passwd命令时，普通用户具有该命令的执行权限；passwd执行该命令时会暂时获得root用户权限；&#x2F;etc&#x2F;shadow就可以被修改。</p>
-<p>也许看到这里就会有疑问：那岂不是普通用户可以通过&#x2F;etc&#x2F;passwd命令修改其他用户的密码了。之所以不可以这么操作是因为passwd命令内部通过逻辑实现。</p>
-<h1 id="set-gid"><a href="#set-gid" class="headerlink" title="set gid"></a>set gid</h1><p>设置在文件上的情况：</p>
-<ul>
-<li>该权限位仅对二进制文件有效</li>
-<li>执行者对该程序需要具有x的权限</li>
-<li>执行者在运行程序的过程中将会获得该执行群组的权限</li>
-</ul>
-<p>设置在目录上的情况：</p>
-<ul>
-<li>用户对目录具有r和x的权限</li>
-<li>用户在目录下的有效群组将会变成该目录的群组</li>
-<li>若用户在此目录下具有w的权限，使用者建立的群组与该目录的群组相同</li>
-</ul>
-<h1 id="粘附位（sticky-bit）"><a href="#粘附位（sticky-bit）" class="headerlink" title="粘附位（sticky bit）"></a>粘附位（sticky bit）</h1><p>该权限位仅对目录有效，如果在目录上设置了粘附位，只有该目录的属主、该文件的属主或root用户可以删除或重命名该目录文件。</p>
-<p>&#x2F;tmp文件夹的权限如下，其中的t位表示粘附位：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[kuring@localhost /]$ ll -ad tmp/</span><br><span class="line">drwxrwxrwt. 25 root root 4096 3月   1 14:51 tmp/</span><br></pre></td></tr></table></figure>
-
-<p>如果在&#x2F;tmp下kuring用户创建了自己的文件kuring_file，并设置权限为777，test用户并不能删除该文件</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[kuring@localhost tmp]$ touch kuring_file</span><br><span class="line">[kuring@localhost tmp]$ ll kuring_file</span><br><span class="line">-rw-rw-r--. 1 kuring kuring 0 3月   1 15:05 kuring_file</span><br><span class="line">[kuring@localhost tmp]$ chmod 777 kuring_file</span><br><span class="line">[kuring@localhost tmp]$ ll kuring_file</span><br><span class="line">-rwxrwxrwx. 1 kuring kuring 0 3月   1 15:05 kuring_file</span><br><span class="line"></span><br><span class="line">[kuring@localhost tmp]$ su - test</span><br><span class="line">密码：</span><br><span class="line">[test@localhost ~]$ cd /tmp/</span><br><span class="line">[test@localhost tmp]$ rm kuring_file</span><br><span class="line">rm: 无法删除&quot;kuring_file&quot;: 不允许的操作</span><br></pre></td></tr></table></figure>
-
-<h1 id="表示方法"><a href="#表示方法" class="headerlink" title="表示方法"></a>表示方法</h1><p>如果设置了setuid位，属主的执行权限中的x用s来代替；<br>如果设置了setgid位，组执行权限中的x用s来代替；<br>如果设置了sticky位，权限最后的那个字符被设置为t；<br>如果设置了setuid、setgid或sticky位中一个，又没有设置相应的执行位，这些位显示为S或T。</p>
-<h1 id="权限设定方式"><a href="#权限设定方式" class="headerlink" title="权限设定方式"></a>权限设定方式</h1><p>4为setuid位，2为setgid位，1为sticky位。具体参考《鸟哥的Linux私房菜》。</p>
-<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><p>《鸟哥的Linux私房菜》<br>《UNIX&#x2F;Linux系统管理技术手册》</p>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/post/linux_screen/" rel="prev" title="Linux下的screen命令">
-                  <i class="fa fa-angle-left"></i> Linux下的screen命令
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/post/eclipse_viplugin/" rel="next" title="在Eclipse中安装viplugin插件">
-                  在Eclipse中安装viplugin插件 <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    
-  
-  <div class="comments giscus-container">
-  </div>
-  
-  
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder"></span>
-  </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-
-
-  
-
-
-
-
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
-
-<script>
-document.addEventListener('page:loaded', () => {
-  if (!CONFIG.page.comments) return;
-
-  NexT.utils.loadComments('.giscus-container')
-    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
-      attributes: {
-        async                   : true,
-        crossOrigin             : 'anonymous',
-        'data-repo'             : CONFIG.giscus.repo,
-        'data-repo-id'          : CONFIG.giscus.repo_id,
-        'data-category'         : CONFIG.giscus.category,
-        'data-category-id'      : CONFIG.giscus.category_id,
-        'data-mapping'          : CONFIG.giscus.mapping,
-        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
-        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
-        'data-theme'            : CONFIG.giscus.theme,
-        'data-lang'             : CONFIG.giscus.lang,
-        'data-input-position'   : CONFIG.giscus.input_position,
-        'data-loading'          : CONFIG.giscus.loading
-      },
-      parentNode: document.querySelector('.giscus-container')
-    }));
-});
-</script>
-
-</body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="[TOC]\n在Linux操作系统中，每个文件都有一组9个权限位来控制谁能够读写和执行该文件的内容。这组权限对于文件的意义非常容易理解。但是对于目录而言就不是那么容易理解了。要想搞明白权限机制需要了解文件系统中的inode节点和block等概念，并大致了解文件系统的内部实现原理。\n"><title>Linux难点之权限类型</title><link rel=canonical href=https://kuring.me/post/linux_permission/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="Linux难点之权限类型"><meta property='og:description' content="[TOC]\n在Linux操作系统中，每个文件都有一组9个权限位来控制谁能够读写和执行该文件的内容。这组权限对于文件的意义非常容易理解。但是对于目录而言就不是那么容易理解了。要想搞明白权限机制需要了解文件系统中的inode节点和block等概念，并大致了解文件系统的内部实现原理。\n"><meta property='og:url' content='https://kuring.me/post/linux_permission/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:published_time' content='2014-03-08T00:00:00+00:00'><meta property='article:modified_time' content='2014-03-08T00:00:00+00:00'><meta name=twitter:title content="Linux难点之权限类型"><meta name=twitter:description content="[TOC]\n在Linux操作系统中，每个文件都有一组9个权限位来控制谁能够读写和执行该文件的内容。这组权限对于文件的意义非常容易理解。但是对于目录而言就不是那么容易理解了。要想搞明白权限机制需要了解文件系统中的inode节点和block等概念，并大致了解文件系统的内部实现原理。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#例子一>例子一</a></li><li><a href=#例子二>例子二</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/linux_permission/>Linux难点之权限类型</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2014-03-08T00:00:00Z>2014-03-08</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 5 分钟</time></div></footer></div></header><section class=article-content><p>[TOC]</p><p>在Linux操作系统中，每个文件都有一组9个权限位来控制谁能够读写和执行该文件的内容。这组权限对于文件的意义非常容易理解。但是对于目录而言就不是那么容易理解了。要想搞明白权限机制需要了解文件系统中的inode节点和block等概念，并大致了解文件系统的内部实现原理。</p><h1 id=文件的权限>文件的权限</h1><p>这部分比较容易理解。比较容易搞错的为：</p><p>w位：包含对文件的添加、修改该文件内容的权限，但不包含删除文件或移动该文件的权限，因为文件的文件名信息存储在父目录的block中，而不是在该文件的inode节点中。父目录的block中包含该文件的inode节点和文件名信息，通过父目录中的inode节点找到该文件。</p><h1 id=目录的权限>目录的权限</h1><p>r位：表示具有读取该目录列表的权限。</p><p>w位：对该文件夹下创建新的文件或目录进行增加、删除、修改操作。</p><p>x位：这个稍微难以理解。表示用户能否进入该目录成为工作目录，即是否可以cd到该目录。通常和r位组合一块使用。</p><h2 id=例子一>例子一</h2><p>假设root用户对testing目录和testing目录下的testing文件拥有的如下权限：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[root@localhost tmp]# ls -ald testing/ testing/testing
+</span></span><span class=line><span class=cl>drwxr--r--. 2 root root 4096 3月   1 11:44 testing/
+</span></span><span class=line><span class=cl>-rw-------. 1 root root    0 3月   1 11:44 testing/testing
+</span></span></code></pre></td></tr></table></div></div><p>kuring用户拥有对该文件夹的读权限，但是没有x权限。当kuring用户访问时会提示如下内容：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>// 拥有r的权限可以查询文件名，但是没有x权限，不能读取除文件名外的其他信息，产生了问号。
+</span></span><span class=line><span class=cl>[kuring@localhost tmp]$ ll testing/
+</span></span><span class=line><span class=cl>ls: 无法访问testing/testing: 权限不够
+</span></span><span class=line><span class=cl>总用量 0
+</span></span><span class=line><span class=cl>-????????? ? ? ? ?            ? testing    
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>// 没有x权限，不能进入该目录
+</span></span><span class=line><span class=cl>[kuring@localhost tmp]$ cd testing/
+</span></span><span class=line><span class=cl>bash: cd: testing/: 权限不够
+</span></span></code></pre></td></tr></table></div></div><h2 id=例子二>例子二</h2><p>在上述例子中，给kuring用户增加对目录testing的rwx权限，却只拥有testing目录下的testing文件的r权限。权限情况如下所示：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[kuring@localhost tmp]$ ls -ald testing testing/testing
+</span></span><span class=line><span class=cl>drwxr--rwx. 2 root root 4096 3月   1 13:29 testing
+</span></span><span class=line><span class=cl>-rw-r--r--. 1 root root    0 3月   1 13:29 testing/testing
+</span></span></code></pre></td></tr></table></div></div><p>kuring用户执行如下操作：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>// 当对文件进行更改时由于没有对文件的w权限，操作失败
+</span></span><span class=line><span class=cl>[kuring@localhost tmp]$ echo &#34;world&#34; &gt;&gt; testing/testing
+</span></span><span class=line><span class=cl>bash: testing/testing: 权限不够
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>// 当对文件进行删除操作时却可以删除该文件，这是因为文件删除操作的权限是由该文件所在目录的w位决定的
+</span></span><span class=line><span class=cl>// 文件删除操作会修改父目录中block节点中的文件名内容，而父目录的权限为rx，不可写。
+</span></span><span class=line><span class=cl>[kuring@localhost tmp]$ rm testing/testing
+</span></span><span class=line><span class=cl>rm：是否删除有写保护的普通文件 &#34;testing/testing&#34;？y
+</span></span><span class=line><span class=cl>[kuring@localhost tmp]$ ls testing/
+</span></span><span class=line><span class=cl>[kuring@localhost tmp]$
+</span></span></code></pre></td></tr></table></div></div><p>只有了解了原理，就可以理解在多级目录并且目录的权限不一致的情况下相应的权限问题了。</p><hr><h1 id=进程用户id>进程用户ID</h1><p>要讲解set uid和set gid，就涉及到进程的用户ID概念。用户ID又可以分为两部分：</p><ul><li><p>实际用户ID和实际组ID：标识了究竟是哪个用户执行了该程序，跟命令行中的登录用户一致，可以通过id命令查看。</p></li><li><p>有效用户ID和有效组ID：系统通过有效用户ID、有效组ID和附加组ID来决定进行对系统资源的访问权限。在Linux系统中一个用户可以属于多个组，在/etc/passwd文件中一个用户仅能标识出隶属于一个组ID，该组ID叫做默认的组ID。在/etc/group为文件中可以标识出一个用户隶属于多个组，这多个组中除去默认的组ID叫做附加组ID。</p></li></ul><h1 id=set-uid>set uid</h1><ul><li>该权限位仅对二进制文件有效</li><li>执行者对该程序需要具有x的权限</li><li>该权限仅在执行该程序过程中有效</li><li>执行者将具有该程序拥有者的权限</li></ul><p>以/usr/bin/passwd命令为例，该程序的权限为：rwsr-xr-x。普通用户可以调用该程序修改自己的密码，而密码文件/etc/shadow未设置任何权限，即只有root用户可以操作该文件。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[root@localhost tmp]# ll /usr/bin/passwd
+</span></span><span class=line><span class=cl>-rwsr-xr-x. 1 root root 30768 2月  22 2012 /usr/bin/passwd
+</span></span><span class=line><span class=cl>[root@localhost tmp]# ll /etc/shadow
+</span></span><span class=line><span class=cl>----------. 1 root root 1248 11月 30 10:50 /etc/shadow
+</span></span></code></pre></td></tr></table></div></div><p>passwd文件的s标志表明setuid位被设置。</p><p>passwd的拥有者为root；当普通用户执行passwd命令时，普通用户具有该命令的执行权限；passwd执行该命令时会暂时获得root用户权限；/etc/shadow就可以被修改。</p><p>也许看到这里就会有疑问：那岂不是普通用户可以通过/etc/passwd命令修改其他用户的密码了。之所以不可以这么操作是因为passwd命令内部通过逻辑实现。</p><h1 id=set-gid>set gid</h1><p>设置在文件上的情况：</p><ul><li>该权限位仅对二进制文件有效</li><li>执行者对该程序需要具有x的权限</li><li>执行者在运行程序的过程中将会获得该执行群组的权限</li></ul><p>设置在目录上的情况：</p><ul><li>用户对目录具有r和x的权限</li><li>用户在目录下的有效群组将会变成该目录的群组</li><li>若用户在此目录下具有w的权限，使用者建立的群组与该目录的群组相同</li></ul><h1 id=粘附位sticky-bit>粘附位（sticky bit）</h1><p>该权限位仅对目录有效，如果在目录上设置了粘附位，只有该目录的属主、该文件的属主或root用户可以删除或重命名该目录文件。</p><p>/tmp文件夹的权限如下，其中的t位表示粘附位：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[kuring@localhost /]$ ll -ad tmp/
+</span></span><span class=line><span class=cl>drwxrwxrwt. 25 root root 4096 3月   1 14:51 tmp/
+</span></span></code></pre></td></tr></table></div></div><p>如果在/tmp下kuring用户创建了自己的文件kuring_file，并设置权限为777，test用户并不能删除该文件</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[kuring@localhost tmp]$ touch kuring_file
+</span></span><span class=line><span class=cl>[kuring@localhost tmp]$ ll kuring_file
+</span></span><span class=line><span class=cl>-rw-rw-r--. 1 kuring kuring 0 3月   1 15:05 kuring_file
+</span></span><span class=line><span class=cl>[kuring@localhost tmp]$ chmod 777 kuring_file
+</span></span><span class=line><span class=cl>[kuring@localhost tmp]$ ll kuring_file
+</span></span><span class=line><span class=cl>-rwxrwxrwx. 1 kuring kuring 0 3月   1 15:05 kuring_file
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>[kuring@localhost tmp]$ su - test
+</span></span><span class=line><span class=cl>密码：
+</span></span><span class=line><span class=cl>[test@localhost ~]$ cd /tmp/
+</span></span><span class=line><span class=cl>[test@localhost tmp]$ rm kuring_file
+</span></span><span class=line><span class=cl>rm: 无法删除&#34;kuring_file&#34;: 不允许的操作
+</span></span></code></pre></td></tr></table></div></div><h1 id=表示方法>表示方法</h1><p>如果设置了setuid位，属主的执行权限中的x用s来代替；
+如果设置了setgid位，组执行权限中的x用s来代替；
+如果设置了sticky位，权限最后的那个字符被设置为t；
+如果设置了setuid、setgid或sticky位中一个，又没有设置相应的执行位，这些位显示为S或T。</p><h1 id=权限设定方式>权限设定方式</h1><p>4为setuid位，2为setgid位，1为sticky位。具体参考《鸟哥的Linux私房菜》。</p><h1 id=参考文档>参考文档</h1><p>《鸟哥的Linux私房菜》
+《UNIX/Linux系统管理技术手册》</p></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

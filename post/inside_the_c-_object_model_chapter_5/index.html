@@ -1,0 +1,203 @@
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="无继承情况下的对象构造 在《Unix环境高级编程》的7.6节中提到C程序的内存空间可以分为正文段、初始化数据段、非初始化数据段、栈、堆。其中初始化数据段包含程序中需明确赋初值的变量，如C语言中的全局变量int maxcount = 99;。非初始化数据段又称为bss（block started by symbol）段，在程序开始之前，内核将此段初始化为0或空指针，如出现在函数外面的long sum[1000];，该变量没有明确赋初值，因此放到了bss段中。 而在C++语言中，将所有的全局对象当做初始化过的数据来对待，因此不会将全局变量放到bss段中。\n"><title>深度探索C++对象模型读书笔记_第五章：构造、析构、复制语意学</title><link rel=canonical href=https://kuring.me/post/inside_the_c-_object_model_chapter_5/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="深度探索C++对象模型读书笔记_第五章：构造、析构、复制语意学"><meta property='og:description' content="无继承情况下的对象构造 在《Unix环境高级编程》的7.6节中提到C程序的内存空间可以分为正文段、初始化数据段、非初始化数据段、栈、堆。其中初始化数据段包含程序中需明确赋初值的变量，如C语言中的全局变量int maxcount = 99;。非初始化数据段又称为bss（block started by symbol）段，在程序开始之前，内核将此段初始化为0或空指针，如出现在函数外面的long sum[1000];，该变量没有明确赋初值，因此放到了bss段中。 而在C++语言中，将所有的全局对象当做初始化过的数据来对待，因此不会将全局变量放到bss段中。\n"><meta property='og:url' content='https://kuring.me/post/inside_the_c-_object_model_chapter_5/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='C++'><meta property='article:published_time' content='2013-09-23T00:00:00+00:00'><meta property='article:modified_time' content='2013-09-23T00:00:00+00:00'><meta name=twitter:title content="深度探索C++对象模型读书笔记_第五章：构造、析构、复制语意学"><meta name=twitter:description content="无继承情况下的对象构造 在《Unix环境高级编程》的7.6节中提到C程序的内存空间可以分为正文段、初始化数据段、非初始化数据段、栈、堆。其中初始化数据段包含程序中需明确赋初值的变量，如C语言中的全局变量int maxcount = 99;。非初始化数据段又称为bss（block started by symbol）段，在程序开始之前，内核将此段初始化为0或空指针，如出现在函数外面的long sum[1000];，该变量没有明确赋初值，因此放到了bss段中。 而在C++语言中，将所有的全局对象当做初始化过的数据来对待，因此不会将全局变量放到bss段中。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#pod数据类型>POD数据类型</a></li><li><a href=#抽象数据类型>抽象数据类型</a></li><li><a href=#为继承做准备>为继承做准备</a></li></ol><ol><li><a href=#虚拟继承>虚拟继承</a></li><li><a href=#vptr初始化语意学>vptr初始化语意学</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/inside_the_c-_object_model_chapter_5/>深度探索C++对象模型读书笔记_第五章：构造、析构、复制语意学</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2013-09-23T00:00:00Z>2013-09-23</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 5 分钟</time></div></footer></div></header><section class=article-content><h1 id=无继承情况下的对象构造>无继承情况下的对象构造</h1><p>在《Unix环境高级编程》的7.6节中提到C程序的内存空间可以分为正文段、初始化数据段、非初始化数据段、栈、堆。其中初始化数据段包含程序中需明确赋初值的变量，如C语言中的全局变量<code>int maxcount = 99;</code>。非初始化数据段又称为bss（block started by symbol）段，在程序开始之前，内核将此段初始化为0或空指针，如出现在函数外面的<code>long sum[1000];</code>，该变量没有明确赋初值，因此放到了bss段中。
+而在C++语言中，将所有的全局对象当做初始化过的数据来对待，因此不会将全局变量放到bss段中。</p><h2 id=pod数据类型>POD数据类型</h2><p>书中提到Plain ol&rsquo; data，查了下应该叫Plain Old Data,简称POD，指C风格的struct结构体定义的数据结构，其中struct结构体中只能定义常规数据类型，不可以含有自定义数据类型。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>typedef struct Point
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>	float x, y, z;
+</span></span><span class=line><span class=cl>} Point;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Point global;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Point foobar()
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>	Point local;
+</span></span><span class=line><span class=cl>	Point *heap = new Point();
+</span></span><span class=line><span class=cl>	*heap = local;
+</span></span><span class=line><span class=cl>	delete heap;
+</span></span><span class=line><span class=cl>	return local;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>首先看全局变量global，按照常规的理解，在程序启动的时候编译器会调用Point的合成的默认构造函数来初始化global变量，在程序退出时会调用Point的合成的析构函数来销毁global变量。实际上，C++编译器会将Point看成是一个POD对象，既不会调用合成的构造函数也不会调用合成的析构函数，但C++编译器会将global当成初始化过的数据来对待，不放入BSS段。</p><p>foobar函数中的local局部变量不会自动初始化，意味着local.x中的值是不可控的，但是local变量分配了栈空间。</p><p><code>*heap = local;</code>执行时仅简单执行按字节复制操作，不会产生赋值操作符，因为Point是一个POD类型。</p><p><code>return local;</code>同样仅通过字节复制操作产生一个临时对象。</p><h2 id=抽象数据类型>抽象数据类型</h2><p>这次将上面的Point类型从struct变换为class</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>class Point
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>public:
+</span></span><span class=line><span class=cl>	Point(float x=0.0, float y=0.0, float z=0.0) : _x(x), _y(y), _z(z){}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>private:
+</span></span><span class=line><span class=cl>	float _x, _y, _z;
+</span></span><span class=line><span class=cl>};
+</span></span></code></pre></td></tr></table></div></div><p>在上节中的foobar函数中，各个对象的默认复制构造函数、赋值操作符和析构函数仍然不会调用，因为调用是没有意义的，因此编译器干脆就不产生。</p><h2 id=为继承做准备>为继承做准备</h2><p>再次更改Point类，引入虚函数。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>class Point
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>public:
+</span></span><span class=line><span class=cl>	Point(float x=0.0, float y=0.0) : _x(x), _y(y) {}
+</span></span><span class=line><span class=cl>	virtual float z();
+</span></span><span class=line><span class=cl>private:
+</span></span><span class=line><span class=cl>	float _x, _y;
+</span></span><span class=line><span class=cl>};
+</span></span></code></pre></td></tr></table></div></div><p>引入虚函数后，类对象就需要一个vtbl来存放虚函数的地址，类对象中需要添加vptr指针。而vptr的初始化是在对象构造的时候，因此对象初始化的时候需要调用构造函数，同时默认构造函数和赋值构造函数会自动在构造函数的最前面插入初始化vptr的代码。</p><h1 id=继承体系下的对象构造>继承体系下的对象构造</h1><p>C++时会自动扩充类的每一个构造函数。扩充步骤如下：</p><ol><li>如果类含有虚基类，则所有虚基类的构造函数被调用，调用顺序为从左到右，从最深到最浅。</li><li>如果类含有基类，则基类构造函数会被调用，以基类的声明顺序为顺序。</li><li>如果类对象中含有vptr，必须在初始化类的成员变量之前为vptr指定初值，使其指向vtbl。</li><li>将成员初始化列表中数据成员的初始化操作放入构造函数内部，并且按照成员在类中的声明顺序。</li><li>如果类成员变量不在构造函数的初始化列表中，但是成员变量含有默认构造函数，则默认构造函数必须被调用。</li></ol><h2 id=虚拟继承>虚拟继承</h2><p>本小节将学习一下引入了虚继承机制之后构造函数的生成是什么样子的。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>class Point
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>public:
+</span></span><span class=line><span class=cl>	Point(float x=0.0, float y=0.0) : _x(x), _y(y) {}
+</span></span><span class=line><span class=cl>	virtual float z();
+</span></span><span class=line><span class=cl>private:
+</span></span><span class=line><span class=cl>	float _x, _y;
+</span></span><span class=line><span class=cl>};
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>class Point3d : public virtual Point
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>public:
+</span></span><span class=line><span class=cl>	Point3d(float x=0.0, float y=0.0, float z=0.0)
+</span></span><span class=line><span class=cl>		: Point(x, y), _z(z) {}
+</span></span><span class=line><span class=cl>	~Point3d();
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	virtual float z() {return _z;}
+</span></span><span class=line><span class=cl>protected:
+</span></span><span class=line><span class=cl>	float _z;
+</span></span><span class=line><span class=cl>};
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>class Vertex : virtual public Point 
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>	// 不是重点忽略
+</span></span><span class=line><span class=cl>};
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>class Vertex3d : public Point3d, public Vertex
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>	// 不是重点忽略
+</span></span><span class=line><span class=cl>};
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>class PVertex : public Vertex3d
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>	// 不是重点忽略
+</span></span><span class=line><span class=cl>};
+</span></span></code></pre></td></tr></table></div></div><p>类之间的继承关系如下图所示，已经属于最复杂的继承模型了。
+<img src=/ref/c++/c++_object_model/chapter5_1.PNG loading=lazy alt="Image Title">
+如果要构造Vertex3d的实例，在内存中必须仅能有一个Point类型的对象，而如果在Point3d和Vertex基类中都构造一个Point实例显然是不合适的。答案是编译器会在Vertex3d的构造函数中生成Point的对象，在Point3d和Vertex的构造函数中均不会生成Point的对象。Vertex3d和Point3d的构造函数伪码如下面所示，Vertex构造函数的伪码和Point3d类似，这里就不再列出。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Point3d* Point3d::Point3d(Point3d *this, bool __most_derived, float x, float y, float z)
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>	// 如果子类初始化基类则本构造函数不需要初始化基类
+</span></span><span class=line><span class=cl>	if (__most_derived != false)
+</span></span><span class=line><span class=cl>	{
+</span></span><span class=line><span class=cl>		this-&gt;Point::Point(x, y);
+</span></span><span class=line><span class=cl>	}
+</span></span><span class=line><span class=cl>	this-&gt;__vptr_Point3d = __vtbl_Point3d;	// 初始化指向本类的vptr
+</span></span><span class=line><span class=cl>	this-&gt;__vptr_Point3d_Point = __vtbl_Point3d_Point;	// 初始化指向基类的vptr
+</span></span><span class=line><span class=cl>	this-&gt;_z = z;
+</span></span><span class=line><span class=cl>	return *this;
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Vertex3d* Vertex3d::Vertex3d(Vertex3d *this, bool __most_derived, float x, float y, float z)
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>	if (__most_derived != false)
+</span></span><span class=line><span class=cl>	{
+</span></span><span class=line><span class=cl>		this-&gt;Point::Point(x, y);
+</span></span><span class=line><span class=cl>	}
+</span></span><span class=line><span class=cl>	this-&gt;Point3d::Point3d(false, x, y, z);
+</span></span><span class=line><span class=cl>	this-&gt;Vertex::Vertex(false, x, y);
+</span></span><span class=line><span class=cl>	// 初始化vptr
+</span></span><span class=line><span class=cl>	// 用户代码
+</span></span><span class=line><span class=cl>	return this;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>编译器在类的构造函数中增加了一个bool变量来判断本类是否需要初始化基类，虚基类的初始化始终在继承最底层的类构造函数中初始化。对于PVertex类来说，Point类的构造函数在该类的构造函数中调用。</p><h2 id=vptr初始化语意学>vptr初始化语意学</h2><p>vptr的在构造函数中的初始化时机为：在基类构造函数调用操作之后，在成员初始化列表和构造函数中显式代码之前。
+构造函数的执行先后顺序为：</p><ol><li>所有虚基类、基类的构造函数会被调用。</li><li>对象的vptr初始化，指向相关的vtbl。</li><li>在构造函数内展开成员的初始化列表。</li><li>执行显式代码。</li></ol><h1 id=对象复制语意学>对象复制语意学</h1></section><footer class=article-footer><section class=article-tags><a href=/tags/c++/>C++</a></section></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

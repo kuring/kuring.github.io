@@ -1,0 +1,235 @@
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content=" 本文为对《GPT 图解 - 大模型是怎样构建的》一书的学习笔记，所有的例子和代码均来源于本书。\n基本介绍 N-Gram 模型为语言模型的雏形，诞生于 1948 年。\n基本思想为：一个词出现的概率仅依赖其前面的 N-1 个词。即通过有限的 N-1 个词来预测第 N 个词。\n"><title>语言模型雏形 N-Gram</title><link rel=canonical href=https://kuring.me/post/%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B%E9%9B%8F%E5%BD%A2-n-gram/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="语言模型雏形 N-Gram"><meta property='og:description' content=" 本文为对《GPT 图解 - 大模型是怎样构建的》一书的学习笔记，所有的例子和代码均来源于本书。\n基本介绍 N-Gram 模型为语言模型的雏形，诞生于 1948 年。\n基本思想为：一个词出现的概率仅依赖其前面的 N-1 个词。即通过有限的 N-1 个词来预测第 N 个词。\n"><meta property='og:url' content='https://kuring.me/post/%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B%E9%9B%8F%E5%BD%A2-n-gram/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='ai'><meta property='article:published_time' content='2024-08-19T00:00:00+00:00'><meta property='article:modified_time' content='2024-08-19T00:00:00+00:00'><meta name=twitter:title content="语言模型雏形 N-Gram"><meta name=twitter:description content=" 本文为对《GPT 图解 - 大模型是怎样构建的》一书的学习笔记，所有的例子和代码均来源于本书。\n基本介绍 N-Gram 模型为语言模型的雏形，诞生于 1948 年。\n基本思想为：一个词出现的概率仅依赖其前面的 N-1 个词。即通过有限的 N-1 个词来预测第 N 个词。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#基本介绍>基本介绍</a></li><li><a href=#2-gram-的代码实践>2-Gram 的代码实践</a><ol><li><a href=#将语料拆分为分词>将语料拆分为分词</a></li><li><a href=#计算每个-2-grambigram-在语料库中的词频>计算每个 2-Gram（BiGram） 在语料库中的词频</a><ol><li><a href=#计算每个-2-gram-出现的概率>计算每个 2-Gram 出现的概率</a></li></ol></li><li><a href=#给定一个前缀输出连续的文本>给定一个前缀，输出连续的文本</a></li></ol></li><li><a href=#总结>总结</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B%E9%9B%8F%E5%BD%A2-n-gram/>语言模型雏形 N-Gram</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2024-08-19T00:00:00Z>2024-08-19</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 6 分钟</time></div></footer></div></header><section class=article-content><blockquote><p>本文为对《GPT 图解 - 大模型是怎样构建的》一书的学习笔记，所有的例子和代码均来源于本书。</p></blockquote><h2 id=基本介绍>基本介绍</h2><p>N-Gram 模型为语言模型的雏形，诞生于 1948 年。</p><p>基本思想为：一个词出现的概率仅依赖其前面的 N-1 个词。即通过有限的 N-1 个词来预测第 N 个词。</p><p>以 &ldquo;我爱吃肉&rdquo; 举例，分词为 [”我“, &ldquo;爱&rdquo;, &ldquo;吃&rdquo;, &ldquo;肉&rdquo;]。</p><ul><li>当 N=1 时，对应的序列为[”我“, &ldquo;爱&rdquo;, &ldquo;吃&rdquo;, &ldquo;肉&rdquo;]，又成为 Unigram。</li><li>当 N=2 时，对应的序列为[”我爱“, &ldquo;爱吃&rdquo;, &ldquo;吃肉&rdquo;]，又成为 Bigram。</li><li>当 N=3 时，对应的序列为[”我爱吃“, &ldquo;爱吃肉&rdquo;]，又成为 Trigram。</li></ul><h2 id=2-gram-的代码实践>2-Gram 的代码实践</h2><h3 id=将语料拆分为分词>将语料拆分为分词</h3><p>将给定的语料库，拆分为以一个的分词。在真实的场景中需要使用分词函数，这里简单起见，使用了一个汉字一个分词的方式。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=n>corpus</span> <span class=o>=</span> <span class=p>[</span> <span class=s2>&#34;我喜欢吃苹果&#34;</span><span class=p>,</span>  
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;我喜欢吃香蕉&#34;</span><span class=p>,</span>  
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;她喜欢吃葡萄&#34;</span><span class=p>,</span>  
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;他不喜欢吃香蕉&#34;</span><span class=p>,</span>  
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;他喜欢吃苹果&#34;</span><span class=p>,</span>  
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;她喜欢吃草莓&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 定义一个分词函数，将文本转换为单个字符的列表  </span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>tokenize</span><span class=p>(</span><span class=n>text</span><span class=p>):</span>  
+</span></span><span class=line><span class=cl> <span class=k>return</span> <span class=p>[</span><span class=n>char</span> <span class=k>for</span> <span class=n>char</span> <span class=ow>in</span> <span class=n>text</span><span class=p>]</span> <span class=c1># 将文本拆分为字符列表  </span>
+</span></span><span class=line><span class=cl><span class=c1># 对每个文本进行分词，并打印出对应的单字列表  </span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=s2>&#34;单字列表:&#34;</span><span class=p>)</span>   
+</span></span><span class=line><span class=cl><span class=k>for</span> <span class=n>text</span> <span class=ow>in</span> <span class=n>corpus</span><span class=p>:</span>  
+</span></span><span class=line><span class=cl>    <span class=n>tokens</span> <span class=o>=</span> <span class=n>tokenize</span><span class=p>(</span><span class=n>text</span><span class=p>)</span>  
+</span></span><span class=line><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=n>tokens</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>得到如下的结果：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>单字列表:
+</span></span><span class=line><span class=cl>[&#39;我&#39;, &#39;喜&#39;, &#39;欢&#39;, &#39;吃&#39;, &#39;苹&#39;, &#39;果&#39;]
+</span></span><span class=line><span class=cl>[&#39;我&#39;, &#39;喜&#39;, &#39;欢&#39;, &#39;吃&#39;, &#39;香&#39;, &#39;蕉&#39;]
+</span></span><span class=line><span class=cl>[&#39;她&#39;, &#39;喜&#39;, &#39;欢&#39;, &#39;吃&#39;, &#39;葡&#39;, &#39;萄&#39;]
+</span></span><span class=line><span class=cl>[&#39;他&#39;, &#39;不&#39;, &#39;喜&#39;, &#39;欢&#39;, &#39;吃&#39;, &#39;香&#39;, &#39;蕉&#39;]
+</span></span><span class=line><span class=cl>[&#39;他&#39;, &#39;喜&#39;, &#39;欢&#39;, &#39;吃&#39;, &#39;苹&#39;, &#39;果&#39;]
+</span></span><span class=line><span class=cl>[&#39;她&#39;, &#39;喜&#39;, &#39;欢&#39;, &#39;吃&#39;, &#39;草&#39;, &#39;莓&#39;]
+</span></span></code></pre></td></tr></table></div></div><h3 id=计算每个-2-grambigram-在语料库中的词频>计算每个 2-Gram（BiGram） 在语料库中的词频</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># 定义计算 N-Gram 词频的函数  </span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>collections</span> <span class=kn>import</span> <span class=n>defaultdict</span><span class=p>,</span> <span class=n>Counter</span> <span class=c1># 导入所需库  </span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>count_ngrams</span><span class=p>(</span><span class=n>corpus</span><span class=p>,</span> <span class=n>n</span><span class=p>):</span>  
+</span></span><span class=line><span class=cl>    <span class=n>ngrams_count</span> <span class=o>=</span> <span class=n>defaultdict</span><span class=p>(</span><span class=n>Counter</span><span class=p>)</span>  <span class=c1># 创建一个字典，存储 N-Gram 计数  </span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>text</span> <span class=ow>in</span> <span class=n>corpus</span><span class=p>:</span>  <span class=c1># 遍历语料库中的每个文本  </span>
+</span></span><span class=line><span class=cl>        <span class=n>tokens</span> <span class=o>=</span> <span class=n>tokenize</span><span class=p>(</span><span class=n>text</span><span class=p>)</span>  <span class=c1># 对文本进行分词  </span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=n>tokens</span><span class=p>)</span> <span class=o>-</span> <span class=n>n</span> <span class=o>+</span> <span class=mi>1</span><span class=p>):</span>  <span class=c1># 遍历分词结果，生成 N-Gram            ngram = tuple(tokens[i:i+n])  # 创建一个 N-Gram 元组  </span>
+</span></span><span class=line><span class=cl>            <span class=n>prefix</span> <span class=o>=</span> <span class=n>ngram</span><span class=p>[:</span><span class=o>-</span><span class=mi>1</span><span class=p>]</span>  <span class=c1># 获取 N-Gram 的前缀  </span>
+</span></span><span class=line><span class=cl>            <span class=n>token</span> <span class=o>=</span> <span class=n>ngram</span><span class=p>[</span><span class=o>-</span><span class=mi>1</span><span class=p>]</span>  <span class=c1># 获取 N-Gram 的目标单字  </span>
+</span></span><span class=line><span class=cl>            <span class=n>ngrams_count</span><span class=p>[</span><span class=n>prefix</span><span class=p>][</span><span class=n>token</span><span class=p>]</span> <span class=o>+=</span> <span class=mi>1</span>  <span class=c1># 更新 N-Gram 计数  </span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>ngrams_count</span>  
+</span></span><span class=line><span class=cl><span class=n>bigram_counts</span> <span class=o>=</span> <span class=n>count_ngrams</span><span class=p>(</span><span class=n>corpus</span><span class=p>,</span> <span class=mi>2</span><span class=p>)</span> <span class=c1># 计算 bigram 词频  </span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=s2>&#34;bigram 词频：&#34;</span><span class=p>)</span> <span class=c1># 打印 bigram 词频  </span>
+</span></span><span class=line><span class=cl><span class=k>for</span> <span class=n>prefix</span><span class=p>,</span> <span class=n>counts</span> <span class=ow>in</span> <span class=n>bigram_counts</span><span class=o>.</span><span class=n>items</span><span class=p>():</span>  
+</span></span><span class=line><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=s2>&#34;</span><span class=si>{}</span><span class=s2>: </span><span class=si>{}</span><span class=s2>&#34;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=s2>&#34;&#34;</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>prefix</span><span class=p>),</span> <span class=nb>dict</span><span class=p>(</span><span class=n>counts</span><span class=p>)))</span>
+</span></span></code></pre></td></tr></table></div></div><p>计算获取到如下的结果：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>bigram 词频：
+</span></span><span class=line><span class=cl>我: {&#39;喜&#39;: 2}
+</span></span><span class=line><span class=cl>喜: {&#39;欢&#39;: 6}
+</span></span><span class=line><span class=cl>欢: {&#39;吃&#39;: 6}
+</span></span><span class=line><span class=cl>吃: {&#39;苹&#39;: 2, &#39;香&#39;: 2, &#39;葡&#39;: 1, &#39;草&#39;: 1}
+</span></span><span class=line><span class=cl>苹: {&#39;果&#39;: 2}
+</span></span><span class=line><span class=cl>香: {&#39;蕉&#39;: 2}
+</span></span><span class=line><span class=cl>她: {&#39;喜&#39;: 2}
+</span></span><span class=line><span class=cl>葡: {&#39;萄&#39;: 1}
+</span></span><span class=line><span class=cl>他: {&#39;不&#39;: 1, &#39;喜&#39;: 1}
+</span></span><span class=line><span class=cl>不: {&#39;喜&#39;: 1}
+</span></span><span class=line><span class=cl>草: {&#39;莓&#39;: 1}
+</span></span></code></pre></td></tr></table></div></div><p>即当第一个词为 ”我“，第二个词为”喜“在整个语料库中出现了 2 次。</p><p>如果为 3-Gram（TriGram），此时输出结果如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>bigram 词频：
+</span></span><span class=line><span class=cl>我喜: {&#39;欢&#39;: 2}
+</span></span><span class=line><span class=cl>喜欢: {&#39;吃&#39;: 6}
+</span></span><span class=line><span class=cl>欢吃: {&#39;苹&#39;: 2, &#39;香&#39;: 2, &#39;葡&#39;: 1, &#39;草&#39;: 1}
+</span></span><span class=line><span class=cl>吃苹: {&#39;果&#39;: 2}
+</span></span><span class=line><span class=cl>吃香: {&#39;蕉&#39;: 2}
+</span></span><span class=line><span class=cl>她喜: {&#39;欢&#39;: 2}
+</span></span><span class=line><span class=cl>吃葡: {&#39;萄&#39;: 1}
+</span></span><span class=line><span class=cl>他不: {&#39;喜&#39;: 1}
+</span></span><span class=line><span class=cl>不喜: {&#39;欢&#39;: 1}
+</span></span><span class=line><span class=cl>他喜: {&#39;欢&#39;: 1}
+</span></span><span class=line><span class=cl>吃草: {&#39;莓&#39;: 1}
+</span></span></code></pre></td></tr></table></div></div><p>如果为 1-Gram（UniGram），此时输出结果如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>bigram 词频：
+</span></span><span class=line><span class=cl>: {&#39;我&#39;: 2, &#39;喜&#39;: 6, &#39;欢&#39;: 6, &#39;吃&#39;: 6, &#39;苹&#39;: 2, &#39;果&#39;: 2, &#39;香&#39;: 2, &#39;蕉&#39;: 2, &#39;她&#39;: 2, &#39;葡&#39;: 1, &#39;萄&#39;: 1, &#39;他&#39;: 2, &#39;不&#39;: 1, &#39;草&#39;: 1, &#39;莓&#39;: 1}
+</span></span></code></pre></td></tr></table></div></div><p>可以看到已经退化为了每个单词在整个语料库中出现的次数。</p><h4 id=计算每个-2-gram-出现的概率>计算每个 2-Gram 出现的概率</h4><p>即给定前一个词，计算下一个词出现的概率。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># 定义计算 N-Gram 出现概率的函数  </span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>ngram_probabilities</span><span class=p>(</span><span class=n>ngram_counts</span><span class=p>):</span>  
+</span></span><span class=line><span class=cl> <span class=n>ngram_probs</span> <span class=o>=</span> <span class=n>defaultdict</span><span class=p>(</span><span class=n>Counter</span><span class=p>)</span> <span class=c1># 创建一个字典，存储 N-Gram 出现的概率  </span>
+</span></span><span class=line><span class=cl> <span class=k>for</span> <span class=n>prefix</span><span class=p>,</span> <span class=n>tokens_count</span> <span class=ow>in</span> <span class=n>ngram_counts</span><span class=o>.</span><span class=n>items</span><span class=p>():</span> <span class=c1># 遍历 N-Gram 前缀  </span>
+</span></span><span class=line><span class=cl>     <span class=n>total_count</span> <span class=o>=</span> <span class=nb>sum</span><span class=p>(</span><span class=n>tokens_count</span><span class=o>.</span><span class=n>values</span><span class=p>())</span> <span class=c1># 计算当前前缀的 N-Gram 计数  </span>
+</span></span><span class=line><span class=cl>     <span class=k>for</span> <span class=n>token</span><span class=p>,</span> <span class=n>count</span> <span class=ow>in</span> <span class=n>tokens_count</span><span class=o>.</span><span class=n>items</span><span class=p>():</span> <span class=c1># 遍历每个前缀的 N-Gram         ngram_probs[prefix][token] = count / total_count # 计算每个 N-Gram 出现的概率  </span>
+</span></span><span class=line><span class=cl> <span class=k>return</span> <span class=n>ngram_probs</span>  
+</span></span><span class=line><span class=cl><span class=n>bigram_probs</span> <span class=o>=</span> <span class=n>ngram_probabilities</span><span class=p>(</span><span class=n>bigram_counts</span><span class=p>)</span> <span class=c1># 计算 bigram 出现的概率  </span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=s2>&#34;</span><span class=se>\n</span><span class=s2>bigram 出现的概率 :&#34;</span><span class=p>)</span> <span class=c1># 打印 bigram 概率  </span>
+</span></span><span class=line><span class=cl><span class=k>for</span> <span class=n>prefix</span><span class=p>,</span> <span class=n>probs</span> <span class=ow>in</span> <span class=n>bigram_probs</span><span class=o>.</span><span class=n>items</span><span class=p>():</span>  
+</span></span><span class=line><span class=cl> <span class=nb>print</span><span class=p>(</span><span class=s2>&#34;</span><span class=si>{}</span><span class=s2>: </span><span class=si>{}</span><span class=s2>&#34;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=s2>&#34;&#34;</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>prefix</span><span class=p>),</span> <span class=nb>dict</span><span class=p>(</span><span class=n>probs</span><span class=p>)))</span>
+</span></span></code></pre></td></tr></table></div></div><p>输出结果如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>bigram 出现的概率 :
+</span></span><span class=line><span class=cl>我: {&#39;喜&#39;: 1.0}
+</span></span><span class=line><span class=cl>喜: {&#39;欢&#39;: 1.0}
+</span></span><span class=line><span class=cl>欢: {&#39;吃&#39;: 1.0}
+</span></span><span class=line><span class=cl>吃: {&#39;苹&#39;: 0.3333333333333333, &#39;香&#39;: 0.3333333333333333, &#39;葡&#39;: 0.16666666666666666, &#39;草&#39;: 0.16666666666666666}
+</span></span><span class=line><span class=cl>苹: {&#39;果&#39;: 1.0}
+</span></span><span class=line><span class=cl>香: {&#39;蕉&#39;: 1.0}
+</span></span><span class=line><span class=cl>她: {&#39;喜&#39;: 1.0}
+</span></span><span class=line><span class=cl>葡: {&#39;萄&#39;: 1.0}
+</span></span><span class=line><span class=cl>他: {&#39;不&#39;: 0.5, &#39;喜&#39;: 0.5}
+</span></span><span class=line><span class=cl>不: {&#39;喜&#39;: 1.0}
+</span></span><span class=line><span class=cl>草: {&#39;莓&#39;: 1.0}
+</span></span></code></pre></td></tr></table></div></div><h3 id=给定一个前缀输出连续的文本>给定一个前缀，输出连续的文本</h3><p>根据前面学习的语料信息，给定一个前缀，即可生成对应的文本内容。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># 定义生成下一个词的函数  </span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>generate_next_token</span><span class=p>(</span><span class=n>prefix</span><span class=p>,</span> <span class=n>ngram_probs</span><span class=p>):</span>  
+</span></span><span class=line><span class=cl> <span class=k>if</span> <span class=ow>not</span> <span class=n>prefix</span> <span class=ow>in</span> <span class=n>ngram_probs</span><span class=p>:</span> <span class=c1># 如果前缀不在 N-Gram 中，返回 None    return None  </span>
+</span></span><span class=line><span class=cl> <span class=n>next_token_probs</span> <span class=o>=</span> <span class=n>ngram_probs</span><span class=p>[</span><span class=n>prefix</span><span class=p>]</span> <span class=c1># 获取当前前缀的下一个词的概率  </span>
+</span></span><span class=line><span class=cl> <span class=n>next_token</span> <span class=o>=</span> <span class=nb>max</span><span class=p>(</span><span class=n>next_token_probs</span><span class=p>,</span>   
+</span></span><span class=line><span class=cl>                    <span class=n>key</span><span class=o>=</span><span class=n>next_token_probs</span><span class=o>.</span><span class=n>get</span><span class=p>)</span> <span class=c1># 选择概率最大的词作为下一个词  </span>
+</span></span><span class=line><span class=cl> <span class=k>return</span> <span class=n>next_token</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 定义生成连续文本的函数  </span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>generate_text</span><span class=p>(</span><span class=n>prefix</span><span class=p>,</span> <span class=n>ngram_probs</span><span class=p>,</span> <span class=n>n</span><span class=p>,</span> <span class=n>length</span><span class=o>=</span><span class=mi>6</span><span class=p>):</span>  
+</span></span><span class=line><span class=cl> <span class=n>tokens</span> <span class=o>=</span> <span class=nb>list</span><span class=p>(</span><span class=n>prefix</span><span class=p>)</span> <span class=c1># 将前缀转换为字符列表  </span>
+</span></span><span class=line><span class=cl> <span class=k>for</span> <span class=n>_</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=n>length</span> <span class=o>-</span> <span class=nb>len</span><span class=p>(</span><span class=n>prefix</span><span class=p>)):</span> <span class=c1># 根据指定长度生成文本   </span>
+</span></span><span class=line><span class=cl><span class=c1># 获取当前前缀的下一个词  </span>
+</span></span><span class=line><span class=cl>     <span class=n>next_token</span> <span class=o>=</span> <span class=n>generate_next_token</span><span class=p>(</span><span class=nb>tuple</span><span class=p>(</span><span class=n>tokens</span><span class=p>[</span><span class=o>-</span><span class=p>(</span><span class=n>n</span><span class=o>-</span><span class=mi>1</span><span class=p>):]),</span> <span class=n>ngram_probs</span><span class=p>)</span>   
+</span></span><span class=line><span class=cl>     <span class=k>if</span> <span class=ow>not</span> <span class=n>next_token</span><span class=p>:</span> <span class=c1># 如果下一个词为 None，跳出循环  </span>
+</span></span><span class=line><span class=cl>         <span class=k>break</span>  
+</span></span><span class=line><span class=cl>     <span class=n>tokens</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>next_token</span><span class=p>)</span> <span class=c1># 将下一个词添加到生成的文本中  </span>
+</span></span><span class=line><span class=cl> <span class=k>return</span> <span class=s2>&#34;&#34;</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>tokens</span><span class=p>)</span> <span class=c1># 将字符列表连接成字符串</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 输入一个前缀，生成文本  </span>
+</span></span><span class=line><span class=cl><span class=n>generated_text</span> <span class=o>=</span> <span class=n>generate_text</span><span class=p>(</span><span class=s2>&#34;我&#34;</span><span class=p>,</span> <span class=n>bigram_probs</span><span class=p>,</span> <span class=mi>2</span><span class=p>)</span>  
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=s2>&#34;</span><span class=se>\n</span><span class=s2> 生成的文本：&#34;</span><span class=p>,</span> <span class=n>generated_text</span><span class=p>)</span> <span class=c1># 打印生成的文本</span>
+</span></span></code></pre></td></tr></table></div></div><p>给定了文本”我“，可以生成出如下结果：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>生成的文本： 我喜欢吃苹果
+</span></span></code></pre></td></tr></table></div></div><h2 id=总结>总结</h2><p>N-Gram 为非常简单的语言模型，可以根据给定的词来生成句子。</p><p>缺点：无法捕捉到距离较远的词之间的关系。</p></section><footer class=article-footer><section class=article-tags><a href=/tags/ai/>Ai</a></section></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

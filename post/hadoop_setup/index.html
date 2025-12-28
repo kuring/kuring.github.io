@@ -1,460 +1,143 @@
-<!DOCTYPE html>
-<html lang="zh-Hans">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="本文选择安装的hadoop版本为网上资料较多的0.20.2，对于不懂的新技术要持保守态度。遇到问题解决问题的痛苦远比体会用不着功能的新版本的快感来的更猛烈。 安装环境本文选择了三台机器来搭建hadoop集群，1个Master和2个Slave。本文中的master主机即namenode所在的机器，slave即datanode所在的机器。节点的机器名和IP地址如下       机器名     IP地址">
-<meta property="og:type" content="article">
-<meta property="og:title" content="在Linux上搭建Hadoop集群环境">
-<meta property="og:url" content="http://kuring.me/post/hadoop_setup/index.html">
-<meta property="og:site_name" content="404频道">
-<meta property="og:description" content="本文选择安装的hadoop版本为网上资料较多的0.20.2，对于不懂的新技术要持保守态度。遇到问题解决问题的痛苦远比体会用不着功能的新版本的快感来的更猛烈。 安装环境本文选择了三台机器来搭建hadoop集群，1个Master和2个Slave。本文中的master主机即namenode所在的机器，slave即datanode所在的机器。节点的机器名和IP地址如下       机器名     IP地址">
-<meta property="og:locale">
-<meta property="article:published_time" content="2013-06-26T00:00:00.000Z">
-<meta property="article:modified_time" content="2025-12-20T16:59:52.688Z">
-<meta property="article:tag" content="Hadoop">
-<meta name="twitter:card" content="summary">
-
-
-<link rel="canonical" href="http://kuring.me/post/hadoop_setup/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/hadoop_setup/","path":"post/hadoop_setup/","title":"在Linux上搭建Hadoop集群环境"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>在Linux上搭建Hadoop集群环境 | 404频道</title>
-  
-
-
-
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">404频道</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">学习笔记</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="Searching..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          Table of Contents
-        </li>
-        <li class="sidebar-nav-overview">
-          Overview
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E7%8E%AF%E5%A2%83"><span class="nav-number">1.</span> <span class="nav-text">安装环境</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Java"><span class="nav-number">2.</span> <span class="nav-text">安装Java</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEhosts%E6%96%87%E4%BB%B6"><span class="nav-number">3.</span> <span class="nav-text">配置hosts文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%96%B0%E5%BB%BAhadoop%E7%94%A8%E6%88%B7"><span class="nav-number">4.</span> <span class="nav-text">新建hadoop用户</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%85%8D%E7%BD%AESSH%E5%85%8D%E7%99%BB%E5%BD%95"><span class="nav-number">5.</span> <span class="nav-text">配置SSH免登录</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E5%8D%95%E6%9C%BA%E7%89%88hadoop"><span class="nav-number">6.</span> <span class="nav-text">搭建单机版hadoop</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E5%88%86%E5%B8%83%E5%BC%8Fhadoop"><span class="nav-number">7.</span> <span class="nav-text">搭建分布式hadoop</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4"><span class="nav-number">8.</span> <span class="nav-text">常用命令</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E6%A1%A3"><span class="nav-number">9.</span> <span class="nav-text">参考文档</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8B%E8%BD%BD%E9%93%BE%E6%8E%A5"><span class="nav-number">10.</span> <span class="nav-text">下载链接</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name"></p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">256</span>
-          <span class="site-state-item-name">posts</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">36</span>
-        <span class="site-state-item-name">tags</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/hadoop_setup/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="在Linux上搭建Hadoop集群环境 | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          在Linux上搭建Hadoop集群环境
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2013-06-26 00:00:00" itemprop="dateCreated datePublished" datetime="2013-06-26T00:00:00+00:00">2013-06-26</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-20 16:59:52" itemprop="dateModified" datetime="2025-12-20T16:59:52+00:00">2025-12-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p>本文选择安装的hadoop版本为网上资料较多的0.20.2，对于不懂的新技术要持保守态度。遇到问题解决问题的痛苦远比体会用不着功能的新版本的快感来的更猛烈。</p>
-<h1 id="安装环境"><a href="#安装环境" class="headerlink" title="安装环境"></a>安装环境</h1><p>本文选择了三台机器来搭建hadoop集群，1个Master和2个Slave。本文中的master主机即namenode所在的机器，slave即datanode所在的机器。节点的机器名和IP地址如下</p>
-<table>
-<tr>
-    <td>机器名</td>
-    <td>IP地址</td>
-    <td>用途</td>
-    <td>运行模块</td>
-</tr>
-<tr>
-    <td>server206</td>
-    <td>192.168.20.6</td>
-    <td>Master</td>
-    <td>NameNode、JobTracker、SecondaryNameNode</td>
-</tr>
-<tr>
-    <td>ap1</td>
-    <td>192.168.20.36</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-</tr>
-<tr>
-    <td>ap2</td>
-    <td>192.168.20.38</td>
-    <td>Slave</td>
-    <td>DataNode、TaskTracker</td>
-</tr>
-</table>
-
-
-<h1 id="安装Java"><a href="#安装Java" class="headerlink" title="安装Java"></a>安装Java</h1><ol>
-<li>检查本机是否已安装Java<br>在命令行中输入<code>java -version</code>判断是否已经安装。如果已经安装检查Java的版本，某些操作系统在安装的时候会安装Jdk，但可能版本会太低。如果版本过低，需要将旧的版本删除。在Redhat操作系统中可以通过rpm命令来删除系统自带的Jdk。</li>
-<li>安装java<br>本文选择jdk1.6安装，将解压出的文件夹jdk1.6.0_10复制到&#x2F;usr&#x2F;java目录下。</li>
-<li>设置java的环境变量<br>添加系统环境变量，修改&#x2F;etc&#x2F;profile文件，在文件末尾添加如下内容：<blockquote>
-<p>export JAVA_HOME&#x3D;&#x2F;usr&#x2F;java&#x2F;jdk1.6.0_10<br>export CLASSPATH&#x3D;.:$JAVA_HOME&#x2F;lib&#x2F;tools.jar:$JAVA_HOME&#x2F;lib&#x2F;dt.jar<br>export PATH&#x3D;$JAVA_HOME&#x2F;bin:$PATH<br>export JRE_HOME&#x3D;$JAVA_HOME&#x2F;jre</p>
-</blockquote>
- 修改完profile文件后要执行<code>source /etc/profile</code>命令才能使刚才的修改在该命令行环境下生效。</li>
-<li>检查java是否安装成功<br>在命令行中输入java -version、javac命令来查看是否安装成功及安装版本。</li>
-</ol>
-<h1 id="配置hosts文件"><a href="#配置hosts文件" class="headerlink" title="配置hosts文件"></a>配置hosts文件</h1><p>本步骤必须操作，需要root用户来操作，修改完成之后立即生效。在三台机器的&#x2F;etc&#x2F;hosts文件末尾添加如下内容：</p>
-<blockquote>
-<p>192.168.20.6   server206<br>192.168.20.36   ap1<br>192.168.20.38   ap2</p>
-</blockquote>
-<p>修改完成之后可以通过<code>ping 主机名</code>的方式来测试hosts文件是否正确。</p>
-<h1 id="新建hadoop用户"><a href="#新建hadoop用户" class="headerlink" title="新建hadoop用户"></a>新建hadoop用户</h1><p>在三台机器上分别新建hadoop用户，该用户的目录为&#x2F;home&#x2F;hadoop。利用useradd命令来添加用户，利用passwd命令给用户添加密码。</p>
-<h1 id="配置SSH免登录"><a href="#配置SSH免登录" class="headerlink" title="配置SSH免登录"></a>配置SSH免登录</h1><p>该步骤非必须，推荐配置，否则在Master上执行start-all.sh命令来启动hadoop集群的时候需要手动输入ssh密码，非常麻烦。<br>原理：用户将自己的公钥储存在远程主机上。登录的时候，远程主机会向用户发送一段随机字符串，用户用自己的私钥加密后，再发回来。远程主机用事先储存的公钥进行解密，如果成功，就证明用户是可信的，直接允许登录shell，不再要求输入密码。<br>在本例中，需要实现的是192.168.20.6上的hadoop用户可以无密码登录自己、192.168.20.36和192.168.20.38的hadoop用户。需要将192.168.20.6上的ssh公钥复制到192.168.20.36和192.168.20.38机器上。</p>
-<ol>
-<li>在192.168.20.6上执行<code>ssh-keygen –t rsa</code>命令来生成ssh密钥对。会在&#x2F;home&#x2F;hadoop&#x2F;.ssh目录下生成id_rsa.pub和id_rsa两个文件，其中id_rsa.pub为公钥文件，id_rsa为私钥文件。</li>
-<li>在192.168.20.6上执行<code>cat ~/.ssh/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</code>命令将公钥添加到授权的key里。</li>
-<li>权限设置。在192.168.20.6上执行<code>chmod 600 ~/.ssh/authorized_keys</code>来修改authorized_keys文件的权限，执行<code>chmod 700 ~/.ssh</code>命令将.ssh文件夹的权限设置为700。如果权限不对无密码登录就配置不成功，而且没有错误提示，这一步特别注意。</li>
-<li>在本机上测试是否设置无密码登录成功。在192.168.20.6上执行<code>ssh -p 本机SSH服务端口号 localhost</code>，如果不需要输入密码则登录成功。</li>
-<li>利用scp命令将192.168.20.6上的公钥文件id_rsa.pub追加到192.168.20.36和192.168.20.38机器上的~&#x2F;.ssh&#x2F;authorized_keys文件中。scp命令的格式如下：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">scp -P ssh端口号 ~/.ssh/id_rsa.pub hadoop@192.168.20.36:~/id_rsa.pub</span><br></pre></td></tr></table></figure>
-在192.168.20.36和192.168.20.38机器上分别执行<code>cat ~/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</code>命令将192.168.20.6机器上的公钥添加到authorized_keys文件的尾部。</li>
-<li>配置无密码登录完成，在Master机器上执行<code>ssh -P 本机SSH服务端口号 要连接的服务器IP地址</code>命令进行测试。</li>
-</ol>
-<h1 id="搭建单机版hadoop"><a href="#搭建单机版hadoop" class="headerlink" title="搭建单机版hadoop"></a>搭建单机版hadoop</h1><p>在192.168.20.6上首先搭建单机版hadoop进行测试。</p>
-<ol>
-<li>将hadoop-0.20.2.tar.gz文件解压到hadoop用户的目录下。</li>
-<li>配置hadoop的环境变量。修改&#x2F;etc&#x2F;profile文件，在文件的下面加入如下：<blockquote>
-<p>HADOOP_HOME&#x3D;&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2<br>export HADOOP_HOME<br>export HADOOP&#x3D;$HADOOP_HOME&#x2F;bin<br>export PATH&#x3D;$HADOOP:$PATH</p>
-</blockquote>
-</li>
-</ol>
-<p>修改完成之后执行<code>source /etc/profile</code>使修改的环境变量生效。<br>3. 配置hadoop用到的java环境变量<br>修改conf&#x2F;hadoop-env.sh文件，添加<code>export JAVA_HOME=/usr/java/jdk1.6.0_10</code>。<br>4. 修改conf&#x2F;core-site.xml的内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.default.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://localhost:9000&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.replication&lt;/name&gt; </span><br><span class="line">        &lt;value&gt;1&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt; </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<ol start="5">
-<li>修改&#x2F;conf&#x2F;mapred-site.xml的内容如下：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;   </span><br><span class="line">        &lt;name&gt;mapred.job.tracker&lt;/name&gt;  </span><br><span class="line">        &lt;value&gt;localhost:9001&lt;/value&gt;   </span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure></li>
-<li>至此单击版搭建完毕。可以通过hadoop自带的wordcount程序测试是否运行正常。下面为运行wordcount例子的步骤。</li>
-<li>在hadoop目录下新建input文件夹。</li>
-<li>将conf目录下的内容拷贝到input文件夹下，执行<code>cp conf/* input</code>。</li>
-<li>通过start-all.sh脚本来启动单机版hadoop。</li>
-<li>执行wordcount程序：<code>hadoop jar hadoop-0.20.2-examples.jar wordcount input output</code>。</li>
-<li>通过stop-all.sh脚本来停止单机版hadoop。</li>
-</ol>
-<h1 id="搭建分布式hadoop"><a href="#搭建分布式hadoop" class="headerlink" title="搭建分布式hadoop"></a>搭建分布式hadoop</h1><p>在上述基础之上，在192.168.20.6上执行如下操作。<br>1. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的core-site.xml文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.default.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://192.168.20.6:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<p>如没有配置hadoop.tmp.dir参数，此时系统默认的临时目录为：&#x2F;tmp&#x2F;hadoo-hadoop。而这个目录在每次重启后都会被干掉，必须重新执行format才行，否则会出错。<br>2. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的hdfs-site.xml文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;dfs.replication&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;1&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;dfs.support.append&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;true&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<p>3. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的mapred-site.xml文件。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">            &lt;name&gt;mapred.job.tracker&lt;/name&gt;</span><br><span class="line">            &lt;value&gt;http://192.168.20.6:9001&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<p>4. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的masters文件。<br>将Master机器的IP地址或主机名添加进文件，如192.168.20.6。<br>5. 修改&#x2F;home&#x2F;hadoop&#x2F;hadoop-0.20.2&#x2F;conf目录下的slaves文件。<em>Master主机特有</em><br>在其中将slave节点的Ip地址或主机名添加进文件中，本例中加入</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">192.168.20.36</span><br><span class="line">192.168.20.38</span><br></pre></td></tr></table></figure>
-<p>6. hadoop主机的master主机已经配置完毕，利用scp命令将hadoop-0.20.2目录复制到两台slave机器的hadoop目录下。命令为：<code>scp -r /home/hadoop hadoop@服务器IP:/home/hadoop/</code>。注意slaves文件在master和slave机器上是不同的。</p>
-<h1 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h1><ul>
-<li>hadoop dfsadmin -report 查看集群状态</li>
-<li><a target="_blank" rel="noopener" href="http://192.168.20.6:50070/dfshealth.jsp">http://192.168.20.6:50070/dfshealth.jsp</a>  查看NameNode状态</li>
-<li><a target="_blank" rel="noopener" href="http://192.168.20.6:50030/jobtracker.jsp">http://192.168.20.6:50030/jobtracker.jsp</a> Map&#x2F;Reduce管理</li>
-<li>hadoop fs -mkdir input 在HDFS上创建文件夹</li>
-<li>hadoop fs -put ~&#x2F;file&#x2F;file*.txt input 将文件放入HDFS文件系统中</li>
-</ul>
-<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><ul>
-<li><a target="_blank" rel="noopener" href="http://www.cnblogs.com/xia520pi/archive/2012/05/16/2503949.html">细细品味Hadoop系列</a>。超详细的hadoop教程，作者非常用心。</li>
-</ul>
-<h1 id="下载链接"><a href="#下载链接" class="headerlink" title="下载链接"></a>下载链接</h1><p><a target="_blank" rel="noopener" href="http://pan.baidu.com/share/link?shareid=1235031445&uk=3506813023">http://pan.baidu.com/share/link?shareid=1235031445&uk=3506813023</a> 提取码：v8ok</p>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-          <div class="post-tags">
-              <a href="/tags/Hadoop/" rel="tag"># Hadoop</a>
-          </div>
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/post/hbase_test/" rel="prev" title="HBase性能测试">
-                  <i class="fa fa-angle-left"></i> HBase性能测试
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/post/compile_java_code/" rel="next" title="通过命令编译java程序">
-                  通过命令编译java程序 <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    
-  
-  <div class="comments giscus-container">
-  </div>
-  
-  
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder"></span>
-  </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-
-
-  
-
-
-
-
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
-
-<script>
-document.addEventListener('page:loaded', () => {
-  if (!CONFIG.page.comments) return;
-
-  NexT.utils.loadComments('.giscus-container')
-    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
-      attributes: {
-        async                   : true,
-        crossOrigin             : 'anonymous',
-        'data-repo'             : CONFIG.giscus.repo,
-        'data-repo-id'          : CONFIG.giscus.repo_id,
-        'data-category'         : CONFIG.giscus.category,
-        'data-category-id'      : CONFIG.giscus.category_id,
-        'data-mapping'          : CONFIG.giscus.mapping,
-        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
-        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
-        'data-theme'            : CONFIG.giscus.theme,
-        'data-lang'             : CONFIG.giscus.lang,
-        'data-input-position'   : CONFIG.giscus.input_position,
-        'data-loading'          : CONFIG.giscus.loading
-      },
-      parentNode: document.querySelector('.giscus-container')
-    }));
-});
-</script>
-
-</body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="本文选择安装的hadoop版本为网上资料较多的0.20.2，对于不懂的新技术要持保守态度。遇到问题解决问题的痛苦远比体会用不着功能的新版本的快感来的更猛烈。\n"><title>在Linux上搭建Hadoop集群环境</title><link rel=canonical href=https://kuring.me/post/hadoop_setup/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="在Linux上搭建Hadoop集群环境"><meta property='og:description' content="本文选择安装的hadoop版本为网上资料较多的0.20.2，对于不懂的新技术要持保守态度。遇到问题解决问题的痛苦远比体会用不着功能的新版本的快感来的更猛烈。\n"><meta property='og:url' content='https://kuring.me/post/hadoop_setup/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Hadoop'><meta property='article:published_time' content='2013-06-26T00:00:00+00:00'><meta property='article:modified_time' content='2013-06-26T00:00:00+00:00'><meta name=twitter:title content="在Linux上搭建Hadoop集群环境"><meta name=twitter:description content="本文选择安装的hadoop版本为网上资料较多的0.20.2，对于不懂的新技术要持保守态度。遇到问题解决问题的痛苦远比体会用不着功能的新版本的快感来的更猛烈。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/hadoop_setup/>在Linux上搭建Hadoop集群环境</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2013-06-26T00:00:00Z>2013-06-26</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 7 分钟</time></div></footer></div></header><section class=article-content><p>本文选择安装的hadoop版本为网上资料较多的0.20.2，对于不懂的新技术要持保守态度。遇到问题解决问题的痛苦远比体会用不着功能的新版本的快感来的更猛烈。</p><h1 id=安装环境>安装环境</h1><p>本文选择了三台机器来搭建hadoop集群，1个Master和2个Slave。本文中的master主机即namenode所在的机器，slave即datanode所在的机器。节点的机器名和IP地址如下</p><div class=table-wrapper><table><tr><td>机器名</td><td>IP地址</td><td>用途</td><td>运行模块</td></tr><tr><td>server206</td><td>192.168.20.6</td><td>Master</td><td>NameNode、JobTracker、SecondaryNameNode</td></tr><tr><td>ap1</td><td>192.168.20.36</td><td>Slave</td><td>DataNode、TaskTracker</td></tr><tr><td>ap2</td><td>192.168.20.38</td><td>Slave</td><td>DataNode、TaskTracker</td></tr></table></div><h1 id=安装java>安装Java</h1><ol><li>检查本机是否已安装Java
+在命令行中输入<code>java -version</code>判断是否已经安装。如果已经安装检查Java的版本，某些操作系统在安装的时候会安装Jdk，但可能版本会太低。如果版本过低，需要将旧的版本删除。在Redhat操作系统中可以通过rpm命令来删除系统自带的Jdk。</li><li>安装java
+本文选择jdk1.6安装，将解压出的文件夹jdk1.6.0_10复制到/usr/java目录下。</li><li>设置java的环境变量
+添加系统环境变量，修改/etc/profile文件，在文件末尾添加如下内容：</li></ol><blockquote><p>export JAVA_HOME=/usr/java/jdk1.6.0_10
+export CLASSPATH=.:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/lib/dt.jar
+export PATH=$JAVA_HOME/bin:$PATH
+export JRE_HOME=$JAVA_HOME/jre</p></blockquote><pre><code>修改完profile文件后要执行`source /etc/profile`命令才能使刚才的修改在该命令行环境下生效。
+</code></pre><ol start=4><li>检查java是否安装成功
+在命令行中输入java -version、javac命令来查看是否安装成功及安装版本。</li></ol><h1 id=配置hosts文件>配置hosts文件</h1><p>本步骤必须操作，需要root用户来操作，修改完成之后立即生效。在三台机器的/etc/hosts文件末尾添加如下内容：</p><blockquote><p>192.168.20.6 server206
+192.168.20.36 ap1
+192.168.20.38 ap2</p></blockquote><p>修改完成之后可以通过<code>ping 主机名</code>的方式来测试hosts文件是否正确。</p><h1 id=新建hadoop用户>新建hadoop用户</h1><p>在三台机器上分别新建hadoop用户，该用户的目录为/home/hadoop。利用useradd命令来添加用户，利用passwd命令给用户添加密码。</p><h1 id=配置ssh免登录>配置SSH免登录</h1><p>该步骤非必须，推荐配置，否则在Master上执行start-all.sh命令来启动hadoop集群的时候需要手动输入ssh密码，非常麻烦。
+原理：用户将自己的公钥储存在远程主机上。登录的时候，远程主机会向用户发送一段随机字符串，用户用自己的私钥加密后，再发回来。远程主机用事先储存的公钥进行解密，如果成功，就证明用户是可信的，直接允许登录shell，不再要求输入密码。
+在本例中，需要实现的是192.168.20.6上的hadoop用户可以无密码登录自己、192.168.20.36和192.168.20.38的hadoop用户。需要将192.168.20.6上的ssh公钥复制到192.168.20.36和192.168.20.38机器上。</p><ol><li>在192.168.20.6上执行<code>ssh-keygen –t rsa</code>命令来生成ssh密钥对。会在/home/hadoop/.ssh目录下生成id_rsa.pub和id_rsa两个文件，其中id_rsa.pub为公钥文件，id_rsa为私钥文件。</li><li>在192.168.20.6上执行<code>cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys</code>命令将公钥添加到授权的key里。</li><li>权限设置。在192.168.20.6上执行<code>chmod 600 ~/.ssh/authorized_keys</code>来修改authorized_keys文件的权限，执行<code>chmod 700 ~/.ssh</code>命令将.ssh文件夹的权限设置为700。如果权限不对无密码登录就配置不成功，而且没有错误提示，这一步特别注意。</li><li>在本机上测试是否设置无密码登录成功。在192.168.20.6上执行<code>ssh -p 本机SSH服务端口号 localhost</code>，如果不需要输入密码则登录成功。</li><li>利用scp命令将192.168.20.6上的公钥文件id_rsa.pub追加到192.168.20.36和192.168.20.38机器上的~/.ssh/authorized_keys文件中。scp命令的格式如下：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>scp -P ssh端口号 ~/.ssh/id_rsa.pub hadoop@192.168.20.36:~/id_rsa.pub
+</span></span></code></pre></td></tr></table></div></div><p>在192.168.20.36和192.168.20.38机器上分别执行<code>cat ~/id_rsa.pub >> ~/.ssh/authorized_keys</code>命令将192.168.20.6机器上的公钥添加到authorized_keys文件的尾部。
+6. 配置无密码登录完成，在Master机器上执行<code>ssh -P 本机SSH服务端口号 要连接的服务器IP地址</code>命令进行测试。</p><h1 id=搭建单机版hadoop>搭建单机版hadoop</h1><p>在192.168.20.6上首先搭建单机版hadoop进行测试。</p><ol><li>将hadoop-0.20.2.tar.gz文件解压到hadoop用户的目录下。</li><li>配置hadoop的环境变量。修改/etc/profile文件，在文件的下面加入如下：</li></ol><blockquote><p>HADOOP_HOME=/home/hadoop/hadoop-0.20.2
+export HADOOP_HOME
+export HADOOP=$HADOOP_HOME/bin
+export PATH=$HADOOP:$PATH</p></blockquote><p>修改完成之后执行<code>source /etc/profile</code>使修改的环境变量生效。
+3. 配置hadoop用到的java环境变量
+修改conf/hadoop-env.sh文件，添加<code>export JAVA_HOME=/usr/java/jdk1.6.0_10</code>。
+4. 修改conf/core-site.xml的内容如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>&lt;configuration&gt;
+</span></span><span class=line><span class=cl>    &lt;property&gt;
+</span></span><span class=line><span class=cl>        &lt;name&gt;fs.default.name&lt;/name&gt;
+</span></span><span class=line><span class=cl>        &lt;value&gt;hdfs://localhost:9000&lt;/value&gt; 
+</span></span><span class=line><span class=cl>    &lt;/property&gt;
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    &lt;property&gt;
+</span></span><span class=line><span class=cl>        &lt;name&gt;dfs.replication&lt;/name&gt; 
+</span></span><span class=line><span class=cl>        &lt;value&gt;1&lt;/value&gt; 
+</span></span><span class=line><span class=cl>    &lt;/property&gt;
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    &lt;property&gt;
+</span></span><span class=line><span class=cl>        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;
+</span></span><span class=line><span class=cl>        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt; 
+</span></span><span class=line><span class=cl>    &lt;/property&gt;
+</span></span><span class=line><span class=cl>&lt;/configuration&gt;
+</span></span></code></pre></td></tr></table></div></div><ol start=5><li>修改/conf/mapred-site.xml的内容如下：</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>&lt;configuration&gt;
+</span></span><span class=line><span class=cl>    &lt;property&gt;   
+</span></span><span class=line><span class=cl>        &lt;name&gt;mapred.job.tracker&lt;/name&gt;  
+</span></span><span class=line><span class=cl>        &lt;value&gt;localhost:9001&lt;/value&gt;   
+</span></span><span class=line><span class=cl>    &lt;/property&gt;
+</span></span><span class=line><span class=cl>&lt;/configuration&gt;
+</span></span></code></pre></td></tr></table></div></div><ol start=6><li>至此单击版搭建完毕。可以通过hadoop自带的wordcount程序测试是否运行正常。下面为运行wordcount例子的步骤。</li><li>在hadoop目录下新建input文件夹。</li><li>将conf目录下的内容拷贝到input文件夹下，执行<code>cp conf/* input</code>。</li><li>通过start-all.sh脚本来启动单机版hadoop。</li><li>执行wordcount程序：<code>hadoop jar hadoop-0.20.2-examples.jar wordcount input output</code>。</li><li>通过stop-all.sh脚本来停止单机版hadoop。</li></ol><h1 id=搭建分布式hadoop>搭建分布式hadoop</h1><p>在上述基础之上，在192.168.20.6上执行如下操作。
+1. 修改/home/hadoop/hadoop-0.20.2/conf目录下的core-site.xml文件。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>&lt;configuration&gt;
+</span></span><span class=line><span class=cl>    &lt;property&gt;
+</span></span><span class=line><span class=cl>        &lt;name&gt;fs.default.name&lt;/name&gt;
+</span></span><span class=line><span class=cl>        &lt;value&gt;hdfs://192.168.20.6:9000&lt;/value&gt;
+</span></span><span class=line><span class=cl>    &lt;/property&gt;
+</span></span><span class=line><span class=cl>    &lt;property&gt;
+</span></span><span class=line><span class=cl>        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;
+</span></span><span class=line><span class=cl>        &lt;value&gt;/home/hadoop/hadoop-0.20.2/tmp&lt;/value&gt;
+</span></span><span class=line><span class=cl>    &lt;/property&gt;
+</span></span><span class=line><span class=cl>&lt;/configuration&gt;
+</span></span></code></pre></td></tr></table></div></div><p>如没有配置hadoop.tmp.dir参数，此时系统默认的临时目录为：/tmp/hadoo-hadoop。而这个目录在每次重启后都会被干掉，必须重新执行format才行，否则会出错。
+2. 修改/home/hadoop/hadoop-0.20.2/conf目录下的hdfs-site.xml文件。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>&lt;configuration&gt;
+</span></span><span class=line><span class=cl>    &lt;property&gt;
+</span></span><span class=line><span class=cl>            &lt;name&gt;dfs.replication&lt;/name&gt;
+</span></span><span class=line><span class=cl>            &lt;value&gt;1&lt;/value&gt;
+</span></span><span class=line><span class=cl>    &lt;/property&gt;
+</span></span><span class=line><span class=cl>    &lt;property&gt;
+</span></span><span class=line><span class=cl>            &lt;name&gt;dfs.support.append&lt;/name&gt;
+</span></span><span class=line><span class=cl>            &lt;value&gt;true&lt;/value&gt;
+</span></span><span class=line><span class=cl>    &lt;/property&gt;
+</span></span><span class=line><span class=cl>&lt;/configuration&gt;
+</span></span></code></pre></td></tr></table></div></div><p>3. 修改/home/hadoop/hadoop-0.20.2/conf目录下的mapred-site.xml文件。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>&lt;configuration&gt;
+</span></span><span class=line><span class=cl>    &lt;property&gt;
+</span></span><span class=line><span class=cl>            &lt;name&gt;mapred.job.tracker&lt;/name&gt;
+</span></span><span class=line><span class=cl>            &lt;value&gt;http://192.168.20.6:9001&lt;/value&gt;
+</span></span><span class=line><span class=cl>    &lt;/property&gt;
+</span></span><span class=line><span class=cl>&lt;/configuration&gt;
+</span></span></code></pre></td></tr></table></div></div><p>4. 修改/home/hadoop/hadoop-0.20.2/conf目录下的masters文件。
+将Master机器的IP地址或主机名添加进文件，如192.168.20.6。
+5. 修改/home/hadoop/hadoop-0.20.2/conf目录下的slaves文件。<em>Master主机特有</em>
+在其中将slave节点的Ip地址或主机名添加进文件中，本例中加入</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>192.168.20.36
+</span></span><span class=line><span class=cl>192.168.20.38
+</span></span></code></pre></td></tr></table></div></div><p>6. hadoop主机的master主机已经配置完毕，利用scp命令将hadoop-0.20.2目录复制到两台slave机器的hadoop目录下。命令为：<code>scp -r /home/hadoop hadoop@服务器IP:/home/hadoop/</code>。注意slaves文件在master和slave机器上是不同的。</p><h1 id=常用命令>常用命令</h1><ul><li>hadoop dfsadmin -report 查看集群状态</li><li>http://192.168.20.6:50070/dfshealth.jsp 查看NameNode状态</li><li>http://192.168.20.6:50030/jobtracker.jsp Map/Reduce管理</li><li>hadoop fs -mkdir input 在HDFS上创建文件夹</li><li>hadoop fs -put ~/file/file*.txt input 将文件放入HDFS文件系统中</li></ul><h1 id=参考文档>参考文档</h1><ul><li><a class=link href=http://www.cnblogs.com/xia520pi/archive/2012/05/16/2503949.html target=_blank rel=noopener>细细品味Hadoop系列</a>。超详细的hadoop教程，作者非常用心。</li></ul><h1 id=下载链接>下载链接</h1><p><a class=link href="http://pan.baidu.com/share/link?shareid=1235031445&amp;uk=3506813023" target=_blank rel=noopener>http://pan.baidu.com/share/link?shareid=1235031445&amp;uk=3506813023</a> 提取码：v8ok</p></section><footer class=article-footer><section class=article-tags><a href=/tags/hadoop/>Hadoop</a></section></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

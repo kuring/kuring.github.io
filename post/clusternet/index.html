@@ -1,426 +1,575 @@
-<!DOCTYPE html>
-<html lang="zh-Hans">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="简介腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。https:&#x2F;&#x2F;github.com&#x2F;clusternet&#x2F;clusternetGitHub Star：891 架构包含clusternet-hub和clusternet-agent两个组件。 clusternet-hub部署在父集群，用途：  接收子集群的注册请求，并为每个自己群创建namespace、serviceaccount">
-<meta property="og:type" content="article">
-<meta property="og:title" content="k8s多集群管理方案 - clusternet">
-<meta property="og:url" content="http://kuring.me/post/clusternet/index.html">
-<meta property="og:site_name" content="404频道">
-<meta property="og:description" content="简介腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。https:&#x2F;&#x2F;github.com&#x2F;clusternet&#x2F;clusternetGitHub Star：891 架构包含clusternet-hub和clusternet-agent两个组件。 clusternet-hub部署在父集群，用途：  接收子集群的注册请求，并为每个自己群创建namespace、serviceaccount">
-<meta property="og:locale">
-<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet1.png">
-<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet2.png">
-<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet3.png">
-<meta property="article:published_time" content="2021-12-26T21:44:17.000Z">
-<meta property="article:modified_time" content="2025-12-20T16:59:52.685Z">
-<meta property="article:tag" content="多集群">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet1.png">
-
-
-<link rel="canonical" href="http://kuring.me/post/clusternet/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/clusternet/","path":"post/clusternet/","title":"k8s多集群管理方案 - clusternet"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>k8s多集群管理方案 - clusternet | 404频道</title>
-  
-
-
-
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">404频道</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">学习笔记</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="Searching..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          Table of Contents
-        </li>
-        <li class="sidebar-nav-overview">
-          Overview
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">架构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CRD%E6%8A%BD%E8%B1%A1"><span class="nav-number">3.</span> <span class="nav-text">CRD抽象</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ClusterRegistrationRequest"><span class="nav-number">3.1.</span> <span class="nav-text">ClusterRegistrationRequest</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ClusterRole%E5%92%8CRole"><span class="nav-number">3.2.</span> <span class="nav-text">ClusterRole和Role</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ManagedCluster"><span class="nav-number">3.3.</span> <span class="nav-text">ManagedCluster</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Subscription"><span class="nav-number">3.4.</span> <span class="nav-text">Subscription</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#HelmChart"><span class="nav-number">3.5.</span> <span class="nav-text">HelmChart</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Localization"><span class="nav-number">3.6.</span> <span class="nav-text">Localization</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Globalization"><span class="nav-number">3.7.</span> <span class="nav-text">Globalization</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Base"><span class="nav-number">3.8.</span> <span class="nav-text">Base</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Description"><span class="nav-number">3.9.</span> <span class="nav-text">Description</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">4.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%BF%E9%97%AE%E5%AD%90%E9%9B%86%E7%BE%A4"><span class="nav-number">5.</span> <span class="nav-text">访问子集群</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#kubectl-clusternet%E5%91%BD%E4%BB%A4%E8%A1%8C%E6%96%B9%E5%BC%8F%E8%AE%BF%E9%97%AE"><span class="nav-number">5.1.</span> <span class="nav-text">kubectl-clusternet命令行方式访问</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%B1%82%E9%9D%A2%E8%AE%BF%E9%97%AE%E5%AD%90%E9%9B%86%E7%BE%A4"><span class="nav-number">5.2.</span> <span class="nav-text">代码层面访问子集群</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%8F%91%E5%B8%83"><span class="nav-number">6.</span> <span class="nav-text">应用发布</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90"><span class="nav-number">7.</span> <span class="nav-text">实现分析</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E9%93%BE%E6%8E%A5"><span class="nav-number">8.</span> <span class="nav-text">相关链接</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name"></p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">256</span>
-          <span class="site-state-item-name">posts</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">36</span>
-        <span class="site-state-item-name">tags</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/clusternet/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="k8s多集群管理方案 - clusternet | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          k8s多集群管理方案 - clusternet
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2021-12-26 21:44:17" itemprop="dateCreated datePublished" datetime="2021-12-26T21:44:17+00:00">2021-12-26</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-20 16:59:52" itemprop="dateModified" datetime="2025-12-20T16:59:52+00:00">2025-12-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。<br><a target="_blank" rel="noopener" href="https://github.com/clusternet/clusternet">https://github.com/clusternet/clusternet</a><br>GitHub Star：891</p>
-<h1 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h1><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet1.png" alt="image.png"><br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet2.png" alt="image.png"><br>包含clusternet-hub和clusternet-agent两个组件。</p>
-<p>clusternet-hub部署在父集群，用途：</p>
-<ul>
-<li>接收子集群的注册请求，并为每个自己群创建namespace、serviceaccount等资源</li>
-<li>提供父集群跟各个子集群的长连接</li>
-<li>提供restful api来访问各个子集群，同时支持子集群的互访</li>
-</ul>
-<p>clusternet-agent部署在子集群，用途：</p>
-<ul>
-<li>自动注册子集群到父集群</li>
-<li>心跳报告到中心集群，包括k8s版本、运行平台、健康状态等</li>
-<li>通过websocket协议跟父集群通讯</li>
-</ul>
-<h1 id="CRD抽象"><a href="#CRD抽象" class="headerlink" title="CRD抽象"></a>CRD抽象</h1><h2 id="ClusterRegistrationRequest"><a href="#ClusterRegistrationRequest" class="headerlink" title="ClusterRegistrationRequest"></a>ClusterRegistrationRequest</h2><p>clusternet-agent在父集群中创建的CR，一个k8s集群一个</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: clusters.clusternet.io/v1beta1</span><br><span class="line">kind: ClusterRegistrationRequest</span><br><span class="line">metadata:</span><br><span class="line">  labels:</span><br><span class="line">    clusters.clusternet.io/cluster<span class="literal">-id</span>: <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">    clusters.clusternet.io/cluster<span class="literal">-name</span>: clusternet<span class="literal">-cluster-pmlbp</span></span><br><span class="line">    clusters.clusternet.io/registered<span class="literal">-by</span>: clusternet<span class="literal">-agent</span></span><br><span class="line">  name: clusternet<span class="literal">-2bcd48d2-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">spec:</span><br><span class="line">  clusterId: <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">  clusterName: clusternet<span class="literal">-cluster-pmlbp</span> <span class="comment"># 集群名称</span></span><br><span class="line">  clusterType: EdgeCluster <span class="comment"># 集群类型</span></span><br><span class="line">  syncMode: Dual</span><br><span class="line">status:</span><br><span class="line">  caCertificate: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXhNekV3TWpjeE5Wb1hEVE14TVRJeE1URXdNamN4TlZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTHVCCmJwdXNaZXM5RXFXaEw1WUVGb2c4eHRJai9jbFh2S1lTMnZYbGR4cUt1MUR3VHV3aUcxZUN4VGlHa2dLQXVXd1IKVFFheEh5aGY3U29lc0hqMG43NnFBKzhQT05lS1VGdERJOWVzejF2WTF5bXFoUHR0QVo0cGhkWmhmbXJjZTJLRQpuMS84MzNWbWlXd0pSZmNWcEJtTU52MjFYMVVwNWp6RGtncS9tY0JOOGN0ZU5PMEpKNkVVeTE2RXZLbjhyWG90ClErTW5PUHE4anFNMzJjRFFqYWVEdGxvM2kveXlRd1NMa2wzNFo4aElwZDZNWWVSTWpXcmhrazF4L0RYZjNJK3IKOGs5S1FBbEsvNWZRMXk5NHYwT25TK0FKZTliczZMT2srYVFWYm5SbExab2E2aVZWbUJNam03UjBjQ2w0Y1hpRwpyekRnN1ZLc3lsY1o3aGFRRTNFQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZPaGwxMHUwNnJvenZJUm9XVmpNYlVPMzFDbERNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFBQytqMXpPQVZYVXpNUFJ0U29Kd3JhMU1FSkJOUTNMWitmWnZRYjdIbk53b00zaCthMgoyc25yUitSWTYrOFFDbXVKeis1eU5yYStEZDlnNzQ1Q0hDaFpVZzlsY3RjQTRzZVR5OXZqcUVQNVBNSzEvbi9PCnFEcDQyMUpqTjYvUXJmamIvbVM0elUvZXNGZGowQXRYQ0FLMWJsNmF0ai9jZXVBbzh1bTRPaUVlNnJhanBYTHUKWFlmQ1FVZFV5TWpQdEZHTDMwNytna0RpdlVsdXk3RkQ4aUpURTh2QWpxOVBXOW40SmxFMjdQWXR5QnNocy9XSApCZ2czQjZpTG10SjZlNzJiWnA3ZmptdmJWTC9VdkxzYXZqRXltZDhrMnN1bFFwQUpzeVJrMkEzM1g3NWJpS0RGCk1CU29DaHc3U2JMSkJrN0FNckRzTjd1Q2U3WWVIWGdZemdhRAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==</span><br><span class="line">  dedicatedNamespace: clusternet<span class="literal">-sdqrh</span></span><br><span class="line">  managedClusterName: clusternet<span class="literal">-cluster-pmlbp</span></span><br><span class="line">  result: Approved</span><br><span class="line">  token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkluZFpWMUV6UmxCbFdUUldWa1Y0UmxBeWMzaDJOV3RuUzBabVJsaG9jWG94TkhKM2JtUkxiRTlrYUZVaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUpqYkhWemRHVnlibVYwTFhOa2NYSm9JaXdpYTNWaVpYSnVaWFJsY3k1cGJ5OXpaWEoyYVdObFlXTmpiM1Z1ZEM5elpXTnlaWFF1Ym1GdFpTSTZJbU5zZFhOMFpYSnVaWFF0YmpneWFHc3RkRzlyWlc0dGN6SnpjRFVpTENKcmRXSmxjbTVsZEdWekxtbHZMM05sY25acFkyVmhZMk52ZFc1MEwzTmxjblpwWTJVdFlXTmpiM1Z1ZEM1dVlXMWxJam9pWTJ4MWMzUmxjbTVsZEMxdU9ESm9heUlzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVnlkbWxqWlMxaFkyTnZkVzUwTG5WcFpDSTZJamN3TWpRMk1tTTBMV0prTlRFdE5HVXpNeTA1WXpnekxUWmpPV1F6TUdGall6bG1aU0lzSW5OMVlpSTZJbk41YzNSbGJUcHpaWEoyYVdObFlXTmpiM1Z1ZERwamJIVnpkR1Z5Ym1WMExYTmtjWEpvT21Oc2RYTjBaWEp1WlhRdGJqZ3lhR3NpZlEuUjJCdEQ1YzQxRm1seC1hTEFKSWQzbGxvOThSY25TakVUak5pSnVuTXg1US1jYXhwc3VkamUxekVtUF9mTHR6TjU4d21Dd3RXcHpoaXhSMWFTUHE5LXJTRlBIYzk3aDlTT3daZGdicC10alFBSjA4dllfYWdiVFRKLU1WN1dpN0xQVzRIcmt1U3RlemUzVHh2RW11NWwySlpzbG5UTXdkR3NGRVlVZzVfeWFoLUQwQ2pnTkZlR1ljUjJ1TlJBWjdkNW00Q1c5VmRkdkNsanNqRE5WX1k0RkFEbGo2cHgzSlh0SDQ4U1ZUd254TS1sNHl0eXBENjZFbG1PYXpUMmRwSWd4eWNSZ0tJSUlacWNQNnZVc0ZOM1Zka21ZZ29ydy1NSUcwc25YdzFaZ1lwRk9SUDJRa3hjd2NOUVVOTjh6VUZqSUZSSmdSSFdjNlo4aXd2eURnZTVn</span><br></pre></td></tr></table></figure>
-<h2 id="ClusterRole和Role"><a href="#ClusterRole和Role" class="headerlink" title="ClusterRole和Role"></a>ClusterRole和Role</h2><p>ClusterRegistrationRequest被接收后会创建ClusterRole</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">kind: ClusterRole</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    clusternet.io/autoupdate: <span class="string">&quot;true&quot;</span></span><br><span class="line">  labels:</span><br><span class="line">    clusternet.io/created<span class="literal">-by</span>: clusternet<span class="literal">-hub</span></span><br><span class="line">    clusters.clusternet.io/bootstrapping: rbac<span class="literal">-defaults</span></span><br><span class="line">    clusters.clusternet.io/cluster<span class="literal">-id</span>: <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">  name: clusternet<span class="literal">-2bcd48d2-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">rules:</span><br><span class="line">- apiGroups:</span><br><span class="line">  - clusters.clusternet.io</span><br><span class="line">  resources:</span><br><span class="line">  - clusterregistrationrequests</span><br><span class="line">  verbs:</span><br><span class="line">  - create</span><br><span class="line">  - get</span><br><span class="line">- apiGroups:</span><br><span class="line">  - proxies.clusternet.io</span><br><span class="line">  resourceNames:</span><br><span class="line">  - <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">  resources:</span><br><span class="line">  - sockets</span><br><span class="line">  verbs:</span><br><span class="line">  - <span class="string">&#x27;*&#x27;</span></span><br></pre></td></tr></table></figure>
-<p>并会在cluster对应的namespace下创建Role</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">kind: Role</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    clusternet.io/autoupdate: <span class="string">&quot;true&quot;</span></span><br><span class="line">  labels:</span><br><span class="line">    clusternet.io/created<span class="literal">-by</span>: clusternet<span class="literal">-hub</span></span><br><span class="line">    clusters.clusternet.io/bootstrapping: rbac<span class="literal">-defaults</span></span><br><span class="line">  name: clusternet<span class="literal">-managedcluster-role</span></span><br><span class="line">  namespace: clusternet<span class="literal">-sdqrh</span></span><br><span class="line">rules:</span><br><span class="line">- apiGroups:</span><br><span class="line">  - <span class="string">&#x27;*&#x27;</span></span><br><span class="line">  resources:</span><br><span class="line">  - <span class="string">&#x27;*&#x27;</span></span><br><span class="line">  verbs:</span><br><span class="line">  - <span class="string">&#x27;*&#x27;</span></span><br></pre></td></tr></table></figure>
-<h2 id="ManagedCluster"><a href="#ManagedCluster" class="headerlink" title="ManagedCluster"></a>ManagedCluster</h2><p>clusternet-hub在接受ClusterRegistrationRequest后，会创建一个ManagedCluster。一个k8s集群一个namespace</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: clusters.clusternet.io/v1beta1</span><br><span class="line">kind: ManagedCluster</span><br><span class="line">metadata:</span><br><span class="line">  labels:</span><br><span class="line">    clusternet.io/created<span class="literal">-by</span>: clusternet<span class="literal">-agent</span></span><br><span class="line">    clusters.clusternet.io/cluster<span class="literal">-id</span>: <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">    clusters.clusternet.io/cluster<span class="literal">-name</span>: clusternet<span class="literal">-cluster-pmlbp</span></span><br><span class="line">  name: clusternet<span class="literal">-cluster-pmlbp</span></span><br><span class="line">  namespace: clusternet<span class="literal">-sdqrh</span></span><br><span class="line">spec:</span><br><span class="line">  clusterId: <span class="number">2</span>bcd48d2<span class="literal">-0ead-45f7-938b-5af6af7da5fd</span></span><br><span class="line">  clusterType: EdgeCluster</span><br><span class="line">  syncMode: Dual</span><br><span class="line">status:</span><br><span class="line">  allocatable:</span><br><span class="line">    cpu: <span class="number">7600</span>m</span><br><span class="line">    memory: <span class="string">&quot;30792789992&quot;</span></span><br><span class="line">  apiserverURL: https://<span class="number">10.233</span>.<span class="number">0.1</span>:<span class="number">443</span> <span class="comment"># default/kubernetes的service clusterip</span></span><br><span class="line">  appPusher: true</span><br><span class="line">  capacity:</span><br><span class="line">    cpu: <span class="string">&quot;8&quot;</span></span><br><span class="line">    memory: <span class="number">32192720</span>Ki</span><br><span class="line">  clusterCIDR: <span class="number">10.233</span>.<span class="number">0.0</span>/<span class="number">18</span></span><br><span class="line">  conditions:</span><br><span class="line">  - lastTransitionTime: <span class="string">&quot;2021-12-15T07:47:10Z&quot;</span></span><br><span class="line">    message: managed cluster is ready.</span><br><span class="line">    reason: ManagedClusterReady</span><br><span class="line">    status: <span class="string">&quot;True&quot;</span></span><br><span class="line">    <span class="built_in">type</span>: Ready</span><br><span class="line">  healthz: true</span><br><span class="line">  heartbeatFrequencySeconds: <span class="number">180</span></span><br><span class="line">  k8sVersion: v1.<span class="number">21.5</span></span><br><span class="line">  lastObservedTime: <span class="string">&quot;2021-12-15T07:47:10Z&quot;</span></span><br><span class="line">  livez: true</span><br><span class="line">  nodeStatistics:</span><br><span class="line">    readyNodes: <span class="number">1</span></span><br><span class="line">  parentAPIServerURL: https://<span class="number">172.21</span>.<span class="number">115.160</span>:<span class="number">6443</span>  <span class="comment"># 父集群地址</span></span><br><span class="line">  platform: linux/amd64</span><br><span class="line">  readyz: true</span><br><span class="line">  serviceCIDR: <span class="number">10.233</span>.<span class="number">64.0</span>/<span class="number">18</span></span><br><span class="line">  useSocket: true</span><br></pre></td></tr></table></figure>
-<h2 id="Subscription"><a href="#Subscription" class="headerlink" title="Subscription"></a>Subscription</h2><p>应用发布的抽象，人工提交到环境中。要发布的资源即可以是helm chart，也可以是原生的k8s对象。clusternet在部署的时候会查看部署的优先级，并且支持weight，优先部署cluster级别的资源，这点跟helm部署的逻辑一致。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">kind: Subscription</span><br><span class="line">metadata:</span><br><span class="line">  name: app<span class="literal">-demo</span></span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">  <span class="comment"># 定义应用要发布到哪个k8s集群</span></span><br><span class="line">  subscribers: <span class="comment"># defines the clusters to be distributed to</span></span><br><span class="line">    - clusterAffinity:</span><br><span class="line">        matchLabels:</span><br><span class="line">          clusters.clusternet.io/cluster<span class="literal">-id</span>: dc91021d<span class="literal">-2361-4f6d-a404-7c33b9e01118</span> <span class="comment"># PLEASE UPDATE THIS CLUSTER-ID TO YOURS!!!</span></span><br><span class="line">	<span class="comment"># 定义了要发布哪些资源</span></span><br><span class="line">  feeds: <span class="comment"># defines all the resources to be deployed with</span></span><br><span class="line">    - apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">      kind: HelmChart</span><br><span class="line">      name: mysql</span><br><span class="line">      namespace: default</span><br><span class="line">    - apiVersion: v1</span><br><span class="line">      kind: Namespace</span><br><span class="line">      name: foo</span><br><span class="line">    - apiVersion: v1</span><br><span class="line">      kind: Service</span><br><span class="line">      name: my<span class="literal">-nginx-svc</span></span><br><span class="line">      namespace: foo</span><br><span class="line">    - apiVersion: apps/v1</span><br><span class="line">      kind: Deployment</span><br><span class="line">      name: my<span class="literal">-nginx</span></span><br><span class="line">      namespace: foo</span><br></pre></td></tr></table></figure>
-<h2 id="HelmChart"><a href="#HelmChart" class="headerlink" title="HelmChart"></a>HelmChart</h2><p>Subscriber发布的一个子资源之一，对应一个helm chart的完整描述</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">kind: HelmChart</span><br><span class="line">metadata:</span><br><span class="line">  name: mysql</span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">  repo: https://charts.bitnami.com/bitnami</span><br><span class="line">  chart: mysql</span><br><span class="line">  version: <span class="number">8.6</span>.<span class="number">2</span></span><br><span class="line">  targetNamespace: abc</span><br></pre></td></tr></table></figure>
-<h2 id="Localization"><a href="#Localization" class="headerlink" title="Localization"></a>Localization</h2><p>差异化不同于其他集群的配置，用来描述namespace级别的差异化配置。</p>
-<h2 id="Globalization"><a href="#Globalization" class="headerlink" title="Globalization"></a>Globalization</h2><p>用来描述不同集群的cluster级别的差异化配置。</p>
-<h2 id="Base"><a href="#Base" class="headerlink" title="Base"></a>Base</h2><h2 id="Description"><a href="#Description" class="headerlink" title="Description"></a>Description</h2><p>跟Base对象根据Localization和Globalization渲染得到的最终要发布到集群中的最终对象。</p>
-<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>本文使用kind进行测试，使用kind创建两个k8s集群host和member1，两个集群的apiserver均监听在宿主机的端口，确保从一个集群可以访问到另外一个集群的apiserver。</p>
-<p>在父集群执行如下命令安装clusternet管控组件：</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">helm repo add clusternet https://clusternet.github.io/charts</span><br><span class="line">helm install clusternet<span class="literal">-hub</span> <span class="literal">-n</span> clusternet<span class="literal">-system</span> <span class="literal">--create-namespace</span> clusternet/clusternet<span class="literal">-hub</span></span><br><span class="line">kubectl apply <span class="operator">-f</span> https://raw.githubusercontent.com/clusternet/clusternet/main/manifests/samples/cluster_bootstrap_token.yaml</span><br></pre></td></tr></table></figure>
-<p>会在clusternet-system namespace下创建deployment clusternet-hub。</p>
-<p>最后一条命令，会创建一个secret，其中的token信息为07401b.f395accd246ae52d，在子集群注册的时候需要用到。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Secret</span><br><span class="line">metadata:</span><br><span class="line">  <span class="comment"># Name MUST be of form &quot;bootstrap-token-&lt;token id&gt;&quot;</span></span><br><span class="line">  name: bootstrap<span class="literal">-token-07401b</span></span><br><span class="line">  namespace: kube<span class="literal">-system</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Type MUST be &#x27;bootstrap.kubernetes.io/token&#x27;</span></span><br><span class="line"><span class="built_in">type</span>: bootstrap.kubernetes.io/token</span><br><span class="line">stringData:</span><br><span class="line">  <span class="comment"># Human readable description. Optional.</span></span><br><span class="line">  description: <span class="string">&quot;The bootstrap token used by clusternet cluster registration.&quot;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># Token ID and secret. Required.</span></span><br><span class="line">  token<span class="literal">-id</span>: <span class="number">07401</span>b</span><br><span class="line">  token<span class="literal">-secret</span>: f395accd246ae52d</span><br><span class="line"></span><br><span class="line">  <span class="comment"># Expiration. Optional.</span></span><br><span class="line">  expiration: <span class="number">2025</span><span class="literal">-05-10T03</span>:<span class="number">22</span>:<span class="number">11</span>Z</span><br><span class="line"></span><br><span class="line">  <span class="comment"># Allowed usages.</span></span><br><span class="line">  usage<span class="literal">-bootstrap-authentication</span>: <span class="string">&quot;true&quot;</span></span><br><span class="line">  usage<span class="literal">-bootstrap-signing</span>: <span class="string">&quot;true&quot;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># Extra groups to authenticate the token as. Must start with &quot;system:bootstrappers:&quot;</span></span><br><span class="line">  auth<span class="literal">-extra-groups</span>: system:bootstrappers:clusternet:<span class="built_in">register-cluster</span><span class="literal">-token</span></span><br></pre></td></tr></table></figure>
-
-<p>在子集群执行如下命令，其中parentURL要修改为父集群的apiserver地址</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">helm repo add clusternet https://clusternet.github.io/charts</span><br><span class="line">helm install clusternet<span class="literal">-agent</span> <span class="literal">-n</span> clusternet<span class="literal">-system</span> <span class="literal">--create-namespace</span> \</span><br><span class="line">  <span class="literal">--set</span> parentURL=https://<span class="number">10.0</span>.<span class="number">248.96</span>:<span class="number">8443</span> \</span><br><span class="line">  <span class="literal">--set</span> registrationToken=<span class="number">07401</span>b.f395accd246ae52d \</span><br><span class="line">  clusternet/clusternet<span class="literal">-agent</span></span><br></pre></td></tr></table></figure>
-<p>其中parentURL为父集群的apiserver地址，registrationToken为父集群注册的token信息。</p>
-<h1 id="访问子集群"><a href="#访问子集群" class="headerlink" title="访问子集群"></a>访问子集群</h1><h2 id="kubectl-clusternet命令行方式访问"><a href="#kubectl-clusternet命令行方式访问" class="headerlink" title="kubectl-clusternet命令行方式访问"></a>kubectl-clusternet命令行方式访问</h2><p>安装kubectl krew插件，参考 <a target="_blank" rel="noopener" href="https://krew.sigs.k8s.io/docs/user-guide/setup/install/">https://krew.sigs.k8s.io/docs/user-guide/setup/install/</a>，执行如下命令：</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">yum install git <span class="literal">-y</span></span><br><span class="line">(</span><br><span class="line">  <span class="built_in">set</span> <span class="literal">-x</span>; <span class="built_in">cd</span> <span class="string">&quot;<span class="variable">$</span>(mktemp -d)&quot;</span> &amp;&amp;</span><br><span class="line">  OS=<span class="string">&quot;<span class="variable">$</span>(uname | tr &#x27;[:upper:]&#x27; &#x27;[:lower:]&#x27;)&quot;</span> &amp;&amp;</span><br><span class="line">  ARCH=<span class="string">&quot;<span class="variable">$</span>(uname -m | sed -e &#x27;s/x86_64/amd64/&#x27; -e &#x27;s/\(arm\)\(64\)\?.*/\1\2/&#x27; -e &#x27;s/aarch64<span class="variable">$</span>/arm64/&#x27;)&quot;</span> &amp;&amp;</span><br><span class="line">  KREW=<span class="string">&quot;krew-<span class="variable">$</span>&#123;OS&#125;_<span class="variable">$</span>&#123;ARCH&#125;&quot;</span> &amp;&amp;</span><br><span class="line">  <span class="built_in">curl</span> <span class="literal">-fsSLO</span> <span class="string">&quot;https://github.com/kubernetes-sigs/krew/releases/latest/download/<span class="variable">$</span>&#123;KREW&#125;.tar.gz&quot;</span> &amp;&amp;</span><br><span class="line">  tar zxvf <span class="string">&quot;<span class="variable">$</span>&#123;KREW&#125;.tar.gz&quot;</span> &amp;&amp;</span><br><span class="line">  ./<span class="string">&quot;<span class="variable">$</span>&#123;KREW&#125;&quot;</span> install krew</span><br><span class="line">)</span><br><span class="line"><span class="built_in">echo</span> <span class="string">&#x27;export PATH=&quot;$&#123;PATH&#125;:$&#123;HOME&#125;/.krew/bin&quot;&#x27;</span> &gt;&gt;  ~/.bashrc</span><br><span class="line">source ~/.bashrc</span><br></pre></td></tr></table></figure>
-<p>安装kubectl插件clusternet：kubectl krew install clusternet</p>
-<p>使用kubectl clusternet get可以看到发布的应用，非发布的应用看不到。</p>
-<h2 id="代码层面访问子集群"><a href="#代码层面访问子集群" class="headerlink" title="代码层面访问子集群"></a>代码层面访问子集群</h2><p>可以参照例子：<a target="_blank" rel="noopener" href="https://github.com/clusternet/clusternet/blob/main/examples/clientgo/demo.go#L42-L45">https://github.com/clusternet/clusternet/blob/main/examples/clientgo/demo.go#L42-L45</a></p>
-<p>改动代码非常小，仅需要获取到对应集群的config信息即可。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">config, err := rest.InClusterConfig()</span><br><span class="line">	<span class="keyword">if</span> err != nil &#123;</span><br><span class="line">		klog.Error(err)</span><br><span class="line">		os.Exit(<span class="number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	// This is the ONLY place you need to wrap <span class="keyword">for</span> Clusternet</span><br><span class="line">	config.Wrap(func(rt http.RoundTripper) http.RoundTripper &#123;</span><br><span class="line">		<span class="keyword">return</span> clientgo.NewClusternetTransport(config.Host, rt)</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	// now we could create and visit all the resources</span><br><span class="line">	client := kubernetes.NewForConfigOrDie(config)</span><br><span class="line">	_, err = client.CoreV1().Namespaces().Create(context.TODO(), &amp;corev1.Namespace&#123;</span><br><span class="line">		ObjectMeta: metav1.ObjectMeta&#123;</span><br><span class="line">			Name: <span class="string">&quot;demo&quot;</span>,</span><br><span class="line">		&#125;,</span><br><span class="line">	&#125;, metav1.CreateOptions&#123;&#125;)</span><br></pre></td></tr></table></figure>
-
-<h1 id="应用发布"><a href="#应用发布" class="headerlink" title="应用发布"></a>应用发布</h1><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet3.png" alt="image.png"><br>在主集群提交如下的yaml文件</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">kind: Subscription</span><br><span class="line">metadata:</span><br><span class="line">  name: app<span class="literal">-demo</span></span><br><span class="line">  namespace: default</span><br><span class="line">spec:</span><br><span class="line">  subscribers: <span class="comment"># defines the clusters to be distributed to</span></span><br><span class="line">    - clusterAffinity:</span><br><span class="line">        matchLabels:</span><br><span class="line">          clusters.clusternet.io/cluster<span class="literal">-id</span>: dc91021d<span class="literal">-2361-4f6d-a404-7c33b9e01118</span> <span class="comment"># PLEASE UPDATE THIS CLUSTER-ID TO YOURS!!!</span></span><br><span class="line">  feeds: <span class="comment"># defines all the resources to be deployed with</span></span><br><span class="line">    - apiVersion: apps.clusternet.io/v1alpha1</span><br><span class="line">      kind: HelmChart</span><br><span class="line">      name: mysql</span><br><span class="line">      namespace: default</span><br><span class="line">    - apiVersion: v1</span><br><span class="line">      kind: Namespace</span><br><span class="line">      name: foo</span><br><span class="line">    - apiVersion: apps/v1</span><br><span class="line">      kind: Service</span><br><span class="line">      name: my<span class="literal">-nginx-svc</span></span><br><span class="line">      namespace: foo</span><br><span class="line">    - apiVersion: apps/v1</span><br><span class="line">      kind: Deployment</span><br><span class="line">      name: my<span class="literal">-nginx</span></span><br><span class="line">      namespace: foo</span><br></pre></td></tr></table></figure>
-
-<h1 id="实现分析"><a href="#实现分析" class="headerlink" title="实现分析"></a>实现分析</h1><p>在主集群实现了两个aggregated apiservice</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apiregistration.k8s.io/v1</span><br><span class="line">kind: APIService</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    meta.helm.sh/release<span class="literal">-name</span>: clusternet<span class="literal">-hub</span></span><br><span class="line">    meta.helm.sh/release<span class="literal">-namespace</span>: clusternet<span class="literal">-system</span></span><br><span class="line">  labels:</span><br><span class="line">    app.kubernetes.io/instance: clusternet<span class="literal">-hub</span></span><br><span class="line">    app.kubernetes.io/managed<span class="literal">-by</span>: Helm</span><br><span class="line">    app.kubernetes.io/name: clusternet<span class="literal">-hub</span></span><br><span class="line">    helm.sh/chart: clusternet<span class="literal">-hub-0</span>.<span class="number">2.1</span></span><br><span class="line">  name: v1alpha1.proxies.clusternet.io</span><br><span class="line">spec:</span><br><span class="line">  <span class="built_in">group</span>: proxies.clusternet.io</span><br><span class="line">  groupPriorityMinimum: <span class="number">1000</span></span><br><span class="line">  insecureSkipTLSVerify: true</span><br><span class="line">  service:</span><br><span class="line">    name: clusternet<span class="literal">-hub</span></span><br><span class="line">    namespace: clusternet<span class="literal">-system</span></span><br><span class="line">    port: <span class="number">443</span></span><br><span class="line">  version: v1alpha1</span><br><span class="line">  versionPriority: <span class="number">100</span></span><br></pre></td></tr></table></figure>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apiregistration.k8s.io/v1</span><br><span class="line">kind: APIService</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    meta.helm.sh/release<span class="literal">-name</span>: clusternet<span class="literal">-hub</span></span><br><span class="line">    meta.helm.sh/release<span class="literal">-namespace</span>: clusternet<span class="literal">-system</span></span><br><span class="line">  labels:</span><br><span class="line">    app.kubernetes.io/instance: clusternet<span class="literal">-hub</span></span><br><span class="line">    app.kubernetes.io/managed<span class="literal">-by</span>: Helm</span><br><span class="line">    app.kubernetes.io/name: clusternet<span class="literal">-hub</span></span><br><span class="line">    helm.sh/chart: clusternet<span class="literal">-hub-0</span>.<span class="number">2.1</span></span><br><span class="line">  name: v1alpha1.shadow</span><br><span class="line">spec:</span><br><span class="line">  <span class="built_in">group</span>: shadow</span><br><span class="line">  groupPriorityMinimum: <span class="number">1</span></span><br><span class="line">  insecureSkipTLSVerify: true</span><br><span class="line">  service:</span><br><span class="line">    name: clusternet<span class="literal">-hub</span></span><br><span class="line">    namespace: clusternet<span class="literal">-system</span></span><br><span class="line">    port: <span class="number">443</span></span><br><span class="line">  version: v1alpha1</span><br><span class="line">  versionPriority: <span class="number">1</span></span><br></pre></td></tr></table></figure>
-<h1 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h1><ul>
-<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/BSgb2uoAuHbxQOUvn8fEsA">https://mp.weixin.qq.com/s/BSgb2uoAuHbxQOUvn8fEsA</a></li>
-</ul>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-          <div class="post-tags">
-              <a href="/tags/%E5%A4%9A%E9%9B%86%E7%BE%A4/" rel="tag"># 多集群</a>
-          </div>
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/post/create_test_k8s/" rel="prev" title="ecs的Linux主机上快速创建测试k8s集群">
-                  <i class="fa fa-angle-left"></i> ecs的Linux主机上快速创建测试k8s集群
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/post/certificate/" rel="next" title="证书技术">
-                  证书技术 <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    
-  
-  <div class="comments giscus-container">
-  </div>
-  
-  
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder"></span>
-  </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-
-
-  
-
-
-
-
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
-
-<script>
-document.addEventListener('page:loaded', () => {
-  if (!CONFIG.page.comments) return;
-
-  NexT.utils.loadComments('.giscus-container')
-    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
-      attributes: {
-        async                   : true,
-        crossOrigin             : 'anonymous',
-        'data-repo'             : CONFIG.giscus.repo,
-        'data-repo-id'          : CONFIG.giscus.repo_id,
-        'data-category'         : CONFIG.giscus.category,
-        'data-category-id'      : CONFIG.giscus.category_id,
-        'data-mapping'          : CONFIG.giscus.mapping,
-        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
-        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
-        'data-theme'            : CONFIG.giscus.theme,
-        'data-lang'             : CONFIG.giscus.lang,
-        'data-input-position'   : CONFIG.giscus.input_position,
-        'data-loading'          : CONFIG.giscus.loading
-      },
-      parentNode: document.querySelector('.giscus-container')
-    }));
-});
-</script>
-
-</body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="title: k8s多集群管理方案 - clusternet date: 2021-12-26 21:44:17 tags: 多集群 简介 腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。 https://github.com/clusternet/clusternet GitHub Star：891\n架构 包含clusternet-hub和clusternet-agent两个组件。\n"><title></title><link rel=canonical href=https://kuring.me/post/clusternet/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content><meta property='og:description' content="title: k8s多集群管理方案 - clusternet date: 2021-12-26 21:44:17 tags: 多集群 简介 腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。 https://github.com/clusternet/clusternet GitHub Star：891\n架构 包含clusternet-hub和clusternet-agent两个组件。\n"><meta property='og:url' content='https://kuring.me/post/clusternet/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta name=twitter:title content><meta name=twitter:description content="title: k8s多集群管理方案 - clusternet date: 2021-12-26 21:44:17 tags: 多集群 简介 腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。 https://github.com/clusternet/clusternet GitHub Star：891\n架构 包含clusternet-hub和clusternet-agent两个组件。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#tags-多集群>title: k8s多集群管理方案 - clusternet
+date: 2021-12-26 21:44:17
+tags: 多集群</a></li></ol><ol><li><a href=#clusterregistrationrequest>ClusterRegistrationRequest</a></li><li><a href=#clusterrole和role>ClusterRole和Role</a></li><li><a href=#managedcluster>ManagedCluster</a></li><li><a href=#subscription>Subscription</a></li><li><a href=#helmchart>HelmChart</a></li><li><a href=#localization>Localization</a></li><li><a href=#globalization>Globalization</a></li><li><a href=#base>Base</a></li><li><a href=#description>Description</a></li></ol><ol><li><a href=#kubectl-clusternet命令行方式访问>kubectl-clusternet命令行方式访问</a></li><li><a href=#代码层面访问子集群>代码层面访问子集群</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/clusternet/></a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 5 分钟</time></div></footer></div></header><section class=article-content><h2 id=tags-多集群>title: k8s多集群管理方案 - clusternet
+date: 2021-12-26 21:44:17
+tags: 多集群</h2><h1 id=简介>简介</h1><p>腾讯云开源的k8s多集群管理方案，可发布应用到多个k8s集群。
+<a class=link href=https://github.com/clusternet/clusternet target=_blank rel=noopener>https://github.com/clusternet/clusternet</a>
+GitHub Star：891</p><h1 id=架构>架构</h1><p><img src=https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet1.png loading=lazy alt=image.png>
+<img src=https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet2.png loading=lazy alt=image.png>
+包含clusternet-hub和clusternet-agent两个组件。</p><p>clusternet-hub部署在父集群，用途：</p><ul><li>接收子集群的注册请求，并为每个自己群创建namespace、serviceaccount等资源</li><li>提供父集群跟各个子集群的长连接</li><li>提供restful api来访问各个子集群，同时支持子集群的互访</li></ul><p>clusternet-agent部署在子集群，用途：</p><ul><li>自动注册子集群到父集群</li><li>心跳报告到中心集群，包括k8s版本、运行平台、健康状态等</li><li>通过websocket协议跟父集群通讯</li></ul><h1 id=crd抽象>CRD抽象</h1><h2 id=clusterregistrationrequest>ClusterRegistrationRequest</h2><p>clusternet-agent在父集群中创建的CR，一个k8s集群一个</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1beta1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>ClusterRegistrationRequest</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>labels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>cluster-id</span><span class=err>:</span> <span class=n>2bcd48d2</span><span class=p>-</span><span class=n>0ead</span><span class=p>-</span><span class=n>45f7</span><span class=p>-</span><span class=n>938b</span><span class=p>-</span><span class=n>5af6af7da5fd</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>cluster-name</span><span class=err>:</span> <span class=nb>clusternet-cluster</span><span class=n>-pmlbp</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>registered-by</span><span class=err>:</span> <span class=nb>clusternet-agent</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=n>clusternet</span><span class=p>-</span><span class=n>2bcd48d2</span><span class=p>-</span><span class=n>0ead</span><span class=p>-</span><span class=n>45f7</span><span class=p>-</span><span class=n>938b</span><span class=p>-</span><span class=n>5af6af7da5fd</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>clusterId</span><span class=err>:</span> <span class=n>2bcd48d2</span><span class=p>-</span><span class=n>0ead</span><span class=p>-</span><span class=n>45f7</span><span class=p>-</span><span class=n>938b</span><span class=p>-</span><span class=n>5af6af7da5fd</span>
+</span></span><span class=line><span class=cl>  <span class=n>clusterName</span><span class=err>:</span> <span class=nb>clusternet-cluster</span><span class=n>-pmlbp</span> <span class=c># 集群名称</span>
+</span></span><span class=line><span class=cl>  <span class=n>clusterType</span><span class=err>:</span> <span class=n>EdgeCluster</span> <span class=c># 集群类型</span>
+</span></span><span class=line><span class=cl>  <span class=n>syncMode</span><span class=err>:</span> <span class=n>Dual</span>
+</span></span><span class=line><span class=cl><span class=n>status</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>caCertificate</span><span class=err>:</span> <span class=n>LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXhNekV3TWpjeE5Wb1hEVE14TVRJeE1URXdNamN4TlZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTHVCCmJwdXNaZXM5RXFXaEw1WUVGb2c4eHRJai9jbFh2S1lTMnZYbGR4cUt1MUR3VHV3aUcxZUN4VGlHa2dLQXVXd1IKVFFheEh5aGY3U29lc0hqMG43NnFBKzhQT05lS1VGdERJOWVzejF2WTF5bXFoUHR0QVo0cGhkWmhmbXJjZTJLRQpuMS84MzNWbWlXd0pSZmNWcEJtTU52MjFYMVVwNWp6RGtncS9tY0JOOGN0ZU5PMEpKNkVVeTE2RXZLbjhyWG90ClErTW5PUHE4anFNMzJjRFFqYWVEdGxvM2kveXlRd1NMa2wzNFo4aElwZDZNWWVSTWpXcmhrazF4L0RYZjNJK3IKOGs5S1FBbEsvNWZRMXk5NHYwT25TK0FKZTliczZMT2srYVFWYm5SbExab2E2aVZWbUJNam03UjBjQ2w0Y1hpRwpyekRnN1ZLc3lsY1o3aGFRRTNFQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZPaGwxMHUwNnJvenZJUm9XVmpNYlVPMzFDbERNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFBQytqMXpPQVZYVXpNUFJ0U29Kd3JhMU1FSkJOUTNMWitmWnZRYjdIbk53b00zaCthMgoyc25yUitSWTYrOFFDbXVKeis1eU5yYStEZDlnNzQ1Q0hDaFpVZzlsY3RjQTRzZVR5OXZqcUVQNVBNSzEvbi9PCnFEcDQyMUpqTjYvUXJmamIvbVM0elUvZXNGZGowQXRYQ0FLMWJsNmF0ai9jZXVBbzh1bTRPaUVlNnJhanBYTHUKWFlmQ1FVZFV5TWpQdEZHTDMwNytna0RpdlVsdXk3RkQ4aUpURTh2QWpxOVBXOW40SmxFMjdQWXR5QnNocy9XSApCZ2czQjZpTG10SjZlNzJiWnA3ZmptdmJWTC9VdkxzYXZqRXltZDhrMnN1bFFwQUpzeVJrMkEzM1g3NWJpS0RGCk1CU29DaHc3U2JMSkJrN0FNckRzTjd1Q2U3WWVIWGdZemdhRAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg</span><span class=p>==</span>
+</span></span><span class=line><span class=cl>  <span class=n>dedicatedNamespace</span><span class=err>:</span> <span class=nb>clusternet-sdqrh</span>
+</span></span><span class=line><span class=cl>  <span class=n>managedClusterName</span><span class=err>:</span> <span class=nb>clusternet-cluster</span><span class=n>-pmlbp</span>
+</span></span><span class=line><span class=cl>  <span class=n>result</span><span class=err>:</span> <span class=n>Approved</span>
+</span></span><span class=line><span class=cl>  <span class=n>token</span><span class=err>:</span> <span class=n>ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkluZFpWMUV6UmxCbFdUUldWa1Y0UmxBeWMzaDJOV3RuUzBabVJsaG9jWG94TkhKM2JtUkxiRTlrYUZVaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUpqYkhWemRHVnlibVYwTFhOa2NYSm9JaXdpYTNWaVpYSnVaWFJsY3k1cGJ5OXpaWEoyYVdObFlXTmpiM1Z1ZEM5elpXTnlaWFF1Ym1GdFpTSTZJbU5zZFhOMFpYSnVaWFF0YmpneWFHc3RkRzlyWlc0dGN6SnpjRFVpTENKcmRXSmxjbTVsZEdWekxtbHZMM05sY25acFkyVmhZMk52ZFc1MEwzTmxjblpwWTJVdFlXTmpiM1Z1ZEM1dVlXMWxJam9pWTJ4MWMzUmxjbTVsZEMxdU9ESm9heUlzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVnlkbWxqWlMxaFkyTnZkVzUwTG5WcFpDSTZJamN3TWpRMk1tTTBMV0prTlRFdE5HVXpNeTA1WXpnekxUWmpPV1F6TUdGall6bG1aU0lzSW5OMVlpSTZJbk41YzNSbGJUcHpaWEoyYVdObFlXTmpiM1Z1ZERwamJIVnpkR1Z5Ym1WMExYTmtjWEpvT21Oc2RYTjBaWEp1WlhRdGJqZ3lhR3NpZlEuUjJCdEQ1YzQxRm1seC1hTEFKSWQzbGxvOThSY25TakVUak5pSnVuTXg1US1jYXhwc3VkamUxekVtUF9mTHR6TjU4d21Dd3RXcHpoaXhSMWFTUHE5LXJTRlBIYzk3aDlTT3daZGdicC10alFBSjA4dllfYWdiVFRKLU1WN1dpN0xQVzRIcmt1U3RlemUzVHh2RW11NWwySlpzbG5UTXdkR3NGRVlVZzVfeWFoLUQwQ2pnTkZlR1ljUjJ1TlJBWjdkNW00Q1c5VmRkdkNsanNqRE5WX1k0RkFEbGo2cHgzSlh0SDQ4U1ZUd254TS1sNHl0eXBENjZFbG1PYXpUMmRwSWd4eWNSZ0tJSUlacWNQNnZVc0ZOM1Zka21ZZ29ydy1NSUcwc25YdzFaZ1lwRk9SUDJRa3hjd2NOUVVOTjh6VUZqSUZSSmdSSFdjNlo4aXd2eURnZTVn</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=clusterrole和role>ClusterRole和Role</h2><p>ClusterRegistrationRequest被接收后会创建ClusterRole</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>rbac</span><span class=p>.</span><span class=py>authorization</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>ClusterRole</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>annotations</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>autoupdate</span><span class=err>:</span> <span class=s2>&#34;true&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>labels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>created-by</span><span class=err>:</span> <span class=nb>clusternet-hub</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>bootstrapping</span><span class=err>:</span> <span class=nb>rbac-defaults</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>cluster-id</span><span class=err>:</span> <span class=n>2bcd48d2</span><span class=p>-</span><span class=n>0ead</span><span class=p>-</span><span class=n>45f7</span><span class=p>-</span><span class=n>938b</span><span class=p>-</span><span class=n>5af6af7da5fd</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=n>clusternet</span><span class=p>-</span><span class=n>2bcd48d2</span><span class=p>-</span><span class=n>0ead</span><span class=p>-</span><span class=n>45f7</span><span class=p>-</span><span class=n>938b</span><span class=p>-</span><span class=n>5af6af7da5fd</span>
+</span></span><span class=line><span class=cl><span class=n>rules</span><span class=err>:</span>
+</span></span><span class=line><span class=cl><span class=p>-</span> <span class=n>apiGroups</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=py>io</span>
+</span></span><span class=line><span class=cl>  <span class=n>resources</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>clusterregistrationrequests</span>
+</span></span><span class=line><span class=cl>  <span class=n>verbs</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>create</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>get</span>
+</span></span><span class=line><span class=cl><span class=p>-</span> <span class=n>apiGroups</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>proxies</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=py>io</span>
+</span></span><span class=line><span class=cl>  <span class=n>resourceNames</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>2bcd48d2</span><span class=p>-</span><span class=n>0ead</span><span class=p>-</span><span class=n>45f7</span><span class=p>-</span><span class=n>938b</span><span class=p>-</span><span class=n>5af6af7da5fd</span>
+</span></span><span class=line><span class=cl>  <span class=n>resources</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>sockets</span>
+</span></span><span class=line><span class=cl>  <span class=n>verbs</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=s1>&#39;*&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><p>并会在cluster对应的namespace下创建Role</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>rbac</span><span class=p>.</span><span class=py>authorization</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>Role</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>annotations</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>autoupdate</span><span class=err>:</span> <span class=s2>&#34;true&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>labels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>created-by</span><span class=err>:</span> <span class=nb>clusternet-hub</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>bootstrapping</span><span class=err>:</span> <span class=nb>rbac-defaults</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=nb>clusternet-managedcluster</span><span class=n>-role</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=nb>clusternet-sdqrh</span>
+</span></span><span class=line><span class=cl><span class=n>rules</span><span class=err>:</span>
+</span></span><span class=line><span class=cl><span class=p>-</span> <span class=n>apiGroups</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=s1>&#39;*&#39;</span>
+</span></span><span class=line><span class=cl>  <span class=n>resources</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=s1>&#39;*&#39;</span>
+</span></span><span class=line><span class=cl>  <span class=n>verbs</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=s1>&#39;*&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=managedcluster>ManagedCluster</h2><p>clusternet-hub在接受ClusterRegistrationRequest后，会创建一个ManagedCluster。一个k8s集群一个namespace</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1beta1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>ManagedCluster</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>labels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>created-by</span><span class=err>:</span> <span class=nb>clusternet-agent</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>cluster-id</span><span class=err>:</span> <span class=n>2bcd48d2</span><span class=p>-</span><span class=n>0ead</span><span class=p>-</span><span class=n>45f7</span><span class=p>-</span><span class=n>938b</span><span class=p>-</span><span class=n>5af6af7da5fd</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>cluster-name</span><span class=err>:</span> <span class=nb>clusternet-cluster</span><span class=n>-pmlbp</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=nb>clusternet-cluster</span><span class=n>-pmlbp</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=nb>clusternet-sdqrh</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>clusterId</span><span class=err>:</span> <span class=n>2bcd48d2</span><span class=p>-</span><span class=n>0ead</span><span class=p>-</span><span class=n>45f7</span><span class=p>-</span><span class=n>938b</span><span class=p>-</span><span class=n>5af6af7da5fd</span>
+</span></span><span class=line><span class=cl>  <span class=n>clusterType</span><span class=err>:</span> <span class=n>EdgeCluster</span>
+</span></span><span class=line><span class=cl>  <span class=n>syncMode</span><span class=err>:</span> <span class=n>Dual</span>
+</span></span><span class=line><span class=cl><span class=n>status</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>allocatable</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>cpu</span><span class=err>:</span> <span class=mf>7600m</span>
+</span></span><span class=line><span class=cl>    <span class=n>memory</span><span class=err>:</span> <span class=s2>&#34;30792789992&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>apiserverURL</span><span class=err>:</span> <span class=n>https</span><span class=err>:</span><span class=p>//</span><span class=mf>10.233</span><span class=p>.</span><span class=py>0</span><span class=p>.</span><span class=mf>1</span><span class=err>:</span><span class=mf>443</span> <span class=c># default/kubernetes的service clusterip</span>
+</span></span><span class=line><span class=cl>  <span class=n>appPusher</span><span class=err>:</span> <span class=n>true</span>
+</span></span><span class=line><span class=cl>  <span class=n>capacity</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>cpu</span><span class=err>:</span> <span class=s2>&#34;8&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>memory</span><span class=err>:</span> <span class=n>32192720Ki</span>
+</span></span><span class=line><span class=cl>  <span class=n>clusterCIDR</span><span class=err>:</span> <span class=mf>10.233</span><span class=p>.</span><span class=py>0</span><span class=p>.</span><span class=mf>0</span><span class=p>/</span><span class=mf>18</span>
+</span></span><span class=line><span class=cl>  <span class=n>conditions</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>lastTransitionTime</span><span class=err>:</span> <span class=s2>&#34;2021-12-15T07:47:10Z&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>message</span><span class=err>:</span> <span class=n>managed</span> <span class=n>cluster</span> <span class=n>is</span> <span class=n>ready</span><span class=p>.</span>
+</span></span><span class=line><span class=cl>    <span class=n>reason</span><span class=err>:</span> <span class=n>ManagedClusterReady</span>
+</span></span><span class=line><span class=cl>    <span class=n>status</span><span class=err>:</span> <span class=s2>&#34;True&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>type</span><span class=err>:</span> <span class=n>Ready</span>
+</span></span><span class=line><span class=cl>  <span class=n>healthz</span><span class=err>:</span> <span class=n>true</span>
+</span></span><span class=line><span class=cl>  <span class=n>heartbeatFrequencySeconds</span><span class=err>:</span> <span class=mf>180</span>
+</span></span><span class=line><span class=cl>  <span class=n>k8sVersion</span><span class=err>:</span> <span class=n>v1</span><span class=p>.</span><span class=py>21</span><span class=p>.</span><span class=py>5</span>
+</span></span><span class=line><span class=cl>  <span class=n>lastObservedTime</span><span class=err>:</span> <span class=s2>&#34;2021-12-15T07:47:10Z&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>livez</span><span class=err>:</span> <span class=n>true</span>
+</span></span><span class=line><span class=cl>  <span class=n>nodeStatistics</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>readyNodes</span><span class=err>:</span> <span class=mf>1</span>
+</span></span><span class=line><span class=cl>  <span class=n>parentAPIServerURL</span><span class=err>:</span> <span class=n>https</span><span class=err>:</span><span class=p>//</span><span class=mf>172.21</span><span class=p>.</span><span class=py>115</span><span class=p>.</span><span class=mf>160</span><span class=err>:</span><span class=mf>6443</span>  <span class=c># 父集群地址</span>
+</span></span><span class=line><span class=cl>  <span class=n>platform</span><span class=err>:</span> <span class=n>linux</span><span class=p>/</span><span class=n>amd64</span>
+</span></span><span class=line><span class=cl>  <span class=n>readyz</span><span class=err>:</span> <span class=n>true</span>
+</span></span><span class=line><span class=cl>  <span class=n>serviceCIDR</span><span class=err>:</span> <span class=mf>10.233</span><span class=p>.</span><span class=py>64</span><span class=p>.</span><span class=mf>0</span><span class=p>/</span><span class=mf>18</span>
+</span></span><span class=line><span class=cl>  <span class=n>useSocket</span><span class=err>:</span> <span class=n>true</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=subscription>Subscription</h2><p>应用发布的抽象，人工提交到环境中。要发布的资源即可以是helm chart，也可以是原生的k8s对象。clusternet在部署的时候会查看部署的优先级，并且支持weight，优先部署cluster级别的资源，这点跟helm部署的逻辑一致。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>apps</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1alpha1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>Subscription</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=nb>app-demo</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=k>default</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=c># 定义应用要发布到哪个k8s集群</span>
+</span></span><span class=line><span class=cl>  <span class=n>subscribers</span><span class=err>:</span> <span class=c># defines the clusters to be distributed to</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>clusterAffinity</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>matchLabels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>          <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>cluster-id</span><span class=err>:</span> <span class=n>dc91021d</span><span class=p>-</span><span class=mf>2361</span><span class=p>-</span><span class=n>4f6d-a404</span><span class=p>-</span><span class=n>7c33b9e01118</span> <span class=c># PLEASE UPDATE THIS CLUSTER-ID TO YOURS!!!</span>
+</span></span><span class=line><span class=cl>	<span class=c># 定义了要发布哪些资源</span>
+</span></span><span class=line><span class=cl>  <span class=n>feeds</span><span class=err>:</span> <span class=c># defines all the resources to be deployed with</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>apiVersion</span><span class=err>:</span> <span class=n>apps</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1alpha1</span>
+</span></span><span class=line><span class=cl>      <span class=n>kind</span><span class=err>:</span> <span class=n>HelmChart</span>
+</span></span><span class=line><span class=cl>      <span class=n>name</span><span class=err>:</span> <span class=n>mysql</span>
+</span></span><span class=line><span class=cl>      <span class=n>namespace</span><span class=err>:</span> <span class=k>default</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>apiVersion</span><span class=err>:</span> <span class=n>v1</span>
+</span></span><span class=line><span class=cl>      <span class=n>kind</span><span class=err>:</span> <span class=n>Namespace</span>
+</span></span><span class=line><span class=cl>      <span class=n>name</span><span class=err>:</span> <span class=n>foo</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>apiVersion</span><span class=err>:</span> <span class=n>v1</span>
+</span></span><span class=line><span class=cl>      <span class=n>kind</span><span class=err>:</span> <span class=n>Service</span>
+</span></span><span class=line><span class=cl>      <span class=n>name</span><span class=err>:</span> <span class=nb>my-nginx</span><span class=n>-svc</span>
+</span></span><span class=line><span class=cl>      <span class=n>namespace</span><span class=err>:</span> <span class=n>foo</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>apiVersion</span><span class=err>:</span> <span class=n>apps</span><span class=p>/</span><span class=n>v1</span>
+</span></span><span class=line><span class=cl>      <span class=n>kind</span><span class=err>:</span> <span class=n>Deployment</span>
+</span></span><span class=line><span class=cl>      <span class=n>name</span><span class=err>:</span> <span class=nb>my-nginx</span>
+</span></span><span class=line><span class=cl>      <span class=n>namespace</span><span class=err>:</span> <span class=n>foo</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=helmchart>HelmChart</h2><p>Subscriber发布的一个子资源之一，对应一个helm chart的完整描述</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>apps</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1alpha1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>HelmChart</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=n>mysql</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=k>default</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>repo</span><span class=err>:</span> <span class=n>https</span><span class=err>:</span><span class=p>//</span><span class=n>charts</span><span class=p>.</span><span class=py>bitnami</span><span class=p>.</span><span class=n>com</span><span class=p>/</span><span class=n>bitnami</span>
+</span></span><span class=line><span class=cl>  <span class=n>chart</span><span class=err>:</span> <span class=n>mysql</span>
+</span></span><span class=line><span class=cl>  <span class=n>version</span><span class=err>:</span> <span class=mf>8.6</span><span class=p>.</span><span class=py>2</span>
+</span></span><span class=line><span class=cl>  <span class=n>targetNamespace</span><span class=err>:</span> <span class=n>abc</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=localization>Localization</h2><p>差异化不同于其他集群的配置，用来描述namespace级别的差异化配置。</p><h2 id=globalization>Globalization</h2><p>用来描述不同集群的cluster级别的差异化配置。</p><h2 id=base>Base</h2><h2 id=description>Description</h2><p>跟Base对象根据Localization和Globalization渲染得到的最终要发布到集群中的最终对象。</p><h1 id=安装>安装</h1><p>本文使用kind进行测试，使用kind创建两个k8s集群host和member1，两个集群的apiserver均监听在宿主机的端口，确保从一个集群可以访问到另外一个集群的apiserver。</p><p>在父集群执行如下命令安装clusternet管控组件：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>helm</span> <span class=n>repo</span> <span class=n>add</span> <span class=n>clusternet</span> <span class=n>https</span><span class=err>:</span><span class=p>//</span><span class=n>clusternet</span><span class=p>.</span><span class=py>github</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>charts</span>
+</span></span><span class=line><span class=cl><span class=n>helm</span> <span class=n>install</span> <span class=nb>clusternet-hub</span> <span class=n>-n</span> <span class=nb>clusternet-system</span> <span class=p>-</span><span class=n>-create-namespace</span> <span class=n>clusternet</span><span class=p>/</span><span class=nb>clusternet-hub</span>
+</span></span><span class=line><span class=cl><span class=n>kubectl</span> <span class=n>apply</span> <span class=o>-f</span> <span class=n>https</span><span class=err>:</span><span class=p>//</span><span class=n>raw</span><span class=p>.</span><span class=py>githubusercontent</span><span class=p>.</span><span class=n>com</span><span class=p>/</span><span class=n>clusternet</span><span class=p>/</span><span class=n>clusternet</span><span class=p>/</span><span class=n>main</span><span class=p>/</span><span class=n>manifests</span><span class=p>/</span><span class=n>samples</span><span class=p>/</span><span class=n>cluster_bootstrap_token</span><span class=p>.</span><span class=py>yaml</span>
+</span></span></code></pre></td></tr></table></div></div><p>会在clusternet-system namespace下创建deployment clusternet-hub。</p><p>最后一条命令，会创建一个secret，其中的token信息为07401b.f395accd246ae52d，在子集群注册的时候需要用到。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>v1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>Secret</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=c># Name MUST be of form &#34;bootstrap-token-&lt;token id&gt;&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=nb>bootstrap-token</span><span class=p>-</span><span class=n>07401b</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=nb>kube-system</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Type MUST be &#39;bootstrap.kubernetes.io/token&#39;</span>
+</span></span><span class=line><span class=cl><span class=n>type</span><span class=err>:</span> <span class=n>bootstrap</span><span class=p>.</span><span class=py>kubernetes</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>token</span>
+</span></span><span class=line><span class=cl><span class=n>stringData</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=c># Human readable description. Optional.</span>
+</span></span><span class=line><span class=cl>  <span class=n>description</span><span class=err>:</span> <span class=s2>&#34;The bootstrap token used by clusternet cluster registration.&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c># Token ID and secret. Required.</span>
+</span></span><span class=line><span class=cl>  <span class=nb>token-id</span><span class=err>:</span> <span class=n>07401b</span>
+</span></span><span class=line><span class=cl>  <span class=nb>token-secret</span><span class=err>:</span> <span class=n>f395accd246ae52d</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c># Expiration. Optional.</span>
+</span></span><span class=line><span class=cl>  <span class=n>expiration</span><span class=err>:</span> <span class=mf>2025</span><span class=p>-</span><span class=mf>05</span><span class=p>-</span><span class=n>10T03</span><span class=err>:</span><span class=mf>22</span><span class=err>:</span><span class=n>11Z</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c># Allowed usages.</span>
+</span></span><span class=line><span class=cl>  <span class=nb>usage-bootstrap</span><span class=n>-authentication:</span> <span class=s2>&#34;true&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=nb>usage-bootstrap</span><span class=n>-signing:</span> <span class=s2>&#34;true&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c># Extra groups to authenticate the token as. Must start with &#34;system:bootstrappers:&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=nb>auth-extra</span><span class=n>-groups:</span> <span class=n>system</span><span class=err>:</span><span class=n>bootstrappers</span><span class=err>:</span><span class=n>clusternet</span><span class=err>:</span><span class=nb>register-cluster</span><span class=n>-token</span>
+</span></span></code></pre></td></tr></table></div></div><p>在子集群执行如下命令，其中parentURL要修改为父集群的apiserver地址</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>helm</span> <span class=n>repo</span> <span class=n>add</span> <span class=n>clusternet</span> <span class=n>https</span><span class=err>:</span><span class=p>//</span><span class=n>clusternet</span><span class=p>.</span><span class=py>github</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>charts</span>
+</span></span><span class=line><span class=cl><span class=n>helm</span> <span class=n>install</span> <span class=nb>clusternet-agent</span> <span class=n>-n</span> <span class=nb>clusternet-system</span> <span class=p>-</span><span class=n>-create-namespace</span> <span class=p>\</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span><span class=n>-set</span> <span class=n>parentURL</span><span class=p>=</span><span class=n>https</span><span class=err>:</span><span class=p>//</span><span class=mf>10.0</span><span class=p>.</span><span class=py>248</span><span class=p>.</span><span class=mf>96</span><span class=err>:</span><span class=mf>8443</span> <span class=p>\</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span><span class=n>-set</span> <span class=n>registrationToken</span><span class=p>=</span><span class=n>07401b</span><span class=p>.</span><span class=py>f395accd246ae52d</span> <span class=p>\</span>
+</span></span><span class=line><span class=cl>  <span class=n>clusternet</span><span class=p>/</span><span class=nb>clusternet-agent</span>
+</span></span></code></pre></td></tr></table></div></div><p>其中parentURL为父集群的apiserver地址，registrationToken为父集群注册的token信息。</p><h1 id=访问子集群>访问子集群</h1><h2 id=kubectl-clusternet命令行方式访问>kubectl-clusternet命令行方式访问</h2><p>安装kubectl krew插件，参考 <a class=link href=https://krew.sigs.k8s.io/docs/user-guide/setup/install/ target=_blank rel=noopener>https://krew.sigs.k8s.io/docs/user-guide/setup/install/</a>，执行如下命令：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>yum</span> <span class=n>install</span> <span class=n>git</span> <span class=n>-y</span>
+</span></span><span class=line><span class=cl><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=nb>set </span><span class=n>-x</span><span class=p>;</span> <span class=nb>cd </span><span class=s2>&#34;</span><span class=p>$(</span><span class=n>mktemp</span> <span class=n>-d</span><span class=p>)</span><span class=s2>&#34;</span> <span class=p>&amp;&amp;</span>
+</span></span><span class=line><span class=cl>  <span class=n>OS</span><span class=p>=</span><span class=s2>&#34;</span><span class=p>$(</span><span class=n>uname</span> <span class=p>|</span> <span class=n>tr</span> <span class=s1>&#39;[:upper:]&#39;</span> <span class=s1>&#39;[:lower:]&#39;</span><span class=p>)</span><span class=s2>&#34;</span> <span class=p>&amp;&amp;</span>
+</span></span><span class=line><span class=cl>  <span class=n>ARCH</span><span class=p>=</span><span class=s2>&#34;</span><span class=p>$(</span><span class=n>uname</span> <span class=n>-m</span> <span class=p>|</span> <span class=n>sed</span> <span class=n>-e</span> <span class=s1>&#39;s/x86_64/amd64/&#39;</span> <span class=n>-e</span> <span class=s1>&#39;s/\(arm\)\(64\)\?.*/\1\2/&#39;</span> <span class=n>-e</span> <span class=s1>&#39;s/aarch64$/arm64/&#39;</span><span class=p>)</span><span class=s2>&#34;</span> <span class=p>&amp;&amp;</span>
+</span></span><span class=line><span class=cl>  <span class=n>KREW</span><span class=p>=</span><span class=s2>&#34;krew-</span><span class=nv>${OS}</span><span class=s2>_</span><span class=nv>${ARCH}</span><span class=s2>&#34;</span> <span class=p>&amp;&amp;</span>
+</span></span><span class=line><span class=cl>  <span class=nb>curl </span><span class=n>-fsSLO</span> <span class=s2>&#34;https://github.com/kubernetes-sigs/krew/releases/latest/download/</span><span class=nv>${KREW}</span><span class=s2>.tar.gz&#34;</span> <span class=p>&amp;&amp;</span>
+</span></span><span class=line><span class=cl>  <span class=n>tar</span> <span class=n>zxvf</span> <span class=s2>&#34;</span><span class=nv>${KREW}</span><span class=s2>.tar.gz&#34;</span> <span class=p>&amp;&amp;</span>
+</span></span><span class=line><span class=cl>  <span class=p>./</span><span class=s2>&#34;</span><span class=nv>${KREW}</span><span class=s2>&#34;</span> <span class=n>install</span> <span class=n>krew</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo </span><span class=s1>&#39;export PATH=&#34;${PATH}:${HOME}/.krew/bin&#34;&#39;</span> <span class=p>&gt;&gt;</span>  <span class=p>~/.</span><span class=py>bashrc</span>
+</span></span><span class=line><span class=cl><span class=n>source</span> <span class=p>~/.</span><span class=py>bashrc</span>
+</span></span></code></pre></td></tr></table></div></div><p>安装kubectl插件clusternet：kubectl krew install clusternet</p><p>使用kubectl clusternet get可以看到发布的应用，非发布的应用看不到。</p><h2 id=代码层面访问子集群>代码层面访问子集群</h2><p>可以参照例子：<a class=link href=https://github.com/clusternet/clusternet/blob/main/examples/clientgo/demo.go#L42-L45 target=_blank rel=noopener>https://github.com/clusternet/clusternet/blob/main/examples/clientgo/demo.go#L42-L45</a></p><p>改动代码非常小，仅需要获取到对应集群的config信息即可。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>config</span><span class=p>,</span> <span class=n>err</span> <span class=err>:</span><span class=p>=</span> <span class=n>rest</span><span class=p>.</span><span class=py>InClusterConfig</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=n>err</span> <span class=p>!=</span> <span class=n>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=n>klog</span><span class=p>.</span><span class=py>Error</span><span class=p>(</span><span class=n>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=n>os</span><span class=p>.</span><span class=py>Exit</span><span class=p>(</span><span class=mf>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=p>//</span> <span class=n>This</span> <span class=n>is</span> <span class=n>the</span> <span class=n>ONLY</span> <span class=n>place</span> <span class=n>you</span> <span class=n>need</span> <span class=n>to</span> <span class=n>wrap</span> <span class=k>for</span> <span class=n>Clusternet</span>
+</span></span><span class=line><span class=cl>	<span class=n>config</span><span class=p>.</span><span class=py>Wrap</span><span class=p>(</span><span class=n>func</span><span class=p>(</span><span class=n>rt</span> <span class=n>http</span><span class=p>.</span><span class=n>RoundTripper</span><span class=p>)</span> <span class=n>http</span><span class=p>.</span><span class=py>RoundTripper</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=n>clientgo</span><span class=p>.</span><span class=py>NewClusternetTransport</span><span class=p>(</span><span class=n>config</span><span class=p>.</span><span class=n>Host</span><span class=p>,</span> <span class=n>rt</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>})</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=p>//</span> <span class=n>now</span> <span class=n>we</span> <span class=n>could</span> <span class=n>create</span> <span class=n>and</span> <span class=n>visit</span> <span class=n>all</span> <span class=n>the</span> <span class=n>resources</span>
+</span></span><span class=line><span class=cl>	<span class=n>client</span> <span class=err>:</span><span class=p>=</span> <span class=n>kubernetes</span><span class=p>.</span><span class=py>NewForConfigOrDie</span><span class=p>(</span><span class=n>config</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=n>_</span><span class=p>,</span> <span class=n>err</span> <span class=p>=</span> <span class=n>client</span><span class=p>.</span><span class=py>CoreV1</span><span class=p>().</span><span class=py>Namespaces</span><span class=p>().</span><span class=py>Create</span><span class=p>(</span><span class=n>context</span><span class=p>.</span><span class=py>TODO</span><span class=p>(),</span> <span class=p>&amp;</span><span class=n>corev1</span><span class=p>.</span><span class=py>Namespace</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=n>ObjectMeta</span><span class=err>:</span> <span class=n>metav1</span><span class=p>.</span><span class=py>ObjectMeta</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=n>Name</span><span class=err>:</span> <span class=s2>&#34;demo&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=p>},</span>
+</span></span><span class=line><span class=cl>	<span class=p>},</span> <span class=n>metav1</span><span class=p>.</span><span class=py>CreateOptions</span><span class=p>{})</span>
+</span></span></code></pre></td></tr></table></div></div><h1 id=应用发布>应用发布</h1><p><img src=https://kuring.oss-cn-beijing.aliyuncs.com/images/clusternet3.png loading=lazy alt=image.png>
+在主集群提交如下的yaml文件</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>apps</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1alpha1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>Subscription</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=nb>app-demo</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=k>default</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>subscribers</span><span class=err>:</span> <span class=c># defines the clusters to be distributed to</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>clusterAffinity</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>matchLabels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>          <span class=n>clusters</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>cluster-id</span><span class=err>:</span> <span class=n>dc91021d</span><span class=p>-</span><span class=mf>2361</span><span class=p>-</span><span class=n>4f6d-a404</span><span class=p>-</span><span class=n>7c33b9e01118</span> <span class=c># PLEASE UPDATE THIS CLUSTER-ID TO YOURS!!!</span>
+</span></span><span class=line><span class=cl>  <span class=n>feeds</span><span class=err>:</span> <span class=c># defines all the resources to be deployed with</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>apiVersion</span><span class=err>:</span> <span class=n>apps</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1alpha1</span>
+</span></span><span class=line><span class=cl>      <span class=n>kind</span><span class=err>:</span> <span class=n>HelmChart</span>
+</span></span><span class=line><span class=cl>      <span class=n>name</span><span class=err>:</span> <span class=n>mysql</span>
+</span></span><span class=line><span class=cl>      <span class=n>namespace</span><span class=err>:</span> <span class=k>default</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>apiVersion</span><span class=err>:</span> <span class=n>v1</span>
+</span></span><span class=line><span class=cl>      <span class=n>kind</span><span class=err>:</span> <span class=n>Namespace</span>
+</span></span><span class=line><span class=cl>      <span class=n>name</span><span class=err>:</span> <span class=n>foo</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>apiVersion</span><span class=err>:</span> <span class=n>apps</span><span class=p>/</span><span class=n>v1</span>
+</span></span><span class=line><span class=cl>      <span class=n>kind</span><span class=err>:</span> <span class=n>Service</span>
+</span></span><span class=line><span class=cl>      <span class=n>name</span><span class=err>:</span> <span class=nb>my-nginx</span><span class=n>-svc</span>
+</span></span><span class=line><span class=cl>      <span class=n>namespace</span><span class=err>:</span> <span class=n>foo</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>apiVersion</span><span class=err>:</span> <span class=n>apps</span><span class=p>/</span><span class=n>v1</span>
+</span></span><span class=line><span class=cl>      <span class=n>kind</span><span class=err>:</span> <span class=n>Deployment</span>
+</span></span><span class=line><span class=cl>      <span class=n>name</span><span class=err>:</span> <span class=nb>my-nginx</span>
+</span></span><span class=line><span class=cl>      <span class=n>namespace</span><span class=err>:</span> <span class=n>foo</span>
+</span></span></code></pre></td></tr></table></div></div><h1 id=实现分析>实现分析</h1><p>在主集群实现了两个aggregated apiservice</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>apiregistration</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>APIService</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>annotations</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>meta</span><span class=p>.</span><span class=py>helm</span><span class=p>.</span><span class=n>sh</span><span class=p>/</span><span class=nb>release-name</span><span class=err>:</span> <span class=nb>clusternet-hub</span>
+</span></span><span class=line><span class=cl>    <span class=n>meta</span><span class=p>.</span><span class=py>helm</span><span class=p>.</span><span class=n>sh</span><span class=p>/</span><span class=nb>release-namespace</span><span class=err>:</span> <span class=nb>clusternet-system</span>
+</span></span><span class=line><span class=cl>  <span class=n>labels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>app</span><span class=p>.</span><span class=py>kubernetes</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>instance</span><span class=err>:</span> <span class=nb>clusternet-hub</span>
+</span></span><span class=line><span class=cl>    <span class=n>app</span><span class=p>.</span><span class=py>kubernetes</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>managed-by</span><span class=err>:</span> <span class=n>Helm</span>
+</span></span><span class=line><span class=cl>    <span class=n>app</span><span class=p>.</span><span class=py>kubernetes</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>name</span><span class=err>:</span> <span class=nb>clusternet-hub</span>
+</span></span><span class=line><span class=cl>    <span class=n>helm</span><span class=p>.</span><span class=n>sh</span><span class=p>/</span><span class=n>chart</span><span class=err>:</span> <span class=nb>clusternet-hub</span><span class=p>-</span><span class=mf>0.2</span><span class=p>.</span><span class=py>1</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=n>v1alpha1</span><span class=p>.</span><span class=py>proxies</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=py>io</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>group</span><span class=err>:</span> <span class=n>proxies</span><span class=p>.</span><span class=py>clusternet</span><span class=p>.</span><span class=py>io</span>
+</span></span><span class=line><span class=cl>  <span class=n>groupPriorityMinimum</span><span class=err>:</span> <span class=mf>1000</span>
+</span></span><span class=line><span class=cl>  <span class=n>insecureSkipTLSVerify</span><span class=err>:</span> <span class=n>true</span>
+</span></span><span class=line><span class=cl>  <span class=n>service</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>name</span><span class=err>:</span> <span class=nb>clusternet-hub</span>
+</span></span><span class=line><span class=cl>    <span class=n>namespace</span><span class=err>:</span> <span class=nb>clusternet-system</span>
+</span></span><span class=line><span class=cl>    <span class=n>port</span><span class=err>:</span> <span class=mf>443</span>
+</span></span><span class=line><span class=cl>  <span class=n>version</span><span class=err>:</span> <span class=n>v1alpha1</span>
+</span></span><span class=line><span class=cl>  <span class=n>versionPriority</span><span class=err>:</span> <span class=mf>100</span>
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>apiregistration</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>APIService</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>annotations</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>meta</span><span class=p>.</span><span class=py>helm</span><span class=p>.</span><span class=n>sh</span><span class=p>/</span><span class=nb>release-name</span><span class=err>:</span> <span class=nb>clusternet-hub</span>
+</span></span><span class=line><span class=cl>    <span class=n>meta</span><span class=p>.</span><span class=py>helm</span><span class=p>.</span><span class=n>sh</span><span class=p>/</span><span class=nb>release-namespace</span><span class=err>:</span> <span class=nb>clusternet-system</span>
+</span></span><span class=line><span class=cl>  <span class=n>labels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>app</span><span class=p>.</span><span class=py>kubernetes</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>instance</span><span class=err>:</span> <span class=nb>clusternet-hub</span>
+</span></span><span class=line><span class=cl>    <span class=n>app</span><span class=p>.</span><span class=py>kubernetes</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>managed-by</span><span class=err>:</span> <span class=n>Helm</span>
+</span></span><span class=line><span class=cl>    <span class=n>app</span><span class=p>.</span><span class=py>kubernetes</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>name</span><span class=err>:</span> <span class=nb>clusternet-hub</span>
+</span></span><span class=line><span class=cl>    <span class=n>helm</span><span class=p>.</span><span class=n>sh</span><span class=p>/</span><span class=n>chart</span><span class=err>:</span> <span class=nb>clusternet-hub</span><span class=p>-</span><span class=mf>0.2</span><span class=p>.</span><span class=py>1</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=n>v1alpha1</span><span class=p>.</span><span class=py>shadow</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>group</span><span class=err>:</span> <span class=n>shadow</span>
+</span></span><span class=line><span class=cl>  <span class=n>groupPriorityMinimum</span><span class=err>:</span> <span class=mf>1</span>
+</span></span><span class=line><span class=cl>  <span class=n>insecureSkipTLSVerify</span><span class=err>:</span> <span class=n>true</span>
+</span></span><span class=line><span class=cl>  <span class=n>service</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>name</span><span class=err>:</span> <span class=nb>clusternet-hub</span>
+</span></span><span class=line><span class=cl>    <span class=n>namespace</span><span class=err>:</span> <span class=nb>clusternet-system</span>
+</span></span><span class=line><span class=cl>    <span class=n>port</span><span class=err>:</span> <span class=mf>443</span>
+</span></span><span class=line><span class=cl>  <span class=n>version</span><span class=err>:</span> <span class=n>v1alpha1</span>
+</span></span><span class=line><span class=cl>  <span class=n>versionPriority</span><span class=err>:</span> <span class=mf>1</span>
+</span></span></code></pre></td></tr></table></div></div><h1 id=相关链接>相关链接</h1><ul><li><a class=link href=https://mp.weixin.qq.com/s/BSgb2uoAuHbxQOUvn8fEsA target=_blank rel=noopener>https://mp.weixin.qq.com/s/BSgb2uoAuHbxQOUvn8fEsA</a></li></ul></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

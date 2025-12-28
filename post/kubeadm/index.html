@@ -1,428 +1,230 @@
-<!DOCTYPE html>
-<html lang="zh-Hans">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="本文将通过 kubeadm 实现单 master 节点模式和集群模式两种部署方式。 所有节点均需初始化操作所有节点均需做的操作。 主机准备12345678cat &gt; &#x2F;etc&#x2F;sysctl.d&#x2F;kubernets.conf &lt;&lt;EOFnet.ipv4.ip_forward&#x3D;1net.bridge.bridge-nf-call-ip6tables &#x3D; 1net.bridge.bri">
-<meta property="og:type" content="article">
-<meta property="og:title" content="使用 kubeadm 安装 k8s 集群">
-<meta property="og:url" content="http://kuring.me/post/kubeadm/index.html">
-<meta property="og:site_name" content="404频道">
-<meta property="og:description" content="本文将通过 kubeadm 实现单 master 节点模式和集群模式两种部署方式。 所有节点均需初始化操作所有节点均需做的操作。 主机准备12345678cat &gt; &#x2F;etc&#x2F;sysctl.d&#x2F;kubernets.conf &lt;&lt;EOFnet.ipv4.ip_forward&#x3D;1net.bridge.bridge-nf-call-ip6tables &#x3D; 1net.bridge.bri">
-<meta property="og:locale">
-<meta property="article:published_time" content="2022-12-07T00:07:20.000Z">
-<meta property="article:modified_time" content="2025-12-20T16:59:52.691Z">
-<meta name="twitter:card" content="summary">
-
-
-<link rel="canonical" href="http://kuring.me/post/kubeadm/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/kubeadm/","path":"post/kubeadm/","title":"使用 kubeadm 安装 k8s 集群"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>使用 kubeadm 安装 k8s 集群 | 404频道</title>
-  
-
-
-
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">404频道</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">学习笔记</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="Searching..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          Table of Contents
-        </li>
-        <li class="sidebar-nav-overview">
-          Overview
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%80%E6%9C%89%E8%8A%82%E7%82%B9%E5%9D%87%E9%9C%80%E5%88%9D%E5%A7%8B%E5%8C%96%E6%93%8D%E4%BD%9C"><span class="nav-number">1.</span> <span class="nav-text">所有节点均需初始化操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E6%9C%BA%E5%87%86%E5%A4%87"><span class="nav-number">1.1.</span> <span class="nav-text">主机准备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85containerd"><span class="nav-number">1.2.</span> <span class="nav-text">安装containerd</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%8B%E5%B7%A5%E5%AE%89%E8%A3%85"><span class="nav-number">1.2.1.</span> <span class="nav-text">手工安装</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#yum-%E6%BA%90%E5%AE%89%E8%A3%85"><span class="nav-number">1.2.2.</span> <span class="nav-text">yum 源安装</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85-kubeadm-x2F-kubelet-x2F-kubectl"><span class="nav-number">1.3.</span> <span class="nav-text">安装 kubeadm&#x2F;kubelet&#x2F;kubectl</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95-master-%E8%8A%82%E7%82%B9%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">单 master 节点模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kubeadm-%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">2.1.</span> <span class="nav-text">kubeadm 初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E7%BD%91%E7%BB%9C%E6%8F%92%E4%BB%B6"><span class="nav-number">2.2.</span> <span class="nav-text">安装网络插件</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#cilim-%E7%BD%91%E7%BB%9C%E6%8F%92%E4%BB%B6"><span class="nav-number">2.2.1.</span> <span class="nav-text">cilim 网络插件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#k8s-%E8%87%AA%E5%B8%A6%E7%9A%84-bridge-%E6%8F%92%E4%BB%B6"><span class="nav-number">2.2.2.</span> <span class="nav-text">k8s 自带的 bridge 插件</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%85%B6%E4%BB%96%E8%8A%82%E7%82%B9"><span class="nav-number">2.3.</span> <span class="nav-text">添加其他节点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E6%B8%85%E7%90%86"><span class="nav-number">2.4.</span> <span class="nav-text">节点清理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B8%85%E7%90%86%E6%99%AE%E9%80%9A%E8%8A%82%E7%82%B9"><span class="nav-number">2.4.1.</span> <span class="nav-text">清理普通节点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B8%85%E7%90%86-control-plan-%E8%8A%82%E7%82%B9"><span class="nav-number">2.4.2.</span> <span class="nav-text">清理 control plan 节点</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E6%A8%A1%E5%BC%8F%E9%83%A8%E7%BD%B2"><span class="nav-number">3.</span> <span class="nav-text">集群模式部署</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B5%84%E6%96%99"><span class="nav-number">4.</span> <span class="nav-text">资料</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name"></p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">256</span>
-          <span class="site-state-item-name">posts</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">36</span>
-        <span class="site-state-item-name">tags</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/kubeadm/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="使用 kubeadm 安装 k8s 集群 | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          使用 kubeadm 安装 k8s 集群
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-12-07 00:07:20" itemprop="dateCreated datePublished" datetime="2022-12-07T00:07:20+00:00">2022-12-07</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-20 16:59:52" itemprop="dateModified" datetime="2025-12-20T16:59:52+00:00">2025-12-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p>本文将通过 kubeadm 实现单 master 节点模式和集群模式两种部署方式。</p>
-<h2 id="所有节点均需初始化操作"><a href="#所有节点均需初始化操作" class="headerlink" title="所有节点均需初始化操作"></a>所有节点均需初始化操作</h2><p>所有节点均需做的操作。</p>
-<h3 id="主机准备"><a href="#主机准备" class="headerlink" title="主机准备"></a>主机准备</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">cat &gt; /etc/sysctl.d/kubernets.conf &lt;&lt;EOF</span><br><span class="line">net.ipv4.ip_forward=1</span><br><span class="line">net.bridge.bridge-nf-call-ip6tables = 1</span><br><span class="line">net.bridge.bridge-nf-call-iptables = 1</span><br><span class="line">vm.swappiness=0</span><br><span class="line">EOF</span><br><span class="line">sysctl --system</span><br><span class="line">modprobe br_netfilter</span><br></pre></td></tr></table></figure>
-
-
-<h3 id="安装containerd"><a href="#安装containerd" class="headerlink" title="安装containerd"></a>安装containerd</h3><p>由于 dockerd 从 k8s 1.24 版本开始不再支持，这里选择 containerd。</p>
-<h4 id="手工安装"><a href="#手工安装" class="headerlink" title="手工安装"></a>手工安装</h4><p>安装 containerd，containerd 的版本可以从这里获取 <a target="_blank" rel="noopener" href="https://github.com/containerd/containerd/releases">https://github.com/containerd/containerd/releases</a></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/containerd/containerd/releases/download/v1.6.11/containerd-1.6.11-linux-amd64.tar.gz</span><br><span class="line">tar Cxzvf /usr/local containerd-1.6.11-linux-amd64.tar.gz</span><br><span class="line">wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service -P /usr/local/lib/systemd/system/</span><br><span class="line">systemctl daemon-reload</span><br><span class="line">systemctl enable --now containerd</span><br></pre></td></tr></table></figure>
-
-<p>安装 runc</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/opencontainers/runc/releases/download/v1.1.4/runc.amd64</span><br><span class="line">install -m 755 runc.amd64 /usr/local/sbin/runc</span><br></pre></td></tr></table></figure>
-
-<h4 id="yum-源安装"><a href="#yum-源安装" class="headerlink" title="yum 源安装"></a>yum 源安装</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">yum install -y yum-utils</span><br><span class="line">yum-config-manager --add-repo     https://download.docker.com/linux/centos/docker-ce.repo</span><br><span class="line">yum install containerd.io -y</span><br><span class="line">systemctl daemon-reload</span><br><span class="line">systemctl enable --now containerd</span><br></pre></td></tr></table></figure>
-
-<p>通过 yum 安装的containerd 没有启用 cri，在其配置文件 &#x2F;etc&#x2F;containerd&#x2F;config.toml 中包含了 <code>disabled_plugins = [&quot;cri&quot;]</code> 配置，需要将配置信息注释后并重启 containerd。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sed -i &#x27;s/disabled_plugins/#disabled_plugins/&#x27;  /etc/containerd/config.toml</span><br><span class="line">systemctl restart containerd</span><br></pre></td></tr></table></figure>
-
-<h3 id="安装-kubeadm-x2F-kubelet-x2F-kubectl"><a href="#安装-kubeadm-x2F-kubelet-x2F-kubectl" class="headerlink" title="安装 kubeadm&#x2F;kubelet&#x2F;kubectl"></a>安装 kubeadm&#x2F;kubelet&#x2F;kubectl</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">cat &lt;&lt;EOF | sudo tee /etc/yum.repos.d/kubernetes.repo</span><br><span class="line">[kubernetes]</span><br><span class="line">name=Kubernetes</span><br><span class="line">baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=1</span><br><span class="line">gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg</span><br><span class="line">exclude=kubelet kubeadm kubectl</span><br><span class="line">EOF</span><br><span class="line"></span><br><span class="line"># Set SELinux in permissive mode (effectively disabling it)</span><br><span class="line">sudo setenforce 0</span><br><span class="line">sudo sed -i &#x27;s/^SELINUX=enforcing$/SELINUX=permissive/&#x27; /etc/selinux/config</span><br><span class="line"></span><br><span class="line">sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes</span><br><span class="line"></span><br><span class="line">sudo systemctl enable --now kubelet</span><br></pre></td></tr></table></figure>
-
-<h2 id="单-master-节点模式"><a href="#单-master-节点模式" class="headerlink" title="单 master 节点模式"></a>单 master 节点模式</h2><table>
-<thead>
-<tr>
-<th>节点</th>
-<th>角色</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>172.21.115.190<br/></td>
-<td>master 节点</td>
-</tr>
-</tbody></table>
-<h3 id="kubeadm-初始化"><a href="#kubeadm-初始化" class="headerlink" title="kubeadm 初始化"></a>kubeadm 初始化</h3><p>创建文件 kubeadm-config.yaml，文件内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: kubeadm.k8s.io/v1beta3</span><br><span class="line">kind: ClusterConfiguration</span><br><span class="line">kubernetesVersion: v1.25.4</span><br><span class="line">---</span><br><span class="line">kind: KubeletConfiguration</span><br><span class="line">apiVersion: kubelet.config.k8s.io/v1beta1</span><br><span class="line">cgroupDriver: systemd</span><br></pre></td></tr></table></figure>
-
-<p>执行命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">kubeadm init --config kubeadm-config.yaml</span><br><span class="line">kubeadm config print init-defaults --component-configs KubeletConfiguration &gt; cluster.yaml</span><br><span class="line">kubeadm init --config cluster.yaml</span><br></pre></td></tr></table></figure>
-
-<p>接下来初始化 kubeconfig 文件，这样即可通过 kubectl 命令来访问 k8s 了。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p $HOME/.kube</span><br><span class="line">sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config</span><br><span class="line">sudo chown $(id -u):$(id -g) $HOME/.kube/config</span><br></pre></td></tr></table></figure>
-
-
-<h3 id="安装网络插件"><a href="#安装网络插件" class="headerlink" title="安装网络插件"></a>安装网络插件</h3><p>刚部署完成的节点处于NotReady 的状态，原因是因为还没有安装网络插件。</p>
-<h4 id="cilim-网络插件"><a href="#cilim-网络插件" class="headerlink" title="cilim 网络插件"></a>cilim 网络插件</h4><p>cilim 网络插件比较火爆，下面介绍其安装步骤：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># 安装 cilium 客户端</span><br><span class="line">CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/master/stable.txt)</span><br><span class="line">CLI_ARCH=amd64</span><br><span class="line">if [ &quot;$(uname -m)&quot; = &quot;aarch64&quot; ]; then CLI_ARCH=arm64; fi</span><br><span class="line">curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/$&#123;CILIUM_CLI_VERSION&#125;/cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz&#123;,.sha256sum&#125;</span><br><span class="line">sha256sum --check cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz.sha256sum</span><br><span class="line">sudo tar xzvfC cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz /usr/local/bin</span><br><span class="line">rm cilium-linux-$&#123;CLI_ARCH&#125;.tar.gz&#123;,.sha256sum&#125;</span><br><span class="line"></span><br><span class="line"># 网络插件初始化</span><br><span class="line">cilium install</span><br></pre></td></tr></table></figure>
-
-<p>在安装完网络插件后，node 节点即可变为 ready 状态。</p>
-<p>查看环境中包含如下的 pod:</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl  get pod  -A</span><br><span class="line">NAMESPACE     NAME                             READY   STATUS    RESTARTS   AGE</span><br><span class="line">kube-system   cilium-7zj7t                     1/1     Running   0          82s</span><br><span class="line">kube-system   cilium-operator-bc4d5b54-kvqqx   1/1     Running   0          82s</span><br><span class="line">kube-system   coredns-565d847f94-hrm9b         1/1     Running   0          14m</span><br><span class="line">kube-system   coredns-565d847f94-z5kwr         1/1     Running   0          14m</span><br><span class="line">kube-system   etcd-k8s002                      1/1     Running   0          14m</span><br><span class="line">kube-system   kube-apiserver-k8s002            1/1     Running   0          14m</span><br><span class="line">kube-system   kube-controller-manager-k8s002   1/1     Running   0          14m</span><br><span class="line">kube-system   kube-proxy-bhpqr                 1/1     Running   0          14m</span><br><span class="line">kube-system   kube-scheduler-k8s002            1/1     Running   0          14m</span><br></pre></td></tr></table></figure>
-
-<h4 id="k8s-自带的-bridge-插件"><a href="#k8s-自带的-bridge-插件" class="headerlink" title="k8s 自带的 bridge 插件"></a>k8s 自带的 bridge 插件</h4><p>在单节点的场景下，pod 不需要跨节点通讯，k8s 自带的 bridge 插件也可以满足单节点内的 pod 相互通讯，类似于 docker 的 bridge 网络模式。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /etc/cni/net.d</span><br><span class="line">cat &gt; /etc/cni/net.d/10-mynet.conf &lt;&lt;EOF</span><br><span class="line">&#123;</span><br><span class="line">  &quot;cniVersion&quot;: &quot;0.2.0&quot;,</span><br><span class="line">  &quot;name&quot;: &quot;mynet&quot;,</span><br><span class="line">  &quot;type&quot;: &quot;bridge&quot;,</span><br><span class="line">  &quot;bridge&quot;: &quot;cni0&quot;,</span><br><span class="line">  &quot;isGateway&quot;: true,</span><br><span class="line">  &quot;ipMasq&quot;: true,</span><br><span class="line">  &quot;ipam&quot;: &#123;</span><br><span class="line">    &quot;type&quot;: &quot;host-local&quot;,</span><br><span class="line">    &quot;subnet&quot;: &quot;172.19.0.0/24&quot;,</span><br><span class="line">    &quot;routes&quot;: [</span><br><span class="line">      &#123; &quot;dst&quot;: &quot;0.0.0.0/0&quot; &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
-
-<p>如果 k8s 节点已经部署完成，需要重启下 kubelet 进程该配置即可生效。</p>
-<h3 id="添加其他节点"><a href="#添加其他节点" class="headerlink" title="添加其他节点"></a>添加其他节点</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">kubeadm join 172.21.115.189:6443 --token abcdef.0123456789abcdef \</span><br><span class="line">        --discovery-token-ca-cert-hash sha256:457fba2c4181a5b02d2a4f202dfe20f9ce5b9f2274bf40b6d25a8a8d4a7ce440 </span><br></pre></td></tr></table></figure>
-
-<p>此时即可以将节点添加到 k8s 集群中</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl  get node </span><br><span class="line">NAME     STATUS   ROLES           AGE   VERSION</span><br><span class="line">k8s002   Ready    control-plane   79m   v1.25.4</span><br><span class="line">k8s003   Ready    &lt;none&gt;          35s   v1.25.4</span><br></pre></td></tr></table></figure>
-
-<h3 id="节点清理"><a href="#节点清理" class="headerlink" title="节点清理"></a>节点清理</h3><h4 id="清理普通节点"><a href="#清理普通节点" class="headerlink" title="清理普通节点"></a>清理普通节点</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">kubectl drain &lt;node name&gt; --delete-emptydir-data --force --ignore-daemonsets</span><br><span class="line">kubeadm reset </span><br><span class="line"># 清理 iptabels 规则</span><br><span class="line">iptables -F &amp;&amp; iptables -t nat -F &amp;&amp; iptables -t mangle -F &amp;&amp; iptables -X</span><br><span class="line">kubectl delete node &lt;node name&gt;</span><br></pre></td></tr></table></figure>
-
-<h4 id="清理-control-plan-节点"><a href="#清理-control-plan-节点" class="headerlink" title="清理 control plan 节点"></a>清理 control plan 节点</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubeadm reset</span><br></pre></td></tr></table></figure>
-
-<h2 id="集群模式部署"><a href="#集群模式部署" class="headerlink" title="集群模式部署"></a>集群模式部署</h2><p>待补充，参考文档：<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/">Creating Highly Available Clusters with kubeadm | Kubernetes</a></p>
-<h2 id="资料"><a href="#资料" class="headerlink" title="资料"></a>资料</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/">Bootstrapping clusters with kubeadm</a></li>
-</ul>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/post/knowledge-share/knowledge-share-16/" rel="prev" title="技术分享第16期">
-                  <i class="fa fa-angle-left"></i> 技术分享第16期
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/post/json-patch/" rel="next" title="json patch">
-                  json patch <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    
-  
-  <div class="comments giscus-container">
-  </div>
-  
-  
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder"></span>
-  </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-
-
-  
-
-
-
-
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
-
-<script>
-document.addEventListener('page:loaded', () => {
-  if (!CONFIG.page.comments) return;
-
-  NexT.utils.loadComments('.giscus-container')
-    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
-      attributes: {
-        async                   : true,
-        crossOrigin             : 'anonymous',
-        'data-repo'             : CONFIG.giscus.repo,
-        'data-repo-id'          : CONFIG.giscus.repo_id,
-        'data-category'         : CONFIG.giscus.category,
-        'data-category-id'      : CONFIG.giscus.category_id,
-        'data-mapping'          : CONFIG.giscus.mapping,
-        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
-        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
-        'data-theme'            : CONFIG.giscus.theme,
-        'data-lang'             : CONFIG.giscus.lang,
-        'data-input-position'   : CONFIG.giscus.input_position,
-        'data-loading'          : CONFIG.giscus.loading
-      },
-      parentNode: document.querySelector('.giscus-container')
-    }));
-});
-</script>
-
-</body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="title: 使用 kubeadm 安装 k8s 集群 date: 2022-12-07 00:07:20 tags: author: 本文将通过 kubeadm 实现单 master 节点模式和集群模式两种部署方式。\n所有节点均需初始化操作 所有节点均需做的操作。\n主机准备 1 2 3 4 5 6 7 8 cat > /etc/sysctl.d/kubernets.conf <<EOF net.ipv4.ip_forward=1 net.bridge.bridge-nf-call-ip6tables = 1 net.bridge.bridge-nf-call-iptables = 1 vm.swappiness=0 EOF sysctl --system modprobe br_netfilter 安装containerd 由于 dockerd 从 k8s 1.24 版本开始不再支持，这里选择 containerd。\n"><title></title><link rel=canonical href=https://kuring.me/post/kubeadm/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content><meta property='og:description' content="title: 使用 kubeadm 安装 k8s 集群 date: 2022-12-07 00:07:20 tags: author: 本文将通过 kubeadm 实现单 master 节点模式和集群模式两种部署方式。\n所有节点均需初始化操作 所有节点均需做的操作。\n主机准备 1 2 3 4 5 6 7 8 cat > /etc/sysctl.d/kubernets.conf <<EOF net.ipv4.ip_forward=1 net.bridge.bridge-nf-call-ip6tables = 1 net.bridge.bridge-nf-call-iptables = 1 vm.swappiness=0 EOF sysctl --system modprobe br_netfilter 安装containerd 由于 dockerd 从 k8s 1.24 版本开始不再支持，这里选择 containerd。\n"><meta property='og:url' content='https://kuring.me/post/kubeadm/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta name=twitter:title content><meta name=twitter:description content="title: 使用 kubeadm 安装 k8s 集群 date: 2022-12-07 00:07:20 tags: author: 本文将通过 kubeadm 实现单 master 节点模式和集群模式两种部署方式。\n所有节点均需初始化操作 所有节点均需做的操作。\n主机准备 1 2 3 4 5 6 7 8 cat > /etc/sysctl.d/kubernets.conf <<EOF net.ipv4.ip_forward=1 net.bridge.bridge-nf-call-ip6tables = 1 net.bridge.bridge-nf-call-iptables = 1 vm.swappiness=0 EOF sysctl --system modprobe br_netfilter 安装containerd 由于 dockerd 从 k8s 1.24 版本开始不再支持，这里选择 containerd。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#author>title: 使用 kubeadm 安装 k8s 集群
+date: 2022-12-07 00:07:20
+tags:
+author:</a></li><li><a href=#所有节点均需初始化操作>所有节点均需初始化操作</a><ol><li><a href=#主机准备>主机准备</a></li><li><a href=#安装containerd>安装containerd</a><ol><li><a href=#手工安装>手工安装</a></li><li><a href=#yum-源安装>yum 源安装</a></li></ol></li><li><a href=#安装-kubeadmkubeletkubectl>安装 kubeadm/kubelet/kubectl</a></li></ol></li><li><a href=#单-master-节点模式>单 master 节点模式</a><ol><li><a href=#kubeadm-初始化>kubeadm 初始化</a></li><li><a href=#安装网络插件>安装网络插件</a><ol><li><a href=#cilim-网络插件>cilim 网络插件</a></li><li><a href=#k8s-自带的-bridge-插件>k8s 自带的 bridge 插件</a></li></ol></li><li><a href=#添加其他节点>添加其他节点</a></li><li><a href=#节点清理>节点清理</a><ol><li><a href=#清理普通节点>清理普通节点</a></li><li><a href=#清理-control-plan-节点>清理 control plan 节点</a></li></ol></li></ol></li><li><a href=#集群模式部署>集群模式部署</a></li><li><a href=#资料>资料</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/kubeadm/></a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 3 分钟</time></div></footer></div></header><section class=article-content><h2 id=author>title: 使用 kubeadm 安装 k8s 集群
+date: 2022-12-07 00:07:20
+tags:
+author:</h2><p>本文将通过 kubeadm 实现单 master 节点模式和集群模式两种部署方式。</p><h2 id=所有节点均需初始化操作>所有节点均需初始化操作</h2><p>所有节点均需做的操作。</p><h3 id=主机准备>主机准备</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>cat &gt; /etc/sysctl.d/kubernets.conf &lt;&lt;EOF
+</span></span><span class=line><span class=cl>net.ipv4.ip_forward=1
+</span></span><span class=line><span class=cl>net.bridge.bridge-nf-call-ip6tables = 1
+</span></span><span class=line><span class=cl>net.bridge.bridge-nf-call-iptables = 1
+</span></span><span class=line><span class=cl>vm.swappiness=0
+</span></span><span class=line><span class=cl>EOF
+</span></span><span class=line><span class=cl>sysctl --system
+</span></span><span class=line><span class=cl>modprobe br_netfilter
+</span></span></code></pre></td></tr></table></div></div><h3 id=安装containerd>安装containerd</h3><p>由于 dockerd 从 k8s 1.24 版本开始不再支持，这里选择 containerd。</p><h4 id=手工安装>手工安装</h4><p>安装 containerd，containerd 的版本可以从这里获取 <a class=link href=https://github.com/containerd/containerd/releases target=_blank rel=noopener>https://github.com/containerd/containerd/releases</a></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>wget</span> <span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>github</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>containerd</span><span class=o>/</span><span class=n>containerd</span><span class=o>/</span><span class=n>releases</span><span class=o>/</span><span class=n>download</span><span class=o>/</span><span class=n>v1</span><span class=o>.</span><span class=mf>6.11</span><span class=o>/</span><span class=n>containerd</span><span class=o>-</span><span class=mf>1.6</span><span class=o>.</span><span class=mi>11</span><span class=o>-</span><span class=n>linux</span><span class=o>-</span><span class=n>amd64</span><span class=o>.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span>
+</span></span><span class=line><span class=cl><span class=n>tar</span> <span class=n>Cxzvf</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>local</span> <span class=n>containerd</span><span class=o>-</span><span class=mf>1.6</span><span class=o>.</span><span class=mi>11</span><span class=o>-</span><span class=n>linux</span><span class=o>-</span><span class=n>amd64</span><span class=o>.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span>
+</span></span><span class=line><span class=cl><span class=n>wget</span> <span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>raw</span><span class=o>.</span><span class=n>githubusercontent</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>containerd</span><span class=o>/</span><span class=n>containerd</span><span class=o>/</span><span class=n>main</span><span class=o>/</span><span class=n>containerd</span><span class=o>.</span><span class=n>service</span> <span class=o>-</span><span class=n>P</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>local</span><span class=o>/</span><span class=n>lib</span><span class=o>/</span><span class=n>systemd</span><span class=o>/</span><span class=n>system</span><span class=o>/</span>
+</span></span><span class=line><span class=cl><span class=n>systemctl</span> <span class=n>daemon</span><span class=o>-</span><span class=n>reload</span>
+</span></span><span class=line><span class=cl><span class=n>systemctl</span> <span class=n>enable</span> <span class=o>--</span><span class=n>now</span> <span class=n>containerd</span>
+</span></span></code></pre></td></tr></table></div></div><p>安装 runc</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>wget</span> <span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>github</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>opencontainers</span><span class=o>/</span><span class=n>runc</span><span class=o>/</span><span class=n>releases</span><span class=o>/</span><span class=n>download</span><span class=o>/</span><span class=n>v1</span><span class=o>.</span><span class=mf>1.4</span><span class=o>/</span><span class=n>runc</span><span class=o>.</span><span class=n>amd64</span>
+</span></span><span class=line><span class=cl><span class=n>install</span> <span class=o>-</span><span class=n>m</span> <span class=mi>755</span> <span class=n>runc</span><span class=o>.</span><span class=n>amd64</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>local</span><span class=o>/</span><span class=n>sbin</span><span class=o>/</span><span class=n>runc</span>
+</span></span></code></pre></td></tr></table></div></div><h4 id=yum-源安装>yum 源安装</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>yum</span> <span class=n>install</span> <span class=o>-</span><span class=n>y</span> <span class=n>yum</span><span class=o>-</span><span class=n>utils</span>
+</span></span><span class=line><span class=cl><span class=n>yum</span><span class=o>-</span><span class=n>config</span><span class=o>-</span><span class=n>manager</span> <span class=o>--</span><span class=n>add</span><span class=o>-</span><span class=n>repo</span>     <span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>download</span><span class=o>.</span><span class=n>docker</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>linux</span><span class=o>/</span><span class=n>centos</span><span class=o>/</span><span class=n>docker</span><span class=o>-</span><span class=n>ce</span><span class=o>.</span><span class=n>repo</span>
+</span></span><span class=line><span class=cl><span class=n>yum</span> <span class=n>install</span> <span class=n>containerd</span><span class=o>.</span><span class=n>io</span> <span class=o>-</span><span class=n>y</span>
+</span></span><span class=line><span class=cl><span class=n>systemctl</span> <span class=n>daemon</span><span class=o>-</span><span class=n>reload</span>
+</span></span><span class=line><span class=cl><span class=n>systemctl</span> <span class=n>enable</span> <span class=o>--</span><span class=n>now</span> <span class=n>containerd</span>
+</span></span></code></pre></td></tr></table></div></div><p>通过 yum 安装的containerd 没有启用 cri，在其配置文件 /etc/containerd/config.toml 中包含了 <code>disabled_plugins = ["cri"]</code> 配置，需要将配置信息注释后并重启 containerd。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>sed -i &#39;s/disabled_plugins/#disabled_plugins/&#39;  /etc/containerd/config.toml
+</span></span><span class=line><span class=cl>systemctl restart containerd
+</span></span></code></pre></td></tr></table></div></div><h3 id=安装-kubeadmkubeletkubectl>安装 kubeadm/kubelet/kubectl</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>cat &lt;&lt;EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+</span></span><span class=line><span class=cl>[kubernetes]
+</span></span><span class=line><span class=cl>name=Kubernetes
+</span></span><span class=line><span class=cl>baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+</span></span><span class=line><span class=cl>enabled=1
+</span></span><span class=line><span class=cl>gpgcheck=1
+</span></span><span class=line><span class=cl>gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+</span></span><span class=line><span class=cl>exclude=kubelet kubeadm kubectl
+</span></span><span class=line><span class=cl>EOF
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># Set SELinux in permissive mode (effectively disabling it)
+</span></span><span class=line><span class=cl>sudo setenforce 0
+</span></span><span class=line><span class=cl>sudo sed -i &#39;s/^SELINUX=enforcing$/SELINUX=permissive/&#39; /etc/selinux/config
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>sudo systemctl enable --now kubelet
+</span></span></code></pre></td></tr></table></div></div><h2 id=单-master-节点模式>单 master 节点模式</h2><div class=table-wrapper><table><thead><tr><th>节点</th><th>角色</th></tr></thead><tbody><tr><td>172.21.115.190<br></td><td>master 节点</td></tr></tbody></table></div><h3 id=kubeadm-初始化>kubeadm 初始化</h3><p>创建文件 kubeadm-config.yaml，文件内容如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>apiVersion: kubeadm.k8s.io/v1beta3
+</span></span><span class=line><span class=cl>kind: ClusterConfiguration
+</span></span><span class=line><span class=cl>kubernetesVersion: v1.25.4
+</span></span><span class=line><span class=cl>---
+</span></span><span class=line><span class=cl>kind: KubeletConfiguration
+</span></span><span class=line><span class=cl>apiVersion: kubelet.config.k8s.io/v1beta1
+</span></span><span class=line><span class=cl>cgroupDriver: systemd
+</span></span></code></pre></td></tr></table></div></div><p>执行命令：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>kubeadm init --config kubeadm-config.yaml
+</span></span><span class=line><span class=cl>kubeadm config print init-defaults --component-configs KubeletConfiguration &gt; cluster.yaml
+</span></span><span class=line><span class=cl>kubeadm init --config cluster.yaml
+</span></span></code></pre></td></tr></table></div></div><p>接下来初始化 kubeconfig 文件，这样即可通过 kubectl 命令来访问 k8s 了。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>mkdir -p $HOME/.kube
+</span></span><span class=line><span class=cl>sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+</span></span><span class=line><span class=cl>sudo chown $(id -u):$(id -g) $HOME/.kube/config
+</span></span></code></pre></td></tr></table></div></div><h3 id=安装网络插件>安装网络插件</h3><p>刚部署完成的节点处于NotReady 的状态，原因是因为还没有安装网络插件。</p><h4 id=cilim-网络插件>cilim 网络插件</h4><p>cilim 网络插件比较火爆，下面介绍其安装步骤：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># 安装 cilium 客户端</span>
+</span></span><span class=line><span class=cl><span class=n>CILIUM_CLI_VERSION</span><span class=o>=$</span><span class=p>(</span><span class=n>curl</span> <span class=o>-</span><span class=n>s</span> <span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>raw</span><span class=o>.</span><span class=n>githubusercontent</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>cilium</span><span class=o>/</span><span class=n>cilium</span><span class=o>-</span><span class=n>cli</span><span class=o>/</span><span class=n>master</span><span class=o>/</span><span class=n>stable</span><span class=o>.</span><span class=n>txt</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>CLI_ARCH</span><span class=o>=</span><span class=n>amd64</span>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=p>[</span> <span class=s2>&#34;$(uname -m)&#34;</span> <span class=o>=</span> <span class=s2>&#34;aarch64&#34;</span> <span class=p>];</span> <span class=n>then</span> <span class=n>CLI_ARCH</span><span class=o>=</span><span class=n>arm64</span><span class=p>;</span> <span class=n>fi</span>
+</span></span><span class=line><span class=cl><span class=n>curl</span> <span class=o>-</span><span class=n>L</span> <span class=o>--</span><span class=n>fail</span> <span class=o>--</span><span class=n>remote</span><span class=o>-</span><span class=n>name</span><span class=o>-</span><span class=n>all</span> <span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>github</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>cilium</span><span class=o>/</span><span class=n>cilium</span><span class=o>-</span><span class=n>cli</span><span class=o>/</span><span class=n>releases</span><span class=o>/</span><span class=n>download</span><span class=o>/$</span><span class=p>{</span><span class=n>CILIUM_CLI_VERSION</span><span class=p>}</span><span class=o>/</span><span class=n>cilium</span><span class=o>-</span><span class=n>linux</span><span class=o>-$</span><span class=p>{</span><span class=n>CLI_ARCH</span><span class=p>}</span><span class=o>.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span><span class=p>{,</span><span class=o>.</span><span class=n>sha256sum</span><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=n>sha256sum</span> <span class=o>--</span><span class=n>check</span> <span class=n>cilium</span><span class=o>-</span><span class=n>linux</span><span class=o>-$</span><span class=p>{</span><span class=n>CLI_ARCH</span><span class=p>}</span><span class=o>.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span><span class=o>.</span><span class=n>sha256sum</span>
+</span></span><span class=line><span class=cl><span class=n>sudo</span> <span class=n>tar</span> <span class=n>xzvfC</span> <span class=n>cilium</span><span class=o>-</span><span class=n>linux</span><span class=o>-$</span><span class=p>{</span><span class=n>CLI_ARCH</span><span class=p>}</span><span class=o>.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>local</span><span class=o>/</span><span class=n>bin</span>
+</span></span><span class=line><span class=cl><span class=n>rm</span> <span class=n>cilium</span><span class=o>-</span><span class=n>linux</span><span class=o>-$</span><span class=p>{</span><span class=n>CLI_ARCH</span><span class=p>}</span><span class=o>.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span><span class=p>{,</span><span class=o>.</span><span class=n>sha256sum</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 网络插件初始化</span>
+</span></span><span class=line><span class=cl><span class=n>cilium</span> <span class=n>install</span>
+</span></span></code></pre></td></tr></table></div></div><p>在安装完网络插件后，node 节点即可变为 ready 状态。</p><p>查看环境中包含如下的 pod:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ kubectl  get pod  -A
+</span></span><span class=line><span class=cl>NAMESPACE     NAME                             READY   STATUS    RESTARTS   AGE
+</span></span><span class=line><span class=cl>kube-system   cilium-7zj7t                     1/1     Running   0          82s
+</span></span><span class=line><span class=cl>kube-system   cilium-operator-bc4d5b54-kvqqx   1/1     Running   0          82s
+</span></span><span class=line><span class=cl>kube-system   coredns-565d847f94-hrm9b         1/1     Running   0          14m
+</span></span><span class=line><span class=cl>kube-system   coredns-565d847f94-z5kwr         1/1     Running   0          14m
+</span></span><span class=line><span class=cl>kube-system   etcd-k8s002                      1/1     Running   0          14m
+</span></span><span class=line><span class=cl>kube-system   kube-apiserver-k8s002            1/1     Running   0          14m
+</span></span><span class=line><span class=cl>kube-system   kube-controller-manager-k8s002   1/1     Running   0          14m
+</span></span><span class=line><span class=cl>kube-system   kube-proxy-bhpqr                 1/1     Running   0          14m
+</span></span><span class=line><span class=cl>kube-system   kube-scheduler-k8s002            1/1     Running   0          14m
+</span></span></code></pre></td></tr></table></div></div><h4 id=k8s-自带的-bridge-插件>k8s 自带的 bridge 插件</h4><p>在单节点的场景下，pod 不需要跨节点通讯，k8s 自带的 bridge 插件也可以满足单节点内的 pod 相互通讯，类似于 docker 的 bridge 网络模式。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>mkdir -p /etc/cni/net.d
+</span></span><span class=line><span class=cl>cat &gt; /etc/cni/net.d/10-mynet.conf &lt;&lt;EOF
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>  &#34;cniVersion&#34;: &#34;0.2.0&#34;,
+</span></span><span class=line><span class=cl>  &#34;name&#34;: &#34;mynet&#34;,
+</span></span><span class=line><span class=cl>  &#34;type&#34;: &#34;bridge&#34;,
+</span></span><span class=line><span class=cl>  &#34;bridge&#34;: &#34;cni0&#34;,
+</span></span><span class=line><span class=cl>  &#34;isGateway&#34;: true,
+</span></span><span class=line><span class=cl>  &#34;ipMasq&#34;: true,
+</span></span><span class=line><span class=cl>  &#34;ipam&#34;: {
+</span></span><span class=line><span class=cl>    &#34;type&#34;: &#34;host-local&#34;,
+</span></span><span class=line><span class=cl>    &#34;subnet&#34;: &#34;172.19.0.0/24&#34;,
+</span></span><span class=line><span class=cl>    &#34;routes&#34;: [
+</span></span><span class=line><span class=cl>      { &#34;dst&#34;: &#34;0.0.0.0/0&#34; }
+</span></span><span class=line><span class=cl>    ]
+</span></span><span class=line><span class=cl>  }
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>EOF
+</span></span></code></pre></td></tr></table></div></div><p>如果 k8s 节点已经部署完成，需要重启下 kubelet 进程该配置即可生效。</p><h3 id=添加其他节点>添加其他节点</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>kubeadm join 172.21.115.189:6443 --token abcdef.0123456789abcdef <span class=se>\
+</span></span></span><span class=line><span class=cl>        --discovery-token-ca-cert-hash sha256:457fba2c4181a5b02d2a4f202dfe20f9ce5b9f2274bf40b6d25a8a8d4a7ce440 
+</span></span></code></pre></td></tr></table></div></div><p>此时即可以将节点添加到 k8s 集群中</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ kubectl  get node 
+</span></span><span class=line><span class=cl>NAME     STATUS   ROLES           AGE   VERSION
+</span></span><span class=line><span class=cl>k8s002   Ready    control-plane   79m   v1.25.4
+</span></span><span class=line><span class=cl>k8s003   Ready    &lt;none&gt;          35s   v1.25.4
+</span></span></code></pre></td></tr></table></div></div><h3 id=节点清理>节点清理</h3><h4 id=清理普通节点>清理普通节点</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>kubectl drain &lt;node name&gt; --delete-emptydir-data --force --ignore-daemonsets
+</span></span><span class=line><span class=cl>kubeadm reset 
+</span></span><span class=line><span class=cl># 清理 iptabels 规则
+</span></span><span class=line><span class=cl>iptables -F &amp;&amp; iptables -t nat -F &amp;&amp; iptables -t mangle -F &amp;&amp; iptables -X
+</span></span><span class=line><span class=cl>kubectl delete node &lt;node name&gt;
+</span></span></code></pre></td></tr></table></div></div><h4 id=清理-control-plan-节点>清理 control plan 节点</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>kubeadm reset
+</span></span></code></pre></td></tr></table></div></div><h2 id=集群模式部署>集群模式部署</h2><p>待补充，参考文档：<a class=link href=https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/ target=_blank rel=noopener>Creating Highly Available Clusters with kubeadm | Kubernetes</a></p><h2 id=资料>资料</h2><ul><li><a class=link href=https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ target=_blank rel=noopener>Bootstrapping clusters with kubeadm</a></li></ul></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

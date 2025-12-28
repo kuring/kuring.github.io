@@ -1,440 +1,519 @@
-<!DOCTYPE html>
-<html lang="zh-Hans">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="背景Federation V1Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s">
-<meta property="og:type" content="article">
-<meta property="og:title" content="k8s多集群管理方案 - KubeFed V2">
-<meta property="og:url" content="http://kuring.me/post/kubefedv2/index.html">
-<meta property="og:site_name" content="404频道">
-<meta property="og:description" content="背景Federation V1Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s">
-<meta property="og:locale">
-<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-1.png">
-<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-2.png">
-<meta property="article:published_time" content="2022-01-09T11:33:15.000Z">
-<meta property="article:modified_time" content="2025-12-20T16:59:52.691Z">
-<meta property="article:tag" content="多集群">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-1.png">
-
-
-<link rel="canonical" href="http://kuring.me/post/kubefedv2/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/kubefedv2/","path":"post/kubefedv2/","title":"k8s多集群管理方案 - KubeFed V2"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>k8s多集群管理方案 - KubeFed V2 | 404频道</title>
-  
-
-
-
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">404频道</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">学习笔记</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="Searching..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          Table of Contents
-        </li>
-        <li class="sidebar-nav-overview">
-          Overview
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Federation-V1"><span class="nav-number">1.1.</span> <span class="nav-text">Federation V1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Federation-V2%E6%9E%B6%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">Federation V2架构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD"><span class="nav-number">1.3.</span> <span class="nav-text">术语</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CRD%E6%89%A9%E5%B1%95"><span class="nav-number">2.</span> <span class="nav-text">CRD扩展</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#KubeFedCluster"><span class="nav-number">2.1.</span> <span class="nav-text">KubeFedCluster</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Fedrated"><span class="nav-number">2.2.</span> <span class="nav-text">Fedrated</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FederatedTypeConfig"><span class="nav-number">2.3.</span> <span class="nav-text">FederatedTypeConfig</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ReplicaSchedulingPreference"><span class="nav-number">2.4.</span> <span class="nav-text">ReplicaSchedulingPreference</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">3.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AD%90%E9%9B%86%E7%BE%A4%E6%B3%A8%E5%86%8C"><span class="nav-number">4.</span> <span class="nav-text">子集群注册</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%8F%91%E5%B8%83"><span class="nav-number">5.</span> <span class="nav-text">应用发布</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E8%81%94%E9%82%A6API"><span class="nav-number">5.1.</span> <span class="nav-text">集群联邦API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%90%E9%9B%86%E7%BE%A4%E7%9A%84%E4%B8%AA%E6%80%A7%E5%8C%96%E9%85%8D%E7%BD%AE"><span class="nav-number">5.2.</span> <span class="nav-text">子集群的个性化配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E9%9B%86%E7%BE%A4%E5%BA%94%E7%94%A8%E8%B0%83%E5%BA%A6"><span class="nav-number">5.3.</span> <span class="nav-text">多集群应用调度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%91%E5%B8%83%E5%BA%94%E7%94%A8%E5%88%B0%E7%89%B9%E5%AE%9A%E7%9A%84%E5%AD%90%E9%9B%86%E7%BE%A4"><span class="nav-number">5.3.1.</span> <span class="nav-text">发布应用到特定的子集群</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%90%E9%9B%86%E7%BE%A4%E5%B7%AE%E5%BC%82%E5%8C%96%E8%B0%83%E5%BA%A6"><span class="nav-number">5.3.2.</span> <span class="nav-text">子集群差异化调度</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AD%90%E9%9B%86%E7%BE%A4%E4%B9%8B%E9%97%B4%E7%9A%84%E4%BA%A4%E4%BA%92"><span class="nav-number">6.</span> <span class="nav-text">子集群之间的交互</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%BA%E7%82%B9"><span class="nav-number">7.</span> <span class="nav-text">缺点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">8.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name"></p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">256</span>
-          <span class="site-state-item-name">posts</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">36</span>
-        <span class="site-state-item-name">tags</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/kubefedv2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="k8s多集群管理方案 - KubeFed V2 | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          k8s多集群管理方案 - KubeFed V2
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-01-09 11:33:15" itemprop="dateCreated datePublished" datetime="2022-01-09T11:33:15+00:00">2022-01-09</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-20 16:59:52" itemprop="dateModified" datetime="2025-12-20T16:59:52+00:00">2025-12-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><h2 id="Federation-V1"><a href="#Federation-V1" class="headerlink" title="Federation V1"></a>Federation V1</h2><p>Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s v1.11 左右正式被弃用。</p>
-<h2 id="Federation-V2架构"><a href="#Federation-V2架构" class="headerlink" title="Federation V2架构"></a>Federation V2架构</h2><p>v2 版本利用 CRD 实现了整体功能，通过定义多种自定义资源（CR），从而省掉了 v1 中的 API Server；v2 版本由两个组件构成：</p>
-<ul>
-<li>admission-webhook 提供了准入控制</li>
-<li>controller-manager 处理自定义资源以及协调不同集群间的状态</li>
-</ul>
-<p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-1.png" alt="image"><br><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-2.png" alt="image"></p>
-<p>代码行数在2万行左右。</p>
-<h2 id="术语"><a href="#术语" class="headerlink" title="术语"></a>术语</h2><ul>
-<li>Host Cluster：主集群&#x2F;父集群</li>
-<li>Member Cluster：子集群&#x2F;成员集群</li>
-</ul>
-<h1 id="CRD扩展"><a href="#CRD扩展" class="headerlink" title="CRD扩展"></a>CRD扩展</h1><h2 id="KubeFedCluster"><a href="#KubeFedCluster" class="headerlink" title="KubeFedCluster"></a>KubeFedCluster</h2><p>子集群抽象，通过kubefedctl join命令创建。后续controller会使用该信息来访问子k8s集群。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">kind: KubeFedCluster</span><br><span class="line">metadata:</span><br><span class="line">  name: kind<span class="literal">-cluster1</span></span><br><span class="line">  namespace: kube<span class="literal">-federation-system</span></span><br><span class="line">spec:</span><br><span class="line">  apiEndpoint: https://<span class="number">172.21</span>.<span class="number">115.165</span>:<span class="number">6443</span></span><br><span class="line">  caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXlOREUyTlRNME9Wb1hEVE14TVRJeU1qRTJOVE0wT1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTmxjCnF3UHd5cHNFc2M0aXB3QnFuRndDN044RXo2Slhqajh3ZzRybnlXTDNSdlZ0cmVua1Nha1VyYlRjZWVIck9lQTUKWGlNUVo2T1FBY25tUGU0Q2NWSkFoL2ZLQzBkeU9uL0ZZeXgyQXppRjBCK1ZNaUFhK2dvME1VMmhMZ1R5eVFGdQpDbWFmUGtsNmJxZUFJNCtCajZJUWRqY3dVMHBjY3lrNGhSTUxnQmhnTUh4NWkzVkpQckQ2Y284dHcwVnllWncyCkdDUlh2ZzlSd0QweUs5eitOVS9LVS83QjBiMTBvekpNRlVJMktPZmI4N1RkQ0h2NmlBdlVRYVdKc1BqQ0M3MzQKcnBma1ZGZXB2S2liKy9lUVBFaDE4VE5qaitveEVGMnl0Vmo2ZWVKeFc3VVZrbit0T3BxdGpEeUtKVDllNnlwdAp6U1VDTnRZWTAzckdhNTlLczBVQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZOTnRQU3hsMlMxUldOb1BCeXNIcHFoRXJONlVNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFDME0vaktCL2dqcWRSNlRLNXJQVktSSFU2cy8xTTh2eTY2WFBiVEx4M0srazdicUFWdAoxVUFzcUZDZmNrVk91WHY3eFQ0ZHIzVzdtMHE1bDYzRGg3ZDJRZDNiQ00zY2FuclpNd01OM0lSMlpmYzR0VlBGCnRTMFFONElTa0hsYnBudXQxb0F3cy9CaXNwaXNRQ0VtbHF3Zy9xbmdPMStlWWRoWm5vRW40SEFDamF4Slc5MS8KNXlOR1pKRXdia2dYQTVCbSs3VEZRL2FiYnp5a1JvOWtTMnl5c29pMnVzcUg0ZnlVS0ZWK2RETnp3Ujh0ck16cgpjWkRBNHpaVFB1WGlYRkVsWlNRa2NJSGIyV0VsYmZNRGpKNjlyVG5wakJCOWNPQ25jaHVmK0xiOXQwN1lJQ01wCmNlK0prNVp2RElRUFlKK3hTeGdRaVJxMTFraWlKcFE4Wm1FWgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==</span><br><span class="line">  proxyURL: <span class="string">&quot;&quot;</span></span><br><span class="line">  secretRef:</span><br><span class="line">    name: kind<span class="literal">-cluster1-dbxns</span></span><br><span class="line">status:</span><br><span class="line">  conditions:</span><br><span class="line">  - lastProbeTime: <span class="string">&quot;2021-12-24T17:00:47Z&quot;</span></span><br><span class="line">    lastTransitionTime: <span class="string">&quot;2021-12-24T17:00:07Z&quot;</span></span><br><span class="line">    message: /healthz responded with ok</span><br><span class="line">    reason: ClusterReady</span><br><span class="line">    status: <span class="string">&quot;True&quot;</span></span><br><span class="line">    <span class="built_in">type</span>: Ready</span><br></pre></td></tr></table></figure>
-<h2 id="Fedrated"><a href="#Fedrated" class="headerlink" title="Fedrated"></a>Fedrated<Kind></h2><p>发布应用到子集群时手工创建。每一个要被联邦管理的资源都会对应一个Fedrated<Kind>类型的资源，比如ConfigMap对应的是FederatedConfigMap。FederatedConfigMap包含了三部分的信息：</p>
-<ul>
-<li>template：联邦的资源详细spec信息，需要特别注意的是并没有包含metadata部分的信息。</li>
-<li>placement：template中的spec信息要部署的k8s子集群信息</li>
-<li>overrides：允许对部分k8s的部分资源进行自定义修改<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: types.kubefed.io/v1beta1</span><br><span class="line">kind: FederatedConfigMap</span><br><span class="line">metadata:</span><br><span class="line">  name: <span class="built_in">test-configmap</span></span><br><span class="line">  namespace: <span class="built_in">test-namespace</span></span><br><span class="line">spec:</span><br><span class="line">  template:</span><br><span class="line">    <span class="keyword">data</span>:</span><br><span class="line">      A: ala ma kota</span><br><span class="line">  placement:</span><br><span class="line">    clusters:</span><br><span class="line">    - name: cluster2</span><br><span class="line">    - name: cluster1</span><br><span class="line">  overrides:</span><br><span class="line">  - clusterName: cluster2</span><br><span class="line">    clusterOverrides:</span><br><span class="line">    - path: /<span class="keyword">data</span></span><br><span class="line">      value:</span><br><span class="line">        foo: bar</span><br></pre></td></tr></table></figure></li>
-</ul>
-<h2 id="FederatedTypeConfig"><a href="#FederatedTypeConfig" class="headerlink" title="FederatedTypeConfig"></a>FederatedTypeConfig</h2><p>通过kubefedctl enable <target API type>创建。定义了哪些k8s api资源需要联邦，下面的例子描述了k8s ConfigMap要被联邦资源FederatedConfigMap所管理。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: core.kubefed.io/v1beta1</span><br><span class="line">kind: FederatedTypeConfig</span><br><span class="line">metadata:</span><br><span class="line">  annotations:</span><br><span class="line">    meta.helm.sh/release<span class="literal">-name</span>: kubefed</span><br><span class="line">    meta.helm.sh/release<span class="literal">-namespace</span>: kube<span class="literal">-federation-system</span></span><br><span class="line">  finalizers:</span><br><span class="line">  - core.kubefed.io/federated<span class="literal">-type-config</span></span><br><span class="line">  labels:</span><br><span class="line">    app.kubernetes.io/managed<span class="literal">-by</span>: Helm</span><br><span class="line">  name: configmaps</span><br><span class="line">  namespace: kube<span class="literal">-federation-system</span></span><br><span class="line">spec:</span><br><span class="line">  federatedType:</span><br><span class="line">    <span class="built_in">group</span>: types.kubefed.io</span><br><span class="line">    kind: FederatedConfigMap</span><br><span class="line">    pluralName: federatedconfigmaps</span><br><span class="line">    scope: Namespaced</span><br><span class="line">    version: v1beta1</span><br><span class="line">  propagation: Enabled <span class="comment"># 是否启用该联邦对象</span></span><br><span class="line">  targetType:</span><br><span class="line">    kind: ConfigMap</span><br><span class="line">    pluralName: configmaps</span><br><span class="line">    scope: Namespaced</span><br><span class="line">    version: v1</span><br><span class="line">status:</span><br><span class="line">  observedGeneration: <span class="number">1</span></span><br><span class="line">  propagationController: Running</span><br><span class="line">  statusController: NotRunning</span><br></pre></td></tr></table></figure>
-<h2 id="ReplicaSchedulingPreference"><a href="#ReplicaSchedulingPreference" class="headerlink" title="ReplicaSchedulingPreference"></a>ReplicaSchedulingPreference</h2><p>用来管理相同名字的FederatedDeployment或FederatedReplicaset资源，保证所有子集群的副本数为spec.totalReplicas。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: scheduling.kubefed.io/v1alpha1</span><br><span class="line">kind: ReplicaSchedulingPreference</span><br><span class="line">metadata:</span><br><span class="line">  name: <span class="built_in">test-deployment</span></span><br><span class="line">  namespace: <span class="built_in">test-ns</span></span><br><span class="line">spec:</span><br><span class="line">  targetKind: FederatedDeployment</span><br><span class="line">  totalReplicas: <span class="number">9</span></span><br><span class="line">  clusters:</span><br><span class="line">    A:</span><br><span class="line">      minReplicas: <span class="number">4</span></span><br><span class="line">      maxReplicas: <span class="number">6</span></span><br><span class="line">      weight: <span class="number">1</span></span><br><span class="line">    B:</span><br><span class="line">      minReplicas: <span class="number">4</span></span><br><span class="line">      maxReplicas: <span class="number">8</span></span><br><span class="line">      weight: <span class="number">2</span></span><br></pre></td></tr></table></figure>
-<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>使用kind来在本机创建多个k8s集群的方式测试。通过kind创建两个k8s集群 kind-cluster1和kind-cluster2。<br>​</p>
-<p>安装kubefedctl</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">wget</span> https://github.com/kubernetes<span class="literal">-sigs</span>/kubefed/releases/download/v0.<span class="number">9.0</span>/kubefedctl<span class="literal">-0</span>.<span class="number">9.0</span><span class="literal">-linux-amd64</span>.tgz</span><br><span class="line">tar zvxf kubefedctl<span class="literal">-0</span>.<span class="number">9.0</span><span class="literal">-linux-amd64</span>.tgz</span><br><span class="line">chmod u+x kubefedctl</span><br><span class="line"><span class="built_in">mv</span> kubefedctl /usr/local/bin/</span><br></pre></td></tr></table></figure>
-<p>在第一个集群安装KubeFed，在第一个集群执行如下的命令</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> helm repo add kubefed<span class="literal">-charts</span> https://raw.githubusercontent.com/kubernetes<span class="literal">-sigs</span>/kubefed/master/charts</span><br><span class="line"><span class="variable">$</span> helm repo list</span><br><span class="line"><span class="variable">$</span> helm <span class="literal">--namespace</span> kube<span class="literal">-federation-system</span> upgrade <span class="literal">-i</span> kubefed kubefed<span class="literal">-charts</span>/kubefed <span class="literal">--version</span>=<span class="number">0.9</span>.<span class="number">0</span> <span class="literal">--create-namespace</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 会安装如下两个deployment，其中一个是controller，另外一个是webhook</span></span><br><span class="line"><span class="variable">$</span> kubectl  get deploy <span class="literal">-n</span> kube<span class="literal">-federation-system</span></span><br><span class="line">NAME                         READY   UP<span class="literal">-TO-DATE</span>   AVAILABLE   AGE</span><br><span class="line">kubefed<span class="literal">-admission-webhook</span>    <span class="number">1</span>/<span class="number">1</span>     <span class="number">1</span>            <span class="number">1</span>           <span class="number">7</span>m40s</span><br><span class="line">kubefed<span class="literal">-controller-manager</span>   <span class="number">2</span>/<span class="number">2</span>     <span class="number">2</span>            <span class="number">2</span>           <span class="number">7</span>m40s</span><br></pre></td></tr></table></figure>
-<h1 id="子集群注册"><a href="#子集群注册" class="headerlink" title="子集群注册"></a>子集群注册</h1><p>将cluster1和cluster2集群加入到cluster1中</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">kubefedctl join kind<span class="literal">-cluster1</span> <span class="literal">--cluster-context</span> kind<span class="literal">-cluster1</span> <span class="literal">--host-cluster-context</span> kind<span class="literal">-cluster1</span> <span class="literal">--v</span>=<span class="number">2</span></span><br><span class="line">kubefedctl join kind<span class="literal">-cluster2</span> <span class="literal">--cluster-context</span> kind<span class="literal">-cluster2</span> <span class="literal">--host-cluster-context</span> kind<span class="literal">-cluster1</span> <span class="literal">--v</span>=<span class="number">2</span></span><br></pre></td></tr></table></figure>
-<p>在第一个集群可以看到在kube-federation-system中创建出了两个新的kubefedcluster对象</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> kubectl <span class="literal">-n</span> kube<span class="literal">-federation-system</span> get kubefedcluster</span><br><span class="line">NAME            AGE   READY</span><br><span class="line">kind<span class="literal">-cluster1</span>   <span class="number">17</span>s   True</span><br><span class="line">kind<span class="literal">-cluster2</span>   <span class="number">16</span>s   True</span><br><span class="line"></span><br><span class="line"><span class="variable">$</span> apiVersion: core.kubefed.io/v1beta1</span><br><span class="line">kind: KubeFedCluster</span><br><span class="line">metadata:</span><br><span class="line">  name: kind<span class="literal">-cluster1</span></span><br><span class="line">  namespace: kube<span class="literal">-federation-system</span></span><br><span class="line">spec:</span><br><span class="line">  apiEndpoint: https://<span class="number">172.21</span>.<span class="number">115.165</span>:<span class="number">6443</span></span><br><span class="line">  caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXlOREUyTlRNME9Wb1hEVE14TVRJeU1qRTJOVE0wT1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTmxjCnF3UHd5cHNFc2M0aXB3QnFuRndDN044RXo2Slhqajh3ZzRybnlXTDNSdlZ0cmVua1Nha1VyYlRjZWVIck9lQTUKWGlNUVo2T1FBY25tUGU0Q2NWSkFoL2ZLQzBkeU9uL0ZZeXgyQXppRjBCK1ZNaUFhK2dvME1VMmhMZ1R5eVFGdQpDbWFmUGtsNmJxZUFJNCtCajZJUWRqY3dVMHBjY3lrNGhSTUxnQmhnTUh4NWkzVkpQckQ2Y284dHcwVnllWncyCkdDUlh2ZzlSd0QweUs5eitOVS9LVS83QjBiMTBvekpNRlVJMktPZmI4N1RkQ0h2NmlBdlVRYVdKc1BqQ0M3MzQKcnBma1ZGZXB2S2liKy9lUVBFaDE4VE5qaitveEVGMnl0Vmo2ZWVKeFc3VVZrbit0T3BxdGpEeUtKVDllNnlwdAp6U1VDTnRZWTAzckdhNTlLczBVQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZOTnRQU3hsMlMxUldOb1BCeXNIcHFoRXJONlVNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFDME0vaktCL2dqcWRSNlRLNXJQVktSSFU2cy8xTTh2eTY2WFBiVEx4M0srazdicUFWdAoxVUFzcUZDZmNrVk91WHY3eFQ0ZHIzVzdtMHE1bDYzRGg3ZDJRZDNiQ00zY2FuclpNd01OM0lSMlpmYzR0VlBGCnRTMFFONElTa0hsYnBudXQxb0F3cy9CaXNwaXNRQ0VtbHF3Zy9xbmdPMStlWWRoWm5vRW40SEFDamF4Slc5MS8KNXlOR1pKRXdia2dYQTVCbSs3VEZRL2FiYnp5a1JvOWtTMnl5c29pMnVzcUg0ZnlVS0ZWK2RETnp3Ujh0ck16cgpjWkRBNHpaVFB1WGlYRkVsWlNRa2NJSGIyV0VsYmZNRGpKNjlyVG5wakJCOWNPQ25jaHVmK0xiOXQwN1lJQ01wCmNlK0prNVp2RElRUFlKK3hTeGdRaVJxMTFraWlKcFE4Wm1FWgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==</span><br><span class="line">  proxyURL: <span class="string">&quot;&quot;</span></span><br><span class="line">  secretRef:</span><br><span class="line">    name: kind<span class="literal">-cluster1-dbxns</span></span><br><span class="line">status:</span><br><span class="line">  conditions:</span><br><span class="line">  - lastProbeTime: <span class="string">&quot;2021-12-24T17:00:47Z&quot;</span></span><br><span class="line">    lastTransitionTime: <span class="string">&quot;2021-12-24T17:00:07Z&quot;</span></span><br><span class="line">    message: /healthz responded with ok</span><br><span class="line">    reason: ClusterReady</span><br><span class="line">    status: <span class="string">&quot;True&quot;</span></span><br><span class="line">    <span class="built_in">type</span>: Ready</span><br></pre></td></tr></table></figure>
-<p>要想将cluster2从主集群中移除，可以执行 kubefedctl unjoin kind-cluster2 –cluster-context kind-cluster2 –host-cluster-context kind-cluster1 –v&#x3D;2</p>
-<h1 id="应用发布"><a href="#应用发布" class="headerlink" title="应用发布"></a>应用发布</h1><h2 id="集群联邦API"><a href="#集群联邦API" class="headerlink" title="集群联邦API"></a>集群联邦API</h2><p>kubefed将资源分为普通k8s资源类型和联邦的资源类型。在默认的场景下，kubefed已经内置将很多资源类型做了集群联邦。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> k get FederatedTypeConfig <span class="literal">-n</span> kube<span class="literal">-federation-system</span></span><br><span class="line">NAME                                            AGE</span><br><span class="line">clusterrolebindings.rbac.authorization.k8s.io   <span class="number">19</span><span class="built_in">h</span></span><br><span class="line">clusterroles.rbac.authorization.k8s.io          <span class="number">19</span><span class="built_in">h</span></span><br><span class="line">configmaps                                      <span class="number">19</span><span class="built_in">h</span></span><br><span class="line">deployments.apps                                <span class="number">19</span><span class="built_in">h</span></span><br><span class="line">ingresses.extensions                            <span class="number">19</span><span class="built_in">h</span></span><br><span class="line">jobs.batch                                      <span class="number">19</span><span class="built_in">h</span></span><br><span class="line">namespaces                                      <span class="number">19</span><span class="built_in">h</span></span><br><span class="line">replicasets.apps                                <span class="number">19</span><span class="built_in">h</span></span><br><span class="line">secrets                                         <span class="number">19</span><span class="built_in">h</span></span><br><span class="line">serviceaccounts                                 <span class="number">19</span><span class="built_in">h</span></span><br><span class="line">services                                        <span class="number">19</span><span class="built_in">h</span></span><br></pre></td></tr></table></figure>
-<p>将crd资源类型集群联邦，执行 kubefedctl enable 命令</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> kubefedctl enable customresourcedefinitions</span><br><span class="line">I1224 <span class="number">20</span>:<span class="number">32</span>:<span class="number">54.537112</span>  <span class="number">687543</span> util.go:<span class="number">141</span>] Api resource found.</span><br><span class="line">customresourcedefinition.apiextensions.k8s.io/federatedcustomresourcedefinitions.types.kubefed.io created</span><br><span class="line">federatedtypeconfig.core.kubefed.io/customresourcedefinitions.apiextensions.k8s.io created <span class="keyword">in</span> namespace kube<span class="literal">-federation-system</span></span><br></pre></td></tr></table></figure>
-<p>可以看到会多出一个名字为federatedcustomresourcedefinitions.types.kubefed.io 的CRD 资源，同时会新创建一个FederatedTypeConfig类型的资源。当创建了FederatedTypeConfig后，就可以通过创建federatedcustomresourcedefinition类型的实例来向各个子集群发布CRD资源了。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> k get crd federatedcustomresourcedefinitions.types.kubefed.io</span><br><span class="line">NAME                                                  CREATED AT</span><br><span class="line">federatedcustomresourcedefinitions.types.kubefed.io   <span class="number">2021</span><span class="literal">-12-24T12</span>:<span class="number">32</span>:<span class="number">54</span>Z</span><br><span class="line"></span><br><span class="line"><span class="variable">$</span> k get FederatedTypeConfig <span class="literal">-n</span> kube<span class="literal">-federation-system</span> customresourcedefinitions.apiextensions.k8s.io <span class="literal">-o</span> yaml</span><br><span class="line">apiVersion: core.kubefed.io/v1beta1</span><br><span class="line">kind: FederatedTypeConfig</span><br><span class="line">metadata:</span><br><span class="line">  finalizers:</span><br><span class="line">  - core.kubefed.io/federated<span class="literal">-type-config</span></span><br><span class="line">  name: customresourcedefinitions.apiextensions.k8s.io</span><br><span class="line">  namespace: kube<span class="literal">-federation-system</span></span><br><span class="line">spec:</span><br><span class="line">  federatedType:</span><br><span class="line">    <span class="built_in">group</span>: types.kubefed.io</span><br><span class="line">    kind: FederatedCustomResourceDefinition</span><br><span class="line">    pluralName: federatedcustomresourcedefinitions</span><br><span class="line">    scope: Cluster</span><br><span class="line">    version: v1beta1</span><br><span class="line">  propagation: Enabled</span><br><span class="line">  targetType:</span><br><span class="line">    <span class="built_in">group</span>: apiextensions.k8s.io</span><br><span class="line">    kind: CustomResourceDefinition</span><br><span class="line">    pluralName: customresourcedefinitions</span><br><span class="line">    scope: Cluster</span><br><span class="line">    version: v1</span><br><span class="line">status:</span><br><span class="line">  observedGeneration: <span class="number">1</span></span><br><span class="line">  propagationController: Running</span><br><span class="line">  statusController: NotRunning</span><br></pre></td></tr></table></figure>
-<p>在example&#x2F;sample1下包含了很多例子，可以直接参考。接下来使用sample1中的例子进行试验。<br>​</p>
-<p>在父集群创建namespace test-namespace</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> kubectl create <span class="operator">-f</span> namespace.yaml</span><br><span class="line">namespace/<span class="built_in">test-namespace</span> created</span><br></pre></td></tr></table></figure>
-<p>在主集群中创建federatednamespace资源</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> k apply <span class="operator">-f</span> federatednamespace.yaml</span><br><span class="line">federatednamespace.types.kubefed.io/<span class="built_in">test-namespace</span> created</span><br></pre></td></tr></table></figure>
-<p>在子集群中即可查询到新创建的namespace资源</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> k get ns <span class="built_in">test-namespace</span></span><br><span class="line">NAME             STATUS   AGE</span><br><span class="line"><span class="built_in">test-namespace</span>   Active   <span class="number">4</span>m49s</span><br></pre></td></tr></table></figure>
-<p>其他的对象均可以按照跟上述namespace同样的方式来创建，比较特殊的对象为clusterrulebinding，该对象在默认情况下没有联邦api FederatedClusterRoleBinding，因此需要手工先创建FederatedClusterRoleBinding联邦api类型。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> kubefedctl enable clusterrolebinding</span><br><span class="line">I1225 <span class="number">01</span>:<span class="number">46</span>:<span class="number">42.779166</span>  <span class="number">818254</span> util.go:<span class="number">141</span>] Api resource found.</span><br><span class="line">customresourcedefinition.apiextensions.k8s.io/federatedclusterrolebindings.types.kubefed.io created</span><br><span class="line">federatedtypeconfig.core.kubefed.io/clusterrolebindings.rbac.authorization.k8s.io created <span class="keyword">in</span> namespace kube<span class="literal">-federation-system</span></span><br></pre></td></tr></table></figure>
-<p>在创建完成FederatedClusterRoleBinding联邦api类型后，即可以创建出FederatedClusterRoleBinding类型的对象。</p>
-<h2 id="子集群的个性化配置"><a href="#子集群的个性化配置" class="headerlink" title="子集群的个性化配置"></a>子集群的个性化配置</h2><p>通过Fedrated<Kind>中的spec.overrides来完成，可以覆盖spec.template中的内容</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: types.kubefed.io/v1beta1</span><br><span class="line">kind: FederatedDeployment</span><br><span class="line">metadata:</span><br><span class="line">  name: <span class="built_in">test-deployment</span></span><br><span class="line">  namespace: <span class="built_in">test-namespace</span></span><br><span class="line">spec:</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: nginx</span><br><span class="line">    spec:</span><br><span class="line">      replicas: <span class="number">3</span></span><br><span class="line">      selector:</span><br><span class="line">        matchLabels:</span><br><span class="line">          app: nginx</span><br><span class="line">      template:</span><br><span class="line">        metadata:</span><br><span class="line">          labels:</span><br><span class="line">            app: nginx</span><br><span class="line">        spec:</span><br><span class="line">          containers:</span><br><span class="line">          - image: nginx</span><br><span class="line">            name: nginx</span><br><span class="line">  placement:</span><br><span class="line">    clusters:</span><br><span class="line">    - name: cluster2</span><br><span class="line">    - name: cluster1</span><br><span class="line">  overrides:</span><br><span class="line">  - clusterName: cluster2</span><br><span class="line">    clusterOverrides:</span><br><span class="line">    - path: <span class="string">&quot;/spec/replicas&quot;</span></span><br><span class="line">      value: <span class="number">5</span></span><br><span class="line">    - path: <span class="string">&quot;/spec/template/spec/containers/0/image&quot;</span></span><br><span class="line">      value: <span class="string">&quot;nginx:1.17.0-alpine&quot;</span></span><br><span class="line">    - path: <span class="string">&quot;/metadata/annotations&quot;</span></span><br><span class="line">      op: <span class="string">&quot;add&quot;</span></span><br><span class="line">      value:</span><br><span class="line">        foo: bar</span><br><span class="line">    - path: <span class="string">&quot;/metadata/annotations/foo&quot;</span></span><br><span class="line">      op: <span class="string">&quot;remove&quot;</span></span><br></pre></td></tr></table></figure>
-
-<h2 id="多集群应用调度"><a href="#多集群应用调度" class="headerlink" title="多集群应用调度"></a>多集群应用调度</h2><h3 id="发布应用到特定的子集群"><a href="#发布应用到特定的子集群" class="headerlink" title="发布应用到特定的子集群"></a>发布应用到特定的子集群</h3><p>在Fedrated<Kind>的spec.placement.clusters中，定义了要发布到哪个子集群的信息。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">placement:</span><br><span class="line">    clusters:</span><br><span class="line">    - name: cluster2</span><br><span class="line">    - name: cluster1</span><br></pre></td></tr></table></figure>
-<p>不过上述方法需要指定特定的集群，为了有更丰富的灵活性，kubefed还提供了label selector的机制，可以提供spec.placement.clusterSelector来指定一组集群。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">spec:</span><br><span class="line">  placement:</span><br><span class="line">    clusters: []</span><br><span class="line">    clusterSelector:</span><br><span class="line">      matchLabels:</span><br><span class="line">        foo: bar</span><br></pre></td></tr></table></figure>
-<p>标签选择器通过跟kubefedclusters对象的label来进行匹配，可以执行下述命令给kubefedclusters来打标签。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl label kubefedclusters <span class="literal">-n</span> kube<span class="literal">-federation-system</span> kind<span class="literal">-cluster1</span> foo=bar</span><br></pre></td></tr></table></figure>
-
-<h3 id="子集群差异化调度"><a href="#子集群差异化调度" class="headerlink" title="子集群差异化调度"></a>子集群差异化调度</h3><p>上述调度功能被选择的子集群为平等关系，如果要想子集群能够有所差异，可以使用ReplicaSchedulingPreference来完成，目前仅支持deployment和replicaset两种类型的资源，还不支持statefulset。</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: scheduling.kubefed.io/v1alpha1</span><br><span class="line">kind: ReplicaSchedulingPreference</span><br><span class="line">metadata:</span><br><span class="line">  name: <span class="built_in">test-deployment</span></span><br><span class="line">  namespace: <span class="built_in">test-ns</span></span><br><span class="line">spec:</span><br><span class="line">  targetKind: FederatedDeployment</span><br><span class="line">  totalReplicas: <span class="number">9</span></span><br><span class="line">  clusters:</span><br><span class="line">    A:</span><br><span class="line">      minReplicas: <span class="number">4</span></span><br><span class="line">      maxReplicas: <span class="number">6</span></span><br><span class="line">      weight: <span class="number">1</span></span><br><span class="line">    B:</span><br><span class="line">      minReplicas: <span class="number">4</span></span><br><span class="line">      maxReplicas: <span class="number">8</span></span><br><span class="line">      weight: <span class="number">2</span></span><br></pre></td></tr></table></figure>
-<p>spec.targetKind用来指定管理的类型，仅支持FederatedDeployment和FederatedReplicaset。<br>spec.totalReplicas用来指定所有子集群的副本数总和。优先级要高于FederatedDeployment和FederatedReplicaset的spec.template中指定的副本数。<br>spec.clusters用来指定每个子集群的最大、最小副本数和权重。<br>spec.rebalance自动调整整个集群中的副本数，比如一个集群中的pod挂掉后，可以将pod迁移到另外的集群中。</p>
-<h1 id="子集群之间的交互"><a href="#子集群之间的交互" class="headerlink" title="子集群之间的交互"></a>子集群之间的交互</h1><p>无</p>
-<h1 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h1><ol>
-<li>父集群充当了所有集群的单一控制面</li>
-<li>通过联邦CRD来管理资源，无法直接使用k8s原生的资源，集群间维护CRD版本和API版本一致性导致升级比较复杂。</li>
-</ol>
-<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
-<li>官方文档：<a target="_blank" rel="noopener" href="https://github.com/kubernetes-sigs/kubefed/blob/master/docs/userguide.md#using-cluster-selector">https://github.com/kubernetes-sigs/kubefed/blob/master/docs/userguide.md#using-cluster-selector</a></li>
-</ul>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-          <div class="post-tags">
-              <a href="/tags/%E5%A4%9A%E9%9B%86%E7%BE%A4/" rel="tag"># 多集群</a>
-          </div>
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/post/certificate/" rel="prev" title="证书技术">
-                  <i class="fa fa-angle-left"></i> 证书技术
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/post/k8s-dual-stack/" rel="next" title="k8s ipv4/ipv6双栈">
-                  k8s ipv4/ipv6双栈 <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    
-  
-  <div class="comments giscus-container">
-  </div>
-  
-  
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder"></span>
-  </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-
-
-  
-
-
-
-
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
-
-<script>
-document.addEventListener('page:loaded', () => {
-  if (!CONFIG.page.comments) return;
-
-  NexT.utils.loadComments('.giscus-container')
-    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
-      attributes: {
-        async                   : true,
-        crossOrigin             : 'anonymous',
-        'data-repo'             : CONFIG.giscus.repo,
-        'data-repo-id'          : CONFIG.giscus.repo_id,
-        'data-category'         : CONFIG.giscus.category,
-        'data-category-id'      : CONFIG.giscus.category_id,
-        'data-mapping'          : CONFIG.giscus.mapping,
-        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
-        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
-        'data-theme'            : CONFIG.giscus.theme,
-        'data-lang'             : CONFIG.giscus.lang,
-        'data-input-position'   : CONFIG.giscus.input_position,
-        'data-loading'          : CONFIG.giscus.loading
-      },
-      parentNode: document.querySelector('.giscus-container')
-    }));
-});
-</script>
-
-</body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="背景 Federation V1 Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s v1.11 左右正式被弃用。\n"><title>k8s多集群管理方案 - KubeFed V2</title><link rel=canonical href=https://kuring.me/post/kubefedv2/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="k8s多集群管理方案 - KubeFed V2"><meta property='og:description' content="背景 Federation V1 Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s v1.11 左右正式被弃用。\n"><meta property='og:url' content='https://kuring.me/post/kubefedv2/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='多集群'><meta property='article:published_time' content='2022-01-09T11:33:15+00:00'><meta property='article:modified_time' content='2022-01-09T11:33:15+00:00'><meta name=twitter:title content="k8s多集群管理方案 - KubeFed V2"><meta name=twitter:description content="背景 Federation V1 Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s v1.11 左右正式被弃用。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#federation-v1>Federation V1</a></li><li><a href=#federation-v2架构>Federation V2架构</a></li><li><a href=#术语>术语</a></li></ol><ol><li><a href=#kubefedcluster>KubeFedCluster</a></li><li><a href=#fedrated>Fedrated</a></li><li><a href=#federatedtypeconfig>FederatedTypeConfig</a></li><li><a href=#replicaschedulingpreference>ReplicaSchedulingPreference</a></li></ol><ol><li><a href=#集群联邦api>集群联邦API</a></li><li><a href=#子集群的个性化配置>子集群的个性化配置</a></li><li><a href=#多集群应用调度>多集群应用调度</a><ol><li><a href=#发布应用到特定的子集群>发布应用到特定的子集群</a></li><li><a href=#子集群差异化调度>子集群差异化调度</a></li></ol></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/kubefedv2/>k8s多集群管理方案 - KubeFed V2</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2022-01-09T11:33:15Z>2022-01-09</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 7 分钟</time></div></footer></div></header><section class=article-content><h1 id=背景>背景</h1><h2 id=federation-v1>Federation V1</h2><p>Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s v1.11 左右正式被弃用。</p><h2 id=federation-v2架构>Federation V2架构</h2><p>v2 版本利用 CRD 实现了整体功能，通过定义多种自定义资源（CR），从而省掉了 v1 中的 API Server；v2 版本由两个组件构成：</p><ul><li>admission-webhook 提供了准入控制</li><li>controller-manager 处理自定义资源以及协调不同集群间的状态</li></ul><p><img src=https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-1.png loading=lazy alt=image>
+<img src=https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-2.png loading=lazy alt=image></p><p>代码行数在2万行左右。</p><h2 id=术语>术语</h2><ul><li>Host Cluster：主集群/父集群</li><li>Member Cluster：子集群/成员集群</li></ul><h1 id=crd扩展>CRD扩展</h1><h2 id=kubefedcluster>KubeFedCluster</h2><p>子集群抽象，通过kubefedctl join命令创建。后续controller会使用该信息来访问子k8s集群。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>KubeFedCluster</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=nb>kind-cluster1</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=nb>kube-federation</span><span class=n>-system</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>apiEndpoint</span><span class=err>:</span> <span class=n>https</span><span class=err>:</span><span class=p>//</span><span class=mf>172.21</span><span class=p>.</span><span class=py>115</span><span class=p>.</span><span class=mf>165</span><span class=err>:</span><span class=mf>6443</span>
+</span></span><span class=line><span class=cl>  <span class=n>caBundle</span><span class=err>:</span> <span class=n>LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXlOREUyTlRNME9Wb1hEVE14TVRJeU1qRTJOVE0wT1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTmxjCnF3UHd5cHNFc2M0aXB3QnFuRndDN044RXo2Slhqajh3ZzRybnlXTDNSdlZ0cmVua1Nha1VyYlRjZWVIck9lQTUKWGlNUVo2T1FBY25tUGU0Q2NWSkFoL2ZLQzBkeU9uL0ZZeXgyQXppRjBCK1ZNaUFhK2dvME1VMmhMZ1R5eVFGdQpDbWFmUGtsNmJxZUFJNCtCajZJUWRqY3dVMHBjY3lrNGhSTUxnQmhnTUh4NWkzVkpQckQ2Y284dHcwVnllWncyCkdDUlh2ZzlSd0QweUs5eitOVS9LVS83QjBiMTBvekpNRlVJMktPZmI4N1RkQ0h2NmlBdlVRYVdKc1BqQ0M3MzQKcnBma1ZGZXB2S2liKy9lUVBFaDE4VE5qaitveEVGMnl0Vmo2ZWVKeFc3VVZrbit0T3BxdGpEeUtKVDllNnlwdAp6U1VDTnRZWTAzckdhNTlLczBVQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZOTnRQU3hsMlMxUldOb1BCeXNIcHFoRXJONlVNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFDME0vaktCL2dqcWRSNlRLNXJQVktSSFU2cy8xTTh2eTY2WFBiVEx4M0srazdicUFWdAoxVUFzcUZDZmNrVk91WHY3eFQ0ZHIzVzdtMHE1bDYzRGg3ZDJRZDNiQ00zY2FuclpNd01OM0lSMlpmYzR0VlBGCnRTMFFONElTa0hsYnBudXQxb0F3cy9CaXNwaXNRQ0VtbHF3Zy9xbmdPMStlWWRoWm5vRW40SEFDamF4Slc5MS8KNXlOR1pKRXdia2dYQTVCbSs3VEZRL2FiYnp5a1JvOWtTMnl5c29pMnVzcUg0ZnlVS0ZWK2RETnp3Ujh0ck16cgpjWkRBNHpaVFB1WGlYRkVsWlNRa2NJSGIyV0VsYmZNRGpKNjlyVG5wakJCOWNPQ25jaHVmK0xiOXQwN1lJQ01wCmNlK0prNVp2RElRUFlKK3hTeGdRaVJxMTFraWlKcFE4Wm1FWgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg</span><span class=p>==</span>
+</span></span><span class=line><span class=cl>  <span class=n>proxyURL</span><span class=err>:</span> <span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>secretRef</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>name</span><span class=err>:</span> <span class=nb>kind-cluster1</span><span class=n>-dbxns</span>
+</span></span><span class=line><span class=cl><span class=n>status</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>conditions</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>lastProbeTime</span><span class=err>:</span> <span class=s2>&#34;2021-12-24T17:00:47Z&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>lastTransitionTime</span><span class=err>:</span> <span class=s2>&#34;2021-12-24T17:00:07Z&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>message</span><span class=err>:</span> <span class=p>/</span><span class=n>healthz</span> <span class=n>responded</span> <span class=n>with</span> <span class=n>ok</span>
+</span></span><span class=line><span class=cl>    <span class=n>reason</span><span class=err>:</span> <span class=n>ClusterReady</span>
+</span></span><span class=line><span class=cl>    <span class=n>status</span><span class=err>:</span> <span class=s2>&#34;True&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>type</span><span class=err>:</span> <span class=n>Ready</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=fedrated>Fedrated<kind></h2><p>发布应用到子集群时手工创建。每一个要被联邦管理的资源都会对应一个Fedrated<kind>类型的资源，比如ConfigMap对应的是FederatedConfigMap。FederatedConfigMap包含了三部分的信息：</p><ul><li>template：联邦的资源详细spec信息，需要特别注意的是并没有包含metadata部分的信息。</li><li>placement：template中的spec信息要部署的k8s子集群信息</li><li>overrides：允许对部分k8s的部分资源进行自定义修改</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>types</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1beta1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>FederatedConfigMap</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=nb>test-configmap</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=nb>test-namespace</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>template</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>data</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>      <span class=n>A:</span> <span class=n>ala</span> <span class=n>ma</span> <span class=n>kota</span>
+</span></span><span class=line><span class=cl>  <span class=n>placement</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>name</span><span class=err>:</span> <span class=n>cluster2</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>name</span><span class=err>:</span> <span class=n>cluster1</span>
+</span></span><span class=line><span class=cl>  <span class=n>overrides</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>clusterName</span><span class=err>:</span> <span class=n>cluster2</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusterOverrides</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>path</span><span class=err>:</span> <span class=p>/</span><span class=n>data</span>
+</span></span><span class=line><span class=cl>      <span class=n>value</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>foo</span><span class=err>:</span> <span class=n>bar</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=federatedtypeconfig>FederatedTypeConfig</h2><p>通过kubefedctl enable <target api type>创建。定义了哪些k8s api资源需要联邦，下面的例子描述了k8s ConfigMap要被联邦资源FederatedConfigMap所管理。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>core</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1beta1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>FederatedTypeConfig</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>annotations</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>meta</span><span class=p>.</span><span class=py>helm</span><span class=p>.</span><span class=n>sh</span><span class=p>/</span><span class=nb>release-name</span><span class=err>:</span> <span class=n>kubefed</span>
+</span></span><span class=line><span class=cl>    <span class=n>meta</span><span class=p>.</span><span class=py>helm</span><span class=p>.</span><span class=n>sh</span><span class=p>/</span><span class=nb>release-namespace</span><span class=err>:</span> <span class=nb>kube-federation</span><span class=n>-system</span>
+</span></span><span class=line><span class=cl>  <span class=n>finalizers</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>core</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>federated-type</span><span class=n>-config</span>
+</span></span><span class=line><span class=cl>  <span class=n>labels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>app</span><span class=p>.</span><span class=py>kubernetes</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>managed-by</span><span class=err>:</span> <span class=n>Helm</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=n>configmaps</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=nb>kube-federation</span><span class=n>-system</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>federatedType</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>group</span><span class=err>:</span> <span class=n>types</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=py>io</span>
+</span></span><span class=line><span class=cl>    <span class=n>kind</span><span class=err>:</span> <span class=n>FederatedConfigMap</span>
+</span></span><span class=line><span class=cl>    <span class=n>pluralName</span><span class=err>:</span> <span class=n>federatedconfigmaps</span>
+</span></span><span class=line><span class=cl>    <span class=n>scope</span><span class=err>:</span> <span class=n>Namespaced</span>
+</span></span><span class=line><span class=cl>    <span class=n>version</span><span class=err>:</span> <span class=n>v1beta1</span>
+</span></span><span class=line><span class=cl>  <span class=n>propagation</span><span class=err>:</span> <span class=n>Enabled</span> <span class=c># 是否启用该联邦对象</span>
+</span></span><span class=line><span class=cl>  <span class=n>targetType</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>kind</span><span class=err>:</span> <span class=n>ConfigMap</span>
+</span></span><span class=line><span class=cl>    <span class=n>pluralName</span><span class=err>:</span> <span class=n>configmaps</span>
+</span></span><span class=line><span class=cl>    <span class=n>scope</span><span class=err>:</span> <span class=n>Namespaced</span>
+</span></span><span class=line><span class=cl>    <span class=n>version</span><span class=err>:</span> <span class=n>v1</span>
+</span></span><span class=line><span class=cl><span class=n>status</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>observedGeneration</span><span class=err>:</span> <span class=mf>1</span>
+</span></span><span class=line><span class=cl>  <span class=n>propagationController</span><span class=err>:</span> <span class=n>Running</span>
+</span></span><span class=line><span class=cl>  <span class=n>statusController</span><span class=err>:</span> <span class=n>NotRunning</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=replicaschedulingpreference>ReplicaSchedulingPreference</h2><p>用来管理相同名字的FederatedDeployment或FederatedReplicaset资源，保证所有子集群的副本数为spec.totalReplicas。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>scheduling</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1alpha1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>ReplicaSchedulingPreference</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=nb>test-deployment</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=nb>test-ns</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>targetKind</span><span class=err>:</span> <span class=n>FederatedDeployment</span>
+</span></span><span class=line><span class=cl>  <span class=n>totalReplicas</span><span class=err>:</span> <span class=mf>9</span>
+</span></span><span class=line><span class=cl>  <span class=n>clusters</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>A:</span>
+</span></span><span class=line><span class=cl>      <span class=n>minReplicas</span><span class=err>:</span> <span class=mf>4</span>
+</span></span><span class=line><span class=cl>      <span class=n>maxReplicas</span><span class=err>:</span> <span class=mf>6</span>
+</span></span><span class=line><span class=cl>      <span class=n>weight</span><span class=err>:</span> <span class=mf>1</span>
+</span></span><span class=line><span class=cl>    <span class=n>B:</span>
+</span></span><span class=line><span class=cl>      <span class=n>minReplicas</span><span class=err>:</span> <span class=mf>4</span>
+</span></span><span class=line><span class=cl>      <span class=n>maxReplicas</span><span class=err>:</span> <span class=mf>8</span>
+</span></span><span class=line><span class=cl>      <span class=n>weight</span><span class=err>:</span> <span class=mf>2</span>
+</span></span></code></pre></td></tr></table></div></div><h1 id=安装>安装</h1><p>使用kind来在本机创建多个k8s集群的方式测试。通过kind创建两个k8s集群 kind-cluster1和kind-cluster2。
+​</p><p>安装kubefedctl</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=nb>wget </span><span class=n>https</span><span class=err>:</span><span class=p>//</span><span class=n>github</span><span class=p>.</span><span class=n>com</span><span class=p>/</span><span class=nb>kubernetes-sigs</span><span class=p>/</span><span class=n>kubefed</span><span class=p>/</span><span class=n>releases</span><span class=p>/</span><span class=n>download</span><span class=p>/</span><span class=n>v0</span><span class=p>.</span><span class=py>9</span><span class=p>.</span><span class=mf>0</span><span class=p>/</span><span class=n>kubefedctl</span><span class=p>-</span><span class=mf>0.9</span><span class=p>.</span><span class=mf>0</span><span class=n>-linux-amd64</span><span class=p>.</span><span class=py>tgz</span>
+</span></span><span class=line><span class=cl><span class=n>tar</span> <span class=n>zvxf</span> <span class=n>kubefedctl</span><span class=p>-</span><span class=mf>0.9</span><span class=p>.</span><span class=mf>0</span><span class=n>-linux-amd64</span><span class=p>.</span><span class=py>tgz</span>
+</span></span><span class=line><span class=cl><span class=n>chmod</span> <span class=n>u</span><span class=p>+</span><span class=n>x</span> <span class=n>kubefedctl</span>
+</span></span><span class=line><span class=cl><span class=nb>mv </span><span class=n>kubefedctl</span> <span class=p>/</span><span class=n>usr</span><span class=p>/</span><span class=n>local</span><span class=p>/</span><span class=n>bin</span><span class=p>/</span>
+</span></span></code></pre></td></tr></table></div></div><p>在第一个集群安装KubeFed，在第一个集群执行如下的命令</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>$</span> <span class=n>helm</span> <span class=n>repo</span> <span class=n>add</span> <span class=nb>kubefed-charts</span> <span class=n>https</span><span class=err>:</span><span class=p>//</span><span class=n>raw</span><span class=p>.</span><span class=py>githubusercontent</span><span class=p>.</span><span class=n>com</span><span class=p>/</span><span class=nb>kubernetes-sigs</span><span class=p>/</span><span class=n>kubefed</span><span class=p>/</span><span class=n>master</span><span class=p>/</span><span class=n>charts</span>
+</span></span><span class=line><span class=cl><span class=p>$</span> <span class=n>helm</span> <span class=n>repo</span> <span class=n>list</span>
+</span></span><span class=line><span class=cl><span class=p>$</span> <span class=n>helm</span> <span class=p>-</span><span class=n>-namespace</span> <span class=nb>kube-federation</span><span class=n>-system</span> <span class=n>upgrade</span> <span class=n>-i</span> <span class=n>kubefed</span> <span class=nb>kubefed-charts</span><span class=p>/</span><span class=n>kubefed</span> <span class=p>-</span><span class=n>-version</span><span class=p>=</span><span class=mf>0.9</span><span class=p>.</span><span class=py>0</span> <span class=p>-</span><span class=n>-create-namespace</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># 会安装如下两个deployment，其中一个是controller，另外一个是webhook</span>
+</span></span><span class=line><span class=cl><span class=p>$</span> <span class=n>kubectl</span>  <span class=n>get</span> <span class=n>deploy</span> <span class=n>-n</span> <span class=nb>kube-federation</span><span class=n>-system</span>
+</span></span><span class=line><span class=cl><span class=n>NAME</span>                         <span class=n>READY</span>   <span class=nb>UP-TO</span><span class=n>-DATE</span>   <span class=n>AVAILABLE</span>   <span class=n>AGE</span>
+</span></span><span class=line><span class=cl><span class=nb>kubefed-admission</span><span class=n>-webhook</span>    <span class=mf>1</span><span class=p>/</span><span class=mf>1</span>     <span class=mf>1</span>            <span class=mf>1</span>           <span class=n>7m40s</span>
+</span></span><span class=line><span class=cl><span class=nb>kubefed-controller</span><span class=n>-manager</span>   <span class=mf>2</span><span class=p>/</span><span class=mf>2</span>     <span class=mf>2</span>            <span class=mf>2</span>           <span class=n>7m40s</span>
+</span></span></code></pre></td></tr></table></div></div><h1 id=子集群注册>子集群注册</h1><p>将cluster1和cluster2集群加入到cluster1中</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>kubefedctl</span> <span class=n>join</span> <span class=nb>kind-cluster1</span> <span class=p>-</span><span class=n>-cluster-context</span> <span class=nb>kind-cluster1</span> <span class=p>-</span><span class=n>-host-cluster-context</span> <span class=nb>kind-cluster1</span> <span class=p>-</span><span class=n>-v</span><span class=p>=</span><span class=mf>2</span>
+</span></span><span class=line><span class=cl><span class=n>kubefedctl</span> <span class=n>join</span> <span class=nb>kind-cluster2</span> <span class=p>-</span><span class=n>-cluster-context</span> <span class=nb>kind-cluster2</span> <span class=p>-</span><span class=n>-host-cluster-context</span> <span class=nb>kind-cluster1</span> <span class=p>-</span><span class=n>-v</span><span class=p>=</span><span class=mf>2</span>
+</span></span></code></pre></td></tr></table></div></div><p>在第一个集群可以看到在kube-federation-system中创建出了两个新的kubefedcluster对象</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>$</span> <span class=n>kubectl</span> <span class=n>-n</span> <span class=nb>kube-federation</span><span class=n>-system</span> <span class=n>get</span> <span class=n>kubefedcluster</span>
+</span></span><span class=line><span class=cl><span class=n>NAME</span>            <span class=n>AGE</span>   <span class=n>READY</span>
+</span></span><span class=line><span class=cl><span class=nb>kind-cluster1</span>   <span class=n>17s</span>   <span class=n>True</span>
+</span></span><span class=line><span class=cl><span class=nb>kind-cluster2</span>   <span class=n>16s</span>   <span class=n>True</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>$</span> <span class=n>apiVersion</span><span class=err>:</span> <span class=n>core</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1beta1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>KubeFedCluster</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=nb>kind-cluster1</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=nb>kube-federation</span><span class=n>-system</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>apiEndpoint</span><span class=err>:</span> <span class=n>https</span><span class=err>:</span><span class=p>//</span><span class=mf>172.21</span><span class=p>.</span><span class=py>115</span><span class=p>.</span><span class=mf>165</span><span class=err>:</span><span class=mf>6443</span>
+</span></span><span class=line><span class=cl>  <span class=n>caBundle</span><span class=err>:</span> <span class=n>LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXlOREUyTlRNME9Wb1hEVE14TVRJeU1qRTJOVE0wT1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTmxjCnF3UHd5cHNFc2M0aXB3QnFuRndDN044RXo2Slhqajh3ZzRybnlXTDNSdlZ0cmVua1Nha1VyYlRjZWVIck9lQTUKWGlNUVo2T1FBY25tUGU0Q2NWSkFoL2ZLQzBkeU9uL0ZZeXgyQXppRjBCK1ZNaUFhK2dvME1VMmhMZ1R5eVFGdQpDbWFmUGtsNmJxZUFJNCtCajZJUWRqY3dVMHBjY3lrNGhSTUxnQmhnTUh4NWkzVkpQckQ2Y284dHcwVnllWncyCkdDUlh2ZzlSd0QweUs5eitOVS9LVS83QjBiMTBvekpNRlVJMktPZmI4N1RkQ0h2NmlBdlVRYVdKc1BqQ0M3MzQKcnBma1ZGZXB2S2liKy9lUVBFaDE4VE5qaitveEVGMnl0Vmo2ZWVKeFc3VVZrbit0T3BxdGpEeUtKVDllNnlwdAp6U1VDTnRZWTAzckdhNTlLczBVQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZOTnRQU3hsMlMxUldOb1BCeXNIcHFoRXJONlVNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFDME0vaktCL2dqcWRSNlRLNXJQVktSSFU2cy8xTTh2eTY2WFBiVEx4M0srazdicUFWdAoxVUFzcUZDZmNrVk91WHY3eFQ0ZHIzVzdtMHE1bDYzRGg3ZDJRZDNiQ00zY2FuclpNd01OM0lSMlpmYzR0VlBGCnRTMFFONElTa0hsYnBudXQxb0F3cy9CaXNwaXNRQ0VtbHF3Zy9xbmdPMStlWWRoWm5vRW40SEFDamF4Slc5MS8KNXlOR1pKRXdia2dYQTVCbSs3VEZRL2FiYnp5a1JvOWtTMnl5c29pMnVzcUg0ZnlVS0ZWK2RETnp3Ujh0ck16cgpjWkRBNHpaVFB1WGlYRkVsWlNRa2NJSGIyV0VsYmZNRGpKNjlyVG5wakJCOWNPQ25jaHVmK0xiOXQwN1lJQ01wCmNlK0prNVp2RElRUFlKK3hTeGdRaVJxMTFraWlKcFE4Wm1FWgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg</span><span class=p>==</span>
+</span></span><span class=line><span class=cl>  <span class=n>proxyURL</span><span class=err>:</span> <span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>secretRef</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>name</span><span class=err>:</span> <span class=nb>kind-cluster1</span><span class=n>-dbxns</span>
+</span></span><span class=line><span class=cl><span class=n>status</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>conditions</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>lastProbeTime</span><span class=err>:</span> <span class=s2>&#34;2021-12-24T17:00:47Z&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>lastTransitionTime</span><span class=err>:</span> <span class=s2>&#34;2021-12-24T17:00:07Z&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>message</span><span class=err>:</span> <span class=p>/</span><span class=n>healthz</span> <span class=n>responded</span> <span class=n>with</span> <span class=n>ok</span>
+</span></span><span class=line><span class=cl>    <span class=n>reason</span><span class=err>:</span> <span class=n>ClusterReady</span>
+</span></span><span class=line><span class=cl>    <span class=n>status</span><span class=err>:</span> <span class=s2>&#34;True&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>type</span><span class=err>:</span> <span class=n>Ready</span>
+</span></span></code></pre></td></tr></table></div></div><p>要想将cluster2从主集群中移除，可以执行 kubefedctl unjoin kind-cluster2 &ndash;cluster-context kind-cluster2 &ndash;host-cluster-context kind-cluster1 &ndash;v=2</p><h1 id=应用发布>应用发布</h1><h2 id=集群联邦api>集群联邦API</h2><p>kubefed将资源分为普通k8s资源类型和联邦的资源类型。在默认的场景下，kubefed已经内置将很多资源类型做了集群联邦。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>$</span> <span class=n>k</span> <span class=n>get</span> <span class=n>FederatedTypeConfig</span> <span class=n>-n</span> <span class=nb>kube-federation</span><span class=n>-system</span>
+</span></span><span class=line><span class=cl><span class=n>NAME</span>                                            <span class=n>AGE</span>
+</span></span><span class=line><span class=cl><span class=n>clusterrolebindings</span><span class=p>.</span><span class=py>rbac</span><span class=p>.</span><span class=py>authorization</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=py>io</span>   <span class=n>19h</span>
+</span></span><span class=line><span class=cl><span class=n>clusterroles</span><span class=p>.</span><span class=py>rbac</span><span class=p>.</span><span class=py>authorization</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=py>io</span>          <span class=n>19h</span>
+</span></span><span class=line><span class=cl><span class=n>configmaps</span>                                      <span class=n>19h</span>
+</span></span><span class=line><span class=cl><span class=n>deployments</span><span class=p>.</span><span class=py>apps</span>                                <span class=n>19h</span>
+</span></span><span class=line><span class=cl><span class=n>ingresses</span><span class=p>.</span><span class=py>extensions</span>                            <span class=n>19h</span>
+</span></span><span class=line><span class=cl><span class=n>jobs</span><span class=p>.</span><span class=py>batch</span>                                      <span class=n>19h</span>
+</span></span><span class=line><span class=cl><span class=n>namespaces</span>                                      <span class=n>19h</span>
+</span></span><span class=line><span class=cl><span class=n>replicasets</span><span class=p>.</span><span class=py>apps</span>                                <span class=n>19h</span>
+</span></span><span class=line><span class=cl><span class=n>secrets</span>                                         <span class=n>19h</span>
+</span></span><span class=line><span class=cl><span class=n>serviceaccounts</span>                                 <span class=n>19h</span>
+</span></span><span class=line><span class=cl><span class=n>services</span>                                        <span class=n>19h</span>
+</span></span></code></pre></td></tr></table></div></div><p>将crd资源类型集群联邦，执行 kubefedctl enable 命令</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>$</span> <span class=n>kubefedctl</span> <span class=n>enable</span> <span class=n>customresourcedefinitions</span>
+</span></span><span class=line><span class=cl><span class=n>I1224</span> <span class=mf>20</span><span class=err>:</span><span class=mf>32</span><span class=err>:</span><span class=mf>54.537112</span>  <span class=mf>687543</span> <span class=n>util</span><span class=p>.</span><span class=n>go</span><span class=err>:</span><span class=mf>141</span><span class=p>]</span> <span class=n>Api</span> <span class=n>resource</span> <span class=n>found</span><span class=p>.</span>
+</span></span><span class=line><span class=cl><span class=n>customresourcedefinition</span><span class=p>.</span><span class=py>apiextensions</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>federatedcustomresourcedefinitions</span><span class=p>.</span><span class=py>types</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=py>io</span> <span class=n>created</span>
+</span></span><span class=line><span class=cl><span class=n>federatedtypeconfig</span><span class=p>.</span><span class=py>core</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>customresourcedefinitions</span><span class=p>.</span><span class=py>apiextensions</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=py>io</span> <span class=n>created</span> <span class=k>in</span> <span class=n>namespace</span> <span class=nb>kube-federation</span><span class=n>-system</span>
+</span></span></code></pre></td></tr></table></div></div><p>可以看到会多出一个名字为federatedcustomresourcedefinitions.types.kubefed.io 的CRD 资源，同时会新创建一个FederatedTypeConfig类型的资源。当创建了FederatedTypeConfig后，就可以通过创建federatedcustomresourcedefinition类型的实例来向各个子集群发布CRD资源了。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>$</span> <span class=n>k</span> <span class=n>get</span> <span class=n>crd</span> <span class=n>federatedcustomresourcedefinitions</span><span class=p>.</span><span class=py>types</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=py>io</span>
+</span></span><span class=line><span class=cl><span class=n>NAME</span>                                                  <span class=n>CREATED</span> <span class=n>AT</span>
+</span></span><span class=line><span class=cl><span class=n>federatedcustomresourcedefinitions</span><span class=p>.</span><span class=py>types</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=py>io</span>   <span class=mf>2021</span><span class=p>-</span><span class=mf>12</span><span class=p>-</span><span class=n>24T12</span><span class=err>:</span><span class=mf>32</span><span class=err>:</span><span class=n>54Z</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>$</span> <span class=n>k</span> <span class=n>get</span> <span class=n>FederatedTypeConfig</span> <span class=n>-n</span> <span class=nb>kube-federation</span><span class=n>-system</span> <span class=n>customresourcedefinitions</span><span class=p>.</span><span class=py>apiextensions</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=py>io</span> <span class=n>-o</span> <span class=n>yaml</span>
+</span></span><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>core</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1beta1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>FederatedTypeConfig</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>finalizers</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>core</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>federated-type</span><span class=n>-config</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=n>customresourcedefinitions</span><span class=p>.</span><span class=py>apiextensions</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=py>io</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=nb>kube-federation</span><span class=n>-system</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>federatedType</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>group</span><span class=err>:</span> <span class=n>types</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=py>io</span>
+</span></span><span class=line><span class=cl>    <span class=n>kind</span><span class=err>:</span> <span class=n>FederatedCustomResourceDefinition</span>
+</span></span><span class=line><span class=cl>    <span class=n>pluralName</span><span class=err>:</span> <span class=n>federatedcustomresourcedefinitions</span>
+</span></span><span class=line><span class=cl>    <span class=n>scope</span><span class=err>:</span> <span class=n>Cluster</span>
+</span></span><span class=line><span class=cl>    <span class=n>version</span><span class=err>:</span> <span class=n>v1beta1</span>
+</span></span><span class=line><span class=cl>  <span class=n>propagation</span><span class=err>:</span> <span class=n>Enabled</span>
+</span></span><span class=line><span class=cl>  <span class=n>targetType</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>group</span><span class=err>:</span> <span class=n>apiextensions</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=py>io</span>
+</span></span><span class=line><span class=cl>    <span class=n>kind</span><span class=err>:</span> <span class=n>CustomResourceDefinition</span>
+</span></span><span class=line><span class=cl>    <span class=n>pluralName</span><span class=err>:</span> <span class=n>customresourcedefinitions</span>
+</span></span><span class=line><span class=cl>    <span class=n>scope</span><span class=err>:</span> <span class=n>Cluster</span>
+</span></span><span class=line><span class=cl>    <span class=n>version</span><span class=err>:</span> <span class=n>v1</span>
+</span></span><span class=line><span class=cl><span class=n>status</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>observedGeneration</span><span class=err>:</span> <span class=mf>1</span>
+</span></span><span class=line><span class=cl>  <span class=n>propagationController</span><span class=err>:</span> <span class=n>Running</span>
+</span></span><span class=line><span class=cl>  <span class=n>statusController</span><span class=err>:</span> <span class=n>NotRunning</span>
+</span></span></code></pre></td></tr></table></div></div><p>在example/sample1下包含了很多例子，可以直接参考。接下来使用sample1中的例子进行试验。
+​</p><p>在父集群创建namespace test-namespace</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>$</span> <span class=n>kubectl</span> <span class=n>create</span> <span class=o>-f</span> <span class=n>namespace</span><span class=p>.</span><span class=py>yaml</span>
+</span></span><span class=line><span class=cl><span class=n>namespace</span><span class=p>/</span><span class=nb>test-namespace</span> <span class=n>created</span>
+</span></span></code></pre></td></tr></table></div></div><p>在主集群中创建federatednamespace资源</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>$</span> <span class=n>k</span> <span class=n>apply</span> <span class=o>-f</span> <span class=n>federatednamespace</span><span class=p>.</span><span class=py>yaml</span>
+</span></span><span class=line><span class=cl><span class=n>federatednamespace</span><span class=p>.</span><span class=py>types</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=nb>test-namespace</span> <span class=n>created</span>
+</span></span></code></pre></td></tr></table></div></div><p>在子集群中即可查询到新创建的namespace资源</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>$</span> <span class=n>k</span> <span class=n>get</span> <span class=n>ns</span> <span class=nb>test-namespace</span>
+</span></span><span class=line><span class=cl><span class=n>NAME</span>             <span class=n>STATUS</span>   <span class=n>AGE</span>
+</span></span><span class=line><span class=cl><span class=nb>test-namespace</span>   <span class=n>Active</span>   <span class=n>4m49s</span>
+</span></span></code></pre></td></tr></table></div></div><p>其他的对象均可以按照跟上述namespace同样的方式来创建，比较特殊的对象为clusterrulebinding，该对象在默认情况下没有联邦api FederatedClusterRoleBinding，因此需要手工先创建FederatedClusterRoleBinding联邦api类型。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>$</span> <span class=n>kubefedctl</span> <span class=n>enable</span> <span class=n>clusterrolebinding</span>
+</span></span><span class=line><span class=cl><span class=n>I1225</span> <span class=mf>01</span><span class=err>:</span><span class=mf>46</span><span class=err>:</span><span class=mf>42.779166</span>  <span class=mf>818254</span> <span class=n>util</span><span class=p>.</span><span class=n>go</span><span class=err>:</span><span class=mf>141</span><span class=p>]</span> <span class=n>Api</span> <span class=n>resource</span> <span class=n>found</span><span class=p>.</span>
+</span></span><span class=line><span class=cl><span class=n>customresourcedefinition</span><span class=p>.</span><span class=py>apiextensions</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>federatedclusterrolebindings</span><span class=p>.</span><span class=py>types</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=py>io</span> <span class=n>created</span>
+</span></span><span class=line><span class=cl><span class=n>federatedtypeconfig</span><span class=p>.</span><span class=py>core</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>clusterrolebindings</span><span class=p>.</span><span class=py>rbac</span><span class=p>.</span><span class=py>authorization</span><span class=p>.</span><span class=py>k8s</span><span class=p>.</span><span class=py>io</span> <span class=n>created</span> <span class=k>in</span> <span class=n>namespace</span> <span class=nb>kube-federation</span><span class=n>-system</span>
+</span></span></code></pre></td></tr></table></div></div><p>在创建完成FederatedClusterRoleBinding联邦api类型后，即可以创建出FederatedClusterRoleBinding类型的对象。</p><h2 id=子集群的个性化配置>子集群的个性化配置</h2><p>通过Fedrated<kind>中的spec.overrides来完成，可以覆盖spec.template中的内容</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>types</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1beta1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>FederatedDeployment</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=nb>test-deployment</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=nb>test-namespace</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>template</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>      <span class=n>labels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>app</span><span class=err>:</span> <span class=n>nginx</span>
+</span></span><span class=line><span class=cl>    <span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>      <span class=n>replicas</span><span class=err>:</span> <span class=mf>3</span>
+</span></span><span class=line><span class=cl>      <span class=n>selector</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>matchLabels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>          <span class=n>app</span><span class=err>:</span> <span class=n>nginx</span>
+</span></span><span class=line><span class=cl>      <span class=n>template</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>          <span class=n>labels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>app</span><span class=err>:</span> <span class=n>nginx</span>
+</span></span><span class=line><span class=cl>        <span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>          <span class=n>containers</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>          <span class=p>-</span> <span class=n>image</span><span class=err>:</span> <span class=n>nginx</span>
+</span></span><span class=line><span class=cl>            <span class=n>name</span><span class=err>:</span> <span class=n>nginx</span>
+</span></span><span class=line><span class=cl>  <span class=n>placement</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>name</span><span class=err>:</span> <span class=n>cluster2</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>name</span><span class=err>:</span> <span class=n>cluster1</span>
+</span></span><span class=line><span class=cl>  <span class=n>overrides</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>-</span> <span class=n>clusterName</span><span class=err>:</span> <span class=n>cluster2</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusterOverrides</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>path</span><span class=err>:</span> <span class=s2>&#34;/spec/replicas&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=n>value</span><span class=err>:</span> <span class=mf>5</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>path</span><span class=err>:</span> <span class=s2>&#34;/spec/template/spec/containers/0/image&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=n>value</span><span class=err>:</span> <span class=s2>&#34;nginx:1.17.0-alpine&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>path</span><span class=err>:</span> <span class=s2>&#34;/metadata/annotations&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=n>op</span><span class=err>:</span> <span class=s2>&#34;add&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=n>value</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>foo</span><span class=err>:</span> <span class=n>bar</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>path</span><span class=err>:</span> <span class=s2>&#34;/metadata/annotations/foo&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=n>op</span><span class=err>:</span> <span class=s2>&#34;remove&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=多集群应用调度>多集群应用调度</h2><h3 id=发布应用到特定的子集群>发布应用到特定的子集群</h3><p>在Fedrated<kind>的spec.placement.clusters中，定义了要发布到哪个子集群的信息。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>placement</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>name</span><span class=err>:</span> <span class=n>cluster2</span>
+</span></span><span class=line><span class=cl>    <span class=p>-</span> <span class=n>name</span><span class=err>:</span> <span class=n>cluster1</span>
+</span></span></code></pre></td></tr></table></div></div><p>不过上述方法需要指定特定的集群，为了有更丰富的灵活性，kubefed还提供了label selector的机制，可以提供spec.placement.clusterSelector来指定一组集群。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>placement</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusters</span><span class=err>:</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>    <span class=n>clusterSelector</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>      <span class=n>matchLabels</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>foo</span><span class=err>:</span> <span class=n>bar</span>
+</span></span></code></pre></td></tr></table></div></div><p>标签选择器通过跟kubefedclusters对象的label来进行匹配，可以执行下述命令给kubefedclusters来打标签。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>kubectl</span> <span class=n>label</span> <span class=n>kubefedclusters</span> <span class=n>-n</span> <span class=nb>kube-federation</span><span class=n>-system</span> <span class=nb>kind-cluster1</span> <span class=n>foo</span><span class=p>=</span><span class=n>bar</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=子集群差异化调度>子集群差异化调度</h3><p>上述调度功能被选择的子集群为平等关系，如果要想子集群能够有所差异，可以使用ReplicaSchedulingPreference来完成，目前仅支持deployment和replicaset两种类型的资源，还不支持statefulset。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>apiVersion</span><span class=err>:</span> <span class=n>scheduling</span><span class=p>.</span><span class=py>kubefed</span><span class=p>.</span><span class=n>io</span><span class=p>/</span><span class=n>v1alpha1</span>
+</span></span><span class=line><span class=cl><span class=n>kind</span><span class=err>:</span> <span class=n>ReplicaSchedulingPreference</span>
+</span></span><span class=line><span class=cl><span class=n>metadata</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>name</span><span class=err>:</span> <span class=nb>test-deployment</span>
+</span></span><span class=line><span class=cl>  <span class=n>namespace</span><span class=err>:</span> <span class=nb>test-ns</span>
+</span></span><span class=line><span class=cl><span class=n>spec</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>targetKind</span><span class=err>:</span> <span class=n>FederatedDeployment</span>
+</span></span><span class=line><span class=cl>  <span class=n>totalReplicas</span><span class=err>:</span> <span class=mf>9</span>
+</span></span><span class=line><span class=cl>  <span class=n>clusters</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>A:</span>
+</span></span><span class=line><span class=cl>      <span class=n>minReplicas</span><span class=err>:</span> <span class=mf>4</span>
+</span></span><span class=line><span class=cl>      <span class=n>maxReplicas</span><span class=err>:</span> <span class=mf>6</span>
+</span></span><span class=line><span class=cl>      <span class=n>weight</span><span class=err>:</span> <span class=mf>1</span>
+</span></span><span class=line><span class=cl>    <span class=n>B:</span>
+</span></span><span class=line><span class=cl>      <span class=n>minReplicas</span><span class=err>:</span> <span class=mf>4</span>
+</span></span><span class=line><span class=cl>      <span class=n>maxReplicas</span><span class=err>:</span> <span class=mf>8</span>
+</span></span><span class=line><span class=cl>      <span class=n>weight</span><span class=err>:</span> <span class=mf>2</span>
+</span></span></code></pre></td></tr></table></div></div><p>spec.targetKind用来指定管理的类型，仅支持FederatedDeployment和FederatedReplicaset。
+spec.totalReplicas用来指定所有子集群的副本数总和。优先级要高于FederatedDeployment和FederatedReplicaset的spec.template中指定的副本数。
+spec.clusters用来指定每个子集群的最大、最小副本数和权重。
+spec.rebalance自动调整整个集群中的副本数，比如一个集群中的pod挂掉后，可以将pod迁移到另外的集群中。</p><h1 id=子集群之间的交互>子集群之间的交互</h1><p>无</p><h1 id=缺点>缺点</h1><ol><li>父集群充当了所有集群的单一控制面</li><li>通过联邦CRD来管理资源，无法直接使用k8s原生的资源，集群间维护CRD版本和API版本一致性导致升级比较复杂。</li></ol><h1 id=参考资料>参考资料</h1><ul><li>官方文档：<a class=link href=https://github.com/kubernetes-sigs/kubefed/blob/master/docs/userguide.md#using-cluster-selector target=_blank rel=noopener>https://github.com/kubernetes-sigs/kubefed/blob/master/docs/userguide.md#using-cluster-selector</a></li></ul></section><footer class=article-footer><section class=article-tags><a href=/tags/%E5%A4%9A%E9%9B%86%E7%BE%A4/>多集群</a></section></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

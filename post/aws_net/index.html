@@ -1,396 +1,75 @@
-<!DOCTYPE html>
-<html lang="zh-Hans">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="曾经使用过多种科学上网方式，​最近尝试了使用aws的免费试用一年的功能搭建shadowsocks，访问google的速度非常不错，比很多收费的服务要好用，amazon真是良心企业！ 本文用于记录在aws上搭建服务的步骤及其中的一些注意事项，步骤不会太详细，aws上关于主机的功能需要读者自己在试验的过程中去自己探索。 注册aws账号为了能够搭建搭建aws服务，拥有一个amazon账号是必须的，在aw">
-<meta property="og:type" content="article">
-<meta property="og:title" content="利用aws科学上网">
-<meta property="og:url" content="http://kuring.me/post/aws_net/index.html">
-<meta property="og:site_name" content="404频道">
-<meta property="og:description" content="曾经使用过多种科学上网方式，​最近尝试了使用aws的免费试用一年的功能搭建shadowsocks，访问google的速度非常不错，比很多收费的服务要好用，amazon真是良心企业！ 本文用于记录在aws上搭建服务的步骤及其中的一些注意事项，步骤不会太详细，aws上关于主机的功能需要读者自己在试验的过程中去自己探索。 注册aws账号为了能够搭建搭建aws服务，拥有一个amazon账号是必须的，在aw">
-<meta property="og:locale">
-<meta property="article:published_time" content="2016-02-17T00:00:00.000Z">
-<meta property="article:modified_time" content="2025-12-20T16:59:52.685Z">
-<meta property="article:tag" content="aws">
-<meta name="twitter:card" content="summary">
-
-
-<link rel="canonical" href="http://kuring.me/post/aws_net/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/aws_net/","path":"post/aws_net/","title":"利用aws科学上网"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>利用aws科学上网 | 404频道</title>
-  
-
-
-
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">404频道</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">学习笔记</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="Searching..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          Table of Contents
-        </li>
-        <li class="sidebar-nav-overview">
-          Overview
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B3%A8%E5%86%8Caws%E8%B4%A6%E5%8F%B7"><span class="nav-number">1.</span> <span class="nav-text">注册aws账号</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%80%E5%90%AFEC2%E4%B8%BB%E6%9C%BA%E5%AE%9E%E4%BE%8B"><span class="nav-number">2.</span> <span class="nav-text">开启EC2主机实例</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8C%89%E7%85%A7shadowsocks"><span class="nav-number">3.</span> <span class="nav-text">按照shadowsocks</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%84%9A%E6%9C%AC"><span class="nav-number">4.</span> <span class="nav-text">脚本</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E8%A3%85shadowsocks%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="nav-number">5.</span> <span class="nav-text">安装shadowsocks客户端</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#kcptun"><span class="nav-number">6.</span> <span class="nav-text">kcptun</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7"><span class="nav-number">7.</span> <span class="nav-text">监控</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name"></p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">256</span>
-          <span class="site-state-item-name">posts</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">36</span>
-        <span class="site-state-item-name">tags</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/aws_net/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="利用aws科学上网 | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          利用aws科学上网
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2016-02-17 00:00:00" itemprop="dateCreated datePublished" datetime="2016-02-17T00:00:00+00:00">2016-02-17</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-20 16:59:52" itemprop="dateModified" datetime="2025-12-20T16:59:52+00:00">2025-12-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p>曾经使用过多种科学上网方式，​最近尝试了使用aws的免费试用一年的功能搭建shadowsocks，访问google的速度非常不错，比很多收费的服务要好用，amazon真是良心企业！</p>
-<p>本文用于记录在aws上搭建服务的步骤及其中的一些注意事项，步骤不会太详细，aws上关于主机的功能需要读者自己在试验的过程中去自己探索。</p>
-<h1 id="注册aws账号"><a href="#注册aws账号" class="headerlink" title="注册aws账号"></a>注册aws账号</h1><p>为了能够搭建搭建aws服务，拥有一个amazon账号是必须的，在<a target="_blank" rel="noopener" href="https://aws.amazon.com/cn/free/">aws免费套餐</a>的页面点击『创建免费账号』按钮即可按照步骤创建aws账号。</p>
-<p>值得一提的是，注册aws的账号需要一张信用卡。</p>
-<h1 id="开启EC2主机实例"><a href="#开启EC2主机实例" class="headerlink" title="开启EC2主机实例"></a>开启EC2主机实例</h1><p>该步骤的目的是开启aws上的主机实例。​</p>
-<p>进入aws的控制面板，在左上角的服务中选择EC2，aws提供了多种类型的主机，这里选择EC2即可。</p>
-<p>在EC2控制面板界面中需要选择右上角的区域，这个用于选择EC2主机所在的机房，不同机房之间主机是不可以共享的。我这里选择了『美国西部（俄勒冈）』，感觉速度还不错，没有试验过亚洲地区的，新加坡的速度是不是会更好些。后续经过验证，首尔的服务器确实速度更快一些。<br>​<br>下面即可创建EC2的实例了，点击界面上的『启动实例』按钮即可按照步骤创建EC2实例了，创建实例的时候一定要选择免费的EC2主机，否则就会悲剧了。我选择了ubuntu14.04的主机，redhat7.2的主机yum源不太全，没有选择使用。</p>
-<p>最终会得到ssh登录用的pem文件，用于ssh远程登录主机。并在界面上启动刚刚创建的实例。</p>
-<h1 id="按照shadowsocks"><a href="#按照shadowsocks" class="headerlink" title="按照shadowsocks"></a>按照shadowsocks</h1><p>接下来就是在EC2实例上安装sock5代理工具了。</p>
-<p>登录刚刚启动的EC2，需要pem文件。可以通过<code>ssh -i &quot;key.pem&quot; ubuntu@ec2-52-26-2-14.us-west-2.compute.amazonaws.com</code>命令来登录到远程主机，其他工具请自行google。</p>
-<p>使用命令<code>pip install shadowsocks</code>来安装shadowssocks，pip命令的安装自行解决。</p>
-<p>在ubuntu的home目录下执行<code>mkdir shadowsocks</code>创建保存配置文件的文件夹，并创建配置文件config.json，内容如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;server&quot;:&quot;0.0.0.0&quot;,</span><br><span class="line">    &quot;server_port&quot;:10001,</span><br><span class="line">    &quot;local_port&quot;:1080,</span><br><span class="line">    &quot;password&quot;:&quot;xxx&quot;,</span><br><span class="line">    &quot;timeout&quot;:600,</span><br><span class="line">    &quot;method&quot;:&quot;bf-cfb&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>需要说明的是最好配置一下server_port选项，更改shadowsocks的默认端口号。method选项用于控制加密方式，我这里更改为了bf-cfb。</p>
-<p>执行<code>nohup ssserver -c config.json &amp;</code>命令即可启动shadowsocks服务。</p>
-<p>由于对外增加了10001端口号，aws的默认安全策略为仅对外提供22端口，需要在EC2主机的安全策略中增加外放访问tcp端口10001的权限。</p>
-<h1 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h1><p>为了安装方便，我简单写了个脚本如下</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">yum -y install epel-release</span><br><span class="line">#yum update -y</span><br><span class="line">yum install python2-pip -y</span><br><span class="line">pip install shadowsocks</span><br><span class="line">mkdir ~/shadowsocks</span><br><span class="line">echo &#x27;&#123;</span><br><span class="line">    &quot;server&quot;:&quot;0.0.0.0&quot;,</span><br><span class="line">    &quot;server_port&quot;:10001,</span><br><span class="line">    &quot;local_port&quot;:1080,</span><br><span class="line">    &quot;password&quot;:&quot;xxx&quot;,</span><br><span class="line">    &quot;timeout&quot;:600,</span><br><span class="line">    &quot;method&quot;:&quot;aes-256-cfb&quot;</span><br><span class="line">&#125;&#x27; &gt; ~/shadowsocks/config.json</span><br><span class="line">systemctl disable firewalld.service</span><br><span class="line">systemctl stop firewalld.service</span><br><span class="line">nohup ssserver -c ~/shadowsocks/config.json &amp;</span><br></pre></td></tr></table></figure>
-
-<p>在某些云主机的CentOS7系统发现无法使用<code>yum install python2-pip</code>进行安装，原因是有些源被禁用了，可以使用<code>yum repolist disabled</code>来查看被禁用的源，其中会包含epel源。可以使用<code>yum install python2-pip -y --enablerepo=epel</code>的方式来安装。</p>
-<h1 id="安装shadowsocks客户端"><a href="#安装shadowsocks客户端" class="headerlink" title="安装shadowsocks客户端"></a>安装shadowsocks客户端</h1><p>这里是支持的<a target="_blank" rel="noopener" href="https://shadowsocks.com/client.html">客户端列表</a>，​我这里仅使用的mac客户端ShadowsocksX，支持Auto Proxy Mode和Global Mode两种方式，其中Auto方式会自动下载使用sock5代理的列表，非常方便。</p>
-<h1 id="kcptun"><a href="#kcptun" class="headerlink" title="kcptun"></a>kcptun</h1><p>为了加快访问速度，推荐使用kcp + shadowsocks</p>
-<p>kcp的服务端配置如下，即启用20001端口，该端口会将流量导入到127.0.0.1:10001端口，即本机的shadowsocks端口</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd ~ &amp;&amp; mkdir kcptun &amp;&amp; cd kcptun</span><br><span class="line">wget https://github.com/xtaci/kcptun/releases/download/v20190109/kcptun-linux-amd64-20190109.tar.gz</span><br><span class="line">tar zvxf kcptun-linux-amd64-20190109.tar.gz</span><br><span class="line">nohup ./server_linux_amd64 -l :20001 -t 127.0.0.1:10001 -key xxx -mode fast2 --log ~/kcptun/20001.log &amp;</span><br></pre></td></tr></table></figure>
-
-<p>配置了kcptun的shadowsocks客户端仅需要配置代理为远程的kcpdun端口即可，不再需要指定shadowsocks的端口，相当于shadowsocks是透明的。</p>
-<h1 id="监控"><a href="#监控" class="headerlink" title="监控"></a>监控</h1><p>为了避免aws产生额外的费用，一定要设置一下费用报警，否则被扣费了就麻烦了。</p>
-<p>另外，可定期查看下aws的费用。试用期为一年，一年后一定要记得停掉aws服务。</p>
-<p>最后，祝你玩的愉快！</p>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-          <div class="post-tags">
-              <a href="/tags/aws/" rel="tag"># aws</a>
-          </div>
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/post/summary/2015_summary/" rel="prev" title="2015年年终总结">
-                  <i class="fa fa-angle-left"></i> 2015年年终总结
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/post/elk_nginx/" rel="next" title="ELK解析nginx日志">
-                  ELK解析nginx日志 <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    
-  
-  <div class="comments giscus-container">
-  </div>
-  
-  
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder"></span>
-  </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-
-
-  
-
-
-
-
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
-
-<script>
-document.addEventListener('page:loaded', () => {
-  if (!CONFIG.page.comments) return;
-
-  NexT.utils.loadComments('.giscus-container')
-    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
-      attributes: {
-        async                   : true,
-        crossOrigin             : 'anonymous',
-        'data-repo'             : CONFIG.giscus.repo,
-        'data-repo-id'          : CONFIG.giscus.repo_id,
-        'data-category'         : CONFIG.giscus.category,
-        'data-category-id'      : CONFIG.giscus.category_id,
-        'data-mapping'          : CONFIG.giscus.mapping,
-        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
-        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
-        'data-theme'            : CONFIG.giscus.theme,
-        'data-lang'             : CONFIG.giscus.lang,
-        'data-input-position'   : CONFIG.giscus.input_position,
-        'data-loading'          : CONFIG.giscus.loading
-      },
-      parentNode: document.querySelector('.giscus-container')
-    }));
-});
-</script>
-
-</body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="曾经使用过多种科学上网方式，\u200b最近尝试了使用aws的免费试用一年的功能搭建shadowsocks，访问google的速度非常不错，比很多收费的服务要好用，amazon真是良心企业！\n"><title>利用aws科学上网</title><link rel=canonical href=https://kuring.me/post/aws_net/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="利用aws科学上网"><meta property='og:description' content="曾经使用过多种科学上网方式，\u200b最近尝试了使用aws的免费试用一年的功能搭建shadowsocks，访问google的速度非常不错，比很多收费的服务要好用，amazon真是良心企业！\n"><meta property='og:url' content='https://kuring.me/post/aws_net/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='aws'><meta property='article:published_time' content='2016-02-17T00:00:00+00:00'><meta property='article:modified_time' content='2016-02-17T00:00:00+00:00'><meta name=twitter:title content="利用aws科学上网"><meta name=twitter:description content="曾经使用过多种科学上网方式，\u200b最近尝试了使用aws的免费试用一年的功能搭建shadowsocks，访问google的速度非常不错，比很多收费的服务要好用，amazon真是良心企业！\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/aws_net/>利用aws科学上网</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2016-02-17T00:00:00Z>2016-02-17</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 4 分钟</time></div></footer></div></header><section class=article-content><p>曾经使用过多种科学上网方式，​最近尝试了使用aws的免费试用一年的功能搭建shadowsocks，访问google的速度非常不错，比很多收费的服务要好用，amazon真是良心企业！</p><p>本文用于记录在aws上搭建服务的步骤及其中的一些注意事项，步骤不会太详细，aws上关于主机的功能需要读者自己在试验的过程中去自己探索。</p><h1 id=注册aws账号>注册aws账号</h1><p>为了能够搭建搭建aws服务，拥有一个amazon账号是必须的，在<a class=link href=https://aws.amazon.com/cn/free/ target=_blank rel=noopener>aws免费套餐</a>的页面点击『创建免费账号』按钮即可按照步骤创建aws账号。</p><p>值得一提的是，注册aws的账号需要一张信用卡。</p><h1 id=开启ec2主机实例>开启EC2主机实例</h1><p>该步骤的目的是开启aws上的主机实例。​</p><p>进入aws的控制面板，在左上角的服务中选择EC2，aws提供了多种类型的主机，这里选择EC2即可。</p><p>在EC2控制面板界面中需要选择右上角的区域，这个用于选择EC2主机所在的机房，不同机房之间主机是不可以共享的。我这里选择了『美国西部（俄勒冈）』，感觉速度还不错，没有试验过亚洲地区的，新加坡的速度是不是会更好些。后续经过验证，首尔的服务器确实速度更快一些。
+​
+下面即可创建EC2的实例了，点击界面上的『启动实例』按钮即可按照步骤创建EC2实例了，创建实例的时候一定要选择免费的EC2主机，否则就会悲剧了。我选择了ubuntu14.04的主机，redhat7.2的主机yum源不太全，没有选择使用。</p><p>最终会得到ssh登录用的pem文件，用于ssh远程登录主机。并在界面上启动刚刚创建的实例。</p><h1 id=按照shadowsocks>按照shadowsocks</h1><p>接下来就是在EC2实例上安装sock5代理工具了。</p><p>登录刚刚启动的EC2，需要pem文件。可以通过<code>ssh -i "key.pem" ubuntu@ec2-52-26-2-14.us-west-2.compute.amazonaws.com</code>命令来登录到远程主机，其他工具请自行google。</p><p>使用命令<code>pip install shadowsocks</code>来安装shadowssocks，pip命令的安装自行解决。</p><p>在ubuntu的home目录下执行<code>mkdir shadowsocks</code>创建保存配置文件的文件夹，并创建配置文件config.json，内容如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>    &#34;server&#34;:&#34;0.0.0.0&#34;,
+</span></span><span class=line><span class=cl>    &#34;server_port&#34;:10001,
+</span></span><span class=line><span class=cl>    &#34;local_port&#34;:1080,
+</span></span><span class=line><span class=cl>    &#34;password&#34;:&#34;xxx&#34;,
+</span></span><span class=line><span class=cl>    &#34;timeout&#34;:600,
+</span></span><span class=line><span class=cl>    &#34;method&#34;:&#34;bf-cfb&#34;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>需要说明的是最好配置一下server_port选项，更改shadowsocks的默认端口号。method选项用于控制加密方式，我这里更改为了bf-cfb。</p><p>执行<code>nohup ssserver -c config.json &</code>命令即可启动shadowsocks服务。</p><p>由于对外增加了10001端口号，aws的默认安全策略为仅对外提供22端口，需要在EC2主机的安全策略中增加外放访问tcp端口10001的权限。</p><h1 id=脚本>脚本</h1><p>为了安装方便，我简单写了个脚本如下</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>yum -y install epel-release
+</span></span><span class=line><span class=cl>#yum update -y
+</span></span><span class=line><span class=cl>yum install python2-pip -y
+</span></span><span class=line><span class=cl>pip install shadowsocks
+</span></span><span class=line><span class=cl>mkdir ~/shadowsocks
+</span></span><span class=line><span class=cl>echo &#39;{
+</span></span><span class=line><span class=cl>    &#34;server&#34;:&#34;0.0.0.0&#34;,
+</span></span><span class=line><span class=cl>    &#34;server_port&#34;:10001,
+</span></span><span class=line><span class=cl>    &#34;local_port&#34;:1080,
+</span></span><span class=line><span class=cl>    &#34;password&#34;:&#34;xxx&#34;,
+</span></span><span class=line><span class=cl>    &#34;timeout&#34;:600,
+</span></span><span class=line><span class=cl>    &#34;method&#34;:&#34;aes-256-cfb&#34;
+</span></span><span class=line><span class=cl>}&#39; &gt; ~/shadowsocks/config.json
+</span></span><span class=line><span class=cl>systemctl disable firewalld.service
+</span></span><span class=line><span class=cl>systemctl stop firewalld.service
+</span></span><span class=line><span class=cl>nohup ssserver -c ~/shadowsocks/config.json &amp;
+</span></span></code></pre></td></tr></table></div></div><p>在某些云主机的CentOS7系统发现无法使用<code>yum install python2-pip</code>进行安装，原因是有些源被禁用了，可以使用<code>yum repolist disabled</code>来查看被禁用的源，其中会包含epel源。可以使用<code>yum install python2-pip -y --enablerepo=epel</code>的方式来安装。</p><h1 id=安装shadowsocks客户端>安装shadowsocks客户端</h1><p>这里是支持的<a class=link href=https://shadowsocks.com/client.html target=_blank rel=noopener>客户端列表</a>，​我这里仅使用的mac客户端ShadowsocksX，支持Auto Proxy Mode和Global Mode两种方式，其中Auto方式会自动下载使用sock5代理的列表，非常方便。</p><h1 id=kcptun>kcptun</h1><p>为了加快访问速度，推荐使用kcp + shadowsocks</p><p>kcp的服务端配置如下，即启用20001端口，该端口会将流量导入到127.0.0.1:10001端口，即本机的shadowsocks端口</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>cd</span> <span class=o>~</span> <span class=o>&amp;&amp;</span> <span class=n>mkdir</span> <span class=n>kcptun</span> <span class=o>&amp;&amp;</span> <span class=n>cd</span> <span class=n>kcptun</span>
+</span></span><span class=line><span class=cl><span class=n>wget</span> <span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>github</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>xtaci</span><span class=o>/</span><span class=n>kcptun</span><span class=o>/</span><span class=n>releases</span><span class=o>/</span><span class=n>download</span><span class=o>/</span><span class=n>v20190109</span><span class=o>/</span><span class=n>kcptun</span><span class=o>-</span><span class=n>linux</span><span class=o>-</span><span class=n>amd64</span><span class=o>-</span><span class=mf>20190109.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span>
+</span></span><span class=line><span class=cl><span class=n>tar</span> <span class=n>zvxf</span> <span class=n>kcptun</span><span class=o>-</span><span class=n>linux</span><span class=o>-</span><span class=n>amd64</span><span class=o>-</span><span class=mf>20190109.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span>
+</span></span><span class=line><span class=cl><span class=n>nohup</span> <span class=o>./</span><span class=n>server_linux_amd64</span> <span class=o>-</span><span class=n>l</span> <span class=p>:</span><span class=mi>20001</span> <span class=o>-</span><span class=n>t</span> <span class=mf>127.0</span><span class=o>.</span><span class=mf>0.1</span><span class=p>:</span><span class=mi>10001</span> <span class=o>-</span><span class=n>key</span> <span class=n>xxx</span> <span class=o>-</span><span class=n>mode</span> <span class=n>fast2</span> <span class=o>--</span><span class=nb>log</span> <span class=o>~/</span><span class=n>kcptun</span><span class=o>/</span><span class=mf>20001.</span><span class=n>log</span> <span class=o>&amp;</span>
+</span></span></code></pre></td></tr></table></div></div><p>配置了kcptun的shadowsocks客户端仅需要配置代理为远程的kcpdun端口即可，不再需要指定shadowsocks的端口，相当于shadowsocks是透明的。</p><h1 id=监控>监控</h1><p>为了避免aws产生额外的费用，一定要设置一下费用报警，否则被扣费了就麻烦了。</p><p>另外，可定期查看下aws的费用。试用期为一年，一年后一定要记得停掉aws服务。</p><p>最后，祝你玩的愉快！</p></section><footer class=article-footer><section class=article-tags><a href=/tags/aws/>Aws</a></section></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>HBase on 404频道</title><link>https://kuring.me/tags/hbase/</link><description>Recent content in HBase on 404频道</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>kuring</copyright><lastBuildDate>Tue, 26 Feb 2013 00:00:00 +0000</lastBuildDate><atom:link href="https://kuring.me/tags/hbase/index.xml" rel="self" type="application/rss+xml"/><item><title>在Linux上搭建HBase集群环境</title><link>https://kuring.me/post/setup_hbase/</link><pubDate>Tue, 26 Feb 2013 00:00:00 +0000</pubDate><guid>https://kuring.me/post/setup_hbase/</guid><description>&lt;p&gt;本文是在安装完成Hadoop的基础之上进行的，Hadoop的安装戳&lt;a class="link" href="https://kuring.me/post/hadoop_setup" &gt;这里&lt;/a&gt;。
+本文采用的Hadoop版本为0.20.2，HBase版本为0.90.6，ZooKeeper的版本为3.3.2（stable版）。
+本文仍然采用了Hadoop安装的环境，机器如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;tr&gt;
+&lt;td&gt;机器名&lt;/td&gt;
+&lt;td&gt;IP地址&lt;/td&gt;
+&lt;td&gt;用途&lt;/td&gt;
+&lt;td&gt;Hadoop模块&lt;/td&gt;
+&lt;td&gt;HBase模块&lt;/td&gt;
+&lt;td&gt;ZooKeeper模块&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;server206&lt;/td&gt;
+&lt;td&gt;192.168.20.6&lt;/td&gt;
+&lt;td&gt;Master&lt;/td&gt;
+&lt;td&gt;NameNode、JobTracker、SecondaryNameNode&lt;/td&gt;
+&lt;td&gt;HMaster&lt;/td&gt;
+&lt;td&gt;QuorumPeerMain&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ap1&lt;/td&gt;
+&lt;td&gt;192.168.20.36&lt;/td&gt;
+&lt;td&gt;Slave&lt;/td&gt;
+&lt;td&gt;DataNode、TaskTracker&lt;/td&gt;
+&lt;td&gt;HRegionServer&lt;/td&gt;
+&lt;td&gt;QuorumPeerMain&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ap2&lt;/td&gt;
+&lt;td&gt;192.168.20.38&lt;/td&gt;
+&lt;td&gt;Slave&lt;/td&gt;
+&lt;td&gt;DataNode、TaskTracker&lt;/td&gt;
+&lt;td&gt;HRegionServer&lt;/td&gt;
+&lt;td&gt;QuorumPeerMain&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;h1 id="安装zookeeper"&gt;安装ZooKeeper
+&lt;/h1&gt;&lt;p&gt;由于HBase默认集成了ZooKeeper，可以不用单独安装ZooKeeper。本文采用独立安装ZooKeeper的方式。
+1. 将zookeeper解压到/home/hadoop目录下。
+2. 将/home/hadoop/zookeeper-3.3.2/conf目录下的zoo_sample.cfg文件拷贝一份，命名为为“zoo.cfg”。
+3. 修改zoo.cfg文件，修改后内容如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# The number of milliseconds of each tick
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;tickTime=2000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# The number of ticks that the initial
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# synchronization phase can take
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;initLimit=10
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# The number of ticks that can pass between
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# sending a request and getting an acknowledgement
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;syncLimit=5
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# the directory where the snapshot is stored.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;dataDir=/home/hadoop/zookeeper-3.3.2/zookeeper_data
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# the port at which the clients will connect
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;clientPort=2181
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;dataLogDir=/home/hadoop/zookeeper-3.3.2/logs
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;server.1=192.168.20.6:2888:3888
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;server.2=192.168.20.36:2888:3888
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;server.3=192.168.20.38:2888:3888
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;其中，2888端口号是zookeeper服务之间通信的端口，而3888是zookeeper与其他应用程序通信的端口。
+这里修改了dataDir和dataLogDir的值。
+需要特别注意的是：如果要修改dataDir的值不能将原来的行在前面加个“#”注释掉后在后面再增加一行，这样是不起作用的。可以参考bin目录下的zkServer.sh文件中的72行，内容如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ZOOPIDFILE=$(grep dataDir &amp;#34;$ZOOCFG&amp;#34; | sed -e &amp;#39;s/.*=//&amp;#39;)/zookeeper_server.pid
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这里通过grep和sed命令来获取dataDir的值，对于行前面添加“#”注释是不起作用的。
+4. 创建zoo.cfg文件中的dataDir和dataLogDir所指定的目录。
+5. 在dataDir目录下创建文件&lt;code&gt;myid&lt;/code&gt;。
+6. 通过scp命令将zookeeper-3.3.2目录拷贝到其他节点机上。
+7. 修改&lt;code&gt;myid&lt;/code&gt;文件，在对应的IP的机器上输入对应的编号，该编号要和zoo.cfg中的一致。本例中在192.168.20.6上文件内容为1；在192.168.20.36上文件内容为2；在192.168.20.38上文件内容为3。至此ＺooＫeeper的安装已经完成。&lt;/p&gt;
+&lt;h1 id="运行zookeeper"&gt;运行ZooKeeper
+&lt;/h1&gt;&lt;p&gt;1. 在节点机上依次执行&lt;code&gt;/home/hadoop/zookeeper-3.3.2/bin/zkServer.sh start&lt;/code&gt;脚本。运行第一个ZooKeeper的时候会因等待其他节点而出现刷屏现象，等启动起第二个节点上的ZooKeeper后就正常了。运行完成之后该脚本会出现刷屏现象，我这里没有理会。
+2. 通过jps命令来查看各节点机上是否含有QuorumPeerMain进程。
+3. 通过&lt;code&gt;/home/hadoop/zookeeper-3.3.2/bin/zkServer.sh status&lt;/code&gt;命令来查看状态。本例中有三个节点机，其中必有一个leader，两个follower存在。
+4. 在各节点机上依次执行&lt;code&gt;/home/hadoop/zookeeper-3.3.2/bin/zkServer.sh stop&lt;/code&gt;来停止ZooKeeper服务。&lt;/p&gt;
+&lt;h1 id="配置时间同步ntp服务"&gt;配置时间同步ntp服务
+&lt;/h1&gt;&lt;p&gt;HBase在运行的时候各个节点之间时间不同步会存在莫名其妙的问题，这里选择以192.168.20.36机器作为时间同步服务器，其他机器从该机器同步时间。
+在192.168.20.36上通过service ntpd start命令来启动ntp服务。
+在其他机器上配置crontab命令，增加下面一行：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0 */1 * * * /usr/sbin/ntpdate 192.168.20.36 &amp;amp;&amp;amp; /sbin/hwclock -w
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这里采用一个小时同步一次时间的方式。&lt;/p&gt;
+&lt;h1 id="安装hbase"&gt;安装HBase
+&lt;/h1&gt;&lt;p&gt;1. 在HMaster机器上将HBase解压到/home/hadoop目录下。
+2. 修改配置文件hbase-env.sh，使&lt;code&gt;export HBASE_MANAGES_ZK=false&lt;/code&gt;。如果想要HBase使用自带的ZooKeeper则使用设置为true。使&lt;code&gt;export JAVA_HOME=/usr/java/jdk1.6.0_10&lt;/code&gt;来指定java的安装路径。
+3. 修改配置文件hbase-site.xml如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;configuration&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;name&amp;gt;hbase.rootdir&amp;lt;/name&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;value&amp;gt;hdfs://server206:9000/hbase&amp;lt;/value&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;/property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;name&amp;gt;hbase.cluster.distributed&amp;lt;/name&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;value&amp;gt;true&amp;lt;/value&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;name&amp;gt;hbase.master.port&amp;lt;/name&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;value&amp;gt;60000&amp;lt;/value&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;name&amp;gt;hbase.zookeeper.property.clientPort&amp;lt;/name&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;value&amp;gt;2181&amp;lt;/value&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;name&amp;gt;hbase.zookeeper.quorum&amp;lt;/name&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;value&amp;gt;server206,ap1,ap2&amp;lt;/value&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;name&amp;gt;hbase.zookeeper.property.dataDir&amp;lt;/name&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;value&amp;gt;/home/hadoop/zookeeper-3.3.2/zookeeper_data&amp;lt;/value&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;name&amp;gt;dfs.support.append&amp;lt;/name&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;value&amp;gt;true&amp;lt;/value&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;name&amp;gt;hbase.regionserver.handler.count&amp;lt;/name&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;value&amp;gt;100&amp;lt;/value&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/property&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/configuration&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;4. 修改regionservers，添加HRegionServer模块所运行机器的主机名。在本例中内容如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ap1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ap2
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;5. 为了确保HBase和Hadoop的兼容性，这里将/home/hadoop/hadoop-0.20.2/hadoop-0.20.2-core.jar文件复制到/home/hadoop/hbase-0.90.6/lib目录下，并将原先的Hadoop的jar文件删掉或重命名为其他后缀的文件。
+6. 将hbase-0.90.6文件夹通过scp命令复制到其他节点机上。&lt;/p&gt;
+&lt;h1 id="hbase的启动"&gt;HBase的启动
+&lt;/h1&gt;&lt;ol&gt;
+&lt;li&gt;在Hadoop的NameNode所在的机器上使用start-all.sh脚本来启动Hadoop集群。&lt;/li&gt;
+&lt;li&gt;在各个节点机上调用zkServer.sh脚本来启动ZooKeeper。&lt;/li&gt;
+&lt;li&gt;在HMaster所在的机器上使用start-hbase.sh脚本来启动HBase集群。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;HBase启动后会在HDFS自动创建/hbase的文件夹，可以通过&lt;code&gt;hadoop fs -ls /hbase&lt;/code&gt;命令来查看，该目录不需要自动创建。如果在安装HBase的过程中失败需要重新启动，最好将此目录从集群中删除，通过命令&lt;code&gt;hadoop fs -rmr /hbase&lt;/code&gt;来删除。&lt;/p&gt;
+&lt;p&gt;需要特别注意的是在hadoop集群中&lt;code&gt;hadoop fs -ls /hbase&lt;/code&gt;目录和&lt;code&gt;hadoop fs -ls hbase&lt;/code&gt;目录并非一个目录，通过&lt;code&gt;hadoop fs -ls hbase&lt;/code&gt;查看到的目录实际上为/user/hadoop/hbase目录。&lt;/p&gt;
+&lt;h1 id="hbase管理界面"&gt;HBase管理界面
+&lt;/h1&gt;&lt;p&gt;Master的界面：http://192.168.20.6:60010/master.jsp
+RegionServer的界面：http://192.168.20.36:60030/regionserver.jsp和http://192.168.20.38:60030/regionserver.jsp&lt;/p&gt;
+&lt;h1 id="参考资料"&gt;参考资料
+&lt;/h1&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="http://blog.csdn.net/gudaoqianfu/article/details/7327191" target="_blank" rel="noopener"
+&gt;http://blog.csdn.net/gudaoqianfu/article/details/7327191&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="http://thomas0988.iteye.com/blog/1309867" target="_blank" rel="noopener"
+&gt;http://thomas0988.iteye.com/blog/1309867&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id="下载链接"&gt;下载链接
+&lt;/h1&gt;&lt;p&gt;&lt;a class="link" href="http://pan.baidu.com/share/link?shareid=1235031445&amp;amp;uk=3506813023" target="_blank" rel="noopener"
+&gt;http://pan.baidu.com/share/link?shareid=1235031445&amp;amp;uk=3506813023&lt;/a&gt; 提取码：v8ok&lt;/p&gt;</description></item></channel></rss>

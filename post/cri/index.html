@@ -1,396 +1,278 @@
-<!DOCTYPE html>
-<html lang="zh-Hans">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="CRI为k8s提供的kubelet扩展接口，用来支持多种容器运行时。CRI协议为protobuf格式，kubelet作为客户端，容器运行时作为服务端，两者通过gRpc协议通讯。下面主要解读 CRI的协议定义 spec解读RuntimeService 包括了Pod和容器相关的操作。 Pod相关的操作包括：  启：RunPodSandbox 停：StopPodSandbox 删：RemovePodSa">
-<meta property="og:type" content="article">
-<meta property="og:title" content="Container Runtime Interface(CRI)">
-<meta property="og:url" content="http://kuring.me/post/cri/index.html">
-<meta property="og:site_name" content="404频道">
-<meta property="og:description" content="CRI为k8s提供的kubelet扩展接口，用来支持多种容器运行时。CRI协议为protobuf格式，kubelet作为客户端，容器运行时作为服务端，两者通过gRpc协议通讯。下面主要解读 CRI的协议定义 spec解读RuntimeService 包括了Pod和容器相关的操作。 Pod相关的操作包括：  启：RunPodSandbox 停：StopPodSandbox 删：RemovePodSa">
-<meta property="og:locale">
-<meta property="og:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/cri-api-to-construct.png">
-<meta property="article:published_time" content="2022-06-29T22:20:52.000Z">
-<meta property="article:modified_time" content="2025-12-20T16:59:52.686Z">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://kuring.oss-cn-beijing.aliyuncs.com/common/cri-api-to-construct.png">
-
-
-<link rel="canonical" href="http://kuring.me/post/cri/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/cri/","path":"post/cri/","title":"Container Runtime Interface(CRI)"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>Container Runtime Interface(CRI) | 404频道</title>
-  
-
-
-
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">404频道</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">学习笔记</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="Searching..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          Table of Contents
-        </li>
-        <li class="sidebar-nav-overview">
-          Overview
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#spec%E8%A7%A3%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">spec解读</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RuntimeService"><span class="nav-number">1.1.</span> <span class="nav-text">RuntimeService</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ImageService"><span class="nav-number">1.2.</span> <span class="nav-text">ImageService</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CRI-CLI"><span class="nav-number">2.</span> <span class="nav-text">CRI CLI</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name"></p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">256</span>
-          <span class="site-state-item-name">posts</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">36</span>
-        <span class="site-state-item-name">tags</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/cri/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="Container Runtime Interface(CRI) | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          Container Runtime Interface(CRI)
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2022-06-29 22:20:52" itemprop="dateCreated datePublished" datetime="2022-06-29T22:20:52+00:00">2022-06-29</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-20 16:59:52" itemprop="dateModified" datetime="2025-12-20T16:59:52+00:00">2025-12-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p>CRI为k8s提供的kubelet扩展接口，用来支持多种容器运行时。CRI协议为protobuf格式，kubelet作为客户端，容器运行时作为服务端，两者通过gRpc协议通讯。下面主要解读 <a target="_blank" rel="noopener" href="https://github.com/kubernetes/cri-api/blob/c75ef5b/pkg/apis/runtime/v1/api.proto">CRI的协议定义</a></p>
-<h2 id="spec解读"><a href="#spec解读" class="headerlink" title="spec解读"></a>spec解读</h2><h3 id="RuntimeService"><a href="#RuntimeService" class="headerlink" title="RuntimeService"></a>RuntimeService</h3><p><img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/cri-api-to-construct.png" alt="https://github.com/kata-containers/kata-containers/blob/main/docs/design/arch-images/api-to-construct.png"></p>
-<p>包括了Pod和容器相关的操作。</p>
-<p>Pod相关的操作包括：</p>
-<ol>
-<li>启：RunPodSandbox</li>
-<li>停：StopPodSandbox</li>
-<li>删：RemovePodSandbox</li>
-<li>查：PodSandboxStatus、ListPodSandbox、ListPodSandboxStats、PodSandboxStats</li>
-</ol>
-<p>容器相关的操作：</p>
-<ol>
-<li>增、启：CreateContainer、StartContainer</li>
-<li>停：StopContainer</li>
-<li>删：RemoveContainer</li>
-<li>查：ListContainers、ContainerStatus、</li>
-<li>改：UpdateContainerResources</li>
-<li>控：ReopenContainerLog、ExecSync、Exec、Attach、PortForward</li>
-</ol>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Runtime service defines the public APIs for remote container runtimes</span></span><br><span class="line">service RuntimeService <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="comment">// Version returns the runtime name, runtime version, and runtime API version.</span></span><br><span class="line">    rpc Version(VersionRequest) returns (VersionResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// RunPodSandbox creates and starts a pod-level sandbox. Runtimes must ensure</span></span><br><span class="line">    <span class="comment">// the sandbox is in the ready state on success.</span></span><br><span class="line">    rpc RunPodSandbox(RunPodSandboxRequest) returns (RunPodSandboxResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// StopPodSandbox stops any running process that is part of the sandbox and</span></span><br><span class="line">    <span class="comment">// reclaims network resources (e.g., IP addresses) allocated to the sandbox.</span></span><br><span class="line">    <span class="comment">// If there are any running containers in the sandbox, they must be forcibly</span></span><br><span class="line">    <span class="comment">// terminated.</span></span><br><span class="line">    <span class="comment">// This call is idempotent, and must not return an error if all relevant</span></span><br><span class="line">    <span class="comment">// resources have already been reclaimed. kubelet will call StopPodSandbox</span></span><br><span class="line">    <span class="comment">// at least once before calling RemovePodSandbox. It will also attempt to</span></span><br><span class="line">    <span class="comment">// reclaim resources eagerly, as soon as a sandbox is not needed. Hence,</span></span><br><span class="line">    <span class="comment">// multiple StopPodSandbox calls are expected.</span></span><br><span class="line"></span><br><span class="line">    rpc StopPodSandbox(StopPodSandboxRequest) returns (StopPodSandboxResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line">    <span class="comment">// RemovePodSandbox removes the sandbox. If there are any running containers</span></span><br><span class="line">    <span class="comment">// in the sandbox, they must be forcibly terminated and removed.</span></span><br><span class="line">    <span class="comment">// This call is idempotent, and must not return an error if the sandbox has</span></span><br><span class="line">    <span class="comment">// already been removed.</span></span><br><span class="line"></span><br><span class="line">    rpc RemovePodSandbox(RemovePodSandboxRequest) returns (RemovePodSandboxResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line">    <span class="comment">// PodSandboxStatus returns the status of the PodSandbox. If the PodSandbox is not</span></span><br><span class="line">    <span class="comment">// present, returns an error.</span></span><br><span class="line"></span><br><span class="line">    rpc PodSandboxStatus(PodSandboxStatusRequest) returns (PodSandboxStatusResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ListPodSandbox returns a list of PodSandboxes.</span></span><br><span class="line">    rpc ListPodSandbox(ListPodSandboxRequest) returns (ListPodSandboxResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// CreateContainer creates a new container in specified PodSandbox</span></span><br><span class="line">    rpc CreateContainer(CreateContainerRequest) returns (CreateContainerResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// StartContainer starts the container.</span></span><br><span class="line">    rpc StartContainer(StartContainerRequest) returns (StartContainerResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// StopContainer stops a running container with a grace period (i.e., timeout).</span></span><br><span class="line">    <span class="comment">// This call is idempotent, and must not return an error if the container has</span></span><br><span class="line">    <span class="comment">// already been stopped.</span></span><br><span class="line">    <span class="comment">// The runtime must forcibly kill the container after the grace period is</span></span><br><span class="line">    <span class="comment">// reached.</span></span><br><span class="line">    rpc StopContainer(StopContainerRequest) returns (StopContainerResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// RemoveContainer removes the container. If the container is running, the</span></span><br><span class="line">    <span class="comment">// container must be forcibly removed.</span></span><br><span class="line">    <span class="comment">// This call is idempotent, and must not return an error if the container has</span></span><br><span class="line">    <span class="comment">// already been removed.</span></span><br><span class="line"></span><br><span class="line">    rpc RemoveContainer(RemoveContainerRequest) returns (RemoveContainerResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ListContainers lists all containers by filters.</span></span><br><span class="line">    rpc ListContainers(ListContainersRequest) returns (ListContainersResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ContainerStatus returns status of the container. If the container is not</span></span><br><span class="line">    <span class="comment">// present, returns an error.</span></span><br><span class="line">    rpc ContainerStatus(ContainerStatusRequest) returns (ContainerStatusResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// UpdateContainerResources updates ContainerConfig of the container.</span></span><br><span class="line">    rpc UpdateContainerResources(UpdateContainerResourcesRequest) returns (UpdateContainerResourcesResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ReopenContainerLog asks runtime to reopen the stdout/stderr log file</span></span><br><span class="line">    <span class="comment">// for the container. This is often called after the log file has been</span></span><br><span class="line">    <span class="comment">// rotated. If the container is not running, container runtime can choose</span></span><br><span class="line">    <span class="comment">// to either create a new log file and return nil, or return an error.</span></span><br><span class="line">    <span class="comment">// Once it returns error, new container log file MUST NOT be created.</span></span><br><span class="line">    rpc ReopenContainerLog(ReopenContainerLogRequest) returns (ReopenContainerLogResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ExecSync runs a command in a container synchronously.</span></span><br><span class="line">    rpc ExecSync(ExecSyncRequest) returns (ExecSyncResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// Exec prepares a streaming endpoint to execute a command in the container.</span></span><br><span class="line">    rpc Exec(ExecRequest) returns (ExecResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// Attach prepares a streaming endpoint to attach to a running container.</span></span><br><span class="line">    rpc Attach(AttachRequest) returns (AttachResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// PortForward prepares a streaming endpoint to forward ports from a PodSandbox.</span></span><br><span class="line">    rpc PortForward(PortForwardRequest) returns (PortForwardResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ContainerStats returns stats of the container. If the container does not</span></span><br><span class="line">    <span class="comment">// exist, the call returns an error.</span></span><br><span class="line">    rpc ContainerStats(ContainerStatsRequest) returns (ContainerStatsResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ListContainerStats returns stats of all running containers.</span></span><br><span class="line">    rpc ListContainerStats(ListContainerStatsRequest) returns (ListContainerStatsResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// PodSandboxStats returns stats of the pod sandbox. If the pod sandbox does not</span></span><br><span class="line">    <span class="comment">// exist, the call returns an error.</span></span><br><span class="line">    rpc PodSandboxStats(PodSandboxStatsRequest) returns (PodSandboxStatsResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ListPodSandboxStats returns stats of the pod sandboxes matching a filter.</span></span><br><span class="line">    rpc ListPodSandboxStats(ListPodSandboxStatsRequest) returns (ListPodSandboxStatsResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// UpdateRuntimeConfig updates the runtime configuration based on the given request.</span></span><br><span class="line">    rpc UpdateRuntimeConfig(UpdateRuntimeConfigRequest) returns (UpdateRuntimeConfigResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// Status returns the status of the runtime.</span></span><br><span class="line">    rpc Status(StatusRequest) returns (StatusResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="ImageService"><a href="#ImageService" class="headerlink" title="ImageService"></a>ImageService</h3><p>跟镜像相关的操作，包括了</p>
-<ol>
-<li>增：PullImage</li>
-<li>查：ListImages、ImageStatus和ImageFsInfo</li>
-<li>删：RemoveImage</li>
-</ol>
-<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ImageService defines the public APIs for managing images.</span></span><br><span class="line">service ImageService <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="comment">// ListImages lists existing images.</span></span><br><span class="line">    rpc ListImages(ListImagesRequest) returns (ListImagesResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ImageStatus returns the status of the image. If the image is not</span></span><br><span class="line">    <span class="comment">// present, returns a response with ImageStatusResponse.Image set to</span></span><br><span class="line">    <span class="comment">// nil.</span></span><br><span class="line">    rpc ImageStatus(ImageStatusRequest) returns (ImageStatusResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// PullImage pulls an image with authentication config.</span></span><br><span class="line">    rpc PullImage(PullImageRequest) returns (PullImageResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// RemoveImage removes the image.</span></span><br><span class="line">    <span class="comment">// This call is idempotent, and must not return an error if the image has</span></span><br><span class="line">    <span class="comment">// already been removed.</span></span><br><span class="line">    rpc RemoveImage(RemoveImageRequest) returns (RemoveImageResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ImageFSInfo returns information of the filesystem that is used to store images.</span></span><br><span class="line">    rpc ImageFsInfo(ImageFsInfoRequest) returns (ImageFsInfoResponse) <span class="punctuation">&#123;</span><span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
-
-<h2 id="CRI-CLI"><a href="#CRI-CLI" class="headerlink" title="CRI CLI"></a>CRI CLI</h2><p>CRI 自带了命令行工具 crictl。</p>
-<p>Linux 下安装脚本：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">VERSION=&quot;v1.26.0&quot; # check latest version in /releases page</span><br><span class="line">wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$VERSION-linux-amd64.tar.gz</span><br><span class="line">sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin</span><br><span class="line">rm -f crictl-$VERSION-linux-amd64.tar.gz</span><br></pre></td></tr></table></figure>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/post/aliyun-3years/" rel="prev" title="阿里巴巴入职三周年感悟">
-                  <i class="fa fa-angle-left"></i> 阿里巴巴入职三周年感悟
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/post/12-factors-app/" rel="next" title="12要素应用">
-                  12要素应用 <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    
-  
-  <div class="comments giscus-container">
-  </div>
-  
-  
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder"></span>
-  </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-
-
-  
-
-
-
-
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
-
-<script>
-document.addEventListener('page:loaded', () => {
-  if (!CONFIG.page.comments) return;
-
-  NexT.utils.loadComments('.giscus-container')
-    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
-      attributes: {
-        async                   : true,
-        crossOrigin             : 'anonymous',
-        'data-repo'             : CONFIG.giscus.repo,
-        'data-repo-id'          : CONFIG.giscus.repo_id,
-        'data-category'         : CONFIG.giscus.category,
-        'data-category-id'      : CONFIG.giscus.category_id,
-        'data-mapping'          : CONFIG.giscus.mapping,
-        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
-        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
-        'data-theme'            : CONFIG.giscus.theme,
-        'data-lang'             : CONFIG.giscus.lang,
-        'data-input-position'   : CONFIG.giscus.input_position,
-        'data-loading'          : CONFIG.giscus.loading
-      },
-      parentNode: document.querySelector('.giscus-container')
-    }));
-});
-</script>
-
-</body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="title: Container Runtime Interface(CRI) date: 2022-06-29 22:20:52 tags: author: CRI为k8s提供的kubelet扩展接口，用来支持多种容器运行时。CRI协议为protobuf格式，kubelet作为客户端，容器运行时作为服务端，两者通过gRpc协议通讯。下面主要解读 CRI的协议定义\n"><title></title><link rel=canonical href=https://kuring.me/post/cri/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content><meta property='og:description' content="title: Container Runtime Interface(CRI) date: 2022-06-29 22:20:52 tags: author: CRI为k8s提供的kubelet扩展接口，用来支持多种容器运行时。CRI协议为protobuf格式，kubelet作为客户端，容器运行时作为服务端，两者通过gRpc协议通讯。下面主要解读 CRI的协议定义\n"><meta property='og:url' content='https://kuring.me/post/cri/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta name=twitter:title content><meta name=twitter:description content="title: Container Runtime Interface(CRI) date: 2022-06-29 22:20:52 tags: author: CRI为k8s提供的kubelet扩展接口，用来支持多种容器运行时。CRI协议为protobuf格式，kubelet作为客户端，容器运行时作为服务端，两者通过gRpc协议通讯。下面主要解读 CRI的协议定义\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#author>title: Container Runtime Interface(CRI)
+date: 2022-06-29 22:20:52
+tags:
+author:</a></li><li><a href=#spec解读>spec解读</a><ol><li><a href=#runtimeservice>RuntimeService</a></li><li><a href=#imageservice>ImageService</a></li></ol></li><li><a href=#cri-cli>CRI CLI</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/cri/></a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 3 分钟</time></div></footer></div></header><section class=article-content><h2 id=author>title: Container Runtime Interface(CRI)
+date: 2022-06-29 22:20:52
+tags:
+author:</h2><p>CRI为k8s提供的kubelet扩展接口，用来支持多种容器运行时。CRI协议为protobuf格式，kubelet作为客户端，容器运行时作为服务端，两者通过gRpc协议通讯。下面主要解读 <a class=link href=https://github.com/kubernetes/cri-api/blob/c75ef5b/pkg/apis/runtime/v1/api.proto target=_blank rel=noopener>CRI的协议定义</a></p><h2 id=spec解读>spec解读</h2><h3 id=runtimeservice>RuntimeService</h3><p><img src=https://kuring.oss-cn-beijing.aliyuncs.com/common/cri-api-to-construct.png loading=lazy alt=https://github.com/kata-containers/kata-containers/blob/main/docs/design/arch-images/api-to-construct.png></p><p>包括了Pod和容器相关的操作。</p><p>Pod相关的操作包括：</p><ol><li>启：RunPodSandbox</li><li>停：StopPodSandbox</li><li>删：RemovePodSandbox</li><li>查：PodSandboxStatus、ListPodSandbox、ListPodSandboxStats、PodSandboxStats</li></ol><p>容器相关的操作：</p><ol><li>增、启：CreateContainer、StartContainer</li><li>停：StopContainer</li><li>删：RemoveContainer</li><li>查：ListContainers、ContainerStatus、</li><li>改：UpdateContainerResources</li><li>控：ReopenContainerLog、ExecSync、Exec、Attach、PortForward</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=c1>// Runtime service defines the public APIs for remote container runtimes
+</span></span></span><span class=line><span class=cl><span class=err>service</span> <span class=err>RuntimeService</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Version returns the runtime name, runtime version, and runtime API version.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>Version(VersionRequest)</span> <span class=err>returns</span> <span class=err>(VersionResponse)</span> <span class=err>{</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// RunPodSandbox creates and starts a pod-level sandbox. Runtimes must ensure
+</span></span></span><span class=line><span class=cl>    <span class=c1>// the sandbox is in the ready state on success.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>RunPodSandbox(RunPodSandboxRequest)</span> <span class=err>returns</span> <span class=err>(RunPodSandboxResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// StopPodSandbox stops any running process that is part of the sandbox and
+</span></span></span><span class=line><span class=cl>    <span class=c1>// reclaims network resources (e.g., IP addresses) allocated to the sandbox.
+</span></span></span><span class=line><span class=cl>    <span class=c1>// If there are any running containers in the sandbox, they must be forcibly
+</span></span></span><span class=line><span class=cl>    <span class=c1>// terminated.
+</span></span></span><span class=line><span class=cl>    <span class=c1>// This call is idempotent, and must not return an error if all relevant
+</span></span></span><span class=line><span class=cl>    <span class=c1>// resources have already been reclaimed. kubelet will call StopPodSandbox
+</span></span></span><span class=line><span class=cl>    <span class=c1>// at least once before calling RemovePodSandbox. It will also attempt to
+</span></span></span><span class=line><span class=cl>    <span class=c1>// reclaim resources eagerly, as soon as a sandbox is not needed. Hence,
+</span></span></span><span class=line><span class=cl>    <span class=c1>// multiple StopPodSandbox calls are expected.
+</span></span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>StopPodSandbox(StopPodSandboxRequest)</span> <span class=err>returns</span> <span class=err>(StopPodSandboxResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// RemovePodSandbox removes the sandbox. If there are any running containers
+</span></span></span><span class=line><span class=cl>    <span class=c1>// in the sandbox, they must be forcibly terminated and removed.
+</span></span></span><span class=line><span class=cl>    <span class=c1>// This call is idempotent, and must not return an error if the sandbox has
+</span></span></span><span class=line><span class=cl>    <span class=c1>// already been removed.
+</span></span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>RemovePodSandbox(RemovePodSandboxRequest)</span> <span class=err>returns</span> <span class=err>(RemovePodSandboxResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// PodSandboxStatus returns the status of the PodSandbox. If the PodSandbox is not
+</span></span></span><span class=line><span class=cl>    <span class=c1>// present, returns an error.
+</span></span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>PodSandboxStatus(PodSandboxStatusRequest)</span> <span class=err>returns</span> <span class=err>(PodSandboxStatusResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ListPodSandbox returns a list of PodSandboxes.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>ListPodSandbox(ListPodSandboxRequest)</span> <span class=err>returns</span> <span class=err>(ListPodSandboxResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// CreateContainer creates a new container in specified PodSandbox
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>CreateContainer(CreateContainerRequest)</span> <span class=err>returns</span> <span class=err>(CreateContainerResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// StartContainer starts the container.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>StartContainer(StartContainerRequest)</span> <span class=err>returns</span> <span class=err>(StartContainerResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// StopContainer stops a running container with a grace period (i.e., timeout).
+</span></span></span><span class=line><span class=cl>    <span class=c1>// This call is idempotent, and must not return an error if the container has
+</span></span></span><span class=line><span class=cl>    <span class=c1>// already been stopped.
+</span></span></span><span class=line><span class=cl>    <span class=c1>// The runtime must forcibly kill the container after the grace period is
+</span></span></span><span class=line><span class=cl>    <span class=c1>// reached.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>StopContainer(StopContainerRequest)</span> <span class=err>returns</span> <span class=err>(StopContainerResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// RemoveContainer removes the container. If the container is running, the
+</span></span></span><span class=line><span class=cl>    <span class=c1>// container must be forcibly removed.
+</span></span></span><span class=line><span class=cl>    <span class=c1>// This call is idempotent, and must not return an error if the container has
+</span></span></span><span class=line><span class=cl>    <span class=c1>// already been removed.
+</span></span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>RemoveContainer(RemoveContainerRequest)</span> <span class=err>returns</span> <span class=err>(RemoveContainerResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ListContainers lists all containers by filters.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>ListContainers(ListContainersRequest)</span> <span class=err>returns</span> <span class=err>(ListContainersResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ContainerStatus returns status of the container. If the container is not
+</span></span></span><span class=line><span class=cl>    <span class=c1>// present, returns an error.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>ContainerStatus(ContainerStatusRequest)</span> <span class=err>returns</span> <span class=err>(ContainerStatusResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// UpdateContainerResources updates ContainerConfig of the container.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>UpdateContainerResources(UpdateContainerResourcesRequest)</span> <span class=err>returns</span> <span class=err>(UpdateContainerResourcesResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ReopenContainerLog asks runtime to reopen the stdout/stderr log file
+</span></span></span><span class=line><span class=cl>    <span class=c1>// for the container. This is often called after the log file has been
+</span></span></span><span class=line><span class=cl>    <span class=c1>// rotated. If the container is not running, container runtime can choose
+</span></span></span><span class=line><span class=cl>    <span class=c1>// to either create a new log file and return nil, or return an error.
+</span></span></span><span class=line><span class=cl>    <span class=c1>// Once it returns error, new container log file MUST NOT be created.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>ReopenContainerLog(ReopenContainerLogRequest)</span> <span class=err>returns</span> <span class=err>(ReopenContainerLogResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ExecSync runs a command in a container synchronously.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>ExecSync(ExecSyncRequest)</span> <span class=err>returns</span> <span class=err>(ExecSyncResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Exec prepares a streaming endpoint to execute a command in the container.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>Exec(ExecRequest)</span> <span class=err>returns</span> <span class=err>(ExecResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Attach prepares a streaming endpoint to attach to a running container.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>Attach(AttachRequest)</span> <span class=err>returns</span> <span class=err>(AttachResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// PortForward prepares a streaming endpoint to forward ports from a PodSandbox.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>PortForward(PortForwardRequest)</span> <span class=err>returns</span> <span class=err>(PortForwardResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ContainerStats returns stats of the container. If the container does not
+</span></span></span><span class=line><span class=cl>    <span class=c1>// exist, the call returns an error.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>ContainerStats(ContainerStatsRequest)</span> <span class=err>returns</span> <span class=err>(ContainerStatsResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ListContainerStats returns stats of all running containers.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>ListContainerStats(ListContainerStatsRequest)</span> <span class=err>returns</span> <span class=err>(ListContainerStatsResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// PodSandboxStats returns stats of the pod sandbox. If the pod sandbox does not
+</span></span></span><span class=line><span class=cl>    <span class=c1>// exist, the call returns an error.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>PodSandboxStats(PodSandboxStatsRequest)</span> <span class=err>returns</span> <span class=err>(PodSandboxStatsResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ListPodSandboxStats returns stats of the pod sandboxes matching a filter.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>ListPodSandboxStats(ListPodSandboxStatsRequest)</span> <span class=err>returns</span> <span class=err>(ListPodSandboxStatsResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// UpdateRuntimeConfig updates the runtime configuration based on the given request.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>UpdateRuntimeConfig(UpdateRuntimeConfigRequest)</span> <span class=err>returns</span> <span class=err>(UpdateRuntimeConfigResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Status returns the status of the runtime.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>Status(StatusRequest)</span> <span class=err>returns</span> <span class=err>(StatusResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl><span class=err>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=imageservice>ImageService</h3><p>跟镜像相关的操作，包括了</p><ol><li>增：PullImage</li><li>查：ListImages、ImageStatus和ImageFsInfo</li><li>删：RemoveImage</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=c1>// ImageService defines the public APIs for managing images.
+</span></span></span><span class=line><span class=cl><span class=err>service</span> <span class=err>ImageService</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// ListImages lists existing images.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>ListImages(ListImagesRequest)</span> <span class=err>returns</span> <span class=err>(ListImagesResponse)</span> <span class=err>{</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ImageStatus returns the status of the image. If the image is not
+</span></span></span><span class=line><span class=cl>    <span class=c1>// present, returns a response with ImageStatusResponse.Image set to
+</span></span></span><span class=line><span class=cl>    <span class=c1>// nil.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>ImageStatus(ImageStatusRequest)</span> <span class=err>returns</span> <span class=err>(ImageStatusResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// PullImage pulls an image with authentication config.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>PullImage(PullImageRequest)</span> <span class=err>returns</span> <span class=err>(PullImageResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// RemoveImage removes the image.
+</span></span></span><span class=line><span class=cl>    <span class=c1>// This call is idempotent, and must not return an error if the image has
+</span></span></span><span class=line><span class=cl>    <span class=c1>// already been removed.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>RemoveImage(RemoveImageRequest)</span> <span class=err>returns</span> <span class=err>(RemoveImageResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ImageFSInfo returns information of the filesystem that is used to store images.
+</span></span></span><span class=line><span class=cl>    <span class=err>rpc</span> <span class=err>ImageFsInfo(ImageFsInfoRequest)</span> <span class=err>returns</span> <span class=err>(ImageFsInfoResponse)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl><span class=err>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=cri-cli>CRI CLI</h2><p>CRI 自带了命令行工具 crictl。</p><p>Linux 下安装脚本：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>VERSION</span><span class=o>=</span><span class=s2>&#34;v1.26.0&#34;</span> <span class=c1># check latest version in /releases page</span>
+</span></span><span class=line><span class=cl><span class=n>wget</span> <span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>github</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>kubernetes</span><span class=o>-</span><span class=n>sigs</span><span class=o>/</span><span class=n>cri</span><span class=o>-</span><span class=n>tools</span><span class=o>/</span><span class=n>releases</span><span class=o>/</span><span class=n>download</span><span class=o>/$</span><span class=n>VERSION</span><span class=o>/</span><span class=n>crictl</span><span class=o>-$</span><span class=n>VERSION</span><span class=o>-</span><span class=n>linux</span><span class=o>-</span><span class=n>amd64</span><span class=o>.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span>
+</span></span><span class=line><span class=cl><span class=n>sudo</span> <span class=n>tar</span> <span class=n>zxvf</span> <span class=n>crictl</span><span class=o>-$</span><span class=n>VERSION</span><span class=o>-</span><span class=n>linux</span><span class=o>-</span><span class=n>amd64</span><span class=o>.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span> <span class=o>-</span><span class=n>C</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>local</span><span class=o>/</span><span class=n>bin</span>
+</span></span><span class=line><span class=cl><span class=n>rm</span> <span class=o>-</span><span class=n>f</span> <span class=n>crictl</span><span class=o>-$</span><span class=n>VERSION</span><span class=o>-</span><span class=n>linux</span><span class=o>-</span><span class=n>amd64</span><span class=o>.</span><span class=n>tar</span><span class=o>.</span><span class=n>gz</span>
+</span></span></code></pre></td></tr></table></div></div></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

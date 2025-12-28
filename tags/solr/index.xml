@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Solr on 404频道</title><link>https://kuring.me/tags/solr/</link><description>Recent content in Solr on 404频道</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>kuring</copyright><lastBuildDate>Fri, 05 Jul 2013 16:57:14 +0000</lastBuildDate><atom:link href="https://kuring.me/tags/solr/index.xml" rel="self" type="application/rss+xml"/><item><title>SolrCloud官方文档翻译</title><link>https://kuring.me/post/solrcloud_translate/</link><pubDate>Fri, 05 Jul 2013 16:57:14 +0000</pubDate><guid>https://kuring.me/post/solrcloud_translate/</guid><description>&lt;p&gt;本文是翻译的solrcloud的官方英文文档，本文仅将文中重点翻译，原文地址点&lt;a class="link" href="http://wiki.apache.org/solr/SolrCloud" target="_blank" rel="noopener"
+&gt;这里&lt;/a&gt;。英文水平不咋地，翻译篇文章也算练练手。&lt;/p&gt;
+&lt;p&gt;&lt;img src="http://people.apache.org/~markrmiller/2shard4serverFull.jpg"
+loading="lazy"
+alt="Image Title"
+&gt;&lt;/p&gt;
+&lt;h1 id="solrcloud"&gt;SolrCloud
+&lt;/h1&gt;&lt;p&gt;SolrCloud是Solr的分布式集群。可以通过集群来搭建一个高可用性，容错性的Solr服务。当想搭建一个大规模，容错性，分布式索引，查询性能好的Solr服务时可以采用SolrCloud。&lt;/p&gt;
+&lt;h1 id="关于solrcores和collections的一点小知识"&gt;关于SolrCores和Collections的一点小知识
+&lt;/h1&gt;&lt;p&gt;在单机运行时，单独的索引叫做SolrCore。如果想要创建多个索引，可以创建多个SolrCore。利用SolrCloud，一个索引可以存放在不同的Solr服务上。意味着一个单独的索引可以由不同的机器上的SolrCore组成。不同机器上的SolrCore组成了逻辑上的索引，这些SolrCore叫做collection。组成collection的SolrCore包括了数据索引和备份。&lt;/p&gt;
+&lt;h1 id="例子a-简单两个shard集群"&gt;例子A： 简单两个shard集群
+&lt;/h1&gt;&lt;p&gt;&lt;img src="http://people.apache.org/~markrmiller/2shard2server.jpg"
+loading="lazy"
+alt="Image Title"
+&gt;
+这个例子简单创建了包含两个solr服务的集群，一个collection的数据分布到两个不同的shard上。
+因为在这个例子中我们需要两个服务器，这里仅简单的复制example的数据作为第二个服务器，复制example目录之前需要确保里面没有索引数据。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;rm -r example/solr/collection1/data/*
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cp -r example example2
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;下面的命令会启动一个solr服务并启动一个新的solr集群。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cd example
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DzkRun -DnumShards=2 -jar start.jar
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;-DzkRun&lt;/code&gt; 参数会在solr服务中启动一个内置的zookeeper服务。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-Dbootstrap_confdir=./solr/collection1/conf&lt;/code&gt; 因为在zookeeper中没有solr配置信息，这一参数会将本地的&lt;code&gt;./solr/conf&lt;/code&gt;目录下的配置信息上传到zookeeper中作为&lt;code&gt;myconf&lt;/code&gt;配置参数。&lt;code&gt;myconf&lt;/code&gt;是在下面的&lt;code&gt;collection.configName&lt;/code&gt;参数中指定的。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-Dcollection.configName=myconf&lt;/code&gt; 为新的collection设置配置名称。如果不加这个参数配置默认名称为&lt;code&gt;configuration1&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-DnumShards=2&lt;/code&gt; 划分索引到逻辑分区的个数。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;浏览&lt;code&gt;http://localhost(本地主机):8983/solr/#/~cloud&lt;/code&gt;可以看到集群的状态。&lt;/p&gt;
+&lt;p&gt;通过目录树可以看到配置文件已经上传到了&lt;code&gt;/configs/myconf/&lt;/code&gt;目录下，一个叫collection1的collection已经创建，在collection1下是shard的列表，这些shard组成了完整的collection。&lt;/p&gt;
+&lt;p&gt;接下来准备启动第二个服务器，因为没有明确的设置shard的id，该服务会自动分配到shard2。&lt;/p&gt;
+&lt;p&gt;启动第二个服务，并将其指向集群。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cd example2
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -Djetty.port=7574 -DzkHost=localhost:9983 -jar start.jar
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;-Djetty.port=7574&lt;/code&gt;来指定Jetty的端口号。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-DzkHost=localhost:9983&lt;/code&gt;用来指定Zookeeper集群。在本例中，在第一个Solr服务中运行了一个单独的Zookeeper服务。默认情况下，Zookeeper的端口号为Solr服务的端口号加上1000，即9983。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;通过访问&lt;code&gt;http://localhost(本地主机):8983/solr/#/~cloud&lt;/code&gt;，在collection1中就可以看到shard1和shard2。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://kuring.me/ref/solr/solrcloud_1.png"
+loading="lazy"
+alt="Image Title"
+&gt;&lt;/p&gt;
+&lt;p&gt;下面对一些文档建立索引。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cd exampledocs
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -Durl=http://localhost:8983/solr/collection1/update -jar post.jar ipod_video.xml
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -Durl=http://localhost:8983/solr/collection1/update -jar post.jar monitor.xml
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -Durl=http://localhost:8983/solr/collection1/update -jar post.jar mem.xml
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;无论是向集群中的任何一台服务器请求都会得到全部的collection：&lt;code&gt;http://localhost:8983/solr/collection1/select?q=*:*&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;假如想更改配置，可以在关闭所有服务之后删除&lt;code&gt;solr/zoo_data&lt;/code&gt;目录下的所有内容。&lt;/p&gt;
+&lt;p&gt;实际测试插入速度要比单个服务慢。&lt;/p&gt;
+&lt;h1 id="例子b简单的两个shard重复的shard集群"&gt;例子B：简单的两个shard重复的shard集群
+&lt;/h1&gt;&lt;p&gt;&lt;img src="http://people.apache.org/~markrmiller/2shard4server.jpg"
+loading="lazy"
+alt="Image Title"
+&gt;
+本例子会通过复制shard1和shard2来创建上一个例子。额外的shard备份可以有高可用性和容错性，简单提升索引的查询能力。&lt;/p&gt;
+&lt;p&gt;首先，在运行先前的例子中我们已经有了两个shard和一些索引文档。然后简单的复制这两个服务：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cp -r example exampleB
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cp -r example2 example2B
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;然后，在不同的端口上启动两个新的服务：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cd exampleB
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -Djetty.port=8900 -DzkHost=localhost:9983 -jar start.jar
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cd example2B
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -Djetty.port=7500 -DzkHost=localhost:9983 -jar start.jar
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;重新浏览网址&lt;code&gt;http://localhost(本地主机):8983/solr/#/~cloud&lt;/code&gt;，检查四个solr节点是否已经都启动。
+&lt;img src="https://kuring.me/ref/solr/solrcloud_2.png"
+loading="lazy"
+alt="Image Title"
+&gt;
+因为我们已经告诉Solr我们需要两个逻辑上的shard，启动后的实例3和4会自动的成为原来shard的备份。&lt;/p&gt;
+&lt;p&gt;向集群中的任意一个服务发起查询：&lt;code&gt;http://localhost:7500/solr/collection1/select?q=*:*&lt;/code&gt;。多次发起这个查询并查看solr服务的日志。可以观察到Solr通过备份对请求做了平衡，通过不同的服务来处理请求。&lt;/p&gt;
+&lt;p&gt;为了证明高可用性，在除了运行Zookeeper的服务上按下CTRL-C。（在例子C中将会讨论Zookeeper的冗余）当服务终止后，发送另外一个查询请求到其他服务，仍然能够看到所有的结果。&lt;/p&gt;
+&lt;p&gt;在没一个shard至少还有一个服务时，SolrCloud仍然可以提供服务。可以通过关闭每一个实例来查看结果。假如关闭了一个shard的所有的服务，到其他服务的请求就会收到503错误。为了能够返回其他可用的shard中的文档，可以在请求中增加参数：&lt;code&gt;shards.tolerant=true&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;SolrCloud用leaders和overseer来作为具体的实现。一些节点或备份将会扮演特殊的角色。不需要担心杀死了leader或overseer，假如杀死了其中的一个，集群会自动选择一个新的leader或overseer，并自动接管工作。任何的Solr实例都可以成为这种角色。&lt;/p&gt;
+&lt;h1 id="例子c两个shard集群shard带备份和zookeeper集群"&gt;例子C：两个shard集群，shard带备份和zookeeper集群
+&lt;/h1&gt;&lt;p&gt;&lt;img src="http://people.apache.org/~markrmiller/2shard4server2.jpg"
+loading="lazy"
+alt="Image Title"
+&gt;&lt;/p&gt;
+&lt;p&gt;在例子B中问题是虽然有足够的Solr服务器可以避免集群挂掉，但是仅有一个zookeeper服务来维持集群的状态。假如zookeeper服务挂掉了，分布式的查询还是可以工作的，因为solr服务记录了zookeeper最后一次报告的状态。问题是没有新的服务器或客户端能发现集群的状态，集群的状态也不会改变。&lt;/p&gt;
+&lt;p&gt;运行多个zookeeper服务可以保证zookeeper服务具有高可用性。每一个zookeeper服务需要知道集群中的其他服务，大部分服务需要提供服务。例如，一个含有三个zookeeper服务的集群允许其中一个失败剩余的两个仍然可以提供服务。五个zookeeper服务的集群可以允许一次失败两个。&lt;/p&gt;
+&lt;p&gt;从产品角度考虑，推荐使用单独的zookeeper服务而不是solr服务中集成的zookeeper服务。你可以从&lt;a class="link" href="http://zookeeper.apache.org/doc/r3.3.4/zookeeperStarted.html" target="_blank" rel="noopener"
+&gt;这里&lt;/a&gt;读取到更多的zookeeper集群。在这个简单的例子中，我们仅简单的使用了集成的zookeeper。&lt;/p&gt;
+&lt;p&gt;首先，停止四个服务，并清空zookeeper中的数据作为一个新的开始。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;rm -r example*/solr/zoo_data
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;我们仍然将服务分别运行在8983,7574,8900,7500端口。默认是在端口号+1000的端口上启动一个zookeeper服务，第一次运行的时候在另外三台服务器上zookeeper的地址分别为：localhost:9983,localhost:8574,localhost:9900。&lt;/p&gt;
+&lt;p&gt;为了方便通过第一个服务上传solr的配置到zookeeper集群中。在第二个zookeeper服务启动之前程序会阻塞。这是因为zookeeper在工作的时候需要其他服务。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cd example
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DzkRun -DzkHost=localhost:9983,localhost:8574,localhost:9900 -DnumShards=2 -jar start.jar
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cd example2
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -Djetty.port=7574 -DzkRun -DzkHost=localhost:9983,localhost:8574,localhost:9900 -jar start.jar
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cd exampleB
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -Djetty.port=8900 -DzkRun -DzkHost=localhost:9983,localhost:8574,localhost:9900 -jar start.jar
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cd example2B
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -Djetty.port=7500 -DzkHost=localhost:9983,localhost:8574,localhost:9900 -jar start.jar
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;现在我们运行了三个内置的zookeeper服务，如果一个服务挂掉之后其他一切正常。为了证明，在exampleB上按下&lt;code&gt;CTRL+C&lt;/code&gt;杀掉服务，然后浏览&lt;code&gt;http://localhost:8983/solr/#/~cloud&lt;/code&gt;来核实zookeeper服务仍然可以工作。&lt;/p&gt;
+&lt;p&gt;需要注意的是，当运行在多个机器上，需要在每一台机器上设置&lt;code&gt;-DzkRun=hostname:port&lt;/code&gt;属性。&lt;/p&gt;
+&lt;h1 id="zookeeper"&gt;ZooKeeper
+&lt;/h1&gt;&lt;p&gt;多个zookeeper服务同时运行来避免错误和高可用性叫做ensemble。从产品角度，推荐运行外部的zookeeper ensemble来代替solr集成的zookeeper。浏览&lt;a class="link" href="http://zookeeper.apache.org/" target="_blank" rel="noopener"
+&gt;zookeeper官方网站&lt;/a&gt;下载和运行一个zookeeper ensemble。可以参考&lt;a class="link" href="http://zookeeper.apache.org/doc/r3.3.4/zookeeperStarted.html" target="_blank" rel="noopener"
+&gt;Getting Started&lt;/a&gt;和&lt;a class="link" href="http://zookeeper.apache.org/doc/r3.3.4/zookeeperAdmin.html" target="_blank" rel="noopener"
+&gt;ZooKeeper Admin&lt;/a&gt;。非常简单就可以运行。可以坚持使用solr来运行zookeeper集群，但是必须知道zookeeper集群不是非常容易动态改变的。除非solr增加对zookeeper更好的支持，重新开始是最好的改变方式。zookeeper和solr是两个不同的进程是最好的方式。&lt;/p&gt;
+&lt;p&gt;当solr运行内置的zookeeper服务时，默认会使用solr服务的端口号加上1000作为zookeeper的客户端端口号。另外，默认会增加一个zookeeper的客户端端口号和两个zookeeper的选举端口号。所以在第一个例子中，solr运行在8983端口，内置的zookeeper服务运行在9983端口作为客户端端口，9984和9985作为服务端端口。&lt;/p&gt;
+&lt;p&gt;当增加了更多zookeeper节点可以提高读性能，但是会稍微降低写性能。当集群状态稳定的时候，Solr用的Zookeeper非常少。下面有一些优化zookeeper的建议：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;最好的情况是zookeeper有一个专用的机器。zookeeper是一个准时的服务，专用的机器可以确保及时响应。当然专用的机器不是必须的。&lt;/li&gt;
+&lt;li&gt;当把事务日志和snap-shots放到不同的磁盘上可以提高性能。&lt;/li&gt;
+&lt;li&gt;假如zookeeper和solr运行在同一台机器上，利用不同的磁盘可以提高性能。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h1 id="参考文档"&gt;参考文档
+&lt;/h1&gt;&lt;p&gt;&lt;a class="link" href="https://wiki.apache.org/solr/SolrCloud" target="_blank" rel="noopener"
+&gt;https://wiki.apache.org/solr/SolrCloud&lt;/a&gt;&lt;/p&gt;</description></item><item><title>在tomcat7.0.41上搭建solr4.3.1</title><link>https://kuring.me/post/solr4.3.1_setup/</link><pubDate>Wed, 03 Jul 2013 10:00:30 +0000</pubDate><guid>https://kuring.me/post/solr4.3.1_setup/</guid><description>&lt;p&gt;前几天写了篇《&lt;a class="link" href="https://kuring.me/post/solr_setup" &gt;在Linux上搭建solr环境&lt;/a&gt;》的博文，是基于solr3.6.2的安装。本文仅记录在tomcat7.0.41上搭建solr4.3.1搭建过程中需要注意的地方，其他地方可以参考上一篇博文。&lt;/p&gt;
+&lt;p&gt;配置完成之后发现http://192.168.20.38:8090/solr无法访问，但是http://192.168.20.38:8090/却可以访问，通过查看tomcat的日志文件localhost.2013-07-03.log，发现里面有如下错误提示。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;严重: Exception starting filter SolrRequestFilter
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;org.apache.solr.common.SolrException: Could not find necessary SLF4j logging jars. If using Jetty, the SLF4j logging jars need to go in the jetty lib/ext directory. For other containers, the corresponding directory should be used. For more information, see: http://wiki.apache.org/solr/SolrLogging
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;解决办法：将~/solr-4.3.1/example/lib/ext目录下的所有jar文件复制到~/apache-tomcat-7.0.41/lib目录下，然后重启tomcat即可。&lt;/p&gt;
+&lt;h1 id="相关下载"&gt;相关下载
+&lt;/h1&gt;&lt;p&gt;&lt;a class="link" href="http://pan.baidu.com/share/link?shareid=1811860312&amp;amp;uk=3506813023" target="_blank" rel="noopener"
+&gt;用到的文件&lt;/a&gt;&lt;/p&gt;</description></item><item><title>搭建分布式的solr环境</title><link>https://kuring.me/post/solr_setup_distribute/</link><pubDate>Tue, 02 Jul 2013 14:29:23 +0000</pubDate><guid>https://kuring.me/post/solr_setup_distribute/</guid><description>&lt;p&gt;本文以《&lt;a class="link" href="https://kuring.me/post/solr_setup" &gt;在Linux上搭建solr环境&lt;/a&gt;》为基础，假设已经在192.168.20.6和192.168.20.38上搭建了单机版solr环境。&lt;/p&gt;
+&lt;h1 id="主服务器配置"&gt;主服务器配置
+&lt;/h1&gt;&lt;p&gt;找到solr的环境目录下的conf文件夹下的solrconfig.xml文件，我的是在&lt;code&gt;/hadoop/solr/conf/solrconfig.xml&lt;/code&gt;目录下，打开后找到如下行&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;requestHandler name=&amp;#34;/replication&amp;#34; class=&amp;#34;solr.ReplicationHandler&amp;#34; &amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;默认是被注释的，将其修改为&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;requestHandler name=&amp;#34;/replication&amp;#34; class=&amp;#34;solr.ReplicationHandler&amp;#34; &amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;lst name=&amp;#34;master&amp;#34;&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;str name=&amp;#34;replicateAfter&amp;#34;&amp;gt;commit&amp;lt;/str&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;str name=&amp;#34;replicateAfter&amp;#34;&amp;gt;startup&amp;lt;/str&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;str name=&amp;#34;confFiles&amp;#34;&amp;gt;schema.xml,stopwords.txt&amp;lt;/str&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;/lst&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/requestHandler&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;replicateAfter表示solr会在什么情况下复制，可选项包括：commit、startup、optimize，这里保持默认。
+confFiles表示要分发的配置文件。&lt;/p&gt;
+&lt;h1 id="从服务器配置"&gt;从服务器配置
+&lt;/h1&gt;&lt;p&gt;在从服务器上，将&lt;code&gt;/hadoop/solr/conf/solrconfig.xml&lt;/code&gt;文件相应的修改为&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;requestHandler name=&amp;#34;/replication&amp;#34; class=&amp;#34;solr.ReplicationHandler&amp;#34; &amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;lst name=&amp;#34;slave&amp;#34;&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;str name=&amp;#34;masterUrl&amp;#34;&amp;gt;http://192.168.20.6:8080/solr/replication&amp;lt;/str&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;str name=&amp;#34;pollInterval&amp;#34;&amp;gt;00:00:60&amp;lt;/str&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;/lst&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/requestHandler&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;masterUrl为服务器的url地址。
+pollInterval为从服务器的同步时间间隔。&lt;/p&gt;</description></item><item><title>在Linux上搭建solr环境</title><link>https://kuring.me/post/solr_setup/</link><pubDate>Tue, 02 Jul 2013 00:00:00 +0000</pubDate><guid>https://kuring.me/post/solr_setup/</guid><description>&lt;p&gt;本文采用Linux操作系统在hadoop用户下安装，solr采用3.x中的最新版本3.6.2，tomcat采用6.0.37版本，安装包可以从本文下方链接下载。
+这里有两种安装方式，一种方式为利用solr自带的jetty来启动solr，默认端口为8983。另外一种方式为将solr集成到tomcat中。其中第一种方式较为简单，推荐新手采用。&lt;/p&gt;
+&lt;h1 id="独立启动"&gt;独立启动
+&lt;/h1&gt;&lt;ol&gt;
+&lt;li&gt;将sorl的安装包解压到用户的根目录下，解压后文件夹为apache-solr-3.6.2。&lt;/li&gt;
+&lt;li&gt;进入到example目录下，执行&lt;code&gt;java -jar start.jar&lt;/code&gt;命令，solr服务启动，端口为8983。&lt;/li&gt;
+&lt;li&gt;通过&lt;code&gt;http://IP地址:8983/solr/&lt;/code&gt;来访问solr的web页面，进入admin页面后可以通过输入字符串来查找索引。查找索引默认显示的格式为xml格式，可以通过在url的后面加上参数&lt;code&gt;wt=json&lt;/code&gt;来显示json格式的结果。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h1 id="利用tomcat"&gt;利用tomcat
+&lt;/h1&gt;&lt;h2 id="安装tomcat"&gt;安装tomcat
+&lt;/h2&gt;&lt;p&gt;1. 将apache-tomcat-6.0.37.tar.gz解压到hadoop的跟目录下。
+2. 修改hadoop用户的环境变量，执行&lt;code&gt;vi ~/.bash_profile&lt;/code&gt;命令，添加如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;export&lt;/span&gt; &lt;span class="n"&gt;CATALINA_HOME&lt;/span&gt;&lt;span class="o"&gt;=/&lt;/span&gt;&lt;span class="n"&gt;home&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;hadoop&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;apache&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;tomcat&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mf"&gt;6.0&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="mi"&gt;37&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;export&lt;/span&gt; &lt;span class="n"&gt;CLASSPATH&lt;/span&gt;&lt;span class="o"&gt;=.&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;$&lt;/span&gt;&lt;span class="n"&gt;JAVA_HOME&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;$&lt;/span&gt;&lt;span class="n"&gt;CATALINA_HOME&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;export&lt;/span&gt; &lt;span class="n"&gt;PATH&lt;/span&gt;&lt;span class="o"&gt;=$&lt;/span&gt;&lt;span class="n"&gt;PATH&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;$&lt;/span&gt;&lt;span class="n"&gt;CATALINA_HOME&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;bin&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;3. 执行&lt;code&gt;source ~/.bash_profile &lt;/code&gt;使修改的环境变量生效。
+4. 执行tomcat的bin目录下的startup.bat脚本来启动tomcat。
+5. 通过&lt;code&gt;netstat -anp | grep 8080&lt;/code&gt;命令查看tomcat是否启动。&lt;/p&gt;
+&lt;h2 id="安装solr"&gt;安装solr
+&lt;/h2&gt;&lt;p&gt;1. 将solr的dist/apache-solr-3.6.2.war文件复制到tomcat的webapps目录下，并将文件命名为solr.war。执行&lt;code&gt;cp ~/apache-solr-3.6.2/dist/apache-solr-3.6.2.war ~/apache-tomcat-6.0.37/webapps/solr.war&lt;/code&gt;命令。WAR是一个完整的web应用程序，包括了Solr的jar文件和所有运行Solr所依赖的Jar文件，Jsp和很多的配置文件与资源文件。&lt;/p&gt;
+&lt;p&gt;2. 修改&lt;code&gt;~/apache-tomcat-6.0.37/conf/server.xml&lt;/code&gt;文件相应行的内容如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;Connector port=&amp;#34;8080&amp;#34; protocol=&amp;#34;HTTP/1.1&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; connectionTimeout=&amp;#34;20000&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; URIEncoding=&amp;#34;UTF-8&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; redirectPort=&amp;#34;8443&amp;#34; /&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;增加&lt;code&gt;URIEncoding=&amp;quot;UTF-8&amp;quot;&lt;/code&gt;来支持中文。这是因为solr基于xml，json，javabin，php，python等多种格式传输请求和返回结果。&lt;/p&gt;
+&lt;p&gt;3.复制&lt;code&gt;~/apache-solr-3.6.2/example/solr&lt;/code&gt;目录到&lt;code&gt;/home/hadoop/solr&lt;/code&gt;位置。该位置为solr的应用环境目录。&lt;/p&gt;
+&lt;p&gt;4. 修改&lt;code&gt;/home/hadoop/solr/conf/solrconfig.xml&lt;/code&gt;文件中的dataDir一行内容为：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;dataDir&amp;gt;${solr.data.dir:/home/hadoop/solr/data}&amp;lt;/dataDir&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;目的是为了指定存放索引数据的路径。&lt;/p&gt;
+&lt;p&gt;5. 在&lt;code&gt;~/apache-tomcat-6.0.37/conf/Catalina/localhost&lt;/code&gt;目录下新建文件&lt;code&gt;solr.xml&lt;/code&gt;。增加内容如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;Context docBase=&amp;#34;/home/hadoop/apache-tomcat-6.0.37/webapps/solr.war&amp;#34; debug=&amp;#34;0&amp;#34; crossContext=&amp;#34;true&amp;#34; &amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;Environment name=&amp;#34;solr/home&amp;#34; type=&amp;#34;java.lang.String&amp;#34; value=&amp;#34;/home/hadoop/solr&amp;#34; override=&amp;#34;true&amp;#34; /&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/Context&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;其中docBase为tomcat的webapps下的solr.war完整路径。Environment的value属性的值为存放solr索引的文件夹，即第三步中复制的文件夹。
+需要注意的是：Catalina目录在首次启动tomcat时创建，因此在此步骤前需要启动过tomcat。&lt;/p&gt;
+&lt;p&gt;6. 在tomcat的bin目录下通过&lt;code&gt;startup.sh&lt;/code&gt;启动tomcat。&lt;/p&gt;
+&lt;p&gt;7. 通过&lt;code&gt;http://IP地址:8080/solr/&lt;/code&gt;来访问solr的web页面。&lt;/p&gt;
+&lt;h1 id="相关命令"&gt;相关命令
+&lt;/h1&gt;&lt;h2 id="放入数据到solr中"&gt;放入数据到solr中
+&lt;/h2&gt;&lt;p&gt;在apache-solr-3.6.2/example/exampledocs目录下，执行&lt;code&gt;java -jar post.jar 要存放的文件名&lt;/code&gt;。这里自己新建一个文件test.xml放入到solr中，文件内容如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;add&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;doc&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;field name=&amp;#34;id&amp;#34;&amp;gt;company&amp;lt;/field&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;field name=&amp;#34;text&amp;#34;&amp;gt;kaitone&amp;lt;/field&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;/doc&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/add&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;执行&lt;code&gt;java -jar post.jar test.xml&lt;/code&gt;将数据放入solr中。&lt;/p&gt;
+&lt;h2 id="删除数据"&gt;删除数据
+&lt;/h2&gt;&lt;p&gt;新建文本文件test_delete.xml，内容如下&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;delete&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;lt;id&amp;gt;company&amp;lt;/id&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&amp;lt;/delete&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;执行&lt;code&gt;java -jar post.jar test_delete.xml&lt;/code&gt;将数据从solr中删除。
+另外还可以通过命令行的方式来删除，命令为&lt;code&gt;java -Ddate=args -jar post.jar '&amp;lt;delete&amp;gt;&amp;lt;id&amp;gt;company&amp;lt;/id&amp;gt;&amp;lt;/delete&amp;gt;'&lt;/code&gt;。&lt;/p&gt;
+&lt;h1 id="在eclipse中搭建环境操作solr-api"&gt;在Eclipse中搭建环境操作Solr api
+&lt;/h1&gt;&lt;p&gt;1. 新建一个java工程
+2. 在工程中引入如下包：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;commons-httpclient-3.1.jar&lt;/li&gt;
+&lt;li&gt;commons-codec-1.6.jar&lt;/li&gt;
+&lt;li&gt;apache-solr-solrj-3.6.2.jar&lt;/li&gt;
+&lt;li&gt;slf4j-api-1.6.1.jar&lt;/li&gt;
+&lt;li&gt;slf4j-log4j12-1.6.1.jar&lt;/li&gt;
+&lt;li&gt;commons-logging-1.1.3.jar&lt;/li&gt;
+&lt;li&gt;log4j-1.2.12.jar&lt;/li&gt;
+&lt;li&gt;httpclient-4.2.5.jar&lt;/li&gt;
+&lt;li&gt;httpcore-4.2.4.jar&lt;/li&gt;
+&lt;li&gt;httpmime-4.2.5.jar&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;其中&lt;code&gt;commons-httpclient-3.1.jar&lt;/code&gt;、&lt;code&gt;commons-codec-1.6.jar&lt;/code&gt;、&lt;code&gt;apache-solr-solrj-3.6.2.jar&lt;/code&gt;、&lt;code&gt;slf4j-api-1.6.1.jar&lt;/code&gt;可以从solr的目录&lt;code&gt;apache-solr-3.6.2&lt;/code&gt;中的dist目录下找到。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;slf4j-log4j12-1.6.1.jar&lt;/code&gt;可以从slf4j的压缩包中&lt;code&gt;slf4j-1.6.1.tar.gz&lt;/code&gt;找到。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;commons-logging-1.1.3.jar&lt;/code&gt;可以从slf4j的压缩包中&lt;code&gt;commons-logging-1.1.3-bin.zip&lt;/code&gt;找到。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;log4j-1.2.12.jar&lt;/code&gt;可以从log4j的压缩包中&lt;code&gt;logging-log4j-1.2.12.tar.gz&lt;/code&gt;找到。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;httpclient-4.2.5.jar&lt;/code&gt;、&lt;code&gt;httpcore-4.2.4.jar&lt;/code&gt;、&lt;code&gt;httpmime-4.2.5.jar&lt;/code&gt;在&lt;code&gt;httpcomponents-client-4.2.5-bin.tar.gz&lt;/code&gt;文件中。&lt;/p&gt;
+&lt;p&gt;具体的API编程可以参考&lt;a class="link" href="http://www.cnblogs.com/hoojo/archive/2011/10/21/2220431.html" target="_blank" rel="noopener"
+&gt;Solr开发文档&lt;/a&gt;。&lt;/p&gt;
+&lt;h1 id="在linux上编译并执行程序"&gt;在linux上编译并执行程序
+&lt;/h1&gt;&lt;p&gt;1. 将工程中用到的jar包复制到Linux机器上，这里复制到&lt;code&gt;/home/hadoop/test_solr/lib&lt;/code&gt;目录下。&lt;/p&gt;
+&lt;p&gt;2. 将测试程序的源码放到Linux机器上，这里复制到&lt;code&gt;/home/hadoop/test_solr&lt;/code&gt;目录下。其中源码包括三个文件：SolrTest.java、SolrClient.java、Index.java。该三个文件将会包含在下面相关下载中的Eclipse工程中。&lt;/p&gt;
+&lt;p&gt;3. 在&lt;code&gt;/home/hadoop/test_solr&lt;/code&gt;目录下执行&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;javac -cp lib/apache-solr-solrj-3.6.2.jar:lib/commons-httpclient-3.1.jar:lib/log4j-1.2.12.jar:lib/commons-codec-1.6.jar:lib/commons-logging-1.1.3.jar:lib/slf4j-api-1.6.1.jar:lib/httpclient-4.2.5.jar:lib/httpcore-4.2.4.jar:lib/httpmime-4.2.5.jar:. SolrTest.java
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;其中-cp等同于-classpath参数，指定编译SolrTest.java文件需要的ClassPath路径，不要忘记路径后面的&lt;code&gt;.&lt;/code&gt;表示当前路径，否则找不到当前目录下的其他java文件。
+命令执行后会在&lt;code&gt;/home/hadoop/test_solr&lt;/code&gt;目录下生成Index.class、SolrClient.class、SolrTest.class三个class文件。&lt;/p&gt;
+&lt;p&gt;4. 在&lt;code&gt;/home/hadoop/test_solr&lt;/code&gt;目录下执行&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;java -cp lib/apache-solr-solrj-3.6.2.jar:lib/commons-httpclient-3.1.jar:lib/log4j-1.2.12.jar:lib/commons-codec-1.6.jar:lib/commons-logging-1.1.3.jar:lib/slf4j-api-1.6.1.jar:lib/httpclient-4.2.5.jar:lib/httpcore-4.2.4.jar:lib/:httpmime-4.2.5.jar:. SolrTest
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;来运行程序。&lt;/p&gt;
+&lt;h1 id="在linux上打包并执行"&gt;在Linux上打包并执行
+&lt;/h1&gt;&lt;p&gt;1. 在上面步骤基础上，为了方便执行，可以将class文件打成jar包来执行，这样在使用java命令执行的时候就不用指定classpath路径了，只需要在jar包的MANIFEST.MF文件中指定classpath。&lt;/p&gt;
+&lt;p&gt;2. 在&lt;code&gt;/home/hadoop/test_solr&lt;/code&gt;下新建一个文件，文件名可以随便，这里取名为MANIFEST.MF，与生成的jar包中的文件名一致，文件内容为&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Manifest-Version: 1.0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Created-By: 1.6.0_10 (Sun Microsystems Inc.)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Main-Class: SolrTest
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Class-Path: /home/hadoop/test_solr/lib/apache-solr-solrj-3.6.2.jar /home/hadoop/test_solr/lib/commons-httpclient-3.1.jar /home/hadoop/test_solr/lib/log4j-1.2.12.jar /home/hadoop/test_solr/lib/commons-codec-1.6.jar /home/hadoop/test_solr/lib/commons-logging-1.1.3.jar /home/hadoop/test_solr/lib/slf4j-api-1.6.1.jar
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/home/hadoop/test_solr/lib/httpclient-4.2.5.jar
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/home/hadoop/test_solr/lib/httpcore-4.2.4.jar
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/home/hadoop/test_solr/lib/httpmime-4.2.5.jar
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;其中Main-Class指定main函数所在的类。
+Class-Path指定用到的jar所在的路径。其中Class-Path的各个jar文件之间通过空格分隔而不是通过&lt;code&gt;:&lt;/code&gt;分隔。&lt;/p&gt;
+&lt;p&gt;3. 将class文件打包成jar文件。执行&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;jar -cfm solrtest.jar MANIFEST.MF Index.class SolrClient.class SolrTest.class
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;会在此目录下生成solrtest.jar文件。jar命令会根据指定的MANIFEST.MF文件来产生jar包中的META-INF/MANIFEST.MF文件。两个文件内容并不完全一致，jar命令会根据格式对内容进行调整。&lt;/p&gt;
+&lt;p&gt;4. 运行jar文件。通过&lt;code&gt;java -jar solrtest.jar&lt;/code&gt;来执行。&lt;/p&gt;
+&lt;h1 id="相关下载"&gt;相关下载
+&lt;/h1&gt;&lt;p&gt;&lt;a class="link" href="http://pan.baidu.com/share/link?shareid=2915568646&amp;amp;uk=3506813023" target="_blank" rel="noopener"
+&gt;本文中用到的安装包&lt;/a&gt;&lt;/p&gt;
+&lt;h1 id="参考文档"&gt;参考文档
+&lt;/h1&gt;&lt;p&gt;&lt;a class="link" href="http://demi-panda.com/2013/03/13/install-solr/" target="_blank" rel="noopener"
+&gt;简单的Solr安装配置&lt;/a&gt;
+&lt;a class="link" href="https://lucene.apache.org/solr/3_6_2/doc-files/tutorial.html" target="_blank" rel="noopener"
+&gt;官方安装教程&lt;/a&gt;
+&lt;a class="link" href="http://cxshun.iteye.com/blog/1039445" target="_blank" rel="noopener"
+&gt;Solr初体验系列&lt;/a&gt;讲的非常详细，适合初学者
+&lt;a class="link" href="http://www.cnblogs.com/hoojo/archive/2011/10/21/2220431.html" target="_blank" rel="noopener"
+&gt;Solr开发文档&lt;/a&gt;&lt;/p&gt;</description></item></channel></rss>

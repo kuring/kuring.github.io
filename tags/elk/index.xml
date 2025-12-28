@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>ELK on 404频道</title><link>https://kuring.me/tags/elk/</link><description>Recent content in ELK on 404频道</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>kuring</copyright><lastBuildDate>Thu, 18 Feb 2016 00:00:00 +0000</lastBuildDate><atom:link href="https://kuring.me/tags/elk/index.xml" rel="self" type="application/rss+xml"/><item><title>ELK解析nginx日志</title><link>https://kuring.me/post/elk_nginx/</link><pubDate>Thu, 18 Feb 2016 00:00:00 +0000</pubDate><guid>https://kuring.me/post/elk_nginx/</guid><description>&lt;p&gt;ELK解析nginx日志&lt;/p&gt;
+&lt;p&gt;最近使用ELK搭建了一个nginx的日志解析环境，中间遇到一些挫折，好不容易搭建完毕，有必要记录一下。&lt;/p&gt;
+&lt;h1 id="nginx"&gt;nginx
+&lt;/h1&gt;&lt;p&gt;nginx配置文件中的日志配置如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;error_log&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nb"&gt;log&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;nginx&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;error&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;log_format&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;$remote_addr [$time_local] &amp;#34;$request&amp;#34; &amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s1"&gt;&amp;#39;$status $body_bytes_sent &amp;#34;$http_referer&amp;#34; &amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s1"&gt;&amp;#39;&amp;#34;$http_user_agent&amp;#34; &amp;#34;$http_x_forwarded_for&amp;#34;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;access_log&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nb"&gt;log&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;nginx&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;access&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log&lt;/span&gt; &lt;span class="n"&gt;main&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h1 id="logstash"&gt;logstash
+&lt;/h1&gt;&lt;p&gt;由于是测试环境，我这里使用logstash读取nginx日志文件的方式来获取nginx的日志，并且仅读取了nginx的access log，对于error log没有关心。&lt;/p&gt;
+&lt;p&gt;使用的logstash版本为2.2.0，在log stash程序目录下创建conf文件夹，用于存放解析日志的配置文件，并在其中创建文件test.conf，文件内容如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;input&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;file&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;path&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;/var/log/nginx/access.log&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;filter&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;grok&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;match&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;message&amp;#34;&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;%{IPORHOST:clientip} \[%{HTTPDATE:time}\] &lt;/span&gt;&lt;span class="se"&gt;\&amp;#34;&lt;/span&gt;&lt;span class="s2"&gt;%{WORD:verb} %{URIPATHPARAM:request} HTTP/%{NUMBER:httpversion}&lt;/span&gt;&lt;span class="se"&gt;\&amp;#34;&lt;/span&gt;&lt;span class="s2"&gt; %{NUMBER:http_status_code} %{NUMBER:bytes} &lt;/span&gt;&lt;span class="se"&gt;\&amp;#34;&lt;/span&gt;&lt;span class="s2"&gt;(?&amp;lt;http_referer&amp;gt;\S+)&lt;/span&gt;&lt;span class="se"&gt;\&amp;#34;&lt;/span&gt;&lt;span class="s2"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&amp;#34;&lt;/span&gt;&lt;span class="s2"&gt;(?&amp;lt;http_user_agent&amp;gt;\S+)&lt;/span&gt;&lt;span class="se"&gt;\&amp;#34;&lt;/span&gt;&lt;span class="s2"&gt; &lt;/span&gt;&lt;span class="se"&gt;\&amp;#34;&lt;/span&gt;&lt;span class="s2"&gt;(?&amp;lt;http_x_forwarded_for&amp;gt;\S+)&lt;/span&gt;&lt;span class="se"&gt;\&amp;#34;&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;output&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;elasticsearch&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;hosts&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;10.103.17.4:9200&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;index&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;logstash-nginx-test-%{+YYYY.MM.dd}&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;workers&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;flush_size&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;idle_flush_time&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;template_overwrite&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="bp"&gt;true&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="n"&gt;codec&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;rubydebug&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;需要说明的是，filter字段中的grok部分，由于nginx的日志是格式化的，logstash解析日志的思路为通过正则表达式来匹配日志，并将字段保存到相应的变量中。logstash中使用grok插件来解析日志，grok中message部分为对应的grok语法，并不完全等价于正则表达式的语法，在其中增加了变量信息。&lt;/p&gt;
+&lt;p&gt;具体grok语法不作过多介绍，可以通过logstash的官方文档中来了解。但grok语法中的变量类型如IPORHOST并未找到具体的文档，只能通过在logstash的安装目录下通过&lt;code&gt;grep -nr &amp;quot;IPORHOST&amp;quot; .&lt;/code&gt;来搜索具体的含义。&lt;/p&gt;
+&lt;p&gt;配置文件中的stdout部分用于打印grok解析结果的信息，在调试阶段一定要打开。&lt;/p&gt;
+&lt;p&gt;可以通过&lt;a class="link" href="http://grokconstructor.appspot.com/do/match" target="_blank" rel="noopener"
+&gt;这里&lt;/a&gt;来验证grok表达式的语法是否正确，编写grok表达式的时候可以在这里编写和测试。&lt;/p&gt;
+&lt;p&gt;对于elasticsearch部分不做过多介绍，网上容易找到资料。&lt;/p&gt;
+&lt;h1 id="kibana"&gt;kibana
+&lt;/h1&gt;&lt;p&gt;kibana不做过多介绍，使用可以查看官方文档和自己摸索。&lt;/p&gt;
+&lt;h1 id="reference"&gt;reference
+&lt;/h1&gt;&lt;p&gt;&lt;a class="link" href="https://www.elastic.co/guide/en/logstash/current/plugins-filters-grok.html" target="_blank" rel="noopener"
+&gt;logstash中的grok插件介绍&lt;/a&gt;&lt;/p&gt;</description></item></channel></rss>

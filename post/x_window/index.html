@@ -1,387 +1,48 @@
-<!DOCTYPE html>
-<html lang="zh-Hans">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="X Window的实现机制还是比较难以理解的，尤其是跟软件开发中的客户端-服务器模式不太一样。涉及到概念也比较多，甚至很对教程对概念的理解不一。最近深入学习了下X Window的原理，在此做一下整理。先上一个摘自维基百科的图： 常用快捷键ctrl+alt+fn：切换到相应的虚拟控制台，n为1-12。默认情况下，linux操作系统会在1-6上运行6个虚拟控制台。ctrl+alt+退格键：关闭X wi">
-<meta property="og:type" content="article">
-<meta property="og:title" content="X Window学习">
-<meta property="og:url" content="http://kuring.me/post/x_window/index.html">
-<meta property="og:site_name" content="404频道">
-<meta property="og:description" content="X Window的实现机制还是比较难以理解的，尤其是跟软件开发中的客户端-服务器模式不太一样。涉及到概念也比较多，甚至很对教程对概念的理解不一。最近深入学习了下X Window的原理，在此做一下整理。先上一个摘自维基百科的图： 常用快捷键ctrl+alt+fn：切换到相应的虚拟控制台，n为1-12。默认情况下，linux操作系统会在1-6上运行6个虚拟控制台。ctrl+alt+退格键：关闭X wi">
-<meta property="og:locale">
-<meta property="og:image" content="http://kuring.me/ref/x_window/X_client_server_example.svg.png">
-<meta property="og:image" content="http://kuring.me/ref/x_window/xclock_no_wm.png">
-<meta property="og:image" content="http://kuring.me/ref/x_window/xclock_wm.png">
-<meta property="og:image" content="http://kuring.me/ref/x_window/startx_pstree.png">
-<meta property="og:image" content="http://kuring.me/ref/x_window/init5_pstree.png">
-<meta property="article:published_time" content="2014-02-17T00:00:00.000Z">
-<meta property="article:modified_time" content="2025-12-20T16:59:52.699Z">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://kuring.me/ref/x_window/X_client_server_example.svg.png">
-
-
-<link rel="canonical" href="http://kuring.me/post/x_window/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/x_window/","path":"post/x_window/","title":"X Window学习"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>X Window学习 | 404频道</title>
-  
-
-
-
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">404频道</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">学习笔记</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="Searching..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-overview-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          Table of Contents
-        </li>
-        <li class="sidebar-nav-overview">
-          Overview
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name"></p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">256</span>
-          <span class="site-state-item-name">posts</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">36</span>
-        <span class="site-state-item-name">tags</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/x_window/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="X Window学习 | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          X Window学习
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2014-02-17 00:00:00" itemprop="dateCreated datePublished" datetime="2014-02-17T00:00:00+00:00">2014-02-17</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-20 16:59:52" itemprop="dateModified" datetime="2025-12-20T16:59:52+00:00">2025-12-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p>X Window的实现机制还是比较难以理解的，尤其是跟软件开发中的客户端-服务器模式不太一样。涉及到概念也比较多，甚至很对教程对概念的理解不一。最近深入学习了下X Window的原理，在此做一下整理。先上一个摘自维基百科的图：<br><img src="/ref/x_window/X_client_server_example.svg.png" alt="X Window架构"></p>
-<p>常用快捷键<br>ctrl+alt+fn：切换到相应的虚拟控制台，n为1-12。默认情况下，linux操作系统会在1-6上运行6个虚拟控制台。<br>ctrl+alt+退格键：关闭X window系统。<br>在vmware环境下，ctrl+alt快捷键跟vmware冲突，需要先按住ctrl+alt，然后按一下空格键并松开，再按下相应的fn键才能使用。</p>
-<p>X Server<br>负责硬件管理、屏幕绘制、字体，并接收输入设备（如键盘、鼠标等）的动作，并且告知X Client。<br>Linux下的X Server软件为Xorg，通过X（Xorg的链接文件）命令即可执行。<br>输入X命令后，会在第7个控制台启动X Server，将会出现一个什么都没有的漆黑界面，这是由于没有任何X client程序输入的原因。<br>可以在Linux下启动多个X Server软件，从0开始编号。如果再执行<code>X:2</code>命令会启动第二个X Server，此时X Server会在第8个控制台运行。如果第一次执行的是<code>X:2</code>命令则X Server会在第7个控制台运行。<br>在Windows操作系统下的Xming、Xmanager等可以远程连接Linux界面的软件其实就是X Server。</p>
-<p>X Client<br>即X应用程序，运行在X Window下的窗口程序都属于X client。比如firefox就是一个X Client。接收来自X Server的处理动作，将动作处理成为绘图数据，并将绘图数据传回给X Server。X Client与X Server之间通过X Window System Core Protocol协议进行通讯。<br>xclock是一个简易的X Client的时钟程序，在:1上启动X Server后，执行<code>xclock –display :1&amp;</code>命令将xclock输出到X Server后的画面如下：<br><img src="/ref/x_window/xclock_no_wm.png" alt="xclock"><br>该程序可以在X Server上执行，但是画面非常简陋，甚至没有窗口的菜单栏和最大化等按钮。</p>
-<p>Window Manager<br>一种特殊的X Client，提供了窗口的样式。常用的Window Manager包括GNOME默认的metacity、twm等。<br>将metacity输出到:1上的X Server的命令为<code>metacity –display=:1 &amp;</code>，效果如下：<br><img src="/ref/x_window/xclock_wm.png" alt="Image Title"><br>可以看到窗口多出了最小化、最大化、关闭按钮，并且窗口可以移动和缩放等操作。</p>
-<p>Display Manager<br>提供用户登录画面、帮助X Server建立Session。<br>gnome采用的Display Manager为gdm，KDE采用kdm，还有tdm、xdm等。</p>
-<p>Desktop Manager<br>X Server、X Client、Window Manager的一个集合。常用的Desktop Manager包括：KDE、GNOME等。</p>
-<p>startx启动流程<br>在命令行下执行startx命令后，系统直接进入了桌面环境，并未出现登录界面。进程树如下：<br><img src="/ref/x_window/startx_pstree.png" alt="Image Title"></p>
-<ol>
-<li>startx会调用xinit命令，xinit命令的主要是启动一个X Server软件。</li>
-<li>接着xinit命令会调用gnome-session启动gnome的环境所需要的软件。</li>
-</ol>
-<p>init 5启动流程<br>在命令行下执行init 5，首先出现的画面为登录信息。进程树如下：<br><img src="/ref/x_window/init5_pstree.png" alt="Image Title"></p>
-<ol>
-<li>执行&#x2F;etc&#x2F;rc.d&#x2F;rc5.d中的daemon。</li>
-<li>执行&#x2F;etc&#x2F;X11&#x2F;prefdm文件，会选择启动gdm、kdm、xdm、tdm。</li>
-<li>这里以gdm为例，gdm是一个shell脚本，会启动gdm-binary命令。</li>
-</ol>
-<p>实战<br>Windows主机连接Linux的教程参见我的另外一篇文章《Redhat安装完成之后的设置》中的相关部分。<br>两台Linux机器之间通过XWindow实现连接的用法比较少见，通常情况下可以通过vnc代替。<br>Linux主机连接Windows的工具为rdesktop。</p>
-<p>参考文章<br>《鸟哥的Linux私房菜》<br>《Linux操作系统之奥秘》<br>视频：<a target="_blank" rel="noopener" href="http://edu.51cto.com/lesson/id-12709.html">RH033-ULE112-16-linux下X图形显示体系</a><br>视频：<a target="_blank" rel="noopener" href="http://www.rhce.cc/?p=1117">Xwindow详解</a></p>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/post/linux_net_tools/" rel="prev" title="Linux常用网络诊断工具整理">
-                  <i class="fa fa-angle-left"></i> Linux常用网络诊断工具整理
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/post/centos_yum_iso/" rel="next" title="CentOS中将光盘作为安装源">
-                  CentOS中将光盘作为安装源 <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    
-  
-  <div class="comments giscus-container">
-  </div>
-  
-  
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder"></span>
-  </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-
-
-  
-
-
-
-
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
-
-<script>
-document.addEventListener('page:loaded', () => {
-  if (!CONFIG.page.comments) return;
-
-  NexT.utils.loadComments('.giscus-container')
-    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
-      attributes: {
-        async                   : true,
-        crossOrigin             : 'anonymous',
-        'data-repo'             : CONFIG.giscus.repo,
-        'data-repo-id'          : CONFIG.giscus.repo_id,
-        'data-category'         : CONFIG.giscus.category,
-        'data-category-id'      : CONFIG.giscus.category_id,
-        'data-mapping'          : CONFIG.giscus.mapping,
-        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
-        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
-        'data-theme'            : CONFIG.giscus.theme,
-        'data-lang'             : CONFIG.giscus.lang,
-        'data-input-position'   : CONFIG.giscus.input_position,
-        'data-loading'          : CONFIG.giscus.loading
-      },
-      parentNode: document.querySelector('.giscus-container')
-    }));
-});
-</script>
-
-</body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="X Window的实现机制还是比较难以理解的，尤其是跟软件开发中的客户端-服务器模式不太一样。涉及到概念也比较多，甚至很对教程对概念的理解不一。最近深入学习了下X Window的原理，在此做一下整理。先上一个摘自维基百科的图： "><title>X Window学习</title><link rel=canonical href=https://kuring.me/post/x_window/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="X Window学习"><meta property='og:description' content="X Window的实现机制还是比较难以理解的，尤其是跟软件开发中的客户端-服务器模式不太一样。涉及到概念也比较多，甚至很对教程对概念的理解不一。最近深入学习了下X Window的原理，在此做一下整理。先上一个摘自维基百科的图： "><meta property='og:url' content='https://kuring.me/post/x_window/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Linux'><meta property='article:published_time' content='2014-02-17T00:00:00+00:00'><meta property='article:modified_time' content='2014-02-17T00:00:00+00:00'><meta name=twitter:title content="X Window学习"><meta name=twitter:description content="X Window的实现机制还是比较难以理解的，尤其是跟软件开发中的客户端-服务器模式不太一样。涉及到概念也比较多，甚至很对教程对概念的理解不一。最近深入学习了下X Window的原理，在此做一下整理。先上一个摘自维基百科的图： "><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/x_window/>X Window学习</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2014-02-17T00:00:00Z>2014-02-17</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 4 分钟</time></div></footer></div></header><section class=article-content><p>X Window的实现机制还是比较难以理解的，尤其是跟软件开发中的客户端-服务器模式不太一样。涉及到概念也比较多，甚至很对教程对概念的理解不一。最近深入学习了下X Window的原理，在此做一下整理。先上一个摘自维基百科的图：
+<img src=/ref/x_window/X_client_server_example.svg.png loading=lazy alt="X Window架构"></p><p>常用快捷键
+ctrl+alt+fn：切换到相应的虚拟控制台，n为1-12。默认情况下，linux操作系统会在1-6上运行6个虚拟控制台。
+ctrl+alt+退格键：关闭X window系统。
+在vmware环境下，ctrl+alt快捷键跟vmware冲突，需要先按住ctrl+alt，然后按一下空格键并松开，再按下相应的fn键才能使用。</p><p>X Server
+负责硬件管理、屏幕绘制、字体，并接收输入设备（如键盘、鼠标等）的动作，并且告知X Client。
+Linux下的X Server软件为Xorg，通过X（Xorg的链接文件）命令即可执行。
+输入X命令后，会在第7个控制台启动X Server，将会出现一个什么都没有的漆黑界面，这是由于没有任何X client程序输入的原因。
+可以在Linux下启动多个X Server软件，从0开始编号。如果再执行<code>X:2</code>命令会启动第二个X Server，此时X Server会在第8个控制台运行。如果第一次执行的是<code>X:2</code>命令则X Server会在第7个控制台运行。
+在Windows操作系统下的Xming、Xmanager等可以远程连接Linux界面的软件其实就是X Server。</p><p>X Client
+即X应用程序，运行在X Window下的窗口程序都属于X client。比如firefox就是一个X Client。接收来自X Server的处理动作，将动作处理成为绘图数据，并将绘图数据传回给X Server。X Client与X Server之间通过X Window System Core Protocol协议进行通讯。
+xclock是一个简易的X Client的时钟程序，在:1上启动X Server后，执行<code>xclock –display :1&</code>命令将xclock输出到X Server后的画面如下：
+<img src=/ref/x_window/xclock_no_wm.png loading=lazy alt=xclock>
+该程序可以在X Server上执行，但是画面非常简陋，甚至没有窗口的菜单栏和最大化等按钮。</p><p>Window Manager
+一种特殊的X Client，提供了窗口的样式。常用的Window Manager包括GNOME默认的metacity、twm等。
+将metacity输出到:1上的X Server的命令为<code>metacity –display=:1 &</code>，效果如下：
+<img src=/ref/x_window/xclock_wm.png loading=lazy alt="Image Title">
+可以看到窗口多出了最小化、最大化、关闭按钮，并且窗口可以移动和缩放等操作。</p><p>Display Manager
+提供用户登录画面、帮助X Server建立Session。
+gnome采用的Display Manager为gdm，KDE采用kdm，还有tdm、xdm等。</p><p>Desktop Manager
+X Server、X Client、Window Manager的一个集合。常用的Desktop Manager包括：KDE、GNOME等。</p><p>startx启动流程
+在命令行下执行startx命令后，系统直接进入了桌面环境，并未出现登录界面。进程树如下：
+<img src=/ref/x_window/startx_pstree.png loading=lazy alt="Image Title"></p><ol><li>startx会调用xinit命令，xinit命令的主要是启动一个X Server软件。</li><li>接着xinit命令会调用gnome-session启动gnome的环境所需要的软件。</li></ol><p>init 5启动流程
+在命令行下执行init 5，首先出现的画面为登录信息。进程树如下：
+<img src=/ref/x_window/init5_pstree.png loading=lazy alt="Image Title"></p><ol><li>执行/etc/rc.d/rc5.d中的daemon。</li><li>执行/etc/X11/prefdm文件，会选择启动gdm、kdm、xdm、tdm。</li><li>这里以gdm为例，gdm是一个shell脚本，会启动gdm-binary命令。</li></ol><p>实战
+Windows主机连接Linux的教程参见我的另外一篇文章《Redhat安装完成之后的设置》中的相关部分。
+两台Linux机器之间通过XWindow实现连接的用法比较少见，通常情况下可以通过vnc代替。
+Linux主机连接Windows的工具为rdesktop。</p><p>参考文章
+《鸟哥的Linux私房菜》
+《Linux操作系统之奥秘》
+视频：<a class=link href=http://edu.51cto.com/lesson/id-12709.html target=_blank rel=noopener>RH033-ULE112-16-linux下X图形显示体系</a>
+视频：<a class=link href="http://www.rhce.cc/?p=1117" target=_blank rel=noopener>Xwindow详解</a></p></section><footer class=article-footer><section class=article-tags><a href=/tags/linux/>Linux</a></section></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

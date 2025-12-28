@@ -1,0 +1,273 @@
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="成员函数的各种调用方式 非静态成员函数的调用方式 在C++中必须要保证类的非静态成员函数必须和非成员函数的执行效率一致，在编译的过程中，编译期已经将类的非静态成员函数编译为了非成员函数。\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 class Test { public: int sum() const { return a + b; } int add() { return a;\t} int add(int size) { return a + size; } public: int a; int b; }; 在上述Test类中，编译器会在编译阶段对类中的成员函数做一些转换。下面列出了编译器可能会做出的变换，不同的编译器实现不太一致。\n"><title>深度探索C++对象模型读书笔记_第四章：函数语意学</title><link rel=canonical href=https://kuring.me/post/inside_the_c-_object_model_chapter_4/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="深度探索C++对象模型读书笔记_第四章：函数语意学"><meta property='og:description' content="成员函数的各种调用方式 非静态成员函数的调用方式 在C++中必须要保证类的非静态成员函数必须和非成员函数的执行效率一致，在编译的过程中，编译期已经将类的非静态成员函数编译为了非成员函数。\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 class Test { public: int sum() const { return a + b; } int add() { return a;\t} int add(int size) { return a + size; } public: int a; int b; }; 在上述Test类中，编译器会在编译阶段对类中的成员函数做一些转换。下面列出了编译器可能会做出的变换，不同的编译器实现不太一致。\n"><meta property='og:url' content='https://kuring.me/post/inside_the_c-_object_model_chapter_4/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='C++'><meta property='article:published_time' content='2013-07-25T00:00:00+00:00'><meta property='article:modified_time' content='2013-07-25T00:00:00+00:00'><meta name=twitter:title content="深度探索C++对象模型读书笔记_第四章：函数语意学"><meta name=twitter:description content="成员函数的各种调用方式 非静态成员函数的调用方式 在C++中必须要保证类的非静态成员函数必须和非成员函数的执行效率一致，在编译的过程中，编译期已经将类的非静态成员函数编译为了非成员函数。\n1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 class Test { public: int sum() const { return a + b; } int add() { return a;\t} int add(int size) { return a + size; } public: int a; int b; }; 在上述Test类中，编译器会在编译阶段对类中的成员函数做一些转换。下面列出了编译器可能会做出的变换，不同的编译器实现不太一致。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#非静态成员函数的调用方式>非静态成员函数的调用方式</a></li><li><a href=#虚成员函数>虚成员函数</a></li><li><a href=#静态成员函数>静态成员函数</a></li></ol><ol><li><a href=#单一继承下的虚函数>单一继承下的虚函数</a></li><li><a href=#多重继承下的虚函数>多重继承下的虚函数</a></li><li><a href=#虚拟继承下的虚函数>虚拟继承下的虚函数</a></li></ol><ol><li><a href=#指向虚成员函数的指针>指向虚成员函数的指针</a></li><li><a href=#多重继承下指向成员函数的指针>多重继承下指向成员函数的指针</a></li><li><a href=#指向成员函数指针的效率>指向成员函数指针的效率</a></li></ol><ol><li><a href=#形式参数>形式参数</a></li><li><a href=#局部变量>局部变量</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/inside_the_c-_object_model_chapter_4/>深度探索C++对象模型读书笔记_第四章：函数语意学</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2013-07-25T00:00:00Z>2013-07-25</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 5 分钟</time></div></footer></div></header><section class=article-content><h1 id=成员函数的各种调用方式>成员函数的各种调用方式</h1><h2 id=非静态成员函数的调用方式>非静态成员函数的调用方式</h2><p>在C++中必须要保证类的非静态成员函数必须和非成员函数的执行效率一致，在编译的过程中，编译期已经将类的非静态成员函数编译为了非成员函数。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=k>class</span>  <span class=nc>Test</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl><span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>	<span class=kt>int</span> <span class=n>sum</span><span class=p>()</span> <span class=k>const</span>
+</span></span><span class=line><span class=cl>	<span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=n>a</span> <span class=o>+</span> <span class=n>b</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=kt>int</span> <span class=nf>add</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=n>a</span><span class=p>;</span>		
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	
+</span></span><span class=line><span class=cl>	<span class=kt>int</span> <span class=nf>add</span><span class=p>(</span><span class=kt>int</span> <span class=n>size</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>{</span>
+</span></span><span class=line><span class=cl>	   <span class=k>return</span> <span class=n>a</span> <span class=o>+</span> <span class=n>size</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>	 <span class=kt>int</span> <span class=n>a</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	 <span class=kt>int</span> <span class=n>b</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><p>在上述Test类中，编译器会在编译阶段对类中的成员函数做一些转换。下面列出了编译器可能会做出的变换，不同的编译器实现不太一致。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=kt>int</span> <span class=nf>sum_TestFv</span><span class=p>(</span><span class=k>const</span> <span class=n>Test</span> <span class=o>*</span> <span class=k>const</span> <span class=k>this</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=k>this</span><span class=o>-&gt;</span><span class=n>a</span> <span class=o>+</span> <span class=k>this</span><span class=o>-&gt;</span><span class=n>b</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kt>int</span> <span class=nf>add_TestFv</span><span class=p>(</span><span class=n>Test</span> <span class=o>*</span> <span class=k>const</span> <span class=k>this</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=k>this</span><span class=o>-&gt;</span><span class=n>a</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kt>int</span> <span class=nf>add_Testi</span><span class=p>(</span><span class=kt>int</span> <span class=n>size</span><span class=p>,</span> <span class=n>Test</span> <span class=o>*</span> <span class=k>const</span> <span class=k>this</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=k>this</span><span class=o>-&gt;</span><span class=n>a</span> <span class=o>+</span> <span class=n>size</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span> 
+</span></span></code></pre></td></tr></table></div></div><p>通过上面的变换可以总结出如下规律：</p><ul><li>将成员函数重新改写为一个外部函数，并且对函数的名字进行处理，使在程序中唯一。一种可能的处理办法就是将函数名更改为：函数名_类名_函数参数。这样即解决了类之间函数名相同的问题，又解决了类之间函数重载的问题。</li><li>在函数的参数末尾添加额外的this指针参数。对于const函数添加的this指针为双const类型，对于非const函数则添加的this指针为指向的内容可变的const指针。</li><li>在函数内对成员函数的存取采用this指针来实现。</li></ul><h2 id=虚成员函数>虚成员函数</h2><p>虚函数如果是通过指针类型访问，需要在运行时动态决定指针指向的类型，因此需要访问虚函数表才能够获取正确的虚函数地址。访问虚函数的方式为<code>(*ptr->vptr[i])(ptr)</code>，其中i代表要调用的虚函数在虚函数表中的索引，最后一个ptr代表要调用虚函数的编译器添加的this指针参数。</p><p>关于虚成员函数的更详细问题会在下一个节中进行讨论。</p><h2 id=静态成员函数>静态成员函数</h2><p>静态成员函数中没有this指针，可以理解成带类作用域的全局函数，执行效率跟全局函数一致。</p><h1 id=虚成员函数-1>虚成员函数</h1><p>这部分内容是本书的核心内容，可以参考陈皓的博客相关文章，已经对C++中的虚成员函数和虚成员变量进行了说明。</p><ul><li><a class=link href=http://blog.csdn.net/haoel/article/details/1948051 target=_blank rel=noopener>C++ 虚函数表解析</a></li><li><a class=link href=http://blog.csdn.net/haoel/article/details/3081328 target=_blank rel=noopener>C++ 对象的内存布局(上)</a></li><li><a class=link href=http://blog.csdn.net/haoel/article/details/3081385 target=_blank rel=noopener>C++ 对象的内存布局(下)</a></li></ul><h2 id=单一继承下的虚函数>单一继承下的虚函数</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=k>class</span> <span class=nc>Point</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl><span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>	<span class=k>virtual</span> <span class=o>~</span><span class=n>Point</span><span class=p>(){}</span>
+</span></span><span class=line><span class=cl>	<span class=k>virtual</span> <span class=n>Point</span><span class=o>&amp;</span> <span class=n>mult</span><span class=p>(</span><span class=kt>float</span><span class=p>)</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=kt>float</span> <span class=nf>x</span><span class=p>()</span> <span class=k>const</span> <span class=p>{</span><span class=k>return</span> <span class=n>_x</span><span class=p>;}</span>
+</span></span><span class=line><span class=cl>	<span class=k>virtual</span> <span class=kt>float</span> <span class=nf>y</span><span class=p>()</span> <span class=k>const</span> <span class=p>{</span><span class=k>return</span> <span class=mi>0</span><span class=p>;}</span>
+</span></span><span class=line><span class=cl>	<span class=k>virtual</span> <span class=kt>float</span> <span class=nf>z</span><span class=p>()</span> <span class=k>const</span> <span class=p>{</span><span class=k>return</span> <span class=mi>0</span><span class=p>;}</span>
+</span></span><span class=line><span class=cl><span class=k>protected</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>	<span class=n>Point</span><span class=p>(</span><span class=kt>float</span> <span class=n>x</span><span class=o>=</span><span class=mf>0.0</span><span class=p>)</span> <span class=p>{</span><span class=n>_x</span> <span class=o>=</span> <span class=n>x</span><span class=p>;}</span>
+</span></span><span class=line><span class=cl>	<span class=kt>float</span> <span class=n>_x</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>Point2d</span> <span class=o>:</span> <span class=k>public</span> <span class=n>Point</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl><span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>	<span class=n>Point2d</span><span class=p>(</span><span class=kt>float</span> <span class=n>x</span><span class=o>=</span><span class=mf>0.0</span><span class=p>,</span> <span class=kt>float</span> <span class=n>y</span><span class=o>=</span><span class=mf>0.0</span><span class=p>)</span> <span class=o>:</span> <span class=n>Point</span><span class=p>(</span><span class=n>x</span><span class=p>),</span> <span class=n>_y</span><span class=p>(</span><span class=n>y</span><span class=p>)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>	<span class=o>~</span><span class=n>Point2d</span><span class=p>(){}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=n>Point2d</span><span class=o>&amp;</span> <span class=n>mult</span><span class=p>(</span><span class=kt>float</span><span class=p>){</span><span class=k>return</span> <span class=o>*</span><span class=k>this</span><span class=p>;}</span>
+</span></span><span class=line><span class=cl>	<span class=kt>float</span> <span class=nf>y</span><span class=p>()</span> <span class=k>const</span> <span class=p>{</span><span class=k>return</span> <span class=n>_y</span><span class=p>;}</span>
+</span></span><span class=line><span class=cl><span class=k>protected</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>	<span class=kt>float</span> <span class=n>_y</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>Point3d</span> <span class=o>:</span> <span class=k>public</span> <span class=n>Point2d</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl><span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>	<span class=n>Point3d</span><span class=p>(</span><span class=kt>float</span> <span class=n>x</span><span class=o>=</span><span class=mf>0.0</span><span class=p>,</span> <span class=kt>float</span> <span class=n>y</span><span class=o>=</span><span class=mf>0.0</span><span class=p>,</span> <span class=kt>float</span> <span class=n>z</span><span class=o>=</span><span class=mf>0.0</span><span class=p>)</span> <span class=o>:</span> <span class=n>Point2d</span><span class=p>(</span><span class=n>x</span><span class=p>,</span> <span class=n>y</span><span class=p>),</span> <span class=n>_z</span><span class=p>(</span><span class=n>z</span><span class=p>)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>	<span class=o>~</span><span class=n>Point3d</span><span class=p>(){}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=n>Point3d</span> <span class=o>&amp;</span> <span class=n>mult</span><span class=p>(</span><span class=kt>float</span><span class=p>)</span> <span class=p>{</span><span class=k>return</span> <span class=o>*</span><span class=k>this</span><span class=p>;}</span>
+</span></span><span class=line><span class=cl>	<span class=kt>float</span> <span class=nf>z</span><span class=p>()</span> <span class=k>const</span> <span class=p>{</span><span class=k>return</span> <span class=n>_z</span><span class=p>;}</span>
+</span></span><span class=line><span class=cl><span class=k>protected</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>	<span class=kt>float</span> <span class=n>_z</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><p>三个类对应的虚函数表会转化成下图</p><p><img src=/ref/c++/c++_object_model/chapter4_1.PNG loading=lazy alt="Image Title"></p><p>通过图中可以看出每个函数在虚函数表中的位置无论在基类还是在子类中位置总是固定的。图中的Point的实例应该是不存在的，因为类中含有纯虚函数mult。</p><p>要想调用ptr->z()就变得非常容易，可以在编译器就可以确定虚函数的调用。虽然ptr所指向的对象在编译器并不能确定，但是编译器可以将其转化成为(*ptr->vptr[4])(ptr)。因为z()函数总是在虚函数表中的第四个位置，唯一需要在执行期确定的就是ptr所指的对象的实际类型。</p><h2 id=多重继承下的虚函数>多重继承下的虚函数</h2><p>避免重复造轮子，参考上面博文。</p><h2 id=虚拟继承下的虚函数>虚拟继承下的虚函数</h2><p>避免重复造轮子，参考上面博文。</p><h1 id=函数的效率>函数的效率</h1><p>非成员函数、静态成员函数、非静态成员函数都被转换成为了完全相同的形式。
+inline函数的执行效率最高。
+虚函数的效率最低。</p><h1 id=指向成员函数的指针>指向成员函数的指针</h1><p>这里学习到一个新的语法，之前没有接触过。即指向类成员函数的指针及使用方法。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;iostream&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=k>using</span> <span class=k>namespace</span> <span class=n>std</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>Point</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl><span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>	<span class=k>virtual</span> <span class=o>~</span><span class=n>Point</span><span class=p>()</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>	<span class=kt>float</span> <span class=nf>x</span><span class=p>()</span> <span class=p>{</span><span class=k>return</span> <span class=n>_x</span><span class=p>;}</span>
+</span></span><span class=line><span class=cl><span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>	<span class=n>Point</span><span class=p>(</span><span class=kt>float</span> <span class=n>x</span><span class=o>=</span><span class=mf>0.0</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=n>_x</span> <span class=o>=</span> <span class=n>x</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=kt>float</span> <span class=n>_x</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kt>int</span> <span class=nf>main</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=n>Point</span> <span class=n>point</span><span class=p>(</span><span class=mf>1.0</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>	<span class=kt>float</span> <span class=p>(</span><span class=n>Point</span><span class=o>::*</span><span class=n>p</span><span class=p>)();</span>   <span class=c1>// 定义指向成员函数的指针
+</span></span></span><span class=line><span class=cl>	<span class=n>p</span> <span class=o>=</span> <span class=o>&amp;</span><span class=n>Point</span><span class=o>::</span><span class=n>x</span><span class=p>;</span>        <span class=c1>// 为指向成员函数的指针赋值
+</span></span></span><span class=line><span class=cl>	<span class=n>cout</span> <span class=o>&lt;&lt;</span> <span class=p>(</span><span class=n>point</span><span class=p>.</span><span class=o>*</span><span class=n>p</span><span class=p>)();</span>  <span class=c1>// 调用指向类成员函数的指针
+</span></span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=mi>1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>如果成员函数的指针并不用于虚函数、多重继承、虚基类等情况，则成员函数的指针效率跟非成员函数指针的效率一致。</p><h2 id=指向虚成员函数的指针>指向虚成员函数的指针</h2><p>书中对于函数取地址的语法在gcc和vs2008下我试验不成功，语法错误。</p><h2 id=多重继承下指向成员函数的指针>多重继承下指向成员函数的指针</h2><p>依赖于编译器的实现，用到的情况比较少，没仔细看。</p><h2 id=指向成员函数指针的效率>指向成员函数指针的效率</h2><p>在引入了虚函数、多重继承、虚基类等情况后，指向成员函数的指针效率有所下降。</p><h1 id=内联函数>内联函数</h1><p>内联只是一个请求，编译器并不一定会将函数内联的展开。</p><h2 id=形式参数>形式参数</h2><p>内联时每一个形参都会被对应的实参取代。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=kr>inline</span> <span class=kt>int</span> <span class=nf>min</span><span class=p>(</span><span class=kt>int</span> <span class=n>i</span><span class=p>,</span> <span class=kt>int</span> <span class=n>j</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>j</span> <span class=o>?</span> <span class=nl>i</span> <span class=p>:</span> <span class=n>j</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>inline</span> <span class=kt>int</span> <span class=nf>bar</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=kt>int</span> <span class=n>minval</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=kt>int</span> <span class=n>val1</span> <span class=o>=</span> <span class=mi>1024</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=kt>int</span> <span class=n>val2</span> <span class=o>=</span> <span class=mi>2048</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=n>minval</span> <span class=o>=</span> <span class=n>min</span><span class=p>(</span><span class=n>val1</span><span class=p>,</span> <span class=n>val2</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>	<span class=n>minval</span> <span class=o>=</span> <span class=n>min</span><span class=p>(</span><span class=mi>1024</span><span class=p>,</span> <span class=mi>2048</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>	<span class=n>minval</span> <span class=o>=</span> <span class=n>min</span><span class=p>(</span><span class=n>foo</span><span class=p>(),</span> <span class=n>bar</span><span class=p>()</span> <span class=o>+</span> <span class=mi>1</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>minval=min(val1, val2)</code>会被内联展开成<code>minval = val1 &lt; val2 ? val1 : val2</code>。
+<code>minval = min(1024, 2048)</code>会被扩展为<code>minval = 1024</code>。
+<code>minval = min(foo(), bar() + 1)</code>需要引入临时对象，被扩展为</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>int t1;
+</span></span><span class=line><span class=cl>int t2;
+</span></span><span class=line><span class=cl>minval = (t1 = foo()) , (t2 = bar() + 1), t1 &lt; t2 ? t1 : t2;
+</span></span></code></pre></td></tr></table></div></div><h2 id=局部变量>局部变量</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=kr>inline</span> <span class=kt>int</span> <span class=nf>min</span><span class=p>(</span><span class=kt>int</span> <span class=n>i</span><span class=p>,</span> <span class=kt>int</span> <span class=n>j</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=kt>int</span> <span class=n>minval</span> <span class=o>=</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>j</span> <span class=o>?</span> <span class=nl>i</span> <span class=p>:</span> <span class=n>j</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=n>minval</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>inline</span> <span class=kt>int</span> <span class=nf>bar</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=kt>int</span> <span class=n>minval</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=kt>int</span> <span class=n>val1</span> <span class=o>=</span> <span class=mi>1024</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=kt>int</span> <span class=n>val2</span> <span class=o>=</span> <span class=mi>2048</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=n>minval</span> <span class=o>=</span> <span class=n>min</span><span class=p>(</span><span class=n>val1</span><span class=p>,</span> <span class=n>val2</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>在内联函数中引入局部变量，内联函数在内联的时候局部变量会拥有一个唯一的名称。代码中的<code>minval = min(val1, val2)</code>会被内联为：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=kt>int</span> <span class=n>_min_lv_minval</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=n>minval</span> <span class=o>=</span> <span class=p>(</span><span class=n>_min_lv_minval</span> <span class=o>=</span> <span class=n>val1</span> <span class=o>&lt;</span> <span class=n>val2</span> <span class=o>?</span> <span class=nl>val1</span> <span class=p>:</span> <span class=n>val2</span><span class=p>),</span> <span class=n>_min_lv_minval</span><span class=p>;</span>
+</span></span></code></pre></td></tr></table></div></div><p>内联函数可以代替C语言中的#define宏定义，但是当内联函数调用次数过多，会产生大量的扩展代码，使程序的大小变大。</p></section><footer class=article-footer><section class=article-tags><a href=/tags/c++/>C++</a></section></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

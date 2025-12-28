@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Overlay Overlay2 on 404频道</title><link>https://kuring.me/tags/overlay-overlay2/</link><description>Recent content in Overlay Overlay2 on 404频道</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>kuring</copyright><lastBuildDate>Sat, 28 Jul 2018 21:30:25 +0000</lastBuildDate><atom:link href="https://kuring.me/tags/overlay-overlay2/index.xml" rel="self" type="application/rss+xml"/><item><title>理解OverlayFS</title><link>https://kuring.me/post/overlayfs/</link><pubDate>Sat, 28 Jul 2018 21:30:25 +0000</pubDate><guid>https://kuring.me/post/overlayfs/</guid><description>&lt;h2 id="docker-image结构"&gt;docker image结构
+&lt;/h2&gt;&lt;p&gt;docker可以通过命令&lt;code&gt;docker image inspect ${image}&lt;/code&gt;来查看image的详细信息，其中包含了所使用的底层文件系统及各层的信息。&lt;/p&gt;
+&lt;p&gt;docker container的存储结构分为了只读层、init层和可读写层。&lt;/p&gt;
+&lt;p&gt;只读层跟docker image的层次结构恰好对应，主要包含操作系统的文件、配置、目录等信息，不包含操作系统镜像。&lt;/p&gt;
+&lt;p&gt;init层在只读层和读写层中间，用来专门存放/etc/hosts /etc/resolv.conf等信息，这些文件往往需要在启动的时候写入一些指定值，但不期望&lt;code&gt;docker commit&lt;/code&gt;命令对其进行提交。&lt;/p&gt;
+&lt;p&gt;可读写层为容器在运行中可以进行写入的层。&lt;/p&gt;
+&lt;h2 id="overlay"&gt;overlay
+&lt;/h2&gt;&lt;p&gt;&lt;img src="https://arkingc.github.io/img/in-post/post-docker-filesystem/overlay_constructs.jpg"
+loading="lazy"
+alt="image"
+&gt;&lt;/p&gt;
+&lt;p&gt;采用了两层结构，lowerdir为镜像层，只读。upperdir为容器层。&lt;/p&gt;
+&lt;p&gt;每层都会在/var/run/docker/overlay创建一个文件夹，文件夹中为实际层的内容，文件采用硬链接的方式链接到真实层中的文件，每一层都包含该层该拥有的所有文件，而该文件的真实存储可能是采用硬链接的方式链接到上层中的真实文件，因此比较耗费inode。&lt;/p&gt;
+&lt;p&gt;创建一个容器时，会新增两个目录，一个为读写层，一个为初始层。初始层中保存了容器初始化时的环境信息，如hostname、hosts文件等。读写层用于记录容器的所有改动。&lt;/p&gt;
+&lt;h2 id="overlay2"&gt;overlay2
+&lt;/h2&gt;&lt;p&gt;为了规避overlay消耗inode节点过多的问题，overlay2采用在每层中增加lower文件的方式来记录所有底层的信息，类似于链表的形式。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;docker pull ubuntu&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;root&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;localhost&lt;/span&gt; &lt;span class="n"&gt;runc&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="c1"&gt;# docker pull ubuntu&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;Using&lt;/span&gt; &lt;span class="n"&gt;default&lt;/span&gt; &lt;span class="n"&gt;tag&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;latest&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;latest&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Pulling&lt;/span&gt; &lt;span class="n"&gt;from&lt;/span&gt; &lt;span class="n"&gt;library&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;ubuntu&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;c64513b74145&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Pull&lt;/span&gt; &lt;span class="n"&gt;complete&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="mi"&gt;01&lt;/span&gt;&lt;span class="n"&gt;b8b12bad90&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Pull&lt;/span&gt; &lt;span class="n"&gt;complete&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;c5d85cf7a05f&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Pull&lt;/span&gt; &lt;span class="n"&gt;complete&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;b6b268720157&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Pull&lt;/span&gt; &lt;span class="n"&gt;complete&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;e12192999ff1&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Pull&lt;/span&gt; &lt;span class="n"&gt;complete&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;Digest&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;sha256&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="n"&gt;f119dc0737f57f704ebecac8a6d8477b0f6ca1ca0332c7ee1395ed2c6a82be7&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;Status&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Downloaded&lt;/span&gt; &lt;span class="n"&gt;newer&lt;/span&gt; &lt;span class="n"&gt;image&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;ubuntu&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;latest&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;会在/var/run/docker/overlay2目录下创建如下文件：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;span class="lnt"&gt;35
+&lt;/span&gt;&lt;span class="lnt"&gt;36
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost overlay2]# tree -L 2
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- 664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672 // 第0层
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| `-- link // MZUEUOFHBNVTRCJYJEG7QY4VWT
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- 783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba // 第2层
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- link // HXATFASQ4E2JBG434DUEN54EZZ
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- lower // l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- merged
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| `-- work
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- 89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6 // 第3层
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- link // 5PHT7S3MCZTTQOXVPA4CKJRRFD
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- lower // l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- merged
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| `-- work
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- backingFsBlockDev
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68 // 第4层
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- link // QMKHIPSDT4JTPE4FLT7QGJ33ND
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- lower // l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- merged
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| `-- work
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3 // 第1层
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- link // WUZC5WSTQTPJUJ4KFAYCUT5IPD
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- lower // l/MZUEUOFHBNVTRCJYJEG7QY4VWT
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- merged
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| `-- work
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;`-- l
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; |-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&amp;gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; |-- HXATFASQ4E2JBG434DUEN54EZZ -&amp;gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; |-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&amp;gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; |-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&amp;gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; `-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&amp;gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;l目录下为超链接，缩短后的目录，为了避免mount时超出页大小限制。&lt;/p&gt;
+&lt;p&gt;每一层中的diff文件夹包含实际内容。&lt;/p&gt;
+&lt;p&gt;每一层中都有一个link文件，内容为l目录中的超链接，超链接实际指向当前层目录中的diff文件夹。&lt;/p&gt;
+&lt;p&gt;除去最底层的目录外，其余每一层中包含一个lower文件，包含了该层的所有更底层名称和顺序，可以根据该文件构建出整个镜像的层次结构。&lt;/p&gt;
+&lt;p&gt;work目录用于OverlayFS内部使用。&lt;/p&gt;
+&lt;p&gt;最底层只有link文件，无lower文件，因此664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672为最底层。&lt;/p&gt;
+&lt;p&gt;以上五层为lower，只读。&lt;/p&gt;
+&lt;p&gt;当使用&lt;code&gt;docker run -it ubuntu:latest /bin/bash&lt;/code&gt;启动一个容器后，在overlay2目录下会多出两个文件夹。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost overlay2]# tree -L 1 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08 l
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- link // ZJVMGTB2IOJ6QF57TYM5O7EWXW
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- lower // l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- merged
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;`-- work
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- link
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- lower // l/ZJVMGTB2IOJ6QF57TYM5O7EWXW:l/QMKHIPSDT4JTPE4FLT7QGJ33ND:l/5PHT7S3MCZTTQOXVPA4CKJRRFD:l/HXATFASQ4E2JBG434DUEN54EZZ:l/WUZC5WSTQTPJUJ4KFAYCUT5IPD:l/MZUEUOFHBNVTRCJYJEG7QY4VWT
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- merged
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;`-- work
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;l
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- 5PHT7S3MCZTTQOXVPA4CKJRRFD -&amp;gt; ../89f7a20dda3d868840e20d9e8f1bfe20c5cca51c27b07825f100da0f474672f6/diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- AOLYGFOHIAHWU5CBAJFULNAXI7 -&amp;gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08/diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- HXATFASQ4E2JBG434DUEN54EZZ -&amp;gt; ../783ad02709b67ac47b55198e9659c4592f0972334987ab97f42fd10f1784cbba/diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- MZUEUOFHBNVTRCJYJEG7QY4VWT -&amp;gt; ../664ae13f1c21402385076025d68476eb8d1cc4be6c6a218b24bd55217ac62672/diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- QMKHIPSDT4JTPE4FLT7QGJ33ND -&amp;gt; ../bad073a2d1f79a03af6caa0b3f51a22e6762cebbc0c30e45458fe6c1ff266f68/diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- WUZC5WSTQTPJUJ4KFAYCUT5IPD -&amp;gt; ../cb40b5b47c699050305676b35b1cea1ce08b38604dd68243c4be48934125b1a3/diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;`-- ZJVMGTB2IOJ6QF57TYM5O7EWXW -&amp;gt; ../0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init/diff
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init&lt;/code&gt;用于存放容器初始化时的信息，通过下面查看更直观。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost overlay2]# tree 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08-init
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- diff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- dev
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| | `-- console
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| `-- etc
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- hostname
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- hosts
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| |-- mtab -&amp;gt; /proc/mounts
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;| `-- resolv.conf
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- link
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- lower
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;|-- merged
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;`-- work
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; `-- work
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08&lt;/code&gt;的直接底层为init层，更详细的目录结构如下。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;root&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;localhost&lt;/span&gt; &lt;span class="n"&gt;overlay2&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="c1"&gt;# tree -L 2 0326c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="mi"&gt;0326&lt;/span&gt;&lt;span class="n"&gt;c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;diff&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;link&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;lower&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;merged&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;bin&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;boot&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;dev&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;etc&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;home&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;lib&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;lib64&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;media&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;mnt&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;opt&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;proc&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;root&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;run&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;sbin&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;srv&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;sys&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;tmp&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="o"&gt;|--&lt;/span&gt; &lt;span class="n"&gt;usr&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="o"&gt;--&lt;/span&gt; &lt;span class="k"&gt;var&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="o"&gt;--&lt;/span&gt; &lt;span class="n"&gt;work&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="err"&gt;`&lt;/span&gt;&lt;span class="o"&gt;--&lt;/span&gt; &lt;span class="n"&gt;work&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;merged文件夹中内容较多，为overlay2的直接挂载点，对容器的修改会反应到该目录中。例如在容器中增加/root/hello.txt文件，在merged目录下会增加root/hello.txt文件。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;root&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;localhost&lt;/span&gt; &lt;span class="n"&gt;overlay2&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="c1"&gt;# mount | grep overlay2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;dev&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;mapper&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;centos&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;root&lt;/span&gt; &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;docker&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;overlay2&lt;/span&gt; &lt;span class="n"&gt;type&lt;/span&gt; &lt;span class="n"&gt;xfs&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;rw&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;relatime&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;attr2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;inode64&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;noquota&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;overlay&lt;/span&gt; &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;docker&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;overlay2&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;0326&lt;/span&gt;&lt;span class="n"&gt;c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;merged&lt;/span&gt; &lt;span class="n"&gt;type&lt;/span&gt; &lt;span class="n"&gt;overlay&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;rw&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;relatime&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;lowerdir&lt;/span&gt;&lt;span class="o"&gt;=/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;docker&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;overlay2&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;l&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;ZJVMGTB2IOJ6QF57TYM5O7EWXW&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;docker&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;overlay2&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;l&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;QMKHIPSDT4JTPE4FLT7QGJ33ND&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;docker&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;overlay2&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;l&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="n"&gt;PHT7S3MCZTTQOXVPA4CKJRRFD&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;docker&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;overlay2&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;l&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;HXATFASQ4E2JBG434DUEN54EZZ&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;docker&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;overlay2&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;l&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;WUZC5WSTQTPJUJ4KFAYCUT5IPD&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;docker&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;overlay2&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;l&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;MZUEUOFHBNVTRCJYJEG7QY4VWT&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;upperdir&lt;/span&gt;&lt;span class="o"&gt;=/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;docker&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;overlay2&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;0326&lt;/span&gt;&lt;span class="n"&gt;c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;diff&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;workdir&lt;/span&gt;&lt;span class="o"&gt;=/&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;lib&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;docker&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;overlay2&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;0326&lt;/span&gt;&lt;span class="n"&gt;c1da0af912a6ea5efda77b65b04e796993e0f111ed8f262c55b2716f1c08&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;work&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="ref"&gt;ref
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="https://docs.docker.com/storage/storagedriver/overlayfs-driver/" target="_blank" rel="noopener"
+&gt;Use the OverlayFS storage driver&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://arkingc.github.io/2017/05/05/docker-filesystem-overlay/" target="_blank" rel="noopener"
+&gt;Docker存储驱动—Overlay/Overlay2「译」&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>

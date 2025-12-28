@@ -1,0 +1,699 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>多集群 on 404频道</title><link>https://kuring.me/tags/%E5%A4%9A%E9%9B%86%E7%BE%A4/</link><description>Recent content in 多集群 on 404频道</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>kuring</copyright><lastBuildDate>Sun, 09 Jan 2022 11:33:15 +0000</lastBuildDate><atom:link href="https://kuring.me/tags/%E5%A4%9A%E9%9B%86%E7%BE%A4/index.xml" rel="self" type="application/rss+xml"/><item><title>k8s多集群管理方案 - KubeFed V2</title><link>https://kuring.me/post/kubefedv2/</link><pubDate>Sun, 09 Jan 2022 11:33:15 +0000</pubDate><guid>https://kuring.me/post/kubefedv2/</guid><description>&lt;h1 id="背景"&gt;背景
+&lt;/h1&gt;&lt;h2 id="federation-v1"&gt;Federation V1
+&lt;/h2&gt;&lt;p&gt;Federation v1 在 K8s v1.3 左右就已经着手设计（Design Proposal），并在后面几个版本中发布了相关的组件与命令行工具（kubefed），用于帮助使用者快速建立联邦集群，并在 v1.6 时，进入了 Beta 阶段；但 Federation v1 在进入 Beta 后，就没有更进一步的发展，由于灵活性和 API 成熟度的问题，在 K8s v1.11 左右正式被弃用。&lt;/p&gt;
+&lt;h2 id="federation-v2架构"&gt;Federation V2架构
+&lt;/h2&gt;&lt;p&gt;v2 版本利用 CRD 实现了整体功能，通过定义多种自定义资源（CR），从而省掉了 v1 中的 API Server；v2 版本由两个组件构成：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;admission-webhook 提供了准入控制&lt;/li&gt;
+&lt;li&gt;controller-manager 处理自定义资源以及协调不同集群间的状态&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-1.png"
+loading="lazy"
+alt="image"
+&gt;
+&lt;img src="https://kuring.oss-cn-beijing.aliyuncs.com/common/kubefedv2-2.png"
+loading="lazy"
+alt="image"
+&gt;&lt;/p&gt;
+&lt;p&gt;代码行数在2万行左右。&lt;/p&gt;
+&lt;h2 id="术语"&gt;术语
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;Host Cluster：主集群/父集群&lt;/li&gt;
+&lt;li&gt;Member Cluster：子集群/成员集群&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id="crd扩展"&gt;CRD扩展
+&lt;/h1&gt;&lt;h2 id="kubefedcluster"&gt;KubeFedCluster
+&lt;/h2&gt;&lt;p&gt;子集群抽象，通过kubefedctl join命令创建。后续controller会使用该信息来访问子k8s集群。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;KubeFedCluster&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;metadata&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;kind-cluster1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;namespace&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;spec&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;apiEndpoint&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;https&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="p"&gt;//&lt;/span&gt;&lt;span class="mf"&gt;172.21&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;115&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="mf"&gt;165&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="mf"&gt;6443&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;caBundle&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXlOREUyTlRNME9Wb1hEVE14TVRJeU1qRTJOVE0wT1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTmxjCnF3UHd5cHNFc2M0aXB3QnFuRndDN044RXo2Slhqajh3ZzRybnlXTDNSdlZ0cmVua1Nha1VyYlRjZWVIck9lQTUKWGlNUVo2T1FBY25tUGU0Q2NWSkFoL2ZLQzBkeU9uL0ZZeXgyQXppRjBCK1ZNaUFhK2dvME1VMmhMZ1R5eVFGdQpDbWFmUGtsNmJxZUFJNCtCajZJUWRqY3dVMHBjY3lrNGhSTUxnQmhnTUh4NWkzVkpQckQ2Y284dHcwVnllWncyCkdDUlh2ZzlSd0QweUs5eitOVS9LVS83QjBiMTBvekpNRlVJMktPZmI4N1RkQ0h2NmlBdlVRYVdKc1BqQ0M3MzQKcnBma1ZGZXB2S2liKy9lUVBFaDE4VE5qaitveEVGMnl0Vmo2ZWVKeFc3VVZrbit0T3BxdGpEeUtKVDllNnlwdAp6U1VDTnRZWTAzckdhNTlLczBVQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZOTnRQU3hsMlMxUldOb1BCeXNIcHFoRXJONlVNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFDME0vaktCL2dqcWRSNlRLNXJQVktSSFU2cy8xTTh2eTY2WFBiVEx4M0srazdicUFWdAoxVUFzcUZDZmNrVk91WHY3eFQ0ZHIzVzdtMHE1bDYzRGg3ZDJRZDNiQ00zY2FuclpNd01OM0lSMlpmYzR0VlBGCnRTMFFONElTa0hsYnBudXQxb0F3cy9CaXNwaXNRQ0VtbHF3Zy9xbmdPMStlWWRoWm5vRW40SEFDamF4Slc5MS8KNXlOR1pKRXdia2dYQTVCbSs3VEZRL2FiYnp5a1JvOWtTMnl5c29pMnVzcUg0ZnlVS0ZWK2RETnp3Ujh0ck16cgpjWkRBNHpaVFB1WGlYRkVsWlNRa2NJSGIyV0VsYmZNRGpKNjlyVG5wakJCOWNPQ25jaHVmK0xiOXQwN1lJQ01wCmNlK0prNVp2RElRUFlKK3hTeGdRaVJxMTFraWlKcFE4Wm1FWgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg&lt;/span&gt;&lt;span class="p"&gt;==&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;proxyURL&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;secretRef&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;kind-cluster1&lt;/span&gt;&lt;span class="n"&gt;-dbxns&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;conditions&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;lastProbeTime&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;2021-12-24T17:00:47Z&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;lastTransitionTime&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;2021-12-24T17:00:07Z&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;healthz&lt;/span&gt; &lt;span class="n"&gt;responded&lt;/span&gt; &lt;span class="n"&gt;with&lt;/span&gt; &lt;span class="n"&gt;ok&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;reason&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;ClusterReady&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;True&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;type&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Ready&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="fedrated"&gt;Fedrated&lt;Kind&gt;
+&lt;/h2&gt;&lt;p&gt;发布应用到子集群时手工创建。每一个要被联邦管理的资源都会对应一个Fedrated&lt;Kind&gt;类型的资源，比如ConfigMap对应的是FederatedConfigMap。FederatedConfigMap包含了三部分的信息：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;template：联邦的资源详细spec信息，需要特别注意的是并没有包含metadata部分的信息。&lt;/li&gt;
+&lt;li&gt;placement：template中的spec信息要部署的k8s子集群信息&lt;/li&gt;
+&lt;li&gt;overrides：允许对部分k8s的部分资源进行自定义修改&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;apiVersion&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;types&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;v1beta1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;FederatedConfigMap&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;metadata&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;test-configmap&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;namespace&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;test-namespace&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;spec&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;template&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;A:&lt;/span&gt; &lt;span class="n"&gt;ala&lt;/span&gt; &lt;span class="n"&gt;ma&lt;/span&gt; &lt;span class="n"&gt;kota&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;placement&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;clusters&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;cluster2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;cluster1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;overrides&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;clusterName&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;cluster2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;clusterOverrides&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="federatedtypeconfig"&gt;FederatedTypeConfig
+&lt;/h2&gt;&lt;p&gt;通过kubefedctl enable &lt;target API type&gt;创建。定义了哪些k8s api资源需要联邦，下面的例子描述了k8s ConfigMap要被联邦资源FederatedConfigMap所管理。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;apiVersion&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;core&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;v1beta1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;FederatedTypeConfig&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;metadata&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;annotations&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;meta&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;helm&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sh&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="nb"&gt;release-name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;kubefed&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;meta&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;helm&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sh&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="nb"&gt;release-namespace&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;finalizers&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;core&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="nb"&gt;federated-type&lt;/span&gt;&lt;span class="n"&gt;-config&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;labels&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;app&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubernetes&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="nb"&gt;managed-by&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Helm&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;configmaps&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;namespace&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;spec&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;federatedType&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;group&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;types&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;FederatedConfigMap&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;pluralName&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;federatedconfigmaps&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;scope&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Namespaced&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;v1beta1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;propagation&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Enabled&lt;/span&gt; &lt;span class="c"&gt;# 是否启用该联邦对象&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;targetType&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;ConfigMap&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;pluralName&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;configmaps&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;scope&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Namespaced&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;v1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;observedGeneration&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;propagationController&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Running&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;statusController&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;NotRunning&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="replicaschedulingpreference"&gt;ReplicaSchedulingPreference
+&lt;/h2&gt;&lt;p&gt;用来管理相同名字的FederatedDeployment或FederatedReplicaset资源，保证所有子集群的副本数为spec.totalReplicas。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;apiVersion&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;scheduling&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;v1alpha1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;ReplicaSchedulingPreference&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;metadata&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;test-deployment&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;namespace&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;test-ns&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;spec&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;targetKind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;FederatedDeployment&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;totalReplicas&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;9&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;clusters&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;A:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;minReplicas&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;4&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;maxReplicas&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;6&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;weight&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;B:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;minReplicas&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;4&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;maxReplicas&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;8&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;weight&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h1 id="安装"&gt;安装
+&lt;/h1&gt;&lt;p&gt;使用kind来在本机创建多个k8s集群的方式测试。通过kind创建两个k8s集群 kind-cluster1和kind-cluster2。
+​&lt;/p&gt;
+&lt;p&gt;安装kubefedctl&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;wget &lt;/span&gt;&lt;span class="n"&gt;https&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="p"&gt;//&lt;/span&gt;&lt;span class="n"&gt;github&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;com&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="nb"&gt;kubernetes-sigs&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;releases&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;download&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;v0&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;9&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="mf"&gt;0&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;kubefedctl&lt;/span&gt;&lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="mf"&gt;0.9&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="mf"&gt;0&lt;/span&gt;&lt;span class="n"&gt;-linux-amd64&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;tgz&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;tar&lt;/span&gt; &lt;span class="n"&gt;zvxf&lt;/span&gt; &lt;span class="n"&gt;kubefedctl&lt;/span&gt;&lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="mf"&gt;0.9&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="mf"&gt;0&lt;/span&gt;&lt;span class="n"&gt;-linux-amd64&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;tgz&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;chmod&lt;/span&gt; &lt;span class="n"&gt;u&lt;/span&gt;&lt;span class="p"&gt;+&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt; &lt;span class="n"&gt;kubefedctl&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;mv &lt;/span&gt;&lt;span class="n"&gt;kubefedctl&lt;/span&gt; &lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;usr&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;local&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;bin&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;在第一个集群安装KubeFed，在第一个集群执行如下的命令&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;span class="lnt"&gt;9
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;helm&lt;/span&gt; &lt;span class="n"&gt;repo&lt;/span&gt; &lt;span class="n"&gt;add&lt;/span&gt; &lt;span class="nb"&gt;kubefed-charts&lt;/span&gt; &lt;span class="n"&gt;https&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="p"&gt;//&lt;/span&gt;&lt;span class="n"&gt;raw&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;githubusercontent&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;com&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="nb"&gt;kubernetes-sigs&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;master&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;charts&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;helm&lt;/span&gt; &lt;span class="n"&gt;repo&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;helm&lt;/span&gt; &lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="n"&gt;-namespace&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt; &lt;span class="n"&gt;upgrade&lt;/span&gt; &lt;span class="n"&gt;-i&lt;/span&gt; &lt;span class="n"&gt;kubefed&lt;/span&gt; &lt;span class="nb"&gt;kubefed-charts&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;kubefed&lt;/span&gt; &lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="n"&gt;-version&lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="mf"&gt;0.9&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;0&lt;/span&gt; &lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="n"&gt;-create-namespace&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c"&gt;# 会安装如下两个deployment，其中一个是controller，另外一个是webhook&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;kubectl&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="n"&gt;deploy&lt;/span&gt; &lt;span class="n"&gt;-n&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;NAME&lt;/span&gt; &lt;span class="n"&gt;READY&lt;/span&gt; &lt;span class="nb"&gt;UP-TO&lt;/span&gt;&lt;span class="n"&gt;-DATE&lt;/span&gt; &lt;span class="n"&gt;AVAILABLE&lt;/span&gt; &lt;span class="n"&gt;AGE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;kubefed-admission&lt;/span&gt;&lt;span class="n"&gt;-webhook&lt;/span&gt; &lt;span class="mf"&gt;1&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="mf"&gt;1&lt;/span&gt; &lt;span class="mf"&gt;1&lt;/span&gt; &lt;span class="mf"&gt;1&lt;/span&gt; &lt;span class="n"&gt;7m40s&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;kubefed-controller&lt;/span&gt;&lt;span class="n"&gt;-manager&lt;/span&gt; &lt;span class="mf"&gt;2&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="mf"&gt;2&lt;/span&gt; &lt;span class="mf"&gt;2&lt;/span&gt; &lt;span class="mf"&gt;2&lt;/span&gt; &lt;span class="n"&gt;7m40s&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h1 id="子集群注册"&gt;子集群注册
+&lt;/h1&gt;&lt;p&gt;将cluster1和cluster2集群加入到cluster1中&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;kubefedctl&lt;/span&gt; &lt;span class="n"&gt;join&lt;/span&gt; &lt;span class="nb"&gt;kind-cluster1&lt;/span&gt; &lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="n"&gt;-cluster-context&lt;/span&gt; &lt;span class="nb"&gt;kind-cluster1&lt;/span&gt; &lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="n"&gt;-host-cluster-context&lt;/span&gt; &lt;span class="nb"&gt;kind-cluster1&lt;/span&gt; &lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="n"&gt;-v&lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="mf"&gt;2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;kubefedctl&lt;/span&gt; &lt;span class="n"&gt;join&lt;/span&gt; &lt;span class="nb"&gt;kind-cluster2&lt;/span&gt; &lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="n"&gt;-cluster-context&lt;/span&gt; &lt;span class="nb"&gt;kind-cluster2&lt;/span&gt; &lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="n"&gt;-host-cluster-context&lt;/span&gt; &lt;span class="nb"&gt;kind-cluster1&lt;/span&gt; &lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="n"&gt;-v&lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="mf"&gt;2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;在第一个集群可以看到在kube-federation-system中创建出了两个新的kubefedcluster对象&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;kubectl&lt;/span&gt; &lt;span class="n"&gt;-n&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="n"&gt;kubefedcluster&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;NAME&lt;/span&gt; &lt;span class="n"&gt;AGE&lt;/span&gt; &lt;span class="n"&gt;READY&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;kind-cluster1&lt;/span&gt; &lt;span class="n"&gt;17s&lt;/span&gt; &lt;span class="n"&gt;True&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;kind-cluster2&lt;/span&gt; &lt;span class="n"&gt;16s&lt;/span&gt; &lt;span class="n"&gt;True&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;apiVersion&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;core&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;v1beta1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;KubeFedCluster&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;metadata&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;kind-cluster1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;namespace&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;spec&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;apiEndpoint&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;https&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="p"&gt;//&lt;/span&gt;&lt;span class="mf"&gt;172.21&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;115&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="mf"&gt;165&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="mf"&gt;6443&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;caBundle&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1USXlOREUyTlRNME9Wb1hEVE14TVRJeU1qRTJOVE0wT1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTmxjCnF3UHd5cHNFc2M0aXB3QnFuRndDN044RXo2Slhqajh3ZzRybnlXTDNSdlZ0cmVua1Nha1VyYlRjZWVIck9lQTUKWGlNUVo2T1FBY25tUGU0Q2NWSkFoL2ZLQzBkeU9uL0ZZeXgyQXppRjBCK1ZNaUFhK2dvME1VMmhMZ1R5eVFGdQpDbWFmUGtsNmJxZUFJNCtCajZJUWRqY3dVMHBjY3lrNGhSTUxnQmhnTUh4NWkzVkpQckQ2Y284dHcwVnllWncyCkdDUlh2ZzlSd0QweUs5eitOVS9LVS83QjBiMTBvekpNRlVJMktPZmI4N1RkQ0h2NmlBdlVRYVdKc1BqQ0M3MzQKcnBma1ZGZXB2S2liKy9lUVBFaDE4VE5qaitveEVGMnl0Vmo2ZWVKeFc3VVZrbit0T3BxdGpEeUtKVDllNnlwdAp6U1VDTnRZWTAzckdhNTlLczBVQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZOTnRQU3hsMlMxUldOb1BCeXNIcHFoRXJONlVNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFDME0vaktCL2dqcWRSNlRLNXJQVktSSFU2cy8xTTh2eTY2WFBiVEx4M0srazdicUFWdAoxVUFzcUZDZmNrVk91WHY3eFQ0ZHIzVzdtMHE1bDYzRGg3ZDJRZDNiQ00zY2FuclpNd01OM0lSMlpmYzR0VlBGCnRTMFFONElTa0hsYnBudXQxb0F3cy9CaXNwaXNRQ0VtbHF3Zy9xbmdPMStlWWRoWm5vRW40SEFDamF4Slc5MS8KNXlOR1pKRXdia2dYQTVCbSs3VEZRL2FiYnp5a1JvOWtTMnl5c29pMnVzcUg0ZnlVS0ZWK2RETnp3Ujh0ck16cgpjWkRBNHpaVFB1WGlYRkVsWlNRa2NJSGIyV0VsYmZNRGpKNjlyVG5wakJCOWNPQ25jaHVmK0xiOXQwN1lJQ01wCmNlK0prNVp2RElRUFlKK3hTeGdRaVJxMTFraWlKcFE4Wm1FWgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg&lt;/span&gt;&lt;span class="p"&gt;==&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;proxyURL&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;secretRef&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;kind-cluster1&lt;/span&gt;&lt;span class="n"&gt;-dbxns&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;conditions&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;lastProbeTime&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;2021-12-24T17:00:47Z&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;lastTransitionTime&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;2021-12-24T17:00:07Z&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;message&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;healthz&lt;/span&gt; &lt;span class="n"&gt;responded&lt;/span&gt; &lt;span class="n"&gt;with&lt;/span&gt; &lt;span class="n"&gt;ok&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;reason&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;ClusterReady&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;True&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;type&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Ready&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;要想将cluster2从主集群中移除，可以执行 kubefedctl unjoin kind-cluster2 &amp;ndash;cluster-context kind-cluster2 &amp;ndash;host-cluster-context kind-cluster1 &amp;ndash;v=2&lt;/p&gt;
+&lt;h1 id="应用发布"&gt;应用发布
+&lt;/h1&gt;&lt;h2 id="集群联邦api"&gt;集群联邦API
+&lt;/h2&gt;&lt;p&gt;kubefed将资源分为普通k8s资源类型和联邦的资源类型。在默认的场景下，kubefed已经内置将很多资源类型做了集群联邦。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="n"&gt;FederatedTypeConfig&lt;/span&gt; &lt;span class="n"&gt;-n&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;NAME&lt;/span&gt; &lt;span class="n"&gt;AGE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;clusterrolebindings&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;rbac&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;authorization&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;k8s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt; &lt;span class="n"&gt;19h&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;clusterroles&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;rbac&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;authorization&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;k8s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt; &lt;span class="n"&gt;19h&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;configmaps&lt;/span&gt; &lt;span class="n"&gt;19h&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;deployments&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;apps&lt;/span&gt; &lt;span class="n"&gt;19h&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;ingresses&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;extensions&lt;/span&gt; &lt;span class="n"&gt;19h&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;jobs&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;batch&lt;/span&gt; &lt;span class="n"&gt;19h&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;namespaces&lt;/span&gt; &lt;span class="n"&gt;19h&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;replicasets&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;apps&lt;/span&gt; &lt;span class="n"&gt;19h&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;secrets&lt;/span&gt; &lt;span class="n"&gt;19h&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;serviceaccounts&lt;/span&gt; &lt;span class="n"&gt;19h&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;services&lt;/span&gt; &lt;span class="n"&gt;19h&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;将crd资源类型集群联邦，执行 kubefedctl enable 命令&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;kubefedctl&lt;/span&gt; &lt;span class="n"&gt;enable&lt;/span&gt; &lt;span class="n"&gt;customresourcedefinitions&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;I1224&lt;/span&gt; &lt;span class="mf"&gt;20&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="mf"&gt;32&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="mf"&gt;54.537112&lt;/span&gt; &lt;span class="mf"&gt;687543&lt;/span&gt; &lt;span class="n"&gt;util&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;go&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="mf"&gt;141&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="n"&gt;Api&lt;/span&gt; &lt;span class="n"&gt;resource&lt;/span&gt; &lt;span class="n"&gt;found&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;customresourcedefinition&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;apiextensions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;k8s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;federatedcustomresourcedefinitions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;types&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt; &lt;span class="n"&gt;created&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;federatedtypeconfig&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;core&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;customresourcedefinitions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;apiextensions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;k8s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt; &lt;span class="n"&gt;created&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;namespace&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;可以看到会多出一个名字为federatedcustomresourcedefinitions.types.kubefed.io 的CRD 资源，同时会新创建一个FederatedTypeConfig类型的资源。当创建了FederatedTypeConfig后，就可以通过创建federatedcustomresourcedefinition类型的实例来向各个子集群发布CRD资源了。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="n"&gt;crd&lt;/span&gt; &lt;span class="n"&gt;federatedcustomresourcedefinitions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;types&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;NAME&lt;/span&gt; &lt;span class="n"&gt;CREATED&lt;/span&gt; &lt;span class="n"&gt;AT&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;federatedcustomresourcedefinitions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;types&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt; &lt;span class="mf"&gt;2021&lt;/span&gt;&lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="mf"&gt;12&lt;/span&gt;&lt;span class="p"&gt;-&lt;/span&gt;&lt;span class="n"&gt;24T12&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="mf"&gt;32&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="n"&gt;54Z&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="n"&gt;FederatedTypeConfig&lt;/span&gt; &lt;span class="n"&gt;-n&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt; &lt;span class="n"&gt;customresourcedefinitions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;apiextensions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;k8s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt; &lt;span class="n"&gt;-o&lt;/span&gt; &lt;span class="n"&gt;yaml&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;apiVersion&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;core&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;v1beta1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;FederatedTypeConfig&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;metadata&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;finalizers&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;core&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="nb"&gt;federated-type&lt;/span&gt;&lt;span class="n"&gt;-config&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;customresourcedefinitions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;apiextensions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;k8s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;namespace&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;spec&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;federatedType&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;group&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;types&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;FederatedCustomResourceDefinition&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;pluralName&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;federatedcustomresourcedefinitions&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;scope&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Cluster&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;v1beta1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;propagation&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Enabled&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;targetType&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;group&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;apiextensions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;k8s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;CustomResourceDefinition&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;pluralName&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;customresourcedefinitions&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;scope&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Cluster&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;v1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;status&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;observedGeneration&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;propagationController&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Running&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;statusController&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;NotRunning&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;在example/sample1下包含了很多例子，可以直接参考。接下来使用sample1中的例子进行试验。
+​&lt;/p&gt;
+&lt;p&gt;在父集群创建namespace test-namespace&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;kubectl&lt;/span&gt; &lt;span class="n"&gt;create&lt;/span&gt; &lt;span class="o"&gt;-f&lt;/span&gt; &lt;span class="n"&gt;namespace&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;yaml&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;namespace&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="nb"&gt;test-namespace&lt;/span&gt; &lt;span class="n"&gt;created&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;在主集群中创建federatednamespace资源&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="n"&gt;apply&lt;/span&gt; &lt;span class="o"&gt;-f&lt;/span&gt; &lt;span class="n"&gt;federatednamespace&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;yaml&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;federatednamespace&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;types&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="nb"&gt;test-namespace&lt;/span&gt; &lt;span class="n"&gt;created&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;在子集群中即可查询到新创建的namespace资源&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="n"&gt;get&lt;/span&gt; &lt;span class="n"&gt;ns&lt;/span&gt; &lt;span class="nb"&gt;test-namespace&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;NAME&lt;/span&gt; &lt;span class="n"&gt;STATUS&lt;/span&gt; &lt;span class="n"&gt;AGE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;test-namespace&lt;/span&gt; &lt;span class="n"&gt;Active&lt;/span&gt; &lt;span class="n"&gt;4m49s&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;其他的对象均可以按照跟上述namespace同样的方式来创建，比较特殊的对象为clusterrulebinding，该对象在默认情况下没有联邦api FederatedClusterRoleBinding，因此需要手工先创建FederatedClusterRoleBinding联邦api类型。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;$&lt;/span&gt; &lt;span class="n"&gt;kubefedctl&lt;/span&gt; &lt;span class="n"&gt;enable&lt;/span&gt; &lt;span class="n"&gt;clusterrolebinding&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;I1225&lt;/span&gt; &lt;span class="mf"&gt;01&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="mf"&gt;46&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="mf"&gt;42.779166&lt;/span&gt; &lt;span class="mf"&gt;818254&lt;/span&gt; &lt;span class="n"&gt;util&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;go&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="mf"&gt;141&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="n"&gt;Api&lt;/span&gt; &lt;span class="n"&gt;resource&lt;/span&gt; &lt;span class="n"&gt;found&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;customresourcedefinition&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;apiextensions&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;k8s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;federatedclusterrolebindings&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;types&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt; &lt;span class="n"&gt;created&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;federatedtypeconfig&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;core&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;clusterrolebindings&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;rbac&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;authorization&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;k8s&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;io&lt;/span&gt; &lt;span class="n"&gt;created&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;namespace&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;在创建完成FederatedClusterRoleBinding联邦api类型后，即可以创建出FederatedClusterRoleBinding类型的对象。&lt;/p&gt;
+&lt;h2 id="子集群的个性化配置"&gt;子集群的个性化配置
+&lt;/h2&gt;&lt;p&gt;通过Fedrated&lt;Kind&gt;中的spec.overrides来完成，可以覆盖spec.template中的内容&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;span class="lnt"&gt;35
+&lt;/span&gt;&lt;span class="lnt"&gt;36
+&lt;/span&gt;&lt;span class="lnt"&gt;37
+&lt;/span&gt;&lt;span class="lnt"&gt;38
+&lt;/span&gt;&lt;span class="lnt"&gt;39
+&lt;/span&gt;&lt;span class="lnt"&gt;40
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;apiVersion&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;types&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;v1beta1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;FederatedDeployment&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;metadata&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;test-deployment&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;namespace&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;test-namespace&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;spec&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;template&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;metadata&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;labels&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;app&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;nginx&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;spec&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;replicas&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;3&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;selector&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;matchLabels&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;app&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;nginx&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;template&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;metadata&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;labels&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;app&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;nginx&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;spec&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;containers&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;image&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;nginx&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;nginx&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;placement&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;clusters&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;cluster2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;cluster1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;overrides&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;clusterName&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;cluster2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;clusterOverrides&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/spec/replicas&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;5&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/spec/template/spec/containers/0/image&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;nginx:1.17.0-alpine&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/metadata/annotations&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;op&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;add&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/metadata/annotations/foo&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;op&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;remove&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="多集群应用调度"&gt;多集群应用调度
+&lt;/h2&gt;&lt;h3 id="发布应用到特定的子集群"&gt;发布应用到特定的子集群
+&lt;/h3&gt;&lt;p&gt;在Fedrated&lt;Kind&gt;的spec.placement.clusters中，定义了要发布到哪个子集群的信息。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;placement&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;clusters&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;cluster2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;-&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;cluster1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;不过上述方法需要指定特定的集群，为了有更丰富的灵活性，kubefed还提供了label selector的机制，可以提供spec.placement.clusterSelector来指定一组集群。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;spec&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;placement&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;clusters&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;clusterSelector&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;matchLabels&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;标签选择器通过跟kubefedclusters对象的label来进行匹配，可以执行下述命令给kubefedclusters来打标签。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;kubectl&lt;/span&gt; &lt;span class="n"&gt;label&lt;/span&gt; &lt;span class="n"&gt;kubefedclusters&lt;/span&gt; &lt;span class="n"&gt;-n&lt;/span&gt; &lt;span class="nb"&gt;kube-federation&lt;/span&gt;&lt;span class="n"&gt;-system&lt;/span&gt; &lt;span class="nb"&gt;kind-cluster1&lt;/span&gt; &lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="n"&gt;bar&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id="子集群差异化调度"&gt;子集群差异化调度
+&lt;/h3&gt;&lt;p&gt;上述调度功能被选择的子集群为平等关系，如果要想子集群能够有所差异，可以使用ReplicaSchedulingPreference来完成，目前仅支持deployment和replicaset两种类型的资源，还不支持statefulset。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-powershell" data-lang="powershell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;apiVersion&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;scheduling&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="py"&gt;kubefed&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="p"&gt;/&lt;/span&gt;&lt;span class="n"&gt;v1alpha1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;kind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;ReplicaSchedulingPreference&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;metadata&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;test-deployment&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;namespace&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;test-ns&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;spec&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;targetKind&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="n"&gt;FederatedDeployment&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;totalReplicas&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;9&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;clusters&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;A:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;minReplicas&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;4&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;maxReplicas&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;6&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;weight&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;B:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;minReplicas&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;4&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;maxReplicas&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;8&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;weight&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="mf"&gt;2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;spec.targetKind用来指定管理的类型，仅支持FederatedDeployment和FederatedReplicaset。
+spec.totalReplicas用来指定所有子集群的副本数总和。优先级要高于FederatedDeployment和FederatedReplicaset的spec.template中指定的副本数。
+spec.clusters用来指定每个子集群的最大、最小副本数和权重。
+spec.rebalance自动调整整个集群中的副本数，比如一个集群中的pod挂掉后，可以将pod迁移到另外的集群中。&lt;/p&gt;
+&lt;h1 id="子集群之间的交互"&gt;子集群之间的交互
+&lt;/h1&gt;&lt;p&gt;无&lt;/p&gt;
+&lt;h1 id="缺点"&gt;缺点
+&lt;/h1&gt;&lt;ol&gt;
+&lt;li&gt;父集群充当了所有集群的单一控制面&lt;/li&gt;
+&lt;li&gt;通过联邦CRD来管理资源，无法直接使用k8s原生的资源，集群间维护CRD版本和API版本一致性导致升级比较复杂。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h1 id="参考资料"&gt;参考资料
+&lt;/h1&gt;&lt;ul&gt;
+&lt;li&gt;官方文档：&lt;a class="link" href="https://github.com/kubernetes-sigs/kubefed/blob/master/docs/userguide.md#using-cluster-selector" target="_blank" rel="noopener"
+&gt;https://github.com/kubernetes-sigs/kubefed/blob/master/docs/userguide.md#using-cluster-selector&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>

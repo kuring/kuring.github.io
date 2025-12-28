@@ -1,0 +1,818 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Docker on 404频道</title><link>https://kuring.me/tags/docker/</link><description>Recent content in Docker on 404频道</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>kuring</copyright><lastBuildDate>Sun, 23 Sep 2018 19:13:16 +0000</lastBuildDate><atom:link href="https://kuring.me/tags/docker/index.xml" rel="self" type="application/rss+xml"/><item><title>docker基础知识之user namespace</title><link>https://kuring.me/post/namespace_user/</link><pubDate>Sun, 23 Sep 2018 19:13:16 +0000</pubDate><guid>https://kuring.me/post/namespace_user/</guid><description>&lt;p&gt;user namespace是所有namespace中实现最复杂的一个，也是最晚引入的一个，是在linux2.6版本中才引入。因为涉及到权限机制，跟capability有着比较密切的关系。&lt;/p&gt;
+&lt;h2 id="创建user-namespace"&gt;创建user namespace
+&lt;/h2&gt;&lt;p&gt;在clone或者unshare系统调用使用CLONE_NEWUSER参数后，在子进程中看到的uid和gid跟父进程中的不一样，子进程中找不到uid时，会显示最大的uid 65534（在/proc/sys/kernel/overflowuid中设置）。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ id
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;uid=1000(vagrant) gid=1000(vagrant) groups=1000(vagrant)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ readlink /proc/$$/ns/user
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;user:[4026531837]
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 使用unshare命令创建新的user namespace
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ unshare --user /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@ubuntu-xenial:/tmp$ readlink /proc/$$/ns/user
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;user:[4026532145]
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 新的user namespace没有映射关系，默认使用/proc/sys/kernel/overflowuid中定义的user id和/proc/sys/kernel/overflowgid中的group id
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@ubuntu-xenial:/tmp$ id
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;#--------------------------第二个shell窗口----------------------
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 在父user namespace上创建文件夹，可以看到用户为vagrant
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ mkdir test
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ ll /tmp | grep test
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;drwxrwxr-x 2 vagrant vagrant 4096 Sep 23 17:11 test/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;#--------------------------第一个shell窗口----------------------
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 在新创建的user namespace下用户显示为nobody
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@ubuntu-xenial:/tmp$ ll /tmp | grep test
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;drwxrwxr-x 2 nobody nogroup 4096 Sep 23 17:11 test/
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="映射user-id和group-id到新的user-namespace"&gt;映射user id和group id到新的user namespace
+&lt;/h2&gt;&lt;p&gt;创建完新的user namespace后，通常会先映射user id和group id，方法为添加映射关系到/proc/${pid}/uid_map和/proc/${pid}/gid_map中。&lt;/p&gt;
+&lt;p&gt;user namespace被创建以后，第一个进程被赋予了该namespace的所有权限，但该进程并不拥有父namespace的任何权限。利用该机制可以做到一个用户在父user namespace中是普通用户，在子user namespace中是超级用户的功能。&lt;/p&gt;
+&lt;p&gt;为了将容器中的uid和父user namespace上的uid和gid进行 关联起来，可通过/proc/&lt;pid&gt;/uid_map和/proc/&lt;pid&gt;/gid_map来进行映射的。这两个文件的格式为：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ID-inside-ns ID-outside-ns length
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;第一个字段ID-inside-ns表示在容器显示的UID或GID，
+第二个字段ID-outside-ns表示容器外映射的真实的UID或GID。
+第三个字段表示映射的范围，一般填1，表示一一对应。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;0 1000 256&lt;/code&gt;这个配置的含义为父user namespace的1000-1256映射到新user namespace的0-256.&lt;/p&gt;
+&lt;p&gt;创建子进程在没有指定CLONE_NEWUSER时文件内容如下，子进程跟父进程的用户完全一致：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 表示把namespace内部从0开始的uid映射到外部从0开始的uid，其最大范围是无符号32位整形
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@centos7 1325]# cat uid_map
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; 0 0 4294967295
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;要想实现以普通用户运行程序，在子进程中以root用户执行，仅需要将uid_map文件修改为普通用户映射到子进程中的0即可，因为uid为0表示root用户。&lt;/p&gt;
+&lt;p&gt;那么谁拥有写入该文件的权限呢？&lt;/p&gt;
+&lt;p&gt;/proc/${pid}/[u|g]id的拥有者为创建新user namespace的用户，拥有map文件写入权限的仅有两个用户：和该用户在同一个user namespace中的root用户，创建新的user namespace的用户。创建新的user namespace有没有写入map文件的权限，还要取决于capability中的CAP_SETUID和CAP_SETGID两个权限。&lt;/p&gt;
+&lt;p&gt;为了方便写入/proc/${pid}/uid_map和/proc/${pid}/gid_map文件，可以使用newuidmap和newgidmap命令来完成。&lt;/p&gt;
+&lt;p&gt;继续上述例子&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;span class="lnt"&gt;35
+&lt;/span&gt;&lt;span class="lnt"&gt;36
+&lt;/span&gt;&lt;span class="lnt"&gt;37
+&lt;/span&gt;&lt;span class="lnt"&gt;38
+&lt;/span&gt;&lt;span class="lnt"&gt;39
+&lt;/span&gt;&lt;span class="lnt"&gt;40
+&lt;/span&gt;&lt;span class="lnt"&gt;41
+&lt;/span&gt;&lt;span class="lnt"&gt;42
+&lt;/span&gt;&lt;span class="lnt"&gt;43
+&lt;/span&gt;&lt;span class="lnt"&gt;44
+&lt;/span&gt;&lt;span class="lnt"&gt;45
+&lt;/span&gt;&lt;span class="lnt"&gt;46
+&lt;/span&gt;&lt;span class="lnt"&gt;47
+&lt;/span&gt;&lt;span class="lnt"&gt;48
+&lt;/span&gt;&lt;span class="lnt"&gt;49
+&lt;/span&gt;&lt;span class="lnt"&gt;50
+&lt;/span&gt;&lt;span class="lnt"&gt;51
+&lt;/span&gt;&lt;span class="lnt"&gt;52
+&lt;/span&gt;&lt;span class="lnt"&gt;53
+&lt;/span&gt;&lt;span class="lnt"&gt;54
+&lt;/span&gt;&lt;span class="lnt"&gt;55
+&lt;/span&gt;&lt;span class="lnt"&gt;56
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;#--------------------------第一个shell窗口----------------------
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 在新user namespace中获取当前的进程号
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@ubuntu-xenial:/tmp$ echo $$
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;13226
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;#--------------------------第二个shell窗口----------------------
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ ll /proc/13226/uid_map /proc/13226/gid_map
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;-rw-r--r-- 1 vagrant vagrant 0 Sep 23 17:31 /proc/13226/gid_map
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;-rw-r--r-- 1 vagrant vagrant 0 Sep 23 17:31 /proc/13226/uid_map
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 提示当前进程没有权限写入
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ echo &amp;#39;0 1000 100&amp;#39; &amp;gt; /proc/13226/uid_map
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;-bash: echo: write error: Operation not permitted
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 查看当前bash没有任何capability
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ cat /proc/$$/status | egrep &amp;#39;Cap(Inh|Prm|Eff)&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;CapInh: 0000000000000000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;CapPrm: 0000000000000000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;CapEff: 0000000000000000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 使用root权限给/bin/bash可执行文件增加cap_setgid和cap_setuid
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ sudo setcap cap_setgid,cap_setuid+ep /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 启动新的bash后capability会生效
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ cat /proc/$$/status | egrep &amp;#39;Cap(Inh|Prm|Eff)&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;CapInh: 0000000000000000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;CapPrm: 00000000000000c0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;CapEff: 00000000000000c0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 重新写入
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ echo &amp;#39;0 1000 100&amp;#39; &amp;gt; /proc/13226/uid_map
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ echo &amp;#39;0 1000 100&amp;#39; &amp;gt; /proc/13226/gid_map
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 第二次再写入会失败，仅允许写入一次
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ echo &amp;#39;0 1000 100&amp;#39; &amp;gt; /proc/13226/uid_map
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;bash: echo: write error: Operation not permitted
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 将刚才设置的capability取消
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ sudo setcap cap_setgid,cap_setuid-ep /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ getcap /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/bin/bash =
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;vagrant@ubuntu-xenial:/tmp$ exit
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;exit
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;#--------------------------第一个shell窗口----------------------
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 第一个窗口中userid已经变更为0了
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@ubuntu-xenial:/tmp$ id
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;uid=0(root) gid=0(root) groups=0(root)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 重新执行一个新的bash，会发现提示符已经变更为root了
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@ubuntu-xenial:/tmp$ bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@ubuntu-xenial:/tmp#
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 可以看到新的bash已经拥有的所有的capability，但也仅限于当前的user namespace中
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@ubuntu-xenial:/tmp# cat /proc/$$/status | egrep &amp;#39;Cap(Inh|Prm|Eff)&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;CapInh: 0000000000000000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;CapPrm: 0000003fffffffff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;CapEff: 0000003fffffffff
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="问题"&gt;问题
+&lt;/h2&gt;&lt;p&gt;user namespace在linux3.8内核版本上才实现，存在一定的安全问题。在redhat和centos系统下，user namespace作为了一个实验feature，默认情况下未开启。&lt;/p&gt;
+&lt;p&gt;执行如下命令&lt;code&gt;sudo grubby --args=&amp;quot;user_namespace.enable=1&amp;quot; --update-kernel=&amp;quot;$(grubby --default-kernel)&amp;quot;&lt;/code&gt;并重启系统后可以就可以打开user namespace feature了。执行&lt;code&gt;grubby --remove-args=&amp;quot;user_namespace.enable=1&amp;quot; --update-kernel=&amp;quot;$(grubby --default-kernel)&amp;quot;&lt;/code&gt;可关闭user namespace feature。&lt;/p&gt;
+&lt;p&gt;经实验，上述操作未生效，后续待查该问题。&lt;/p&gt;
+&lt;h2 id="ref"&gt;ref
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="https://rhelblog.redhat.com/2015/07/07/whats-next-for-containers-user-namespaces/#comment-6796" target="_blank" rel="noopener"
+&gt;What’s Next for Containers? User Namespaces
+&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://segmentfault.com/a/1190000006913195" target="_blank" rel="noopener"
+&gt;Linux Namespace系列（07）：user namespace (CLONE_NEWUSER) (第一部分)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item><item><title>docker基础知识之mount namespace</title><link>https://kuring.me/post/docker%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86%E4%B9%8Bmount-namespace/</link><pubDate>Sat, 15 Sep 2018 01:52:17 +0000</pubDate><guid>https://kuring.me/post/docker%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86%E4%B9%8Bmount-namespace/</guid><description>&lt;p&gt;Mount Namespace 是 Linux 下的一种挂载隔离机制，可以实现不同的进程拥有独立的挂载视图，各挂载点之间相互不受影响。&lt;/p&gt;
+&lt;h1 id="mount-namespace-基本用法"&gt;mount namespace 基本用法
+&lt;/h1&gt;&lt;p&gt;Linux 启动时会创建一个默认的 mount namespace，在使用 clone() 或者 unshare() 系统调用通过 CLONE_NEWNS 会创建出新的 mount namespace。因为是第一个加入到 Linux 内核的中的 namespace，CLONE_NEWNS 的取名并不是太合理。&lt;/p&gt;
+&lt;p&gt;每个进程的挂载信息保存在了 &lt;code&gt;/proc/&amp;lt;pid&amp;gt;/{mountinfo,mounts,mountstats}&lt;/code&gt; 中。&lt;/p&gt;
+&lt;p&gt;使用如下命令可以看到一个进程对应的 mount namespace 名称。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;#ll /proc/$$/ns/mnt
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lrwxrwxrwx 1 root root 0 Aug 30 00:02 /proc/94832/ns/mnt -&amp;gt; mnt:[4026531840]
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;可以使用 unshare 命令来创建一个新的命名空间，执行如下命令：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 创建新的命名空间，此时会继承当前 mount namespace 的挂载点信息
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;unshare --mount --fork --pid --mount-proc /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 创建新的挂载点并挂载，执行完成后可以看到新的挂载点存在
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkdir /mnt/new_mount
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mount -t tmpfs tmpfs /mnt/new_mount
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 查看新的挂载点
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;df -h | grep new_mount
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;新打开一个终端，切换回原始的命名空间，可以看到挂载点并不存在。&lt;/p&gt;
+&lt;h1 id="mount-namespace-的-shared-subtree"&gt;mount namespace 的 shared subtree
+&lt;/h1&gt;&lt;p&gt;mount namespace 实现了挂载点的隔离，但在很多创建下又希望能够在不同的 namespace 下共享挂载点。&lt;a class="link" href="https://www.kernel.org/doc/Documentation/filesystems/sharedsubtree.txt" target="_blank" rel="noopener"
+&gt;shared subtree&lt;/a&gt; 机制允许在 mount namespace 之间自动的或者受控的传播 mount 和 umount 事件。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;注意：该处理解起来比较绕。在创建 mount namespace 和挂载目录的时候分别可以指定参数。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;在做单个目录挂载的时候通过指定传播类型来指定的不同隔离行为，支持如下的值：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;private：挂载点不会传播到其他命名空间，默认类型。&lt;/li&gt;
+&lt;li&gt;shared：挂载点会传播到共享这个挂载点的其他命名空间。&lt;/li&gt;
+&lt;li&gt;slave：挂载点不会传播到另一个命名空间，但其他命名空间的传播会影响到这个挂载点。&lt;/li&gt;
+&lt;li&gt;unbindable：挂载点不能被移动。&lt;/li&gt;
+&lt;li&gt;rprivate：递归地将挂载点及其子挂载点设置为 private。&lt;/li&gt;
+&lt;li&gt;rshared：递归地将挂载点及其子挂载点设置为 shared。&lt;/li&gt;
+&lt;li&gt;rslave：递归地将挂载点及其子挂载点设置为 slave。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;mount 在挂载目录的时候可以指定如下参数：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&amp;ndash;make-rshared：将挂载方式设置为 rshared。&lt;/li&gt;
+&lt;li&gt;&amp;ndash;make-rslave：将挂载方式设置为 rslave。&lt;/li&gt;
+&lt;li&gt;&amp;ndash;make-rprivate：将挂载方式设置为 rprivate。&lt;/li&gt;
+&lt;li&gt;&amp;ndash;make-runbindable：将挂载方式设置为不可移动。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;可以通过 &lt;code&gt;findmnt -o TARGET,PROPAGATION&lt;/code&gt; 命令查看到当前 mount namespace 下的挂载点的 shared subtree 属性。但该命令无法区分出 shared 和 rshared 属性。&lt;/p&gt;
+&lt;p&gt;unshare 命令在创建新的 mount namespace 时通过选项 &lt;code&gt;--propagation&lt;/code&gt;来指定新创建的 mount namespace 中所有挂载点的共享方式。支持如下值：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;private：新创建的 mount namespace 中的所有挂载点的 shared subtrees 属性全部为 private。默认值。&lt;/li&gt;
+&lt;li&gt;shared：新创建的 mount namespace 中的挂载点的 shared subtrees 属性全部为 share。&lt;/li&gt;
+&lt;li&gt;slave：新创建的 mount namespace 中的挂载点的 shared subtrees 属性全部为 slave。&lt;/li&gt;
+&lt;li&gt;unchanged：新创建的 mount namespace 中的挂载点的 shared subtrees 属性保持不变。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;在上面的例子中可以通过指定为 rshared 的模式来查看效果。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 创建新的命名空间
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;unshare --mount --fork --pid --mount-proc /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 创建新的挂载点并挂载，执行完成后可以看到新的挂载点存在
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mount --make-rshared /
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 查看新的挂载点
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;df -h | grep new_mount
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h1 id="mount-namespace-在容器技术中的应用"&gt;mount namespace 在容器技术中的应用
+&lt;/h1&gt;&lt;p&gt;在容器技术中，在容器中不应该看到宿主机上挂载的目录。在Linux中使用chroot技术来实现，在容器中将&lt;code&gt;/&lt;/code&gt;挂载到指定目录，这样在容器中就看不到宿主机上的其他挂载项。在容器技术中，chroot所使用的目录即容器镜像的目录。容器镜像中并不包含操作系统的内核。&lt;/p&gt;
+&lt;h2 id="docker-volume"&gt;Docker Volume
+&lt;/h2&gt;&lt;p&gt;为了解决容器中能够访问宿主机上文件的问题，docker引入了Volume机制，将宿主机上指定的文件或者目录挂载到容器中。而整个的docker Volume机制跟mount namespace的关系不太大。&lt;/p&gt;
+&lt;p&gt;Volume用到的技术为Linux的绑定挂载机制，该机制将一个指定的目录或者文件挂载到一个指定的目录上。&lt;/p&gt;
+&lt;p&gt;容器启动顺序如下：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;创建新的mount namespace&lt;/li&gt;
+&lt;li&gt;dockerinit根据容器镜像准备好rootfs&lt;/li&gt;
+&lt;li&gt;dockerinit使用绑定挂载机制将一个指定的目录挂载到rootfs的某个目录上&lt;/li&gt;
+&lt;li&gt;dockerinit调用chroot&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;容器启动时需要创建新的mount namespace，根据容器镜像准备好rootfs，调用chroot。docker volume的挂载时机是在rootfs准备好之后，调用chroot之前完成。&lt;/p&gt;
+&lt;p&gt;上文提到进入新的mount namespace后，mount namespace会继承父mount namespace的挂载, docker volume一定是在新的mount namespce中执行，否则会影响到宿主机上的mount。在调用chroot之后已经看不到宿主机上的文件系统，无法进行挂载。&lt;/p&gt;
+&lt;p&gt;执行这一操作的进程为docker的容器进程dockerinit，该进程会负责完成根目录的准备、挂载设备和目录、配置hostname等一系列需要在容器内进行的初始化操作。在初始化完成后，会调用execv()系统调用，用容器中的ENTRYPOINT进程取代，成为容器中的1号进程。&lt;/p&gt;
+&lt;p&gt;volume挂载的目录是挂载在读写层，由于使用了mount namespace，在宿主机上看不到挂载目录的信息，因此docker commit操作不会将挂载的目录提交。&lt;/p&gt;
+&lt;p&gt;下面使用例子来演示docker volume的用法&lt;/p&gt;
+&lt;p&gt;在宿主机上使用&lt;code&gt;docker run -d -v /test ubuntu sleep 10000&lt;/code&gt;创建新的容器，并创建docker容器中的挂载点/test，该命令会自动在容器中创建目录，并将宿主机上指定目录下的随机目录挂载到容器中的/test目录下。&lt;/p&gt;
+&lt;p&gt;可在宿主机上通过如下命令查看到volume的情况&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 列出当前docker在使用的所有volume&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;root&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;localhost&lt;/span&gt; &lt;span class="n"&gt;vagrant&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="c1"&gt;# docker volume ls&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;DRIVER&lt;/span&gt; &lt;span class="n"&gt;VOLUME&lt;/span&gt; &lt;span class="n"&gt;NAME&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;local&lt;/span&gt; &lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="n"&gt;ad97e6356707b66cd1cacc4a2e223d9c79d11eca26fe12b1becc9dd664fc5c6&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# 查看volume在宿主机上的挂载点&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;root&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt;&lt;span class="n"&gt;localhost&lt;/span&gt; &lt;span class="n"&gt;vagrant&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="c1"&gt;# docker volume inspect 4ad97e6356707b66cd1cacc4a2e223d9c79d11eca26fe12b1becc9dd664fc5c6&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;CreatedAt&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;2018-09-15T23:36:09+08:00&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;Driver&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;local&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;Labels&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;null&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;Mountpoint&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;/var/lib/docker/volumes/4ad97e6356707b66cd1cacc4a2e223d9c79d11eca26fe12b1becc9dd664fc5c6/_data&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;Name&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;4ad97e6356707b66cd1cacc4a2e223d9c79d11eca26fe12b1becc9dd664fc5c6&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;Options&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="s2"&gt;&amp;#34;Scope&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;&amp;#34;local&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="docker文件系统"&gt;docker文件系统
+&lt;/h2&gt;&lt;p&gt;&lt;img src="https://kuring.oss-cn-beijing.aliyuncs.com/images/docker_fs.png"
+loading="lazy"
+&gt;&lt;/p&gt;
+&lt;p&gt;rootfs在最下层为docker镜像的只读层。&lt;/p&gt;
+&lt;p&gt;rootfs之上为dockerinit进程自己添加的init层，用来存放dockerinit添加或者修改的/etc/hostname等文件。&lt;/p&gt;
+&lt;p&gt;rootfs的最上层为可读写层，以Copy-On-Write的方式存放任何对只读层的修改，容器声明的volume挂载点也出现这一层。&lt;/p&gt;
+&lt;h1 id="mount-namespace-在-k8s-中应用"&gt;mount namespace 在 k8s 中应用
+&lt;/h1&gt;&lt;p&gt;在 k8s 中可以通过 volumeMounts 中的参数 mountPropagation 来指定挂载的参数。&lt;/p&gt;
+&lt;h2 id="引用"&gt;引用
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;极客时间-深入剖析Kubernetes-08&lt;/li&gt;
+&lt;/ul&gt;</description></item><item><title>docker基础知识之network namespace</title><link>https://kuring.me/post/namespace_network/</link><pubDate>Sat, 15 Sep 2018 00:40:49 +0000</pubDate><guid>https://kuring.me/post/namespace_network/</guid><description>&lt;p&gt;network namespace用来隔离Linux系统的网络设备、ip地址、端口号、路由表、防火墙等网络资源。用户可以随意将虚拟网络设备分配到自定义的networknamespace里，而连接真实硬件的物理设备则只能放在系统的根networknamesapce中。&lt;/p&gt;
+&lt;p&gt;一个物理的网络设备最多存在于一个network namespace，可以通过创建veth pair在不同的network namespace之间创建通道，来达到通讯的目的。&lt;/p&gt;
+&lt;p&gt;容器的bridge模式的实现思路为创建一个veth pair，一端放置在新的namespace，通常命名为eth0，另外一端放在原先的namespace中连接物理网络设备，以此实现网络通信。&lt;/p&gt;
+&lt;p&gt;docker daemon负责在宿主机上创建veth pair，把一端绑定到docker0网桥，另一端到新建的network namespace进程中。建立的过程中，docker daemon和dockerinit通过pipe进行通讯。&lt;/p&gt;
+&lt;h2 id="一测试例子"&gt;一、测试例子
+&lt;/h2&gt;&lt;p&gt;测试network namespace的过程比较复杂。&lt;/p&gt;
+&lt;p&gt;docker默认采用的为bridge模式，在容器所在的宿主机上看到的网卡情况如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip link show
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1: lo: &amp;lt;LOOPBACK,UP,LOWER_UP&amp;gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;2: enp0s3: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;3: enp0s8: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4: docker0: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;18: veth71f2650@if17: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;其中的enp0s3和enp0s8可以忽略，为虚拟机使用的网卡。docker0和veth71f2650@if17是需要关注的网卡。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# brctl show
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;bridge name bridge id STP enabled interfaces
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;docker0 8000.0242a3750016 no veth71f2650
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;下面的操作为在已经运行docker的虚拟机上的，以便于跟docker进行比较。&lt;/p&gt;
+&lt;p&gt;以下命令根据coolshell中的步骤进行配置，并对执行命令的顺序进行了调整。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt; 10
+&lt;/span&gt;&lt;span class="lnt"&gt; 11
+&lt;/span&gt;&lt;span class="lnt"&gt; 12
+&lt;/span&gt;&lt;span class="lnt"&gt; 13
+&lt;/span&gt;&lt;span class="lnt"&gt; 14
+&lt;/span&gt;&lt;span class="lnt"&gt; 15
+&lt;/span&gt;&lt;span class="lnt"&gt; 16
+&lt;/span&gt;&lt;span class="lnt"&gt; 17
+&lt;/span&gt;&lt;span class="lnt"&gt; 18
+&lt;/span&gt;&lt;span class="lnt"&gt; 19
+&lt;/span&gt;&lt;span class="lnt"&gt; 20
+&lt;/span&gt;&lt;span class="lnt"&gt; 21
+&lt;/span&gt;&lt;span class="lnt"&gt; 22
+&lt;/span&gt;&lt;span class="lnt"&gt; 23
+&lt;/span&gt;&lt;span class="lnt"&gt; 24
+&lt;/span&gt;&lt;span class="lnt"&gt; 25
+&lt;/span&gt;&lt;span class="lnt"&gt; 26
+&lt;/span&gt;&lt;span class="lnt"&gt; 27
+&lt;/span&gt;&lt;span class="lnt"&gt; 28
+&lt;/span&gt;&lt;span class="lnt"&gt; 29
+&lt;/span&gt;&lt;span class="lnt"&gt; 30
+&lt;/span&gt;&lt;span class="lnt"&gt; 31
+&lt;/span&gt;&lt;span class="lnt"&gt; 32
+&lt;/span&gt;&lt;span class="lnt"&gt; 33
+&lt;/span&gt;&lt;span class="lnt"&gt; 34
+&lt;/span&gt;&lt;span class="lnt"&gt; 35
+&lt;/span&gt;&lt;span class="lnt"&gt; 36
+&lt;/span&gt;&lt;span class="lnt"&gt; 37
+&lt;/span&gt;&lt;span class="lnt"&gt; 38
+&lt;/span&gt;&lt;span class="lnt"&gt; 39
+&lt;/span&gt;&lt;span class="lnt"&gt; 40
+&lt;/span&gt;&lt;span class="lnt"&gt; 41
+&lt;/span&gt;&lt;span class="lnt"&gt; 42
+&lt;/span&gt;&lt;span class="lnt"&gt; 43
+&lt;/span&gt;&lt;span class="lnt"&gt; 44
+&lt;/span&gt;&lt;span class="lnt"&gt; 45
+&lt;/span&gt;&lt;span class="lnt"&gt; 46
+&lt;/span&gt;&lt;span class="lnt"&gt; 47
+&lt;/span&gt;&lt;span class="lnt"&gt; 48
+&lt;/span&gt;&lt;span class="lnt"&gt; 49
+&lt;/span&gt;&lt;span class="lnt"&gt; 50
+&lt;/span&gt;&lt;span class="lnt"&gt; 51
+&lt;/span&gt;&lt;span class="lnt"&gt; 52
+&lt;/span&gt;&lt;span class="lnt"&gt; 53
+&lt;/span&gt;&lt;span class="lnt"&gt; 54
+&lt;/span&gt;&lt;span class="lnt"&gt; 55
+&lt;/span&gt;&lt;span class="lnt"&gt; 56
+&lt;/span&gt;&lt;span class="lnt"&gt; 57
+&lt;/span&gt;&lt;span class="lnt"&gt; 58
+&lt;/span&gt;&lt;span class="lnt"&gt; 59
+&lt;/span&gt;&lt;span class="lnt"&gt; 60
+&lt;/span&gt;&lt;span class="lnt"&gt; 61
+&lt;/span&gt;&lt;span class="lnt"&gt; 62
+&lt;/span&gt;&lt;span class="lnt"&gt; 63
+&lt;/span&gt;&lt;span class="lnt"&gt; 64
+&lt;/span&gt;&lt;span class="lnt"&gt; 65
+&lt;/span&gt;&lt;span class="lnt"&gt; 66
+&lt;/span&gt;&lt;span class="lnt"&gt; 67
+&lt;/span&gt;&lt;span class="lnt"&gt; 68
+&lt;/span&gt;&lt;span class="lnt"&gt; 69
+&lt;/span&gt;&lt;span class="lnt"&gt; 70
+&lt;/span&gt;&lt;span class="lnt"&gt; 71
+&lt;/span&gt;&lt;span class="lnt"&gt; 72
+&lt;/span&gt;&lt;span class="lnt"&gt; 73
+&lt;/span&gt;&lt;span class="lnt"&gt; 74
+&lt;/span&gt;&lt;span class="lnt"&gt; 75
+&lt;/span&gt;&lt;span class="lnt"&gt; 76
+&lt;/span&gt;&lt;span class="lnt"&gt; 77
+&lt;/span&gt;&lt;span class="lnt"&gt; 78
+&lt;/span&gt;&lt;span class="lnt"&gt; 79
+&lt;/span&gt;&lt;span class="lnt"&gt; 80
+&lt;/span&gt;&lt;span class="lnt"&gt; 81
+&lt;/span&gt;&lt;span class="lnt"&gt; 82
+&lt;/span&gt;&lt;span class="lnt"&gt; 83
+&lt;/span&gt;&lt;span class="lnt"&gt; 84
+&lt;/span&gt;&lt;span class="lnt"&gt; 85
+&lt;/span&gt;&lt;span class="lnt"&gt; 86
+&lt;/span&gt;&lt;span class="lnt"&gt; 87
+&lt;/span&gt;&lt;span class="lnt"&gt; 88
+&lt;/span&gt;&lt;span class="lnt"&gt; 89
+&lt;/span&gt;&lt;span class="lnt"&gt; 90
+&lt;/span&gt;&lt;span class="lnt"&gt; 91
+&lt;/span&gt;&lt;span class="lnt"&gt; 92
+&lt;/span&gt;&lt;span class="lnt"&gt; 93
+&lt;/span&gt;&lt;span class="lnt"&gt; 94
+&lt;/span&gt;&lt;span class="lnt"&gt; 95
+&lt;/span&gt;&lt;span class="lnt"&gt; 96
+&lt;/span&gt;&lt;span class="lnt"&gt; 97
+&lt;/span&gt;&lt;span class="lnt"&gt; 98
+&lt;/span&gt;&lt;span class="lnt"&gt; 99
+&lt;/span&gt;&lt;span class="lnt"&gt;100
+&lt;/span&gt;&lt;span class="lnt"&gt;101
+&lt;/span&gt;&lt;span class="lnt"&gt;102
+&lt;/span&gt;&lt;span class="lnt"&gt;103
+&lt;/span&gt;&lt;span class="lnt"&gt;104
+&lt;/span&gt;&lt;span class="lnt"&gt;105
+&lt;/span&gt;&lt;span class="lnt"&gt;106
+&lt;/span&gt;&lt;span class="lnt"&gt;107
+&lt;/span&gt;&lt;span class="lnt"&gt;108
+&lt;/span&gt;&lt;span class="lnt"&gt;109
+&lt;/span&gt;&lt;span class="lnt"&gt;110
+&lt;/span&gt;&lt;span class="lnt"&gt;111
+&lt;/span&gt;&lt;span class="lnt"&gt;112
+&lt;/span&gt;&lt;span class="lnt"&gt;113
+&lt;/span&gt;&lt;span class="lnt"&gt;114
+&lt;/span&gt;&lt;span class="lnt"&gt;115
+&lt;/span&gt;&lt;span class="lnt"&gt;116
+&lt;/span&gt;&lt;span class="lnt"&gt;117
+&lt;/span&gt;&lt;span class="lnt"&gt;118
+&lt;/span&gt;&lt;span class="lnt"&gt;119
+&lt;/span&gt;&lt;span class="lnt"&gt;120
+&lt;/span&gt;&lt;span class="lnt"&gt;121
+&lt;/span&gt;&lt;span class="lnt"&gt;122
+&lt;/span&gt;&lt;span class="lnt"&gt;123
+&lt;/span&gt;&lt;span class="lnt"&gt;124
+&lt;/span&gt;&lt;span class="lnt"&gt;125
+&lt;/span&gt;&lt;span class="lnt"&gt;126
+&lt;/span&gt;&lt;span class="lnt"&gt;127
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 增加network namespace ns1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip netns add ns1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip netns
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ns1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 激活namespace ns1中的lo设备
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip netns exec ns1 ip link set dev lo up
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 创建veth pair
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip link add veth-ns1 type veth peer name lxcbr0.1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 多出了lxcbr0.1@veth-ns1和veth-ns1@lxcbr0.1两个设备
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 后面的操作步骤中将lxcbr0.1位于主网络命名空间中，veth-ns1位于ns1命名空间中
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip link
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1: lo: &amp;lt;LOOPBACK,UP,LOWER_UP&amp;gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;2: enp0s3: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;3: enp0s8: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4: docker0: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;18: veth71f2650@if17: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;19: lxcbr0: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether c6:b7:4d:7f:f8:90 brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;20: lxcbr0.1@veth-ns1: &amp;lt;BROADCAST,MULTICAST,M-DOWN&amp;gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether c6:8a:26:3d:ba:de brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;21: veth-ns1@lxcbr0.1: &amp;lt;BROADCAST,MULTICAST,M-DOWN&amp;gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 将设备veth-ns1放入到ns1命名空间中
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip link set veth-ns1 netns ns1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 可以看到veth-ns1设备在当前命名空间消失了
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip link
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1: lo: &amp;lt;LOOPBACK,UP,LOWER_UP&amp;gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;2: enp0s3: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;3: enp0s8: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4: docker0: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;18: veth71f2650@if17: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;19: lxcbr0: &amp;lt;BROADCAST,MULTICAST,UP,LOWER_UP&amp;gt; mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether c6:b7:4d:7f:f8:90 brd ff:ff:ff:ff:ff:ff
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;20: lxcbr0.1@if21: &amp;lt;BROADCAST,MULTICAST&amp;gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether c6:8a:26:3d:ba:de brd ff:ff:ff:ff:ff:ff link-netnsid 1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 同时在命名空间ns1中看到了设备veth-ns1，同时可以看到veth-ns1设备的状态为DOWN
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip netns exec ns1 ip link
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1: lo: &amp;lt;LOOPBACK,UP,LOWER_UP&amp;gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;21: veth-ns1@if20: &amp;lt;BROADCAST,MULTICAST&amp;gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 将ns1中的veth-ns1设备更名为eth0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip netns exec ns1 ip link set dev veth-ns1 name eth0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip netns exec ns1 ip link
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1: lo: &amp;lt;LOOPBACK,UP,LOWER_UP&amp;gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;21: eth0@if20: &amp;lt;BROADCAST,MULTICAST&amp;gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 为容器中的网卡分配一个IP地址，并激活它
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip netns exec ns1 ifconfig eth0 192.168.10.11/24 up
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 可以看到eth0网卡上有ip地址
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip netns exec ns1 ifconfig
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;eth0: flags=4099&amp;lt;UP,BROADCAST,MULTICAST&amp;gt; mtu 1500
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; inet 192.168.10.11 netmask 255.255.255.0 broadcast 192.168.10.255
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; ether f2:03:22:93:d6:f4 txqueuelen 1000 (Ethernet)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; RX packets 0 bytes 0 (0.0 B)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; RX errors 0 dropped 0 overruns 0 frame 0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; TX packets 0 bytes 0 (0.0 B)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; TX errors 0 dropped 0 overruns 0 carrier 0 collisions 0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lo: flags=73&amp;lt;UP,LOOPBACK,RUNNING&amp;gt; mtu 65536
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; inet 127.0.0.1 netmask 255.0.0.0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; inet6 ::1 prefixlen 128 scopeid 0x10&amp;lt;host&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; loop txqueuelen 1000 (Local Loopback)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; RX packets 0 bytes 0 (0.0 B)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; RX errors 0 dropped 0 overruns 0 frame 0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; TX packets 0 bytes 0 (0.0 B)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; TX errors 0 dropped 0 overruns 0 carrier 0 collisions 0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 添加一个网桥lxcbr0，类似于docker中的docker0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# brctl addbr lxcbr0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# brctl show
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;bridge name bridge id STP enabled interfaces
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;docker0 8000.0242a3750016 no veth71f2650
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lxcbr0 8000.000000000000 no
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 关闭生成树协议，默认该协议为关闭状态
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# brctl stp lxcbr0 off
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# brctl show
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;bridge name bridge id STP enabled interfaces
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;docker0 8000.0242a3750016 no veth71f2650
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lxcbr0 8000.000000000000 no
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 为网桥配置ip地址
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;ifconfig lxcbr0 192.168.10.1/24 up
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ifconfig lxcbr0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lxcbr0: flags=4163&amp;lt;UP,BROADCAST,RUNNING,MULTICAST&amp;gt; mtu 1500
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; inet 192.168.10.1 netmask 255.255.255.0 broadcast 192.168.10.255
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; inet6 fe80::c4b7:4dff:fe7f:f890 prefixlen 64 scopeid 0x20&amp;lt;link&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; ether c6:b7:4d:7f:f8:90 txqueuelen 1000 (Ethernet)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; RX packets 0 bytes 0 (0.0 B)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; RX errors 0 dropped 0 overruns 0 frame 0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; TX packets 8 bytes 648 (648.0 B)
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; TX errors 0 dropped 0 overruns 0 carrier 0 collisions 0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 将veth设备中的其中一个lxcbr0.1添加到网桥lxcbr0上
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# brctl addif lxcbr0 lxcbr0.1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 可以看到网桥lxcbr0中已经包含了设备lxcbr0.1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# brctl show
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;bridge name bridge id STP enabled interfaces
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;docker0 8000.0242a3750016 no veth71f2650
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lxcbr0 8000.c68a263dbade no lxcbr0.1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 为网络空间ns1增加默认路由规则，出口为网桥ip地址
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip netns exec ns1 ip route add default via 192.168.10.1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# ip netns exec ns1 ip route
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;default via 192.168.10.1 dev eth0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;192.168.10.0/24 dev eth0 proto kernel scope link src 192.168.10.11
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# 为ns1增加resolv.conf
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# mkdir -p /etc/netns/ns1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost software]# echo &amp;#34;nameserver 8.8.8.8&amp;#34; &amp;gt; /etc/netns/ns1/resolv.conf
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="二常用命令"&gt;二、常用命令
+&lt;/h2&gt;&lt;h3 id="1-列出当前的network-namespace"&gt;1. 列出当前的network namespace
+&lt;/h3&gt;&lt;h4 id="11-使用lsns命令"&gt;1.1 使用&lt;code&gt;lsns&lt;/code&gt;命令
+&lt;/h4&gt;&lt;p&gt;lsns命令通过读取/proc/${pid}/ns目录下进程所属的命名空间来实现，如果是通过&lt;code&gt;ip netns add&lt;/code&gt;场景的命名空间，但是没有使用该命名空间的进程，该命令是看不到的。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;# lsns -t net
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; NS TYPE NPROCS PID USER COMMAND
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026531956 net 383 1 root /usr/lib/systemd/systemd --switched-root --system --deserialize 21
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026532490 net 1 1026 rtkit /usr/libexec/rtkit-daemon
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026532762 net 2 24872 root /pause
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026532866 net 20 25817 root /pause
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026532965 net 3 30763 root /pause
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026533059 net 3 2794 root /bin/sh -c python /usr/src/app/clean.py &amp;#34;${endpoints}&amp;#34; &amp;#34;${expire}&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026533163 net 2 1122 102 /docker-java-home/jre/bin/java -Xms2g -Xmx2g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupan
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026533266 net 4 13920 root /pause
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026533371 net 2 1844 root /pause
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026533559 net 3 1067 root sleep 4
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h4 id="12-通过ip-netns命令"&gt;1.2 通过&lt;code&gt;ip netns&lt;/code&gt;命令
+&lt;/h4&gt;&lt;p&gt;该命令仅会列出有名字的namespace，对于未命名的不能显示。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;ip netns identify ${pid}&lt;/code&gt; 可以找到进程所属的网络命名空间&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ip netns list&lt;/code&gt;: 显示所有有名字的namespace&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="2-通过pid进入具体的network-namespace"&gt;2. 通过pid进入具体的network namespace
+&lt;/h3&gt;&lt;h4 id="21-通过nsenter命令"&gt;2.1 通过nsenter命令
+&lt;/h4&gt;&lt;p&gt;&lt;code&gt;nsenter --target $PID --net&lt;/code&gt;可以进入到对应的命名空间&lt;/p&gt;
+&lt;h4 id="22-docker---net参数"&gt;2.2 docker &lt;code&gt;--net&lt;/code&gt;参数
+&lt;/h4&gt;&lt;p&gt;docker提供了&lt;code&gt;--net&lt;/code&gt;参数用于加入另一个容器的网络命名空间&lt;code&gt;docker run -it --net container:7835490487c1 busybox ifconfig&lt;/code&gt;。&lt;/p&gt;
+&lt;h4 id="23-setns系统调用"&gt;2.3 setns系统调用
+&lt;/h4&gt;&lt;p&gt;一个进程可以通过setns()系统调用来进入到另外一个namespace中。&lt;/p&gt;
+&lt;p&gt;编写setns.c程序，该程序会进入到进程id所在的网络命令空间，并使用&lt;code&gt;gcc setns.c -o setns&lt;/code&gt;进行编译，编译完成后执行&lt;code&gt;./setns /proc/4913/ns/net ifconfig&lt;/code&gt;可以看到网卡的信息为容器中的网卡信息。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-c" data-lang="c"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;unistd.h&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;fcntl.h&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;stdlib.h&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;lt;stdio.h&amp;gt;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;argc&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;char&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[])&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;fd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nf"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;O_RDONLY&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nf"&gt;setns&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;fd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;perror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;setns&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;execvp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;]);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="nf"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;execvp exit&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;如果执行&lt;code&gt;./setns /proc/4913/ns/net /bin/bash&lt;/code&gt;，在宿主机上查看docker进程和/bin/bash进程的网络命名空间/proc/${pid}/ns/net，会发现都指向&lt;code&gt;lrwxrwxrwx 1 root root 0 Sep 14 14:42 net -&amp;gt; net:[4026532133]&lt;/code&gt;同一个位置。&lt;/p&gt;
+&lt;h3 id="3-pid的获取方式"&gt;3. pid的获取方式
+&lt;/h3&gt;&lt;p&gt;最简单的方式上文第1点中的PID列&lt;/p&gt;
+&lt;h4 id="31-procpidns"&gt;3.1 &lt;code&gt;/proc/[pid]/ns&lt;/code&gt;
+&lt;/h4&gt;&lt;p&gt;可以使用如下命令查看当前容器在宿主机上的进程id。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;docker inspect --format &amp;#39;{{.State.Pid}}&amp;#39; a1bf0119d891
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;每个进程在/proc/${pid}/ns/目录下都会创建其对应的虚拟文件，并链接到一个真实的namespace文件上，如果两个进程下的链接文件链接到同一个地方，说明两个进程同属于一个namespace。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;[root@localhost runc]# ls -l /proc/4913/ns/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;total 0
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lrwxrwxrwx 1 root root 0 Sep 11 00:21 ipc -&amp;gt; ipc:[4026532130]
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lrwxrwxrwx 1 root root 0 Sep 11 00:21 mnt -&amp;gt; mnt:[4026532128]
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lrwxrwxrwx 1 root root 0 Sep 11 00:18 net -&amp;gt; net:[4026532133]
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lrwxrwxrwx 1 root root 0 Sep 11 00:21 pid -&amp;gt; pid:[4026532131]
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lrwxrwxrwx 1 root root 0 Sep 11 00:21 user -&amp;gt; user:[4026531837]
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;lrwxrwxrwx 1 root root 0 Sep 11 00:21 uts -&amp;gt; uts:[4026532129]
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="reference"&gt;reference
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="https://coolshell.cn/articles/17029.html" target="_blank" rel="noopener"
+&gt;DOCKER基础技术：LINUX NAMESPACE（下）&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;极客时间-深入剖析Kubernetes&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://www.cnblogs.com/bakari/p/10443484.html" target="_blank" rel="noopener"
+&gt;一文搞懂 Linux network namespace&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>

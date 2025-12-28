@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aws on 404频道</title><link>https://kuring.me/tags/aws/</link><description>Recent content in Aws on 404频道</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>kuring</copyright><lastBuildDate>Wed, 17 Feb 2016 00:00:00 +0000</lastBuildDate><atom:link href="https://kuring.me/tags/aws/index.xml" rel="self" type="application/rss+xml"/><item><title>利用aws科学上网</title><link>https://kuring.me/post/aws_net/</link><pubDate>Wed, 17 Feb 2016 00:00:00 +0000</pubDate><guid>https://kuring.me/post/aws_net/</guid><description>&lt;p&gt;曾经使用过多种科学上网方式，​最近尝试了使用aws的免费试用一年的功能搭建shadowsocks，访问google的速度非常不错，比很多收费的服务要好用，amazon真是良心企业！&lt;/p&gt;
+&lt;p&gt;本文用于记录在aws上搭建服务的步骤及其中的一些注意事项，步骤不会太详细，aws上关于主机的功能需要读者自己在试验的过程中去自己探索。&lt;/p&gt;
+&lt;h1 id="注册aws账号"&gt;注册aws账号
+&lt;/h1&gt;&lt;p&gt;为了能够搭建搭建aws服务，拥有一个amazon账号是必须的，在&lt;a class="link" href="https://aws.amazon.com/cn/free/" target="_blank" rel="noopener"
+&gt;aws免费套餐&lt;/a&gt;的页面点击『创建免费账号』按钮即可按照步骤创建aws账号。&lt;/p&gt;
+&lt;p&gt;值得一提的是，注册aws的账号需要一张信用卡。&lt;/p&gt;
+&lt;h1 id="开启ec2主机实例"&gt;开启EC2主机实例
+&lt;/h1&gt;&lt;p&gt;该步骤的目的是开启aws上的主机实例。​&lt;/p&gt;
+&lt;p&gt;进入aws的控制面板，在左上角的服务中选择EC2，aws提供了多种类型的主机，这里选择EC2即可。&lt;/p&gt;
+&lt;p&gt;在EC2控制面板界面中需要选择右上角的区域，这个用于选择EC2主机所在的机房，不同机房之间主机是不可以共享的。我这里选择了『美国西部（俄勒冈）』，感觉速度还不错，没有试验过亚洲地区的，新加坡的速度是不是会更好些。后续经过验证，首尔的服务器确实速度更快一些。
+​
+下面即可创建EC2的实例了，点击界面上的『启动实例』按钮即可按照步骤创建EC2实例了，创建实例的时候一定要选择免费的EC2主机，否则就会悲剧了。我选择了ubuntu14.04的主机，redhat7.2的主机yum源不太全，没有选择使用。&lt;/p&gt;
+&lt;p&gt;最终会得到ssh登录用的pem文件，用于ssh远程登录主机。并在界面上启动刚刚创建的实例。&lt;/p&gt;
+&lt;h1 id="按照shadowsocks"&gt;按照shadowsocks
+&lt;/h1&gt;&lt;p&gt;接下来就是在EC2实例上安装sock5代理工具了。&lt;/p&gt;
+&lt;p&gt;登录刚刚启动的EC2，需要pem文件。可以通过&lt;code&gt;ssh -i &amp;quot;key.pem&amp;quot; ubuntu@ec2-52-26-2-14.us-west-2.compute.amazonaws.com&lt;/code&gt;命令来登录到远程主机，其他工具请自行google。&lt;/p&gt;
+&lt;p&gt;使用命令&lt;code&gt;pip install shadowsocks&lt;/code&gt;来安装shadowssocks，pip命令的安装自行解决。&lt;/p&gt;
+&lt;p&gt;在ubuntu的home目录下执行&lt;code&gt;mkdir shadowsocks&lt;/code&gt;创建保存配置文件的文件夹，并创建配置文件config.json，内容如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;{
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;server&amp;#34;:&amp;#34;0.0.0.0&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;server_port&amp;#34;:10001,
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;local_port&amp;#34;:1080,
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;password&amp;#34;:&amp;#34;xxx&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;timeout&amp;#34;:600,
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;method&amp;#34;:&amp;#34;bf-cfb&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;需要说明的是最好配置一下server_port选项，更改shadowsocks的默认端口号。method选项用于控制加密方式，我这里更改为了bf-cfb。&lt;/p&gt;
+&lt;p&gt;执行&lt;code&gt;nohup ssserver -c config.json &amp;amp;&lt;/code&gt;命令即可启动shadowsocks服务。&lt;/p&gt;
+&lt;p&gt;由于对外增加了10001端口号，aws的默认安全策略为仅对外提供22端口，需要在EC2主机的安全策略中增加外放访问tcp端口10001的权限。&lt;/p&gt;
+&lt;h1 id="脚本"&gt;脚本
+&lt;/h1&gt;&lt;p&gt;为了安装方便，我简单写了个脚本如下&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;yum -y install epel-release
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;#yum update -y
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;yum install python2-pip -y
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;pip install shadowsocks
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkdir ~/shadowsocks
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;echo &amp;#39;{
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;server&amp;#34;:&amp;#34;0.0.0.0&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;server_port&amp;#34;:10001,
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;local_port&amp;#34;:1080,
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;password&amp;#34;:&amp;#34;xxx&amp;#34;,
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;timeout&amp;#34;:600,
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;#34;method&amp;#34;:&amp;#34;aes-256-cfb&amp;#34;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;}&amp;#39; &amp;gt; ~/shadowsocks/config.json
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;systemctl disable firewalld.service
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;systemctl stop firewalld.service
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nohup ssserver -c ~/shadowsocks/config.json &amp;amp;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;在某些云主机的CentOS7系统发现无法使用&lt;code&gt;yum install python2-pip&lt;/code&gt;进行安装，原因是有些源被禁用了，可以使用&lt;code&gt;yum repolist disabled&lt;/code&gt;来查看被禁用的源，其中会包含epel源。可以使用&lt;code&gt;yum install python2-pip -y --enablerepo=epel&lt;/code&gt;的方式来安装。&lt;/p&gt;
+&lt;h1 id="安装shadowsocks客户端"&gt;安装shadowsocks客户端
+&lt;/h1&gt;&lt;p&gt;这里是支持的&lt;a class="link" href="https://shadowsocks.com/client.html" target="_blank" rel="noopener"
+&gt;客户端列表&lt;/a&gt;，​我这里仅使用的mac客户端ShadowsocksX，支持Auto Proxy Mode和Global Mode两种方式，其中Auto方式会自动下载使用sock5代理的列表，非常方便。&lt;/p&gt;
+&lt;h1 id="kcptun"&gt;kcptun
+&lt;/h1&gt;&lt;p&gt;为了加快访问速度，推荐使用kcp + shadowsocks&lt;/p&gt;
+&lt;p&gt;kcp的服务端配置如下，即启用20001端口，该端口会将流量导入到127.0.0.1:10001端口，即本机的shadowsocks端口&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;cd&lt;/span&gt; &lt;span class="o"&gt;~&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="n"&gt;mkdir&lt;/span&gt; &lt;span class="n"&gt;kcptun&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="n"&gt;cd&lt;/span&gt; &lt;span class="n"&gt;kcptun&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;wget&lt;/span&gt; &lt;span class="n"&gt;https&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="n"&gt;github&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;com&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;xtaci&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;kcptun&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;releases&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;download&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;v20190109&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;kcptun&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;linux&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;amd64&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mf"&gt;20190109.&lt;/span&gt;&lt;span class="n"&gt;tar&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;gz&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;tar&lt;/span&gt; &lt;span class="n"&gt;zvxf&lt;/span&gt; &lt;span class="n"&gt;kcptun&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;linux&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;amd64&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mf"&gt;20190109.&lt;/span&gt;&lt;span class="n"&gt;tar&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;gz&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;nohup&lt;/span&gt; &lt;span class="o"&gt;./&lt;/span&gt;&lt;span class="n"&gt;server_linux_amd64&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;l&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;20001&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;t&lt;/span&gt; &lt;span class="mf"&gt;127.0&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="mf"&gt;0.1&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;10001&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="n"&gt;xxx&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;mode&lt;/span&gt; &lt;span class="n"&gt;fast2&lt;/span&gt; &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="nb"&gt;log&lt;/span&gt; &lt;span class="o"&gt;~/&lt;/span&gt;&lt;span class="n"&gt;kcptun&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mf"&gt;20001.&lt;/span&gt;&lt;span class="n"&gt;log&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;配置了kcptun的shadowsocks客户端仅需要配置代理为远程的kcpdun端口即可，不再需要指定shadowsocks的端口，相当于shadowsocks是透明的。&lt;/p&gt;
+&lt;h1 id="监控"&gt;监控
+&lt;/h1&gt;&lt;p&gt;为了避免aws产生额外的费用，一定要设置一下费用报警，否则被扣费了就麻烦了。&lt;/p&gt;
+&lt;p&gt;另外，可定期查看下aws的费用。试用期为一年，一年后一定要记得停掉aws服务。&lt;/p&gt;
+&lt;p&gt;最后，祝你玩的愉快！&lt;/p&gt;</description></item></channel></rss>

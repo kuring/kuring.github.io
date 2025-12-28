@@ -1,408 +1,369 @@
-<!DOCTYPE html>
-<html lang="zh-Hans">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"kuring.me","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":true,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":true,"preload":true}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="network namespace用来隔离Linux系统的网络设备、ip地址、端口号、路由表、防火墙等网络资源。用户可以随意将虚拟网络设备分配到自定义的networknamespace里，而连接真实硬件的物理设备则只能放在系统的根networknamesapce中。 一个物理的网络设备最多存在于一个network namespace，可以通过创建veth pair在不同的network names">
-<meta property="og:type" content="article">
-<meta property="og:title" content="docker基础知识之network namespace">
-<meta property="og:url" content="http://kuring.me/post/namespace_network/index.html">
-<meta property="og:site_name" content="404频道">
-<meta property="og:description" content="network namespace用来隔离Linux系统的网络设备、ip地址、端口号、路由表、防火墙等网络资源。用户可以随意将虚拟网络设备分配到自定义的networknamespace里，而连接真实硬件的物理设备则只能放在系统的根networknamesapce中。 一个物理的网络设备最多存在于一个network namespace，可以通过创建veth pair在不同的network names">
-<meta property="og:locale">
-<meta property="article:published_time" content="2018-09-15T00:40:49.000Z">
-<meta property="article:modified_time" content="2025-12-20T16:59:52.695Z">
-<meta property="article:tag" content="docker">
-<meta name="twitter:card" content="summary">
-
-
-<link rel="canonical" href="http://kuring.me/post/namespace_network/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-Hans","comments":true,"permalink":"http://kuring.me/post/namespace_network/","path":"post/namespace_network/","title":"docker基础知识之network namespace"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>docker基础知识之network namespace | 404频道</title>
-  
-
-
-
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">404频道</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">学习笔记</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="Searching..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          Table of Contents
-        </li>
-        <li class="sidebar-nav-overview">
-          Overview
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%B5%8B%E8%AF%95%E4%BE%8B%E5%AD%90"><span class="nav-number">1.</span> <span class="nav-text">一、测试例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4"><span class="nav-number">2.</span> <span class="nav-text">二、常用命令</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E5%88%97%E5%87%BA%E5%BD%93%E5%89%8D%E7%9A%84network-namespace"><span class="nav-number">2.1.</span> <span class="nav-text">1. 列出当前的network namespace</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-%E4%BD%BF%E7%94%A8lsns%E5%91%BD%E4%BB%A4"><span class="nav-number">2.1.1.</span> <span class="nav-text">1.1 使用lsns命令</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-%E9%80%9A%E8%BF%87ip-netns%E5%91%BD%E4%BB%A4"><span class="nav-number">2.1.2.</span> <span class="nav-text">1.2 通过ip netns命令</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E9%80%9A%E8%BF%87pid%E8%BF%9B%E5%85%A5%E5%85%B7%E4%BD%93%E7%9A%84network-namespace"><span class="nav-number">2.2.</span> <span class="nav-text">2. 通过pid进入具体的network namespace</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-%E9%80%9A%E8%BF%87nsenter%E5%91%BD%E4%BB%A4"><span class="nav-number">2.2.1.</span> <span class="nav-text">2.1 通过nsenter命令</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-docker-net%E5%8F%82%E6%95%B0"><span class="nav-number">2.2.2.</span> <span class="nav-text">2.2 docker --net参数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-setns%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">2.2.3.</span> <span class="nav-text">2.3 setns系统调用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-pid%E7%9A%84%E8%8E%B7%E5%8F%96%E6%96%B9%E5%BC%8F"><span class="nav-number">2.3.</span> <span class="nav-text">3. pid的获取方式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-1-proc-pid-ns"><span class="nav-number">2.3.1.</span> <span class="nav-text">3.1 &#x2F;proc&#x2F;[pid]&#x2F;ns</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#reference"><span class="nav-number">3.</span> <span class="nav-text">reference</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name"></p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">256</span>
-          <span class="site-state-item-name">posts</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">36</span>
-        <span class="site-state-item-name">tags</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/kuring" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;kuring" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://kuring.me/post/namespace_network/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="404频道">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="docker基础知识之network namespace | 404频道">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          docker基础知识之network namespace
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2018-09-15 00:40:49" itemprop="dateCreated datePublished" datetime="2018-09-15T00:40:49+00:00">2018-09-15</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-20 16:59:52" itemprop="dateModified" datetime="2025-12-20T16:59:52+00:00">2025-12-20</time>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p>network namespace用来隔离Linux系统的网络设备、ip地址、端口号、路由表、防火墙等网络资源。用户可以随意将虚拟网络设备分配到自定义的networknamespace里，而连接真实硬件的物理设备则只能放在系统的根networknamesapce中。</p>
-<p>一个物理的网络设备最多存在于一个network namespace，可以通过创建veth pair在不同的network namespace之间创建通道，来达到通讯的目的。</p>
-<p>容器的bridge模式的实现思路为创建一个veth pair，一端放置在新的namespace，通常命名为eth0，另外一端放在原先的namespace中连接物理网络设备，以此实现网络通信。</p>
-<p>docker daemon负责在宿主机上创建veth pair，把一端绑定到docker0网桥，另一端到新建的network namespace进程中。建立的过程中，docker daemon和dockerinit通过pipe进行通讯。</p>
-<h2 id="一、测试例子"><a href="#一、测试例子" class="headerlink" title="一、测试例子"></a>一、测试例子</h2><p>测试network namespace的过程比较复杂。</p>
-<p>docker默认采用的为bridge模式，在容器所在的宿主机上看到的网卡情况如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost software]# ip link show</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">2: enp0s3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">3: enp0s8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff</span><br><span class="line">4: docker0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default</span><br><span class="line">    link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">18: veth71f2650@if17: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default</span><br><span class="line">    link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br></pre></td></tr></table></figure>
-
-<p>其中的enp0s3和enp0s8可以忽略，为虚拟机使用的网卡。docker0和veth71f2650@if17是需要关注的网卡。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost software]# brctl show</span><br><span class="line">bridge name	bridge id		STP enabled	interfaces</span><br><span class="line">docker0		8000.0242a3750016	no		veth71f2650</span><br></pre></td></tr></table></figure>
-
-<p>下面的操作为在已经运行docker的虚拟机上的，以便于跟docker进行比较。</p>
-<p>以下命令根据coolshell中的步骤进行配置，并对执行命令的顺序进行了调整。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br></pre></td><td class="code"><pre><span class="line"># 增加network namespace ns1</span><br><span class="line">[root@localhost software]# ip netns add ns1</span><br><span class="line">[root@localhost software]# ip netns</span><br><span class="line">ns1</span><br><span class="line"></span><br><span class="line"># 激活namespace ns1中的lo设备</span><br><span class="line">[root@localhost software]# ip netns exec ns1   ip link set dev lo up</span><br><span class="line"></span><br><span class="line"># 创建veth pair</span><br><span class="line">[root@localhost software]# ip link add veth-ns1 type veth peer name lxcbr0.1</span><br><span class="line"># 多出了lxcbr0.1@veth-ns1和veth-ns1@lxcbr0.1两个设备</span><br><span class="line"># 后面的操作步骤中将lxcbr0.1位于主网络命名空间中，veth-ns1位于ns1命名空间中</span><br><span class="line">[root@localhost software]# ip link</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">2: enp0s3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">3: enp0s8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff</span><br><span class="line">4: docker0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default</span><br><span class="line">    link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">18: veth71f2650@if17: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default</span><br><span class="line">    link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br><span class="line">19: lxcbr0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether c6:b7:4d:7f:f8:90 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">20: lxcbr0.1@veth-ns1: &lt;BROADCAST,MULTICAST,M-DOWN&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether c6:8a:26:3d:ba:de brd ff:ff:ff:ff:ff:ff</span><br><span class="line">21: veth-ns1@lxcbr0.1: &lt;BROADCAST,MULTICAST,M-DOWN&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff</span><br><span class="line"></span><br><span class="line"># 将设备veth-ns1放入到ns1命名空间中</span><br><span class="line">[root@localhost software]# ip link set veth-ns1 netns ns1</span><br><span class="line"># 可以看到veth-ns1设备在当前命名空间消失了</span><br><span class="line">[root@localhost software]# ip link</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">2: enp0s3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">3: enp0s8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff</span><br><span class="line">4: docker0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default</span><br><span class="line">    link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">18: veth71f2650@if17: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default</span><br><span class="line">    link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br><span class="line">19: lxcbr0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether c6:b7:4d:7f:f8:90 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">20: lxcbr0.1@if21: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether c6:8a:26:3d:ba:de brd ff:ff:ff:ff:ff:ff link-netnsid 1</span><br><span class="line"># 同时在命名空间ns1中看到了设备veth-ns1，同时可以看到veth-ns1设备的状态为DOWN</span><br><span class="line">[root@localhost software]# ip netns exec ns1  ip link</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">21: veth-ns1@if20: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br><span class="line"></span><br><span class="line"># 将ns1中的veth-ns1设备更名为eth0</span><br><span class="line">[root@localhost software]# ip netns exec ns1  ip link set dev veth-ns1 name eth0</span><br><span class="line">[root@localhost software]# ip netns exec ns1  ip link</span><br><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">21: eth0@if20: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000</span><br><span class="line">    link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><br><span class="line"></span><br><span class="line"># 为容器中的网卡分配一个IP地址，并激活它</span><br><span class="line">[root@localhost software]# ip netns exec ns1 ifconfig eth0 192.168.10.11/24 up</span><br><span class="line"># 可以看到eth0网卡上有ip地址</span><br><span class="line">[root@localhost software]# ip netns exec ns1  ifconfig</span><br><span class="line">eth0: flags=4099&lt;UP,BROADCAST,MULTICAST&gt;  mtu 1500</span><br><span class="line">        inet 192.168.10.11  netmask 255.255.255.0  broadcast 192.168.10.255</span><br><span class="line">        ether f2:03:22:93:d6:f4  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line"></span><br><span class="line">lo: flags=73&lt;UP,LOOPBACK,RUNNING&gt;  mtu 65536</span><br><span class="line">        inet 127.0.0.1  netmask 255.0.0.0</span><br><span class="line">        inet6 ::1  prefixlen 128  scopeid 0x10&lt;host&gt;</span><br><span class="line">        loop  txqueuelen 1000  (Local Loopback)</span><br><span class="line">        RX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line"></span><br><span class="line"># 添加一个网桥lxcbr0，类似于docker中的docker0</span><br><span class="line">[root@localhost software]# brctl addbr lxcbr0</span><br><span class="line">[root@localhost software]# brctl show</span><br><span class="line">bridge name	bridge id		STP enabled	interfaces</span><br><span class="line">docker0		8000.0242a3750016	no		veth71f2650</span><br><span class="line">lxcbr0		8000.000000000000	no</span><br><span class="line"></span><br><span class="line"># 关闭生成树协议，默认该协议为关闭状态</span><br><span class="line">[root@localhost software]# brctl stp lxcbr0 off</span><br><span class="line">[root@localhost software]# brctl show</span><br><span class="line">bridge name	bridge id		STP enabled	interfaces</span><br><span class="line">docker0		8000.0242a3750016	no		veth71f2650</span><br><span class="line">lxcbr0		8000.000000000000	no</span><br><span class="line"></span><br><span class="line"># 为网桥配置ip地址</span><br><span class="line">ifconfig lxcbr0 192.168.10.1/24 up</span><br><span class="line">[root@localhost software]# ifconfig lxcbr0</span><br><span class="line">lxcbr0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500</span><br><span class="line">        inet 192.168.10.1  netmask 255.255.255.0  broadcast 192.168.10.255</span><br><span class="line">        inet6 fe80::c4b7:4dff:fe7f:f890  prefixlen 64  scopeid 0x20&lt;link&gt;</span><br><span class="line">        ether c6:b7:4d:7f:f8:90  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 8  bytes 648 (648.0 B)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line"></span><br><span class="line"># 将veth设备中的其中一个lxcbr0.1添加到网桥lxcbr0上</span><br><span class="line">[root@localhost software]# brctl addif lxcbr0 lxcbr0.1</span><br><span class="line"># 可以看到网桥lxcbr0中已经包含了设备lxcbr0.1</span><br><span class="line">[root@localhost software]# brctl show</span><br><span class="line">bridge name	bridge id		STP enabled	interfaces</span><br><span class="line">docker0		8000.0242a3750016	no		veth71f2650</span><br><span class="line">lxcbr0		8000.c68a263dbade	no		lxcbr0.1</span><br><span class="line"></span><br><span class="line"># 为网络空间ns1增加默认路由规则，出口为网桥ip地址</span><br><span class="line">[root@localhost software]# ip netns exec ns1     ip route add default via 192.168.10.1</span><br><span class="line">[root@localhost software]# ip netns exec ns1 ip route</span><br><span class="line">default via 192.168.10.1 dev eth0</span><br><span class="line">192.168.10.0/24 dev eth0 proto kernel scope link src 192.168.10.11</span><br><span class="line"></span><br><span class="line"># 为ns1增加resolv.conf</span><br><span class="line">[root@localhost software]# mkdir -p /etc/netns/ns1</span><br><span class="line">[root@localhost software]# echo &quot;nameserver 8.8.8.8&quot; &gt; /etc/netns/ns1/resolv.conf</span><br></pre></td></tr></table></figure>
-
-<h2 id="二、常用命令"><a href="#二、常用命令" class="headerlink" title="二、常用命令"></a>二、常用命令</h2><h3 id="1-列出当前的network-namespace"><a href="#1-列出当前的network-namespace" class="headerlink" title="1. 列出当前的network namespace"></a>1. 列出当前的network namespace</h3><h4 id="1-1-使用lsns命令"><a href="#1-1-使用lsns命令" class="headerlink" title="1.1 使用lsns命令"></a>1.1 使用<code>lsns</code>命令</h4><p>lsns命令通过读取&#x2F;proc&#x2F;${pid}&#x2F;ns目录下进程所属的命名空间来实现，如果是通过<code>ip netns add</code>场景的命名空间，但是没有使用该命名空间的进程，该命令是看不到的。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># lsns -t net</span><br><span class="line">        NS TYPE NPROCS   PID USER  COMMAND</span><br><span class="line">4026531956 net     383     1 root  /usr/lib/systemd/systemd --switched-root --system --deserialize 21</span><br><span class="line">4026532490 net       1  1026 rtkit /usr/libexec/rtkit-daemon</span><br><span class="line">4026532762 net       2 24872 root  /pause</span><br><span class="line">4026532866 net      20 25817 root  /pause</span><br><span class="line">4026532965 net       3 30763 root  /pause</span><br><span class="line">4026533059 net       3  2794 root  /bin/sh -c python /usr/src/app/clean.py &quot;$&#123;endpoints&#125;&quot; &quot;$&#123;expire&#125;&quot;</span><br><span class="line">4026533163 net       2  1122 102   /docker-java-home/jre/bin/java -Xms2g -Xmx2g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupan</span><br><span class="line">4026533266 net       4 13920 root  /pause</span><br><span class="line">4026533371 net       2  1844 root  /pause</span><br><span class="line">4026533559 net       3  1067 root  sleep 4</span><br></pre></td></tr></table></figure>
-
-<h4 id="1-2-通过ip-netns命令"><a href="#1-2-通过ip-netns命令" class="headerlink" title="1.2 通过ip netns命令"></a>1.2 通过<code>ip netns</code>命令</h4><p>该命令仅会列出有名字的namespace，对于未命名的不能显示。</p>
-<ul>
-<li><code>ip netns identify $&#123;pid&#125;</code> 可以找到进程所属的网络命名空间</li>
-<li><code>ip netns list</code>: 显示所有有名字的namespace</li>
-</ul>
-<h3 id="2-通过pid进入具体的network-namespace"><a href="#2-通过pid进入具体的network-namespace" class="headerlink" title="2. 通过pid进入具体的network namespace"></a>2. 通过pid进入具体的network namespace</h3><h4 id="2-1-通过nsenter命令"><a href="#2-1-通过nsenter命令" class="headerlink" title="2.1 通过nsenter命令"></a>2.1 通过nsenter命令</h4><p><code>nsenter --target $PID --net</code>可以进入到对应的命名空间</p>
-<h4 id="2-2-docker-net参数"><a href="#2-2-docker-net参数" class="headerlink" title="2.2 docker --net参数"></a>2.2 docker <code>--net</code>参数</h4><p>docker提供了<code>--net</code>参数用于加入另一个容器的网络命名空间<code>docker run -it --net container:7835490487c1 busybox ifconfig</code>。</p>
-<h4 id="2-3-setns系统调用"><a href="#2-3-setns系统调用" class="headerlink" title="2.3 setns系统调用"></a>2.3 setns系统调用</h4><p>一个进程可以通过setns()系统调用来进入到另外一个namespace中。</p>
-<p>编写setns.c程序，该程序会进入到进程id所在的网络命令空间，并使用<code>gcc setns.c -o setns</code>进行编译，编译完成后执行<code>./setns /proc/4913/ns/net ifconfig</code>可以看到网卡的信息为容器中的网卡信息。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span> &#123;</span><br><span class="line">  <span class="type">int</span> fd = open(argv[<span class="number">1</span>], O_RDONLY);</span><br><span class="line">  <span class="keyword">if</span> (setns(fd, <span class="number">0</span>) == <span class="number">-1</span>) &#123;</span><br><span class="line">    perror(<span class="string">&quot;setns&quot;</span>);</span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  execvp(argv[<span class="number">2</span>], &amp;argv[<span class="number">2</span>]);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;execvp exit\n&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>如果执行<code>./setns /proc/4913/ns/net /bin/bash</code>，在宿主机上查看docker进程和&#x2F;bin&#x2F;bash进程的网络命名空间&#x2F;proc&#x2F;${pid}&#x2F;ns&#x2F;net，会发现都指向<code>lrwxrwxrwx 1 root root 0 Sep 14 14:42 net -&gt; net:[4026532133]</code>同一个位置。</p>
-<h3 id="3-pid的获取方式"><a href="#3-pid的获取方式" class="headerlink" title="3. pid的获取方式"></a>3. pid的获取方式</h3><p>最简单的方式上文第1点中的PID列</p>
-<h4 id="3-1-proc-pid-ns"><a href="#3-1-proc-pid-ns" class="headerlink" title="3.1 /proc/[pid]/ns"></a>3.1 <code>/proc/[pid]/ns</code></h4><p>可以使用如下命令查看当前容器在宿主机上的进程id。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker inspect --format &#x27;&#123;&#123;.State.Pid&#125;&#125;&#x27; a1bf0119d891</span><br></pre></td></tr></table></figure>
-
-<p>每个进程在&#x2F;proc&#x2F;${pid}&#x2F;ns&#x2F;目录下都会创建其对应的虚拟文件，并链接到一个真实的namespace文件上，如果两个进程下的链接文件链接到同一个地方，说明两个进程同属于一个namespace。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost runc]# ls -l /proc/4913/ns/</span><br><span class="line">total 0</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:21 ipc -&gt; ipc:[4026532130]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:21 mnt -&gt; mnt:[4026532128]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:18 net -&gt; net:[4026532133]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:21 pid -&gt; pid:[4026532131]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:21 user -&gt; user:[4026531837]</span><br><span class="line">lrwxrwxrwx 1 root root 0 Sep 11 00:21 uts -&gt; uts:[4026532129]</span><br></pre></td></tr></table></figure>
-
-<h2 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h2><ul>
-<li><a target="_blank" rel="noopener" href="https://coolshell.cn/articles/17029.html">DOCKER基础技术：LINUX NAMESPACE（下）</a></li>
-<li>极客时间-深入剖析Kubernetes</li>
-<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/bakari/p/10443484.html">一文搞懂 Linux network namespace</a></li>
-</ul>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-          <div class="post-tags">
-              <a href="/tags/docker/" rel="tag"># docker</a>
-          </div>
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/post/knowledge-share/knowledge-share-2/" rel="prev" title="知识分享第2期">
-                  <i class="fa fa-angle-left"></i> 知识分享第2期
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/namespace_mount/" rel="next" title="docker基础知识之mount namespace">
-                  docker基础知识之mount namespace <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    
-  
-  <div class="comments giscus-container">
-  </div>
-  
-  
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder"></span>
-  </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
-  </div>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-
-
-  
-
-
-
-
-<script class="next-config" data-name="giscus" type="application/json">{"enable":true,"repo":"kuring/kuring.github.io","repo_id":"MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=","category":"Announcements","category_id":"DIC_kwDOEOr4W84CdeTU","mapping":"pathname","reactions_enabled":1,"emit_metadata":1,"theme":"light","lang":"zh-CN","crossorigin":"anonymous","input_position":"bottom","loading":"lazy"}</script>
-
-<script>
-document.addEventListener('page:loaded', () => {
-  if (!CONFIG.page.comments) return;
-
-  NexT.utils.loadComments('.giscus-container')
-    .then(() => NexT.utils.getScript('https://giscus.app/client.js', {
-      attributes: {
-        async                   : true,
-        crossOrigin             : 'anonymous',
-        'data-repo'             : CONFIG.giscus.repo,
-        'data-repo-id'          : CONFIG.giscus.repo_id,
-        'data-category'         : CONFIG.giscus.category,
-        'data-category-id'      : CONFIG.giscus.category_id,
-        'data-mapping'          : CONFIG.giscus.mapping,
-        'data-reactions-enabled': CONFIG.giscus.reactions_enabled,
-        'data-emit-metadata'    : CONFIG.giscus.emit_metadata,
-        'data-theme'            : CONFIG.giscus.theme,
-        'data-lang'             : CONFIG.giscus.lang,
-        'data-input-position'   : CONFIG.giscus.input_position,
-        'data-loading'          : CONFIG.giscus.loading
-      },
-      parentNode: document.querySelector('.giscus-container')
-    }));
-});
-</script>
-
-</body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="network namespace用来隔离Linux系统的网络设备、ip地址、端口号、路由表、防火墙等网络资源。用户可以随意将虚拟网络设备分配到自定义的networknamespace里，而连接真实硬件的物理设备则只能放在系统的根networknamesapce中。\n"><title>docker基础知识之network namespace</title><link rel=canonical href=https://kuring.me/post/namespace_network/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="docker基础知识之network namespace"><meta property='og:description' content="network namespace用来隔离Linux系统的网络设备、ip地址、端口号、路由表、防火墙等网络资源。用户可以随意将虚拟网络设备分配到自定义的networknamespace里，而连接真实硬件的物理设备则只能放在系统的根networknamesapce中。\n"><meta property='og:url' content='https://kuring.me/post/namespace_network/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='docker'><meta property='article:published_time' content='2018-09-15T00:40:49+00:00'><meta property='article:modified_time' content='2018-09-15T00:40:49+00:00'><meta name=twitter:title content="docker基础知识之network namespace"><meta name=twitter:description content="network namespace用来隔离Linux系统的网络设备、ip地址、端口号、路由表、防火墙等网络资源。用户可以随意将虚拟网络设备分配到自定义的networknamespace里，而连接真实硬件的物理设备则只能放在系统的根networknamesapce中。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#一测试例子>一、测试例子</a></li><li><a href=#二常用命令>二、常用命令</a><ol><li><a href=#1-列出当前的network-namespace>1. 列出当前的network namespace</a><ol><li><a href=#11-使用lsns命令>1.1 使用<code>lsns</code>命令</a></li><li><a href=#12-通过ip-netns命令>1.2 通过<code>ip netns</code>命令</a></li></ol></li><li><a href=#2-通过pid进入具体的network-namespace>2. 通过pid进入具体的network namespace</a><ol><li><a href=#21-通过nsenter命令>2.1 通过nsenter命令</a></li><li><a href=#22-docker---net参数>2.2 docker <code>--net</code>参数</a></li><li><a href=#23-setns系统调用>2.3 setns系统调用</a></li></ol></li><li><a href=#3-pid的获取方式>3. pid的获取方式</a><ol><li><a href=#31-procpidns>3.1 <code>/proc/[pid]/ns</code></a></li></ol></li></ol></li><li><a href=#reference>reference</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/namespace_network/>docker基础知识之network namespace</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2018-09-15T00:40:49Z>2018-09-15</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 7 分钟</time></div></footer></div></header><section class=article-content><p>network namespace用来隔离Linux系统的网络设备、ip地址、端口号、路由表、防火墙等网络资源。用户可以随意将虚拟网络设备分配到自定义的networknamespace里，而连接真实硬件的物理设备则只能放在系统的根networknamesapce中。</p><p>一个物理的网络设备最多存在于一个network namespace，可以通过创建veth pair在不同的network namespace之间创建通道，来达到通讯的目的。</p><p>容器的bridge模式的实现思路为创建一个veth pair，一端放置在新的namespace，通常命名为eth0，另外一端放在原先的namespace中连接物理网络设备，以此实现网络通信。</p><p>docker daemon负责在宿主机上创建veth pair，把一端绑定到docker0网桥，另一端到新建的network namespace进程中。建立的过程中，docker daemon和dockerinit通过pipe进行通讯。</p><h2 id=一测试例子>一、测试例子</h2><p>测试network namespace的过程比较复杂。</p><p>docker默认采用的为bridge模式，在容器所在的宿主机上看到的网卡情况如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[root@localhost software]# ip link show
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span class=line><span class=cl>2: enp0s3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>3: enp0s8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>4: docker0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default
+</span></span><span class=line><span class=cl>    link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>18: veth71f2650@if17: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default
+</span></span><span class=line><span class=cl>    link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0
+</span></span></code></pre></td></tr></table></div></div><p>其中的enp0s3和enp0s8可以忽略，为虚拟机使用的网卡。docker0和veth71f2650@if17是需要关注的网卡。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[root@localhost software]# brctl show
+</span></span><span class=line><span class=cl>bridge name	bridge id		STP enabled	interfaces
+</span></span><span class=line><span class=cl>docker0		8000.0242a3750016	no		veth71f2650
+</span></span></code></pre></td></tr></table></div></div><p>下面的操作为在已经运行docker的虚拟机上的，以便于跟docker进行比较。</p><p>以下命令根据coolshell中的步骤进行配置，并对执行命令的顺序进行了调整。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span><span class=lnt>115
+</span><span class=lnt>116
+</span><span class=lnt>117
+</span><span class=lnt>118
+</span><span class=lnt>119
+</span><span class=lnt>120
+</span><span class=lnt>121
+</span><span class=lnt>122
+</span><span class=lnt>123
+</span><span class=lnt>124
+</span><span class=lnt>125
+</span><span class=lnt>126
+</span><span class=lnt>127
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 增加network namespace ns1
+</span></span><span class=line><span class=cl>[root@localhost software]# ip netns add ns1
+</span></span><span class=line><span class=cl>[root@localhost software]# ip netns
+</span></span><span class=line><span class=cl>ns1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 激活namespace ns1中的lo设备
+</span></span><span class=line><span class=cl>[root@localhost software]# ip netns exec ns1   ip link set dev lo up
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 创建veth pair
+</span></span><span class=line><span class=cl>[root@localhost software]# ip link add veth-ns1 type veth peer name lxcbr0.1
+</span></span><span class=line><span class=cl># 多出了lxcbr0.1@veth-ns1和veth-ns1@lxcbr0.1两个设备
+</span></span><span class=line><span class=cl># 后面的操作步骤中将lxcbr0.1位于主网络命名空间中，veth-ns1位于ns1命名空间中
+</span></span><span class=line><span class=cl>[root@localhost software]# ip link
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span class=line><span class=cl>2: enp0s3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>3: enp0s8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>4: docker0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default
+</span></span><span class=line><span class=cl>    link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>18: veth71f2650@if17: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default
+</span></span><span class=line><span class=cl>    link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0
+</span></span><span class=line><span class=cl>19: lxcbr0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether c6:b7:4d:7f:f8:90 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>20: lxcbr0.1@veth-ns1: &lt;BROADCAST,MULTICAST,M-DOWN&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether c6:8a:26:3d:ba:de brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>21: veth-ns1@lxcbr0.1: &lt;BROADCAST,MULTICAST,M-DOWN&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 将设备veth-ns1放入到ns1命名空间中
+</span></span><span class=line><span class=cl>[root@localhost software]# ip link set veth-ns1 netns ns1
+</span></span><span class=line><span class=cl># 可以看到veth-ns1设备在当前命名空间消失了
+</span></span><span class=line><span class=cl>[root@localhost software]# ip link
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span class=line><span class=cl>2: enp0s3: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether 08:00:27:6c:3e:95 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>3: enp0s8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether 08:00:27:a5:78:ca brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>4: docker0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP mode DEFAULT group default
+</span></span><span class=line><span class=cl>    link/ether 02:42:a3:75:00:16 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>18: veth71f2650@if17: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue master docker0 state UP mode DEFAULT group default
+</span></span><span class=line><span class=cl>    link/ether ca:05:f7:db:6f:4c brd ff:ff:ff:ff:ff:ff link-netnsid 0
+</span></span><span class=line><span class=cl>19: lxcbr0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether c6:b7:4d:7f:f8:90 brd ff:ff:ff:ff:ff:ff
+</span></span><span class=line><span class=cl>20: lxcbr0.1@if21: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether c6:8a:26:3d:ba:de brd ff:ff:ff:ff:ff:ff link-netnsid 1
+</span></span><span class=line><span class=cl># 同时在命名空间ns1中看到了设备veth-ns1，同时可以看到veth-ns1设备的状态为DOWN
+</span></span><span class=line><span class=cl>[root@localhost software]# ip netns exec ns1  ip link
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span class=line><span class=cl>21: veth-ns1@if20: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 将ns1中的veth-ns1设备更名为eth0
+</span></span><span class=line><span class=cl>[root@localhost software]# ip netns exec ns1  ip link set dev veth-ns1 name eth0
+</span></span><span class=line><span class=cl>[root@localhost software]# ip netns exec ns1  ip link
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span class=line><span class=cl>21: eth0@if20: &lt;BROADCAST,MULTICAST&gt; mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+</span></span><span class=line><span class=cl>    link/ether f2:03:22:93:d6:f4 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 为容器中的网卡分配一个IP地址，并激活它
+</span></span><span class=line><span class=cl>[root@localhost software]# ip netns exec ns1 ifconfig eth0 192.168.10.11/24 up
+</span></span><span class=line><span class=cl># 可以看到eth0网卡上有ip地址
+</span></span><span class=line><span class=cl>[root@localhost software]# ip netns exec ns1  ifconfig
+</span></span><span class=line><span class=cl>eth0: flags=4099&lt;UP,BROADCAST,MULTICAST&gt;  mtu 1500
+</span></span><span class=line><span class=cl>        inet 192.168.10.11  netmask 255.255.255.0  broadcast 192.168.10.255
+</span></span><span class=line><span class=cl>        ether f2:03:22:93:d6:f4  txqueuelen 1000  (Ethernet)
+</span></span><span class=line><span class=cl>        RX packets 0  bytes 0 (0.0 B)
+</span></span><span class=line><span class=cl>        RX errors 0  dropped 0  overruns 0  frame 0
+</span></span><span class=line><span class=cl>        TX packets 0  bytes 0 (0.0 B)
+</span></span><span class=line><span class=cl>        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>lo: flags=73&lt;UP,LOOPBACK,RUNNING&gt;  mtu 65536
+</span></span><span class=line><span class=cl>        inet 127.0.0.1  netmask 255.0.0.0
+</span></span><span class=line><span class=cl>        inet6 ::1  prefixlen 128  scopeid 0x10&lt;host&gt;
+</span></span><span class=line><span class=cl>        loop  txqueuelen 1000  (Local Loopback)
+</span></span><span class=line><span class=cl>        RX packets 0  bytes 0 (0.0 B)
+</span></span><span class=line><span class=cl>        RX errors 0  dropped 0  overruns 0  frame 0
+</span></span><span class=line><span class=cl>        TX packets 0  bytes 0 (0.0 B)
+</span></span><span class=line><span class=cl>        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 添加一个网桥lxcbr0，类似于docker中的docker0
+</span></span><span class=line><span class=cl>[root@localhost software]# brctl addbr lxcbr0
+</span></span><span class=line><span class=cl>[root@localhost software]# brctl show
+</span></span><span class=line><span class=cl>bridge name	bridge id		STP enabled	interfaces
+</span></span><span class=line><span class=cl>docker0		8000.0242a3750016	no		veth71f2650
+</span></span><span class=line><span class=cl>lxcbr0		8000.000000000000	no
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 关闭生成树协议，默认该协议为关闭状态
+</span></span><span class=line><span class=cl>[root@localhost software]# brctl stp lxcbr0 off
+</span></span><span class=line><span class=cl>[root@localhost software]# brctl show
+</span></span><span class=line><span class=cl>bridge name	bridge id		STP enabled	interfaces
+</span></span><span class=line><span class=cl>docker0		8000.0242a3750016	no		veth71f2650
+</span></span><span class=line><span class=cl>lxcbr0		8000.000000000000	no
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 为网桥配置ip地址
+</span></span><span class=line><span class=cl>ifconfig lxcbr0 192.168.10.1/24 up
+</span></span><span class=line><span class=cl>[root@localhost software]# ifconfig lxcbr0
+</span></span><span class=line><span class=cl>lxcbr0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
+</span></span><span class=line><span class=cl>        inet 192.168.10.1  netmask 255.255.255.0  broadcast 192.168.10.255
+</span></span><span class=line><span class=cl>        inet6 fe80::c4b7:4dff:fe7f:f890  prefixlen 64  scopeid 0x20&lt;link&gt;
+</span></span><span class=line><span class=cl>        ether c6:b7:4d:7f:f8:90  txqueuelen 1000  (Ethernet)
+</span></span><span class=line><span class=cl>        RX packets 0  bytes 0 (0.0 B)
+</span></span><span class=line><span class=cl>        RX errors 0  dropped 0  overruns 0  frame 0
+</span></span><span class=line><span class=cl>        TX packets 8  bytes 648 (648.0 B)
+</span></span><span class=line><span class=cl>        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 将veth设备中的其中一个lxcbr0.1添加到网桥lxcbr0上
+</span></span><span class=line><span class=cl>[root@localhost software]# brctl addif lxcbr0 lxcbr0.1
+</span></span><span class=line><span class=cl># 可以看到网桥lxcbr0中已经包含了设备lxcbr0.1
+</span></span><span class=line><span class=cl>[root@localhost software]# brctl show
+</span></span><span class=line><span class=cl>bridge name	bridge id		STP enabled	interfaces
+</span></span><span class=line><span class=cl>docker0		8000.0242a3750016	no		veth71f2650
+</span></span><span class=line><span class=cl>lxcbr0		8000.c68a263dbade	no		lxcbr0.1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 为网络空间ns1增加默认路由规则，出口为网桥ip地址
+</span></span><span class=line><span class=cl>[root@localhost software]# ip netns exec ns1     ip route add default via 192.168.10.1
+</span></span><span class=line><span class=cl>[root@localhost software]# ip netns exec ns1 ip route
+</span></span><span class=line><span class=cl>default via 192.168.10.1 dev eth0
+</span></span><span class=line><span class=cl>192.168.10.0/24 dev eth0 proto kernel scope link src 192.168.10.11
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 为ns1增加resolv.conf
+</span></span><span class=line><span class=cl>[root@localhost software]# mkdir -p /etc/netns/ns1
+</span></span><span class=line><span class=cl>[root@localhost software]# echo &#34;nameserver 8.8.8.8&#34; &gt; /etc/netns/ns1/resolv.conf
+</span></span></code></pre></td></tr></table></div></div><h2 id=二常用命令>二、常用命令</h2><h3 id=1-列出当前的network-namespace>1. 列出当前的network namespace</h3><h4 id=11-使用lsns命令>1.1 使用<code>lsns</code>命令</h4><p>lsns命令通过读取/proc/${pid}/ns目录下进程所属的命名空间来实现，如果是通过<code>ip netns add</code>场景的命名空间，但是没有使用该命名空间的进程，该命令是看不到的。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># lsns -t net
+</span></span><span class=line><span class=cl>        NS TYPE NPROCS   PID USER  COMMAND
+</span></span><span class=line><span class=cl>4026531956 net     383     1 root  /usr/lib/systemd/systemd --switched-root --system --deserialize 21
+</span></span><span class=line><span class=cl>4026532490 net       1  1026 rtkit /usr/libexec/rtkit-daemon
+</span></span><span class=line><span class=cl>4026532762 net       2 24872 root  /pause
+</span></span><span class=line><span class=cl>4026532866 net      20 25817 root  /pause
+</span></span><span class=line><span class=cl>4026532965 net       3 30763 root  /pause
+</span></span><span class=line><span class=cl>4026533059 net       3  2794 root  /bin/sh -c python /usr/src/app/clean.py &#34;${endpoints}&#34; &#34;${expire}&#34;
+</span></span><span class=line><span class=cl>4026533163 net       2  1122 102   /docker-java-home/jre/bin/java -Xms2g -Xmx2g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupan
+</span></span><span class=line><span class=cl>4026533266 net       4 13920 root  /pause
+</span></span><span class=line><span class=cl>4026533371 net       2  1844 root  /pause
+</span></span><span class=line><span class=cl>4026533559 net       3  1067 root  sleep 4
+</span></span></code></pre></td></tr></table></div></div><h4 id=12-通过ip-netns命令>1.2 通过<code>ip netns</code>命令</h4><p>该命令仅会列出有名字的namespace，对于未命名的不能显示。</p><ul><li><code>ip netns identify ${pid}</code> 可以找到进程所属的网络命名空间</li><li><code>ip netns list</code>: 显示所有有名字的namespace</li></ul><h3 id=2-通过pid进入具体的network-namespace>2. 通过pid进入具体的network namespace</h3><h4 id=21-通过nsenter命令>2.1 通过nsenter命令</h4><p><code>nsenter --target $PID --net</code>可以进入到对应的命名空间</p><h4 id=22-docker---net参数>2.2 docker <code>--net</code>参数</h4><p>docker提供了<code>--net</code>参数用于加入另一个容器的网络命名空间<code>docker run -it --net container:7835490487c1 busybox ifconfig</code>。</p><h4 id=23-setns系统调用>2.3 setns系统调用</h4><p>一个进程可以通过setns()系统调用来进入到另外一个namespace中。</p><p>编写setns.c程序，该程序会进入到进程id所在的网络命令空间，并使用<code>gcc setns.c -o setns</code>进行编译，编译完成后执行<code>./setns /proc/4913/ns/net ifconfig</code>可以看到网卡的信息为容器中的网卡信息。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;unistd.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;fcntl.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;stdlib.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;stdio.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kt>int</span> <span class=nf>main</span><span class=p>(</span><span class=kt>int</span> <span class=n>argc</span><span class=p>,</span> <span class=kt>char</span> <span class=o>*</span><span class=n>argv</span><span class=p>[])</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=kt>int</span> <span class=n>fd</span> <span class=o>=</span> <span class=nf>open</span><span class=p>(</span><span class=n>argv</span><span class=p>[</span><span class=mi>1</span><span class=p>],</span> <span class=n>O_RDONLY</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=nf>setns</span><span class=p>(</span><span class=n>fd</span><span class=p>,</span> <span class=mi>0</span><span class=p>)</span> <span class=o>==</span> <span class=o>-</span><span class=mi>1</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nf>perror</span><span class=p>(</span><span class=s>&#34;setns&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=nf>exit</span><span class=p>(</span><span class=o>-</span><span class=mi>1</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=nf>execvp</span><span class=p>(</span><span class=n>argv</span><span class=p>[</span><span class=mi>2</span><span class=p>],</span> <span class=o>&amp;</span><span class=n>argv</span><span class=p>[</span><span class=mi>2</span><span class=p>]);</span>
+</span></span><span class=line><span class=cl>  <span class=nf>printf</span><span class=p>(</span><span class=s>&#34;execvp exit</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>如果执行<code>./setns /proc/4913/ns/net /bin/bash</code>，在宿主机上查看docker进程和/bin/bash进程的网络命名空间/proc/${pid}/ns/net，会发现都指向<code>lrwxrwxrwx 1 root root 0 Sep 14 14:42 net -> net:[4026532133]</code>同一个位置。</p><h3 id=3-pid的获取方式>3. pid的获取方式</h3><p>最简单的方式上文第1点中的PID列</p><h4 id=31-procpidns>3.1 <code>/proc/[pid]/ns</code></h4><p>可以使用如下命令查看当前容器在宿主机上的进程id。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>docker inspect --format &#39;{{.State.Pid}}&#39; a1bf0119d891
+</span></span></code></pre></td></tr></table></div></div><p>每个进程在/proc/${pid}/ns/目录下都会创建其对应的虚拟文件，并链接到一个真实的namespace文件上，如果两个进程下的链接文件链接到同一个地方，说明两个进程同属于一个namespace。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[root@localhost runc]# ls -l /proc/4913/ns/
+</span></span><span class=line><span class=cl>total 0
+</span></span><span class=line><span class=cl>lrwxrwxrwx 1 root root 0 Sep 11 00:21 ipc -&gt; ipc:[4026532130]
+</span></span><span class=line><span class=cl>lrwxrwxrwx 1 root root 0 Sep 11 00:21 mnt -&gt; mnt:[4026532128]
+</span></span><span class=line><span class=cl>lrwxrwxrwx 1 root root 0 Sep 11 00:18 net -&gt; net:[4026532133]
+</span></span><span class=line><span class=cl>lrwxrwxrwx 1 root root 0 Sep 11 00:21 pid -&gt; pid:[4026532131]
+</span></span><span class=line><span class=cl>lrwxrwxrwx 1 root root 0 Sep 11 00:21 user -&gt; user:[4026531837]
+</span></span><span class=line><span class=cl>lrwxrwxrwx 1 root root 0 Sep 11 00:21 uts -&gt; uts:[4026532129]
+</span></span></code></pre></td></tr></table></div></div><h2 id=reference>reference</h2><ul><li><a class=link href=https://coolshell.cn/articles/17029.html target=_blank rel=noopener>DOCKER基础技术：LINUX NAMESPACE（下）</a></li><li>极客时间-深入剖析Kubernetes</li><li><a class=link href=https://www.cnblogs.com/bakari/p/10443484.html target=_blank rel=noopener>一文搞懂 Linux network namespace</a></li></ul></section><footer class=article-footer><section class=article-tags><a href=/tags/docker/>Docker</a></section></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2025 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
