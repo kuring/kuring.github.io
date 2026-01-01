@@ -1,0 +1,444 @@
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="概要 netfilter与iptables的关系 linux在内核中对数据包过滤和修改的模块为netfilter，netfilter模块本身并不对数据包进行过滤，只是允许将过滤数据包或修改数据包的函数hook到内核网络协议栈的适当位置。\n"><title>iptables基础知识</title><link rel=canonical href=/post/iptables%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="iptables基础知识"><meta property='og:description' content="概要 netfilter与iptables的关系 linux在内核中对数据包过滤和修改的模块为netfilter，netfilter模块本身并不对数据包进行过滤，只是允许将过滤数据包或修改数据包的函数hook到内核网络协议栈的适当位置。\n"><meta property='og:url' content='/post/iptables%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:published_time' content='2018-01-31T23:25:12+00:00'><meta property='article:modified_time' content='2018-01-31T23:25:12+00:00'><meta name=twitter:title content="iptables基础知识"><meta name=twitter:description content="概要 netfilter与iptables的关系 linux在内核中对数据包过滤和修改的模块为netfilter，netfilter模块本身并不对数据包进行过滤，只是允许将过滤数据包或修改数据包的函数hook到内核网络协议栈的适当位置。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#netfilter与iptables的关系>netfilter与iptables的关系</a></li></ol><ol><li><a href=#chain>chain</a></li><li><a href=#table>table</a><ol><li><a href=#filter>filter</a></li><li><a href=#nat>nat</a></li><li><a href=#mangle>mangle</a></li><li><a href=#raw>raw</a></li></ol></li><li><a href=#rule>rule</a></li><li><a href=#table-filter-rule的关系>table filter rule的关系</a><ol><li><a href=#链中的规则存在的表>链中的规则存在的表</a></li><li><a href=#表中的规则可以被哪些链使用>表中的规则可以被哪些链使用</a></li></ol></li></ol><ol><li><a href=#查询>查询</a></li><li><a href=#修改>修改</a></li><li><a href=#删除>删除</a></li><li><a href=#trace>trace</a></li></ol><ol><li><a href=#试验1-基本规则管理>试验1 基本规则管理</a><ol><li><a href=#插入规则>插入规则</a></li><li><a href=#删除规则>删除规则</a></li><li><a href=#修改规则>修改规则</a></li><li><a href=#保存规则>保存规则</a></li></ol></li><li><a href=#实验二-各类匹配条件的使用>实验二 各类匹配条件的使用</a><ol><li><a href=#匹配条件>匹配条件</a></li><li><a href=#协议类型>协议类型</a></li><li><a href=#网卡接口>网卡接口</a></li></ol></li><li><a href=#实验三-扩展模块>实验三 扩展模块</a><ol><li><a href=#端口>端口</a></li><li><a href=#iprange扩展模块>iprange扩展模块</a></li><li><a href=#string扩展模块>string扩展模块</a></li><li><a href=#其他扩展>其他扩展</a></li></ol></li><li><a href=#实验四-自定义链>实验四 自定义链</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/iptables%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/>iptables基础知识</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2018-01-31T23:25:12Z>2018-01-31</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 11 分钟</time></div></footer></div></header><section class=article-content><h1 id=概要>概要</h1><h2 id=netfilter与iptables的关系>netfilter与iptables的关系</h2><p>linux在内核中对数据包过滤和修改的模块为netfilter，netfilter模块本身并不对数据包进行过滤，只是允许将过滤数据包或修改数据包的函数hook到内核网络协议栈的适当位置。</p><img src=https://kuring.oss-cn-beijing.aliyuncs.com/common/Netfilter-packet-flow.svg><p>iptables是用户态的工具，用于向netfilter中添加规则从而实现报文的过滤和修改等功能，工作在ip层。ebtables工作在数据链路层，用于处理以太网帧。</p><p>图中绿色代表iptables的表，可以看到有部分位于了数据链路层，之所以产生这种奇怪的架构，原因是bridge_nf模块，因为bridge工作在数据链路层，不一定会经过网络层，但仍然需要iptables的功能。详细信息可以在<a class=link href=http://ebtables.netfilter.org/br_fw_ia/br_fw_ia.html target=_blank rel=noopener>ebtables/iptables interaction on a Linux-based bridge</a>中了解。</p><p>概念：tables -> chains -> rules</p><h1 id=iptabels介绍>iptabels介绍</h1><h2 id=chain>chain</h2><p>每个表都由一组内置的链，还可以添加用户自定义链，只是用户自定义链没有钩子可以触发，需要从其他链通过<code>-j</code>即JUMP进行触发。</p><ul><li>INPUT 链：发往本机的报文</li><li>OUTPUT 链：由本机发出的报文</li><li>FORWARD 链：经由本机转发的报文</li><li>PREROUTING 链：报文到达本机，进行路由决策之前</li><li>POSTROUTING 链：报文由本机发出，进行路由决策之后</li></ul><p><img src=https://kuring.oss-cn-beijing.aliyuncs.com/images/iptables1.png loading=lazy alt=image></p><p>从chain的角度考虑数据包的流向：</p><ul><li>到本机某进程的报文：PREROUTING -> INPUT</li><li>由本机转发的报文：PREROUTING -> FORWARD -> POSTROUTING</li><li>由本机某进程发出的报文：OUTPUT -> POSTROUTING</li></ul><p>当一个网络包进入一台机器的时候，首先拿下 MAC 头看看，是不是我的。如果是，则拿下 IP 头来。得到目标 IP 之后呢，就开始进行路由判断。在路由判断之前，这个节点我们称为 PREROUTING。如果发现 IP 是我的，包就应该是我的，就发给上面的传输层，这个节点叫作 INPUT。如果发现 IP 不是我的，就需要转发出去，这个节点称为 FORWARD。如果是我的，上层处理完毕完毕后，一般会返回一个处理结果，这个处理结果会发出去，这个节点称为 OUTPUT，无论是 FORWARD 还是 OUTPUT，都是路由判断之后发生的，最后一个节点是 POSTROUTING。</p><h2 id=table>table</h2><p>有了chain的概念后，为了便于chain中rule的管理，又引入了table的概念，用于存放相同功能的rule，不同功能的rule放到不同的table中。</p><p>包括：filter nat mangle raw</p><h3 id=filter>filter</h3><p>默认表，管理本机数据包的进出，用于实现包的过滤，对应内核模块iptables_filter</p><p>input：想要进入linux主机的包
+output：linux主机要发送的包
+forward：传递包到后端计算机，与nat table关联较多</p><h3 id=nat>nat</h3><p>管理后端主机进出，与linux主机没有关系，与linux后的主机有关</p><p>prerouting：进行路由判断之前的规则(dnat/redirect)
+postrouting：路由判断之后执行的规则(snat/masquerade)
+output：与发出去的包有关</p><h3 id=mangle>mangle</h3><p>较少使用，用于拆解报文，修改数据包，并重新封装。</p><h3 id=raw>raw</h3><p>raw表的主要作用是允许我们给某些特定的数据包打上标记。</p><h2 id=rule>rule</h2><p>包含了匹配条件和处理动作。</p><p>匹配条件包括：source ip、destination ip、source port、destination port</p><p>处理动作包括：</p><ul><li>accept: 将包交给协议栈</li><li>drop：直接丢弃数据包，不给任何回应</li><li>reject：拒绝数据包通过，并给一个响应信息，客户端会收到拒绝消息</li><li>queue: 交个某个用户态进程处理</li><li>dnat：目的地址转换</li><li>snat：源地址转换，必须要指定SNAT地址，即&ndash;to-source参数，可以是单个ip，也可以是网段。用在POSTROUTING链上。</li><li>masquerade: 源地址伪装，跟snat类似，不需要指定SNAT地址，会自动从服务器上获取SNAT的ip地址。如果有多个网卡的情况下，会使用路由选择算法。</li><li>mark: 对数据包进行打标签操作</li></ul><h2 id=table-filter-rule的关系>table filter rule的关系</h2><p>这三者之间的关系还是相当的绕。</p><h3 id=链中的规则存在的表>链中的规则存在的表</h3><p>chain中存放了rule，某些chain中注定不包含某些rule。例如prerouting链中的rule仅存在于nat raw mangle三张表中。</p><p>prerouting链中的规则存在的表：raw mangle nat
+input链中的规则存在的表：mangle filter nat
+forward链中的规则存在的表：mangle filter
+output链中的规则存在的表：raw mangle filter nat
+postrouting链中的规则存在的表：mangle nat</p><h3 id=表中的规则可以被哪些链使用>表中的规则可以被哪些链使用</h3><p>raw表中的规则可以被链使用：prerouting output</p><p><img src=https://kuring.oss-cn-beijing.aliyuncs.com/images/iptables2.png loading=lazy alt=image></p><p>表的名字为小写，链的名字为大写</p><h1 id=常用操作>常用操作</h1><h2 id=查询>查询</h2><p>iptables 查询默认的表为filter，默认会列出表中所有链的规则</p><ul><li>-t 用于指定要操作的表，支持raw mangle filter nat，省略-t选项，默认使用filter表</li><li>-L 列出rule</li><li>-v 可查看更详细的信息</li><li>-n 规则中以ip地址的形式进行显示</li><li>&ndash;line-number 显示规则的编号</li><li>-x 包的计数以精确数字显示</li></ul><p><code>iptables -t filter -L</code>：从表的角度查询规则，用于查看filter表中的所有规则</p><p><code>iptables -L INPUT</code>: 从链的角度查询规则，用于查看INPUT链中的所有规则</p><p><code>iptables -vL INPUT</code>: 从链的角度查询规则，用于查看INPUT链中的所有规则，可查看更详细信息，包含了规则的匹配信息</p><p><code>iptables -nvL</code>：以精确数字显示</p><h2 id=修改>修改</h2><ul><li>-F: 清空规则</li><li>-I: 表示插入规则</li><li>-A: 表示以追加的方式插入规则</li><li><code>--dport</code>: 目的端口</li><li><code>--sport</code>: 源端口</li><li>-s: 源ip</li><li>-d: 目的ip</li><li><code>--match-set</code>：匹配ipset</li></ul><p><code>iptables -F INPUT</code>：清空filter表中的INPUT链中的所有规则。</p><h2 id=删除>删除</h2><ul><li>-D: 删除规则，<code>iptables -D 链名 规则编号</code>，其中规则编号可以通过<code>--line-number</code>查看到。</li><li>-F: 清空规则，<code>iptables -F 链名 -t 表名</code></li><li>-X: 删除链 <code>iptables -X 链名 -t 表名</code></li></ul><h2 id=trace>trace</h2><p>开启trace功能</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># centos7 系统下有效，centos6下内核模块为ipt_LOG
+</span></span><span class=line><span class=cl>$ modprobe nf_log_ipv4
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 用来验证module是否加载成功
+</span></span><span class=line><span class=cl>$ sysctl net.netfilter.nf_log.2
+</span></span></code></pre></td></tr></table></div></div><p>要开启icmp协议的追踪，执行如下的命令</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>iptables -t raw -A OUTPUT -p icmp -m comment --comment &#34;TRACE&#34; -j TRACE
+</span></span><span class=line><span class=cl>iptables -t raw -A PREROUTING -p icmp -m comment --comment &#34;TRACE&#34; -j TRACE
+</span></span></code></pre></td></tr></table></div></div><p>可以通过如下的命令看到插入的iptabels规则：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>iptables -t raw -nvL --line-number
+</span></span></code></pre></td></tr></table></div></div><p>追踪日志最终会在/var/log/message或者/var/log/kern下看到：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Feb  6 11:22:04 c43k09006.cloud.k09.am17 kernel: TRACE: raw:PREROUTING:policy:3 IN=docker0 OUT= PHYSIN=bond0.9 MAC=02:42:30:fb:43:94:5c:c9:99:de:c4:8b:08:00 SRC=10.45.8.10 DST=10.45.4.99 LEN=84 TOS=0x00 PREC=0x00 TTL=62 ID=25550 DF PROTO=ICMP TYPE=0 CODE=0 ID=24191 SEQ=2
+</span></span></code></pre></td></tr></table></div></div><p>格式这块的含义如下：</p><p>&ldquo;TRACE: tablename:chainname:type:rulenum " where type can be &ldquo;rule&rdquo; for plain rule, &ldquo;return&rdquo; for implicit rule at the end of a user defined chain and &ldquo;policy&rdquo; for the policy of the built in chains.</p><p>环境清理，删除刚刚创建的规则即可，其中1为规则的编号：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 可以通过此来查询之前创建的规则编号
+</span></span><span class=line><span class=cl>iptables -t raw --line-number -nvL
+</span></span><span class=line><span class=cl># 删除规则
+</span></span><span class=line><span class=cl>iptables -t raw -D PREROUTING 1
+</span></span><span class=line><span class=cl>iptables -t raw -D OUTPUT 1
+</span></span></code></pre></td></tr></table></div></div><h1 id=实战>实战</h1><h2 id=试验1-基本规则管理>试验1 基本规则管理</h2><h3 id=插入规则>插入规则</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 清空filter表中的input链规则
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -F INPUT
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 查看filter表中的详细规则，此时从其他机器上ping该ip是通的
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -nvL INPUT
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 7 packets, 388 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl> 
+</span></span><span class=line><span class=cl># 增加规则，拒绝192.168.33.1上的请求
+</span></span><span class=line><span class=cl># -I：表示插入
+</span></span><span class=line><span class=cl># INPUT为要插入的链
+</span></span><span class=line><span class=cl># -s：表示源ip地址
+</span></span><span class=line><span class=cl># -j：表示要执行的动作
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -I INPUT -s 192.168.33.1 -j DROP
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 再次查询filter表中的规则，此时192.168.33.1上的报文已经不通
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -nvL
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 107 packets, 6170 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>    0     0 DROP       all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Chain OUTPUT (policy ACCEPT 56 packets, 4355 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># appent一条接收192.168.33.1的请求规则
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -A INPUT -s 192.168.33.1 -j ACCEPT
+</span></span><span class=line><span class=cl># 新增加的序号为2，192.168.33.1的包匹配到1后就停止往下走，因此192.168.33.1还是ping不通当前主机
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -nvL INPUT --line-number
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 65 packets, 3572 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        9   756 DROP       all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>2        0     0 ACCEPT     all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 插入一条ACCEPT rule，此时192.168.33.1可以ping通当前主机，新插入的规则优先
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -I INPUT -s 192.168.33.1 -j ACCEPT
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -nvL INPUT --line-number
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 7 packets, 388 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        0     0 ACCEPT     all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>2       10   840 DROP       all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>3        0     0 ACCEPT     all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 新插入一条accept 192.168.33.2的规则，插入位置为2，可以看到插入到2的位置了
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -I INPUT 2 -s 192.168.33.2 -j ACCEPT
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -nvL INPUT --line-number
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 7 packets, 388 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        1    84 ACCEPT     all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>2        0     0 ACCEPT     all  --  *      *       192.168.33.2         0.0.0.0/0
+</span></span><span class=line><span class=cl>3       10   840 DROP       all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>4        0     0 ACCEPT     all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span></code></pre></td></tr></table></div></div><h3 id=删除规则>删除规则</h3><p>接下在上面实验的基础上测试删除规则</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 删除刚刚创建的规则2
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -D INPUT 2
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -nvL INPUT --line-number
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 7 packets, 388 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        1    84 ACCEPT     all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>2       10   840 DROP       all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>3        0     0 ACCEPT     all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 删除source为192.168.33.1，动作为ACCEPT的规则，实际此时执行一次命令仅能删除一条
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -D INPUT -s 192.168.33.1 -j ACCEPT
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -nvL INPUT --line
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 13 packets, 736 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1       11   936 DROP       all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span></code></pre></td></tr></table></div></div><h3 id=修改规则>修改规则</h3><p>在上面实验的基础上修改规则</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 将规则动作从REJECT更改为REJECT
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -R INPUT 1 -s 192.168.33.1 -j REJECT
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -nvL INPUT --line
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 7 packets, 388 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        0     0 REJECT     all  --  *      *       192.168.33.1         0.0.0.0/0            reject-with icmp-port-unreachable
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 每个链都有一个默认规则，当前INPUT链中的默认为ACCEPT
+</span></span><span class=line><span class=cl># 以下可以修改INPUT链的默认规则为DROP，远程连接慎用，不要问我为什么
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -P INPUT DROP
+</span></span></code></pre></td></tr></table></div></div><h3 id=保存规则>保存规则</h3><p>防火墙的所有修改都是临时的，重启系统后会失效。iptables会读取/etc/sysconfig/iptables中的规则。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># iptables-save命令仅会打印当前的规则，需要使用重定向当前规则到文件中
+</span></span><span class=line><span class=cl>[root@localhost system]# iptables-save &gt; /etc/sysconfig/iptables
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 可以从规则文件中载入规则
+</span></span><span class=line><span class=cl>[root@localhost system]# iptables-restore &lt; /etc/sysconfig/iptables
+</span></span></code></pre></td></tr></table></div></div><h2 id=实验二-各类匹配条件的使用>实验二 各类匹配条件的使用</h2><h3 id=匹配条件>匹配条件</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 可一次性插入两条规则
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -I INPUT -s 192.168.33.1,192.168.33.2 -j DROP
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -nvL INPUT --line
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 31 packets, 1744 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        0     0 DROP       all  --  *      *       192.168.33.2         0.0.0.0/0
+</span></span><span class=line><span class=cl>2        0     0 DROP       all  --  *      *       192.168.33.1         0.0.0.0/0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 可指定ip网段
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -F INPUT
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -I INPUT -s 192.168.33.0/24 -j DROP
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -nvL INPUT --line
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 7 packets, 388 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        0     0 DROP       all  --  *      *       192.168.33.0/24      0.0.0.0/0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -I INPUT ! -s 192.168.33.0/24 -j DROP
+</span></span><span class=line><span class=cl>[vagrant@localhost ~]$ sudo iptables -t filter -nvL INPUT --line
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 19 packets, 1048 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        0     0 DROP       all  --  *      *      !10.0.2.0/24          0.0.0.0/0
+</span></span></code></pre></td></tr></table></div></div><h3 id=协议类型>协议类型</h3><p>使用-p来指定协议类型，支持tcp udp icmp等，不指定时默认匹配所有协议</p><h3 id=网卡接口>网卡接口</h3><p><code>-i</code>来指定从某个网卡进入的流量，仅使用于PREROUTING INPUT FORWARD三条链。</p><p><code>-o</code>来指定从某个网络流出的流量，仅适用于FORWARD OUTPUT POSTROUTING三条链。</p><h2 id=实验三-扩展模块>实验三 扩展模块</h2><h3 id=端口>端口</h3><p>使用了扩展模块tcp udp，默认可以省略</p><p><code>--dport</code>来匹配报文的目的端口，使用时必须指定协议，即<code>-p</code>选项。
+<code>--sport</code>来匹配报文的源端口，使用时必须指定协议，即<code>-p</code>选项。</p><p>端口可以指定范围，例如22:25表示22-25之间的所有端口，22,25表示22和25端口，还可以配合起来使用，比如22,80:88表示22和80-88之间的端口。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 可以指定目的端口的范围
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -t filter -I INPUT -s 192.168.33.1 -p tcp --dport 22:25 -j REJECT
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -t filter -nvL INPUT --line
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 70 packets, 4024 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        0     0 REJECT     tcp  --  *      *       192.168.33.1         0.0.0.0/0            tcp dpts:22:25 reject-with icmp-port-unreachable
+</span></span></code></pre></td></tr></table></div></div><h3 id=iprange扩展模块>iprange扩展模块</h3><p>iprange扩展模块可以指定一段连续的ip地址范围。</p><p><code>--src-range</code>和<code>--dst-range</code>用来指定源地址和目的范围。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[root@localhost vagrant]# iptables -t filter -I INPUT -m iprange --src-range 192.168.33.1-192.168.33.10 -j DROP
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -t filter -nvL INPUT --line
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 17 packets, 968 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            source IP range 192.168.33.1-192.168.33.10
+</span></span></code></pre></td></tr></table></div></div><h3 id=string扩展模块>string扩展模块</h3><p>匹配报文中包含的字符串</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 匹配报文中包含XXOO的报文
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -t filter -I INPUT -m string --algo bm --string &#34;XXOO&#34; -j REJECT
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -t filter -nvL INPUT --line
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 15 packets, 852 bytes)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        0     0 REJECT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            STRING match  &#34;XXOO&#34; ALGO name bm TO 65535 reject-with icmp-port-unreachable
+</span></span></code></pre></td></tr></table></div></div><h3 id=其他扩展>其他扩展</h3><p>time扩展用来根据时间段进行匹配</p><p>connlimit用来对ip的并发连接数进行限制</p><p>limit模块限制单位时间内进出包的数量</p><p>tcp扩展中可以使用<code>--tcp-flags</code>可根据tcp flag进行匹配</p><p>state扩展可根据tcp的连接状态进行匹配</p><h2 id=实验四-自定义链>实验四 自定义链</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># 创建自定义链 IN_WEB
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -t filter -N IN_WEB
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -nvL
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 31 packets, 1780 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Chain OUTPUT (policy ACCEPT 16 packets, 1216 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Chain IN_WEB (0 references)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl> 
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -t filter -I IN_WEB -s 192.168.33.1 -j REJECT
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -t filter -I IN_WEB -s 192.168.33.2 -j REJECT
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -t filter -nvL IN_WEB --line
+</span></span><span class=line><span class=cl>Chain IN_WEB (0 references)
+</span></span><span class=line><span class=cl>num   pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>1        0     0 REJECT     all  --  *      *       192.168.33.2         0.0.0.0/0            reject-with icmp-port-unreachable
+</span></span><span class=line><span class=cl>2        0     0 REJECT     all  --  *      *       192.168.33.1         0.0.0.0/0            reject-with icmp-port-unreachable
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 将IN_WEB自定义链添加到INPUT链上
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -t filter -I INPUT -p tcp --dport 80 -j IN_WEB
+</span></span><span class=line><span class=cl># 可以看到INPUT链中多出了IN_WEB链
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -nvL
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 35 packets, 2012 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>    0     0 IN_WEB     tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            tcp dpt:80
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Chain OUTPUT (policy ACCEPT 18 packets, 1408 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Chain IN_WEB (1 references)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>    0     0 REJECT     all  --  *      *       192.168.33.2         0.0.0.0/0            reject-with icmp-port-unreachable
+</span></span><span class=line><span class=cl>    0     0 REJECT     all  --  *      *       192.168.33.1         0.0.0.0/0            reject-with icmp-port-unreachable
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 重新定义自定链名字    
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -E IN_WEB WEB
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -nvL
+</span></span><span class=line><span class=cl>Chain INPUT (policy ACCEPT 39 packets, 2244 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>    0     0 WEB        tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            tcp dpt:80
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Chain OUTPUT (policy ACCEPT 20 packets, 1520 bytes)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Chain WEB (1 references)
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     source               destination
+</span></span><span class=line><span class=cl>    0     0 REJECT     all  --  *      *       192.168.33.2         0.0.0.0/0            reject-with icmp-port-unreachable
+</span></span><span class=line><span class=cl>    0     0 REJECT     all  --  *      *       192.168.33.1         0.0.0.0/0            reject-with icmp-port-unreachable
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl># 由于iptables有自定义链，不能删除
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -X WEB
+</span></span><span class=line><span class=cl>iptables: Too many links.
+</span></span><span class=line><span class=cl># 将INPUT链引用的WEB链删除
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -D INPUT 1
+</span></span><span class=line><span class=cl># 此时仍不能删除自定义链，因为自定义链删除，需要上面没有任何规则
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -X WEB
+</span></span><span class=line><span class=cl>iptables: Directory not empty.
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># 先清空自定义链的规则后可以删除
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -F WEB
+</span></span><span class=line><span class=cl>[root@localhost vagrant]# iptables -X WEB
+</span></span></code></pre></td></tr></table></div></div><h1 id=ref>ref</h1><ul><li><a class=link href=http://www.zsythink.net/archives/tag/iptables/page/2/ target=_blank rel=noopener>iptables详解系列</a></li><li><a class=link href=https://www.frozentux.net/iptables-tutorial/iptables-tutorial.html#ACCEPTTARGET target=_blank rel=noopener>Iptables Tutorial 1.2.2</a></li></ul></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2026 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

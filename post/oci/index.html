@@ -1,0 +1,827 @@
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="OCI（Open Container Initiative）为Linux基金会下的子项目，成立于2015年，由docker、coreos等公司发起，用来制定开放的容器和容器镜像标准，同时docker将其镜像格式和容器运行时runc捐献给了OCI，因此OCI中包含了容器镜像标准和容器运行时标准两部分。\n"><title>OCI</title><link rel=canonical href=/post/oci/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="OCI"><meta property='og:description' content="OCI（Open Container Initiative）为Linux基金会下的子项目，成立于2015年，由docker、coreos等公司发起，用来制定开放的容器和容器镜像标准，同时docker将其镜像格式和容器运行时runc捐献给了OCI，因此OCI中包含了容器镜像标准和容器运行时标准两部分。\n"><meta property='og:url' content='/post/oci/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:published_time' content='2022-06-23T22:25:29+00:00'><meta property='article:modified_time' content='2022-06-23T22:25:29+00:00'><meta name=twitter:title content="OCI"><meta name=twitter:description content="OCI（Open Container Initiative）为Linux基金会下的子项目，成立于2015年，由docker、coreos等公司发起，用来制定开放的容器和容器镜像标准，同时docker将其镜像格式和容器运行时runc捐献给了OCI，因此OCI中包含了容器镜像标准和容器运行时标准两部分。\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#容器镜像的发展历史>容器镜像的发展历史</a></li><li><a href=#容器镜像标准>容器镜像标准</a><ol><li><a href=#镜像索引>镜像索引</a></li><li><a href=#manifest>Manifest</a></li><li><a href=#镜像配置>镜像配置</a></li><li><a href=#镜像层>镜像层</a></li></ol></li><li><a href=#容器运行时标准>容器运行时标准</a><ol><li><a href=#容器配置>容器配置</a></li><li><a href=#运行时和生命周期>运行时和生命周期</a></li></ol></li><li><a href=#镜像分发规范>镜像分发规范</a><ol><li><a href=#pull>pull</a><ol><li><a href=#pull-manifest>pull manifest</a></li><li><a href=#pull-bolb>pull bolb</a></li></ol></li><li><a href=#push>push</a></li><li><a href=#list-tag>list tag</a></li><li><a href=#list-references>list references</a></li><li><a href=#delete-tag>delete tag</a></li><li><a href=#delete-manifest>delete manifest</a></li><li><a href=#delete-blobs>delete blobs</a></li></ol></li><li><a href=#k8s支持情况>k8s支持情况</a></li><li><a href=#参考>参考</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/oci/>OCI</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2022-06-23T22:25:29Z>2022-06-23</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 7 分钟</time></div></footer></div></header><section class=article-content><p>OCI（Open Container Initiative）为Linux基金会下的子项目，成立于2015年，由docker、coreos等公司发起，用来制定开放的容器和容器镜像标准，同时docker将其镜像格式和容器运行时runc捐献给了OCI，因此OCI中包含了容器镜像标准和容器运行时标准两部分。</p><h2 id=容器镜像的发展历史>容器镜像的发展历史</h2><p>2013年，docker横空出世，docker的核心能力之一为将应用封装为镜像，便于打包、发布。</p><p>2014年，docker将镜像格式定位为docker镜像规范v1版本。</p><p>2016年，docker制定了新的镜像格式规范v2，解决v1版本的部分设计缺陷。</p><p>2017年，OCI发布了OCI镜像规范1.0版本，整个规范以docker镜像规范v2为基础，两者的规范比较类似。</p><h2 id=容器镜像标准>容器镜像标准</h2><p>官方定义：<a class=link href=https://github.com/opencontainers/image-spec target=_blank rel=noopener>OCI Image Format Specification</a></p><p>容器镜像标准包含了镜像索引（可选）、manifest、层文件和配置文件四部分内容。包含了容器的构建、分发和准备可以运行的镜像。</p><p><img src=https://kuring.oss-cn-beijing.aliyuncs.com/common/oci-media-types.png loading=lazy alt=https://github.com/opencontainers/image-spec/blob/main/img/media-types.png></p><p>skopeo为一个容器镜像和镜像仓库的命令行操作工具，可以使用该工具来学习OCI容器镜像规范，可以直接使用 <code>yum install skopeo -y</code> 进行安装。</p><p>使用如下命令可以将docker的镜像转换为oci格式，并将其保存到/tmp/local_nginx目录下。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>skopeo copy docker://nginx oci:/tmp/local_nginx
+</span></span></code></pre></td></tr></table></div></div><p>/tmp/local_nginx的目录包含如下结构，参考链接：<a class=link href=https://github.com/opencontainers/image-spec/blob/main/image-layout.md target=_blank rel=noopener>OCI Image Layout Specification</a></p><ul><li>blobs 目录：包含了镜像Manifest、镜像层和镜像配置信息，均已sha256值命名的文件形式存储，文件可以为文本文件，也可以为gzip压缩的二进制文件。</li><li>oci-layout 文件：定义了当前目录结构的版本信息</li><li>index.json 文件：定义了镜像索引信息</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>.
+</span></span><span class=line><span class=cl>├── blobs
+</span></span><span class=line><span class=cl>│   └── sha256
+</span></span><span class=line><span class=cl>│       ├── 4a7307612456a7f65365e1da5c3811df49cefa5a2fd68d8e04e093d26a395d60
+</span></span><span class=line><span class=cl>│       ├── 67e9751bc5aab75bba375f0a24702d70848e5b2bea70de55e50f21ed11feed14
+</span></span><span class=line><span class=cl>│       ├── 8f46223e4234ce76b244c074e79940b9ee0a01b42050012c8555ebc7ac59469e
+</span></span><span class=line><span class=cl>│       ├── 935cecace2a02d2545e0c19bd52fe9c8c728fbab2323fc274e029f5357cda689
+</span></span><span class=line><span class=cl>│       ├── b85a868b505ffd0342a37e6a3b1c49f7c71878afe569a807e6238ef08252fcb7
+</span></span><span class=line><span class=cl>│       ├── efb56228dbd26a7f02dafc74a2ca8f63d5e3bb6df9046a921f7d8174e5318387
+</span></span><span class=line><span class=cl>│       ├── f4407ba1f103abb9ae05a4b2891c7ebebaecab0c262535fc6659a628db25df44
+</span></span><span class=line><span class=cl>│       └── fe0ef4c895f5ea450aca17342e481fada37bf2a1ee85d127a4473216c3f672ea
+</span></span><span class=line><span class=cl>├── index.json
+</span></span><span class=line><span class=cl>└── oci-layout
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>2 directories, 10 files
+</span></span></code></pre></td></tr></table></div></div><h3 id=镜像索引>镜像索引</h3><p>非必须部分。如果包含镜像索引，用来解决多架构问题。不同的平台上，可以使用同一个镜像tag，即可以获取到对应平台的镜像。</p><p>镜像索引为 json 格式的文件，查看 index.json 文件，内容如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>  &#34;schemaVersion&#34;: 2,
+</span></span><span class=line><span class=cl>  &#34;manifests&#34;: [
+</span></span><span class=line><span class=cl>    {
+</span></span><span class=line><span class=cl>      &#34;mediaType&#34;: &#34;application/vnd.oci.image.manifest.v1+json&#34;,
+</span></span><span class=line><span class=cl>      &#34;digest&#34;: &#34;sha256:15beb598b14fca498f13a46923de0614a17012abf675ba06e364904d642d8a61&#34;,
+</span></span><span class=line><span class=cl>      &#34;size&#34;: 1183
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>  ]
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>镜像索引文件可以包含多种架构。其中digest对应的sha256值指向 blobs/sha256 下的文件，其文件为Manifest文件。</p><p>需要注意的是：docker 可以使用 <code>docker manifest</code>命令来查看镜像的manifest信息，但格式并非为OCI Manifest格式，而更类似于OCI index的信息，下面的命令中，可以看到rancher镜像为多镜像。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ docker manifest inspect rancher/rancher
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>   &#34;schemaVersion&#34;: 2,
+</span></span><span class=line><span class=cl>   &#34;mediaType&#34;: &#34;application/vnd.docker.distribution.manifest.list.v2+json&#34;,
+</span></span><span class=line><span class=cl>   &#34;manifests&#34;: [
+</span></span><span class=line><span class=cl>      {
+</span></span><span class=line><span class=cl>         &#34;mediaType&#34;: &#34;application/vnd.docker.distribution.manifest.v2+json&#34;,
+</span></span><span class=line><span class=cl>         &#34;size&#34;: 4732,
+</span></span><span class=line><span class=cl>         &#34;digest&#34;: &#34;sha256:b8f1fdb8228d32ae5fc6f240503cd8e22b214fcfd4ad2a8a0b03274f3ead4e95&#34;,
+</span></span><span class=line><span class=cl>         &#34;platform&#34;: {
+</span></span><span class=line><span class=cl>            &#34;architecture&#34;: &#34;amd64&#34;,
+</span></span><span class=line><span class=cl>            &#34;os&#34;: &#34;linux&#34;
+</span></span><span class=line><span class=cl>         }
+</span></span><span class=line><span class=cl>      },
+</span></span><span class=line><span class=cl>      {
+</span></span><span class=line><span class=cl>         &#34;mediaType&#34;: &#34;application/vnd.docker.distribution.manifest.v2+json&#34;,
+</span></span><span class=line><span class=cl>         &#34;size&#34;: 4731,
+</span></span><span class=line><span class=cl>         &#34;digest&#34;: &#34;sha256:ae0fa74e8dce9b72bdc6611815deb16bbddc8fe0a555052ccc8127fdc1b76980&#34;,
+</span></span><span class=line><span class=cl>         &#34;platform&#34;: {
+</span></span><span class=line><span class=cl>            &#34;architecture&#34;: &#34;arm64&#34;,
+</span></span><span class=line><span class=cl>            &#34;os&#34;: &#34;linux&#34;
+</span></span><span class=line><span class=cl>         }
+</span></span><span class=line><span class=cl>      },
+</span></span><span class=line><span class=cl>      {
+</span></span><span class=line><span class=cl>         &#34;mediaType&#34;: &#34;application/vnd.docker.distribution.manifest.v2+json&#34;,
+</span></span><span class=line><span class=cl>         &#34;size&#34;: 4519,
+</span></span><span class=line><span class=cl>         &#34;digest&#34;: &#34;sha256:94c03afba43e81885c3cd2f5065032d1b7f8f540860fcc1fce1bbd7f1068d3db&#34;,
+</span></span><span class=line><span class=cl>         &#34;platform&#34;: {
+</span></span><span class=line><span class=cl>            &#34;architecture&#34;: &#34;s390x&#34;,
+</span></span><span class=line><span class=cl>            &#34;os&#34;: &#34;linux&#34;
+</span></span><span class=line><span class=cl>         }
+</span></span><span class=line><span class=cl>      }
+</span></span><span class=line><span class=cl>   ]
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><h3 id=manifest>Manifest</h3><p>参考：<a class=link href=https://github.com/opencontainers/image-spec/blob/main/manifest.md target=_blank rel=noopener>OCI Image Manifest Specification</a></p><p>Manifest为json格式的描述文件，包含了如下三个用途：</p><ol><li>每一个镜像都有一个唯一的 id 标识</li><li>对于同一个镜像tag，可以支持多架构镜像</li><li>可以直接转换为OCI的运行时规范</li></ol><p>查看 blobs/sha256/15beb598b14fca498f13a46923de0614a17012abf675ba06e364904d642d8a61 内容如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>  &#34;schemaVersion&#34;: 2,
+</span></span><span class=line><span class=cl>  &#34;mediaType&#34;: &#34;application/vnd.oci.image.manifest.v1+json&#34;,
+</span></span><span class=line><span class=cl>  &#34;config&#34;: {
+</span></span><span class=line><span class=cl>    &#34;mediaType&#34;: &#34;application/vnd.oci.image.config.v1+json&#34;,
+</span></span><span class=line><span class=cl>    &#34;digest&#34;: &#34;sha256:67e9751bc5aab75bba375f0a24702d70848e5b2bea70de55e50f21ed11feed14&#34;,
+</span></span><span class=line><span class=cl>    &#34;size&#34;: 6567
+</span></span><span class=line><span class=cl>  },
+</span></span><span class=line><span class=cl>  &#34;layers&#34;: [
+</span></span><span class=line><span class=cl>    {
+</span></span><span class=line><span class=cl>      &#34;mediaType&#34;: &#34;application/vnd.oci.image.layer.v1.tar+gzip&#34;,
+</span></span><span class=line><span class=cl>      &#34;digest&#34;: &#34;sha256:b85a868b505ffd0342a37e6a3b1c49f7c71878afe569a807e6238ef08252fcb7&#34;,
+</span></span><span class=line><span class=cl>      &#34;size&#34;: 31379408
+</span></span><span class=line><span class=cl>    },
+</span></span><span class=line><span class=cl>    {
+</span></span><span class=line><span class=cl>      &#34;mediaType&#34;: &#34;application/vnd.oci.image.layer.v1.tar+gzip&#34;,
+</span></span><span class=line><span class=cl>      &#34;digest&#34;: &#34;sha256:f4407ba1f103abb9ae05a4b2891c7ebebaecab0c262535fc6659a628db25df44&#34;,
+</span></span><span class=line><span class=cl>      &#34;size&#34;: 25354178
+</span></span><span class=line><span class=cl>    },
+</span></span><span class=line><span class=cl>    {
+</span></span><span class=line><span class=cl>      &#34;mediaType&#34;: &#34;application/vnd.oci.image.layer.v1.tar+gzip&#34;,
+</span></span><span class=line><span class=cl>      &#34;digest&#34;: &#34;sha256:4a7307612456a7f65365e1da5c3811df49cefa5a2fd68d8e04e093d26a395d60&#34;,
+</span></span><span class=line><span class=cl>      &#34;size&#34;: 603
+</span></span><span class=line><span class=cl>    },
+</span></span><span class=line><span class=cl>    {
+</span></span><span class=line><span class=cl>      &#34;mediaType&#34;: &#34;application/vnd.oci.image.layer.v1.tar+gzip&#34;,
+</span></span><span class=line><span class=cl>      &#34;digest&#34;: &#34;sha256:935cecace2a02d2545e0c19bd52fe9c8c728fbab2323fc274e029f5357cda689&#34;,
+</span></span><span class=line><span class=cl>      &#34;size&#34;: 893
+</span></span><span class=line><span class=cl>    },
+</span></span><span class=line><span class=cl>    {
+</span></span><span class=line><span class=cl>      &#34;mediaType&#34;: &#34;application/vnd.oci.image.layer.v1.tar+gzip&#34;,
+</span></span><span class=line><span class=cl>      &#34;digest&#34;: &#34;sha256:8f46223e4234ce76b244c074e79940b9ee0a01b42050012c8555ebc7ac59469e&#34;,
+</span></span><span class=line><span class=cl>      &#34;size&#34;: 666
+</span></span><span class=line><span class=cl>    },
+</span></span><span class=line><span class=cl>    {
+</span></span><span class=line><span class=cl>      &#34;mediaType&#34;: &#34;application/vnd.oci.image.layer.v1.tar+gzip&#34;,
+</span></span><span class=line><span class=cl>      &#34;digest&#34;: &#34;sha256:fe0ef4c895f5ea450aca17342e481fada37bf2a1ee85d127a4473216c3f672ea&#34;,
+</span></span><span class=line><span class=cl>      &#34;size&#34;: 1394
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>  ]
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>包含了config 和 layers 两部分信息，其中 config 信息为运行镜像的配置，layers 为镜像中的层信息，其中gzip说明镜像的层为gzip压缩格式，每个层一个压缩文件。</p><h3 id=镜像配置>镜像配置</h3><p>参考：<a class=link href=https://github.com/opencontainers/image-spec/blob/main/config.md target=_blank rel=noopener>OCI Image Configuration</a></p><p>通过 manifest 中的config信息，可以找到镜像的配置信息 blobs/sha256/67e9751bc5aab75bba375f0a24702d70848e5b2bea70de55e50f21ed11feed14：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:24.820503805Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=s2>&#34;architecture&#34;</span><span class=p>:</span> <span class=s2>&#34;amd64&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=s2>&#34;os&#34;</span><span class=p>:</span> <span class=s2>&#34;linux&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=s2>&#34;config&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;ExposedPorts&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;80/tcp&#34;</span><span class=p>:</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Env&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;NGINX_VERSION=1.23.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;NJS_VERSION=0.7.5&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;PKG_RELEASE=1~bullseye&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Entrypoint&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;/docker-entrypoint.sh&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Cmd&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;nginx&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;-g&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;daemon off;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;Labels&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;maintainer&#34;</span><span class=p>:</span> <span class=s2>&#34;NGINX Docker Maintainers &lt;docker-maint@nginx.com&gt;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;StopSignal&#34;</span><span class=p>:</span> <span class=s2>&#34;SIGQUIT&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=s2>&#34;rootfs&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;layers&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;diff_ids&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;sha256:08249ce7456a1c0613eafe868aed936a284ed9f1d6144f7d2d08c514974a2af9&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;sha256:d5b40e80384bb94d01a8d2d8fb2db1328990e7088640132c33d3f691dd8a88ee&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;sha256:b2f82de68e0d9246de01fa8283876427af5d6f3fe21c4bb04785892d5d071aef&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;sha256:41451f050aa883f9102df03821485fc2e27611da05689c0ba25f69dcda308988&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;sha256:44193d3f4ea2bae7a5ae5983f2562f551618b787751a6abfb732b6d17393bb88&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;sha256:e7344f8a29a34b4861faf6adcf072afb26fadf6096756f0e3fc4c289cdefb7c2&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=s2>&#34;history&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T00:20:27.020952309Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop) ADD file:8adbbab04d6f84cd83b5f4205b89b0acb7ecbf27a1bb2dc181d0a629479039fe in / &#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T00:20:27.337378745Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop)  CMD [</span><span class=se>\&#34;</span><span class=s2>bash</span><span class=se>\&#34;</span><span class=s2>]&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;empty_layer&#34;</span><span class=p>:</span> <span class=bp>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:05.737870066Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop)  LABEL maintainer=NGINX Docker Maintainers &lt;docker-maint@nginx.com&gt;&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;empty_layer&#34;</span><span class=p>:</span> <span class=bp>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:05.834940798Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop)  ENV NGINX_VERSION=1.23.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;empty_layer&#34;</span><span class=p>:</span> <span class=bp>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:05.931909571Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop)  ENV NJS_VERSION=0.7.5&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;empty_layer&#34;</span><span class=p>:</span> <span class=bp>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:06.026686816Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop)  ENV PKG_RELEASE=1~bullseye&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;empty_layer&#34;</span><span class=p>:</span> <span class=bp>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:23.901038357Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c set -x     &amp;&amp; addgroup --system --gid 101 nginx     &amp;&amp; adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos </span><span class=se>\&#34;</span><span class=s2>nginx user</span><span class=se>\&#34;</span><span class=s2> --shell /bin/false --uid 101 nginx     &amp;&amp; apt-get update     &amp;&amp; apt-get install --no-install-recommends --no-install-suggests -y gnupg1 ca-certificates     &amp;&amp;     NGINX_GPGKEY=573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62;     found=&#39;&#39;;     for server in         hkp://keyserver.ubuntu.com:80         pgp.mit.edu     ; do         echo </span><span class=se>\&#34;</span><span class=s2>Fetching GPG key $NGINX_GPGKEY from $server</span><span class=se>\&#34;</span><span class=s2>;         apt-key adv --keyserver </span><span class=se>\&#34;</span><span class=s2>$server</span><span class=se>\&#34;</span><span class=s2> --keyserver-options timeout=10 --recv-keys </span><span class=se>\&#34;</span><span class=s2>$NGINX_GPGKEY</span><span class=se>\&#34;</span><span class=s2> &amp;&amp; found=yes &amp;&amp; break;     done;     test -z </span><span class=se>\&#34;</span><span class=s2>$found</span><span class=se>\&#34;</span><span class=s2> &amp;&amp; echo &gt;&amp;2 </span><span class=se>\&#34;</span><span class=s2>error: failed to fetch GPG key $NGINX_GPGKEY</span><span class=se>\&#34;</span><span class=s2> &amp;&amp; exit 1;     apt-get remove --purge --auto-remove -y gnupg1 &amp;&amp; rm -rf /var/lib/apt/lists/*     &amp;&amp; dpkgArch=</span><span class=se>\&#34;</span><span class=s2>$(dpkg --print-architecture)</span><span class=se>\&#34;</span><span class=s2>     &amp;&amp; nginxPackages=</span><span class=se>\&#34;</span><span class=s2>         nginx=${NGINX_VERSION}-${PKG_RELEASE}         nginx-module-xslt=${NGINX_VERSION}-${PKG_RELEASE}         nginx-module-geoip=${NGINX_VERSION}-${PKG_RELEASE}         nginx-module-image-filter=${NGINX_VERSION}-${PKG_RELEASE}         nginx-module-njs=${NGINX_VERSION}+${NJS_VERSION}-${PKG_RELEASE}     </span><span class=se>\&#34;</span><span class=s2>     &amp;&amp; case </span><span class=se>\&#34;</span><span class=s2>$dpkgArch</span><span class=se>\&#34;</span><span class=s2> in         amd64|arm64)             echo </span><span class=se>\&#34;</span><span class=s2>deb https://nginx.org/packages/mainline/debian/ bullseye nginx</span><span class=se>\&#34;</span><span class=s2> &gt;&gt; /etc/apt/sources.list.d/nginx.list             &amp;&amp; apt-get update             ;;         *)             echo </span><span class=se>\&#34;</span><span class=s2>deb-src https://nginx.org/packages/mainline/debian/ bullseye nginx</span><span class=se>\&#34;</span><span class=s2> &gt;&gt; /etc/apt/sources.list.d/nginx.list                         &amp;&amp; tempDir=</span><span class=se>\&#34;</span><span class=s2>$(mktemp -d)</span><span class=se>\&#34;</span><span class=s2>             &amp;&amp; chmod 777 </span><span class=se>\&#34;</span><span class=s2>$tempDir</span><span class=se>\&#34;</span><span class=s2>                         &amp;&amp; savedAptMark=</span><span class=se>\&#34;</span><span class=s2>$(apt-mark showmanual)</span><span class=se>\&#34;</span><span class=s2>                         &amp;&amp; apt-get update             &amp;&amp; apt-get build-dep -y $nginxPackages             &amp;&amp; (                 cd </span><span class=se>\&#34;</span><span class=s2>$tempDir</span><span class=se>\&#34;</span><span class=s2>                 &amp;&amp; DEB_BUILD_OPTIONS=</span><span class=se>\&#34;</span><span class=s2>nocheck parallel=$(nproc)</span><span class=se>\&#34;</span><span class=s2>                     apt-get source --compile $nginxPackages             )                         &amp;&amp; apt-mark showmanual | xargs apt-mark auto &gt; /dev/null             &amp;&amp; { [ -z </span><span class=se>\&#34;</span><span class=s2>$savedAptMark</span><span class=se>\&#34;</span><span class=s2> ] || apt-mark manual $savedAptMark; }                         &amp;&amp; ls -lAFh </span><span class=se>\&#34;</span><span class=s2>$tempDir</span><span class=se>\&#34;</span><span class=s2>             &amp;&amp; ( cd </span><span class=se>\&#34;</span><span class=s2>$tempDir</span><span class=se>\&#34;</span><span class=s2> &amp;&amp; dpkg-scanpackages . &gt; Packages )             &amp;&amp; grep &#39;^Package: &#39; </span><span class=se>\&#34;</span><span class=s2>$tempDir/Packages</span><span class=se>\&#34;</span><span class=s2>             &amp;&amp; echo </span><span class=se>\&#34;</span><span class=s2>deb [ trusted=yes ] file://$tempDir ./</span><span class=se>\&#34;</span><span class=s2> &gt; /etc/apt/sources.list.d/temp.list             &amp;&amp; apt-get -o Acquire::GzipIndexes=false update             ;;     esac         &amp;&amp; apt-get install --no-install-recommends --no-install-suggests -y                         $nginxPackages                         gettext-base                         curl     &amp;&amp; apt-get remove --purge --auto-remove -y &amp;&amp; rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nginx.list         &amp;&amp; if [ -n </span><span class=se>\&#34;</span><span class=s2>$tempDir</span><span class=se>\&#34;</span><span class=s2> ]; then         apt-get purge -y --auto-remove         &amp;&amp; rm -rf </span><span class=se>\&#34;</span><span class=s2>$tempDir</span><span class=se>\&#34;</span><span class=s2> /etc/apt/sources.list.d/temp.list;     fi     &amp;&amp; ln -sf /dev/stdout /var/log/nginx/access.log     &amp;&amp; ln -sf /dev/stderr /var/log/nginx/error.log     &amp;&amp; mkdir /docker-entrypoint.d&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:24.128160562Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop) COPY file:65504f71f5855ca017fb64d502ce873a31b2e0decd75297a8fb0a287f97acf92 in / &#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:24.233980553Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop) COPY file:0b866ff3fc1ef5b03c4e6c8c513ae014f691fb05d530257dfffd07035c1b75da in /docker-entrypoint.d &#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:24.337299368Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop) COPY file:0fd5fca330dcd6a7de297435e32af634f29f7132ed0550d342cad9fd20158258 in /docker-entrypoint.d &#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:24.441125652Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop) COPY file:09a214a3e07c919af2fb2d7c749ccbc446b8c10eb217366e5a65640ee9edcc25 in /docker-entrypoint.d &#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:24.534829205Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop)  ENTRYPOINT [</span><span class=se>\&#34;</span><span class=s2>/docker-entrypoint.sh</span><span class=se>\&#34;</span><span class=s2>]&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;empty_layer&#34;</span><span class=p>:</span> <span class=bp>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:24.627520512Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop)  EXPOSE 80&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;empty_layer&#34;</span><span class=p>:</span> <span class=bp>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:24.724935944Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop)  STOPSIGNAL SIGQUIT&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;empty_layer&#34;</span><span class=p>:</span> <span class=bp>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-23T04:13:24.820503805Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;created_by&#34;</span><span class=p>:</span> <span class=s2>&#34;/bin/sh -c #(nop)  CMD [</span><span class=se>\&#34;</span><span class=s2>nginx</span><span class=se>\&#34;</span><span class=s2> </span><span class=se>\&#34;</span><span class=s2>-g</span><span class=se>\&#34;</span><span class=s2> </span><span class=se>\&#34;</span><span class=s2>daemon off;</span><span class=se>\&#34;</span><span class=s2>]&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s2>&#34;empty_layer&#34;</span><span class=p>:</span> <span class=bp>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>其中包含了如下几个关键信息：</p><ol><li>config：运行镜像的参数，比如entrypoint、labels等，跟通过 docker inspect 命令看到的信息比较类似。</li><li>rootfs：镜像的层信息</li><li>history：镜像的历史构建信息，如果empty_layer的值为true，说明未产生新的层</li></ol><h3 id=镜像层>镜像层</h3><p>镜像层同样存在于 blobs/sha256 目录下，且以压缩格式存储，一个层一个压缩文件。manifests文件中的 <code>application/vnd.oci.image.layer.v1.tar+gzip</code> 说明镜像层的压缩格式为gzip。</p><h2 id=容器运行时标准>容器运行时标准</h2><p>用来定义容器的配置、运行环境和声明周期。runc为容器运行时的官方实现，其主要代码来源为docker的容器运行时，kara-containers也有对应的OCI实现。</p><p>参考文档：<a class=link href=https://github.com/opencontainers/runtime-spec target=_blank rel=noopener>opencontainers/runtime-spec</a></p><h3 id=容器配置>容器配置</h3><p>定义在config.json文件中，定义了创建容器的字段。由于runc更具体的操作系统环境有关，其中部分的规范是跟具体操作系统有关的。执行<code>runc spec</code>可以获取到默认的config.json文件，文件内容如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span><span class=lnt>115
+</span><span class=lnt>116
+</span><span class=lnt>117
+</span><span class=lnt>118
+</span><span class=lnt>119
+</span><span class=lnt>120
+</span><span class=lnt>121
+</span><span class=lnt>122
+</span><span class=lnt>123
+</span><span class=lnt>124
+</span><span class=lnt>125
+</span><span class=lnt>126
+</span><span class=lnt>127
+</span><span class=lnt>128
+</span><span class=lnt>129
+</span><span class=lnt>130
+</span><span class=lnt>131
+</span><span class=lnt>132
+</span><span class=lnt>133
+</span><span class=lnt>134
+</span><span class=lnt>135
+</span><span class=lnt>136
+</span><span class=lnt>137
+</span><span class=lnt>138
+</span><span class=lnt>139
+</span><span class=lnt>140
+</span><span class=lnt>141
+</span><span class=lnt>142
+</span><span class=lnt>143
+</span><span class=lnt>144
+</span><span class=lnt>145
+</span><span class=lnt>146
+</span><span class=lnt>147
+</span><span class=lnt>148
+</span><span class=lnt>149
+</span><span class=lnt>150
+</span><span class=lnt>151
+</span><span class=lnt>152
+</span><span class=lnt>153
+</span><span class=lnt>154
+</span><span class=lnt>155
+</span><span class=lnt>156
+</span><span class=lnt>157
+</span><span class=lnt>158
+</span><span class=lnt>159
+</span><span class=lnt>160
+</span><span class=lnt>161
+</span><span class=lnt>162
+</span><span class=lnt>163
+</span><span class=lnt>164
+</span><span class=lnt>165
+</span><span class=lnt>166
+</span><span class=lnt>167
+</span><span class=lnt>168
+</span><span class=lnt>169
+</span><span class=lnt>170
+</span><span class=lnt>171
+</span><span class=lnt>172
+</span><span class=lnt>173
+</span><span class=lnt>174
+</span><span class=lnt>175
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;ociVersion&#34;</span><span class=p>:</span> <span class=s2>&#34;1.0.2-dev&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;process&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;terminal&#34;</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;user&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;uid&#34;</span><span class=p>:</span> <span class=mi>0</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;gid&#34;</span><span class=p>:</span> <span class=mi>0</span>
+</span></span><span class=line><span class=cl>                <span class=p>},</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;args&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;sh&#34;</span>
+</span></span><span class=line><span class=cl>                <span class=p>],</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;env&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;TERM=xterm&#34;</span>
+</span></span><span class=line><span class=cl>                <span class=p>],</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;cwd&#34;</span><span class=p>:</span> <span class=s2>&#34;/&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;capabilities&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;bounding&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_AUDIT_WRITE&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_KILL&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_NET_BIND_SERVICE&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>],</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;effective&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_AUDIT_WRITE&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_KILL&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_NET_BIND_SERVICE&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>],</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;permitted&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_AUDIT_WRITE&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_KILL&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_NET_BIND_SERVICE&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>],</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;ambient&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_AUDIT_WRITE&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_KILL&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;CAP_NET_BIND_SERVICE&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>]</span>
+</span></span><span class=line><span class=cl>                <span class=p>},</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;rlimits&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                        <span class=p>{</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;RLIMIT_NOFILE&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&#34;hard&#34;</span><span class=p>:</span> <span class=mi>1024</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&#34;soft&#34;</span><span class=p>:</span> <span class=mi>1024</span>
+</span></span><span class=line><span class=cl>                        <span class=p>}</span>
+</span></span><span class=line><span class=cl>                <span class=p>],</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;noNewPrivileges&#34;</span><span class=p>:</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>        <span class=p>},</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;root&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;path&#34;</span><span class=p>:</span> <span class=s2>&#34;rootfs&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;readonly&#34;</span><span class=p>:</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>        <span class=p>},</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;hostname&#34;</span><span class=p>:</span> <span class=s2>&#34;runc&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;mounts&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                <span class=p>{</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;destination&#34;</span><span class=p>:</span> <span class=s2>&#34;/proc&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;proc&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;source&#34;</span><span class=p>:</span> <span class=s2>&#34;proc&#34;</span>
+</span></span><span class=line><span class=cl>                <span class=p>},</span>
+</span></span><span class=line><span class=cl>                <span class=p>{</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;destination&#34;</span><span class=p>:</span> <span class=s2>&#34;/dev&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;tmpfs&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;source&#34;</span><span class=p>:</span> <span class=s2>&#34;tmpfs&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;options&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;nosuid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;strictatime&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;mode=755&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;size=65536k&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>]</span>
+</span></span><span class=line><span class=cl>                <span class=p>},</span>
+</span></span><span class=line><span class=cl>                <span class=p>{</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;destination&#34;</span><span class=p>:</span> <span class=s2>&#34;/dev/pts&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;devpts&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;source&#34;</span><span class=p>:</span> <span class=s2>&#34;devpts&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;options&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;nosuid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;noexec&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;newinstance&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;ptmxmode=0666&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;mode=0620&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;gid=5&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>]</span>
+</span></span><span class=line><span class=cl>                <span class=p>},</span>
+</span></span><span class=line><span class=cl>                <span class=p>{</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;destination&#34;</span><span class=p>:</span> <span class=s2>&#34;/dev/shm&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;tmpfs&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;source&#34;</span><span class=p>:</span> <span class=s2>&#34;shm&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;options&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;nosuid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;noexec&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;nodev&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;mode=1777&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;size=65536k&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>]</span>
+</span></span><span class=line><span class=cl>                <span class=p>},</span>
+</span></span><span class=line><span class=cl>                <span class=p>{</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;destination&#34;</span><span class=p>:</span> <span class=s2>&#34;/dev/mqueue&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;mqueue&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;source&#34;</span><span class=p>:</span> <span class=s2>&#34;mqueue&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;options&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;nosuid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;noexec&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;nodev&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>]</span>
+</span></span><span class=line><span class=cl>                <span class=p>},</span>
+</span></span><span class=line><span class=cl>                <span class=p>{</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;destination&#34;</span><span class=p>:</span> <span class=s2>&#34;/sys&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;sysfs&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;source&#34;</span><span class=p>:</span> <span class=s2>&#34;sysfs&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;options&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;nosuid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;noexec&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;nodev&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;ro&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>]</span>
+</span></span><span class=line><span class=cl>                <span class=p>},</span>
+</span></span><span class=line><span class=cl>                <span class=p>{</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;destination&#34;</span><span class=p>:</span> <span class=s2>&#34;/sys/fs/cgroup&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;cgroup&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;source&#34;</span><span class=p>:</span> <span class=s2>&#34;cgroup&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;options&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;nosuid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;noexec&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;nodev&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;relatime&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                <span class=s2>&#34;ro&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>]</span>
+</span></span><span class=line><span class=cl>                <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=p>],</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;linux&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;resources&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&#34;devices&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                                <span class=p>{</span>
+</span></span><span class=line><span class=cl>                                        <span class=nt>&#34;allow&#34;</span><span class=p>:</span> <span class=kc>false</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                        <span class=nt>&#34;access&#34;</span><span class=p>:</span> <span class=s2>&#34;rwm&#34;</span>
+</span></span><span class=line><span class=cl>                                <span class=p>}</span>
+</span></span><span class=line><span class=cl>                        <span class=p>]</span>
+</span></span><span class=line><span class=cl>                <span class=p>},</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;namespaces&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                        <span class=p>{</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;pid&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>},</span>
+</span></span><span class=line><span class=cl>                        <span class=p>{</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;network&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>},</span>
+</span></span><span class=line><span class=cl>                        <span class=p>{</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;ipc&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>},</span>
+</span></span><span class=line><span class=cl>                        <span class=p>{</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;uts&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>},</span>
+</span></span><span class=line><span class=cl>                        <span class=p>{</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;mount&#34;</span>
+</span></span><span class=line><span class=cl>                        <span class=p>}</span>
+</span></span><span class=line><span class=cl>                <span class=p>],</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;maskedPaths&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/acpi&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/asound&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/kcore&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/keys&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/latency_stats&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/timer_list&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/timer_stats&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/sched_debug&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/sys/firmware&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/scsi&#34;</span>
+</span></span><span class=line><span class=cl>                <span class=p>],</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;readonlyPaths&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/bus&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/fs&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/irq&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/sys&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                        <span class=s2>&#34;/proc/sysrq-trigger&#34;</span>
+</span></span><span class=line><span class=cl>                <span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=运行时和生命周期>运行时和生命周期</h3><p>在config.json文件中可以声明跟容器生命周期相关的部分，比如prestart、poststop等。</p><p>定义了很多子命令，比如状态查询的<code>state &lt;container-id></code>，删除容器的<code>delete &lt;container-id></code>等，这些子命令runc部分均有实现。通过 <code>runc state mycontainerid</code> 来查看的输出结果如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;ociVersion&#34;</span><span class=p>:</span> <span class=s2>&#34;1.0.2-dev&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;id&#34;</span><span class=p>:</span> <span class=s2>&#34;mycontainerid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;pid&#34;</span><span class=p>:</span> <span class=mi>40805</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;status&#34;</span><span class=p>:</span> <span class=s2>&#34;running&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;bundle&#34;</span><span class=p>:</span> <span class=s2>&#34;/mycontainer&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;rootfs&#34;</span><span class=p>:</span> <span class=s2>&#34;/mycontainer/rootfs&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;created&#34;</span><span class=p>:</span> <span class=s2>&#34;2022-06-29T13:51:54.795617419Z&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;owner&#34;</span><span class=p>:</span> <span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=镜像分发规范>镜像分发规范</h2><h3 id=pull>pull</h3><h4 id=pull-manifest>pull manifest</h4><p>接口定义：<code>GET /v2/&lt;name>/manifests/&lt;reference></code></p><p><code>&lt;name></code>： 镜像的 namespace。
+<code>&lt;reference></code>：镜像的 tag 或者摘要信息。</p><h4 id=pull-bolb>pull bolb</h4><p>接口定义：<code>GET /v2/&lt;name>/blobs/&lt;digest></code></p><h3 id=push>push</h3><p><code>POST /v2/&lt;name>/blobs/uploads/?digest=&lt;digest></code>
+<code>PUT /v2/&lt;name>/manifests/&lt;reference></code></p><h3 id=list-tag>list tag</h3><p>接口定义：<code>GET /v2/&lt;name>/tags/list</code></p><p>返回格式如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>  &#34;name&#34;: &#34;&lt;name&gt;&#34;,
+</span></span><span class=line><span class=cl>  &#34;tags&#34;: [
+</span></span><span class=line><span class=cl>    &#34;&lt;tag1&gt;&#34;,
+</span></span><span class=line><span class=cl>    &#34;&lt;tag2&gt;&#34;,
+</span></span><span class=line><span class=cl>    &#34;&lt;tag3&gt;&#34;
+</span></span><span class=line><span class=cl>  ]
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><h3 id=list-references>list references</h3><p>接口定义： <code>GET /v2/&lt;name>/referrers/&lt;digest></code></p><h3 id=delete-tag>delete tag</h3><p>接口定义： <code>DELETE /v2/&lt;name>/manifests/&lt;tag></code></p><h3 id=delete-manifest>delete manifest</h3><p>接口定义： <code>DELETE /v2/&lt;name>/manifests/&lt;digest></code></p><h3 id=delete-blobs>delete blobs</h3><p>接口定义： <code>DELETE /v2/&lt;name>/blobs/&lt;digest></code></p><h2 id=k8s支持情况>k8s支持情况</h2><p>K8s可以通过 pod 的 spec.runtimeClassName 来指定 oci runtime 的实现方式。</p><h2 id=参考>参考</h2><ul><li><a class=link href=https://vividcode.io/understanding-oci-image-spec/ target=_blank rel=noopener>Understanding OCI Image Spec</a> （简单明了，推荐优先阅读）</li><li><a class=link href=https://opencontainers.org/ target=_blank rel=noopener>https://opencontainers.org/</a></li><li><a class=link href=https://mp.weixin.qq.com/s/TVIz8p8nOj4ffYaECW7gVg target=_blank rel=noopener>云原生制品那些事(2)：OCI 镜像规范</a></li><li><a class=link href=https://github.com/containers/skopeo target=_blank rel=noopener>skopeo</a></li><li><a class=link href="https://ata.alibaba-inc.com/articles/146823?spm=ata.23639746.0.0.7a343566jpFBZQ" target=_blank rel=noopener>解读 OCI Image Spec</a></li></ul></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2026 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

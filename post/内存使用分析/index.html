@@ -1,0 +1,327 @@
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="操作系统级别 /proc/meminfo 其中的Buffers和Cached的迷惑性非常大，非常难理解。Buffers是指的磁盘数据的缓存，Cached是指对文件数据的缓存.\nfree 该命令实际上是通过读取/proc/meminfo文件得到的如下输出\n"><title>内存使用分析</title><link rel=canonical href=/post/%E5%86%85%E5%AD%98%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="内存使用分析"><meta property='og:description' content="操作系统级别 /proc/meminfo 其中的Buffers和Cached的迷惑性非常大，非常难理解。Buffers是指的磁盘数据的缓存，Cached是指对文件数据的缓存.\nfree 该命令实际上是通过读取/proc/meminfo文件得到的如下输出\n"><meta property='og:url' content='/post/%E5%86%85%E5%AD%98%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/'><meta property='og:site_name' content='404频道'><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:published_time' content='2022-04-14T20:33:17+00:00'><meta property='article:modified_time' content='2022-04-14T20:33:17+00:00'><meta name=twitter:title content="内存使用分析"><meta name=twitter:description content="操作系统级别 /proc/meminfo 其中的Buffers和Cached的迷惑性非常大，非常难理解。Buffers是指的磁盘数据的缓存，Cached是指对文件数据的缓存.\nfree 该命令实际上是通过读取/proc/meminfo文件得到的如下输出\n"><link rel="shortcut icon" href=/images/avatar.jpeg></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_16fb6c03614f4da2.jpeg width=300 height=280 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📡</span></figure><div class=site-meta><h1 class=site-name><a href=/>404频道</a></h1><h2 class=site-description>学习笔记</h2></div></header><ol class=menu-social><li><a href=https://github.com/kuring target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/about/><svg class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于我</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#操作系统级别>操作系统级别</a><ol><li><a href=#procmeminfo>/proc/meminfo</a></li><li><a href=#free>free</a></li><li><a href=#vmstat>vmstat</a></li></ol></li><li><a href=#容器级别>容器级别</a><ol><li><a href=#通过kubectl命令来查看内存使用>通过kubectl命令来查看内存使用</a></li><li><a href=#通过docker-stats命令来查看容器>通过docker stats命令来查看容器</a></li></ol></li><li><a href=#进程级别>进程级别</a><ol><li><a href=#cat-procpidstatus>cat /proc/$pid/status</a></li><li><a href=#top命令查看>top命令查看</a></li><li><a href=#ps命令查看>ps命令查看</a></li><li><a href=#pmap>pmap</a></li></ol></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><div class=article-title-wrapper><h2 class=article-title><a href=/post/%E5%86%85%E5%AD%98%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/>内存使用分析</a></h2></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2022-04-14T20:33:17Z>2022-04-14</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>阅读时长: 4 分钟</time></div></footer></div></header><section class=article-content><h2 id=操作系统级别>操作系统级别</h2><h3 id=procmeminfo>/proc/meminfo</h3><p>其中的Buffers和Cached的迷惑性非常大，非常难理解。Buffers是指的磁盘数据的缓存，Cached是指对文件数据的缓存.</p><h3 id=free>free</h3><p>该命令实际上是通过读取/proc/meminfo文件得到的如下输出</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ free -h
+</span></span><span class=line><span class=cl>              total        used        free      shared  buff/cache   available
+</span></span><span class=line><span class=cl>Mem:            30G         22G        412M         47M        7.6G        7.3G
+</span></span><span class=line><span class=cl>Swap:            0B          0B          0B
+</span></span></code></pre></td></tr></table></div></div><p>具体列含义：</p><ul><li>total: 总内存大小</li><li>used：已经使用的内存大小，包含共享内存</li><li>free：未使用的内存大小</li><li>shared：共享内存大小</li><li>buff/cache：缓存和缓冲区的大小</li><li>available：新进程可用的内存大小</li></ul><h3 id=vmstat>vmstat</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ vmstat 1
+</span></span><span class=line><span class=cl>procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
+</span></span><span class=line><span class=cl> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+</span></span><span class=line><span class=cl> 4  0      0 1091484 1142360 34545436    0    0   146   265    0    0  8  5 86  1  0
+</span></span></code></pre></td></tr></table></div></div><h2 id=容器级别>容器级别</h2><h3 id=通过kubectl命令来查看内存使用>通过kubectl命令来查看内存使用</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ kubectl top pod nginx-ingress-controller-85cd6c7b5d-md6vc
+</span></span><span class=line><span class=cl>NAME                                        CPU(cores)   MEMORY(bytes)
+</span></span><span class=line><span class=cl>nginx-ingress-controller-85cd6c7b5d-md6vc   22m          502Mi
+</span></span></code></pre></td></tr></table></div></div><h3 id=通过docker-stats命令来查看容器>通过docker stats命令来查看容器</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ docker stats $container_id
+</span></span><span class=line><span class=cl>CONTAINER ID  NAME                CPU %   MEM USAGE / LIMIT   MEM %  NET I/O   BLOCK I/O           PIDS
+</span></span><span class=line><span class=cl>97d8bff3f89f  k8s_nginx-ingress   6.33%   180.3MiB / 512MiB   35.21% 0B / 0B   0B / 0B             119
+</span></span></code></pre></td></tr></table></div></div><p>docker通过cgroup的统计数据来获取的内存值</p><p>参考文档：https://docs.docker.com/engine/reference/commandline/stats/</p><h2 id=进程级别>进程级别</h2><p><img src=https://kuring.oss-cn-beijing.aliyuncs.com/common/vm-1.png loading=lazy></p><p>具体的含义可以通过下文的/proc/$pid/status来查看，其他进程的内存含义</p><h3 id=cat-procpidstatus>cat /proc/$pid/status</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>cat status
+</span></span><span class=line><span class=cl>Name:   nginx
+</span></span><span class=line><span class=cl>Umask:  0022
+</span></span><span class=line><span class=cl>State:  S (sleeping)
+</span></span><span class=line><span class=cl>Tgid:   46787
+</span></span><span class=line><span class=cl>Ngid:   0
+</span></span><span class=line><span class=cl>Pid:    46787
+</span></span><span class=line><span class=cl>PPid:   33
+</span></span><span class=line><span class=cl>TracerPid:      0
+</span></span><span class=line><span class=cl>Uid:    1000    1000    1000    1000
+</span></span><span class=line><span class=cl>Gid:    19062   19062   19062   19062
+</span></span><span class=line><span class=cl>FDSize: 128
+</span></span><span class=line><span class=cl>Groups:
+</span></span><span class=line><span class=cl>VmPeak:   559768 kB
+</span></span><span class=line><span class=cl>VmSize:   559120 kB
+</span></span><span class=line><span class=cl>VmLck:         0 kB
+</span></span><span class=line><span class=cl>VmPin:         0 kB
+</span></span><span class=line><span class=cl>VmHWM:    285240 kB
+</span></span><span class=line><span class=cl>VmRSS:    284752 kB
+</span></span><span class=line><span class=cl>RssAnon:          279016 kB
+</span></span><span class=line><span class=cl>RssFile:            3420 kB
+</span></span><span class=line><span class=cl>RssShmem:           2316 kB
+</span></span><span class=line><span class=cl>VmData:   371784 kB
+</span></span><span class=line><span class=cl>VmStk:       136 kB
+</span></span><span class=line><span class=cl>VmExe:      4716 kB
+</span></span><span class=line><span class=cl>VmLib:      6828 kB
+</span></span><span class=line><span class=cl>VmPTE:       900 kB
+</span></span><span class=line><span class=cl>VmSwap:        0 kB
+</span></span><span class=line><span class=cl>Threads:        33
+</span></span><span class=line><span class=cl>SigQ:   1/123857
+</span></span><span class=line><span class=cl>SigPnd: 0000000000000000
+</span></span><span class=line><span class=cl>ShdPnd: 0000000000000000
+</span></span><span class=line><span class=cl>SigBlk: 0000000000000000
+</span></span><span class=line><span class=cl>SigIgn: 0000000040001000
+</span></span><span class=line><span class=cl>SigCgt: 0000000198016eef
+</span></span><span class=line><span class=cl>CapInh: 0000001fffffffff
+</span></span><span class=line><span class=cl>CapPrm: 0000000000000400
+</span></span><span class=line><span class=cl>CapEff: 0000000000000400
+</span></span><span class=line><span class=cl>CapBnd: 0000001fffffffff
+</span></span><span class=line><span class=cl>CapAmb: 0000000000000000
+</span></span><span class=line><span class=cl>NoNewPrivs:     0
+</span></span><span class=line><span class=cl>Seccomp:        0
+</span></span><span class=line><span class=cl>Speculation_Store_Bypass:       vulnerable
+</span></span><span class=line><span class=cl>Cpus_allowed:   0001
+</span></span><span class=line><span class=cl>Cpus_allowed_list:      0
+</span></span><span class=line><span class=cl>Mems_allowed:   00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001
+</span></span><span class=line><span class=cl>Mems_allowed_list:      0
+</span></span><span class=line><span class=cl>voluntary_ctxt_switches:        343464
+</span></span><span class=line><span class=cl>nonvoluntary_ctxt_switches:     35061
+</span></span></code></pre></td></tr></table></div></div><p>具体字段含义可以查看man文档：https://man7.org/linux/man-pages/man5/proc.5.html，跟内存相关的字段如下：</p><ul><li>VmRSS：虚拟内存驻留在物理内存中的部分大小</li><li>VmHWM：使用物理内存的峰值</li><li>VmData：进程占用的数据段大小</li></ul><h3 id=top命令查看>top命令查看</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ top -p $pid
+</span></span><span class=line><span class=cl>    PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+</span></span><span class=line><span class=cl>  46787 www-data  20   0  559120 286544   5740 S   1.3  0.9   2:43.64 nginx
+</span></span></code></pre></td></tr></table></div></div><p>具体列含义如下：</p><ul><li>VIRT：进程使用虚拟内存总大小，即使没有占用物理内存，包括了进程代码段、数据段、共享内存、已经申请的堆内存和已经换到swap空间的内存等</li><li>RES: 进程实际使用的物理内存大小，不包括swap和共享内存</li><li>SHR：与其他进程的共享内存、加载的动态链接库、程序代码段的大小</li><li>MEM：进程使用的物理内存占系统总内存的百分比</li></ul><h3 id=ps命令查看>ps命令查看</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ps aux
+</span></span><span class=line><span class=cl>USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+</span></span><span class=line><span class=cl>www-data       1  0.0  0.0    212     8 ?        Ss   Apr09   0:00 /usr/bin/dumb-init -- /nginx-ingress-controller
+</span></span><span class=line><span class=cl>www-data       6  0.9  0.3 813500 99644 ?        Ssl  Apr09  67:32 /nginx-ingress-controller
+</span></span><span class=line><span class=cl>www-data      33  0.0  0.7 458064 242252 ?       S    Apr09   0:53 nginx: master process /usr/local/nginx/sbin/nginx -c /etc/nginx/nginx.conf
+</span></span><span class=line><span class=cl>www-data   46786  0.0  0.7 459976 239996 ?       S    17:57   0:00 rollback logs/eagleeye.log interval=60 adjust=600
+</span></span><span class=line><span class=cl>www-data   46787  1.3  0.8 559120 284452 ?       Sl   17:57   2:22 nginx: worker process
+</span></span><span class=line><span class=cl>www-data   46788  1.0  0.8 558992 285168 ?       Sl   17:57   1:51 nginx: worker process
+</span></span><span class=line><span class=cl>www-data   46789  0.0  0.7 452012 237152 ?       S    17:57   0:01 nginx: cache manager process
+</span></span><span class=line><span class=cl>www-data   46790  0.0  0.8 490832 267600 ?       S    17:57   0:00 nginx: x
+</span></span><span class=line><span class=cl>www-data   47533  0.0  0.0  60052  1832 pts/2    R+   20:50   0:00 ps aux
+</span></span></code></pre></td></tr></table></div></div><ul><li>RSS：虚拟内存中的常驻内存，即实际占用的物理内存，包括所有已经分配的堆内存、栈内存、共享内存，由于共享内存非独占，实际上进程独占的物理内存要少于RSS</li></ul><h3 id=pmap>pmap</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># pmap -x 452021
+</span></span><span class=line><span class=cl>452021:   nginx: worker process
+</span></span><span class=line><span class=cl>Address           Kbytes     RSS   Dirty Mode  Mapping
+</span></span><span class=line><span class=cl>0000000000400000    4716    1540       0 r-x-- tengine
+</span></span><span class=line><span class=cl>0000000000a9a000      20      16       4 r---- tengine
+</span></span><span class=line><span class=cl>0000000000a9f000     212     196     176 rw--- tengine
+</span></span><span class=line><span class=cl>0000000000ad4000     248      60      60 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0da6cb0000     136       4       0 r-x-- ld-2.17.so
+</span></span><span class=line><span class=cl>00002b0da6cd2000       4       4       4 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0da6cd3000       4       4       4 rw-s- zero (deleted)
+</span></span><span class=line><span class=cl>00002b0da6cd7000      28      24      24 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0da6cde000      64       8       8 rwx--   [ anon ]
+</span></span><span class=line><span class=cl>00002b0da6ed1000       4       4       4 r---- ld-2.17.so
+</span></span><span class=line><span class=cl>00002b0da6ed2000       4       4       4 rw--- ld-2.17.so
+</span></span><span class=line><span class=cl>00002b0da6ed3000       4       4       4 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0da6ed4000       8       0       0 r-x-- libdl-2.17.so
+</span></span><span class=line><span class=cl>00002b0da70d8000      92      32       0 r-x-- libpthread-2.17.so
+</span></span><span class=line><span class=cl>00002b0da72f0000      16       4       4 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0da72f4000      32       0       0 r-x-- libcrypt-2.17.so
+</span></span><span class=line><span class=cl>00002b0da72fc000    2044       0       0 ----- libcrypt-2.17.so
+</span></span><span class=line><span class=cl>00002b0da74fb000       4       4       4 r---- libcrypt-2.17.so
+</span></span><span class=line><span class=cl>00002b0da74fc000       4       4       4 rw--- libcrypt-2.17.so
+</span></span><span class=line><span class=cl>00002b0da74fd000     184       0       0 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0da752b000    1028       8       0 r-x-- libm-2.17.so
+</span></span><span class=line><span class=cl>00002b0da7a35000     760     372       0 r-x-- libssl.so.1.1
+</span></span><span class=line><span class=cl>00002b0da7d03000    2812    1124       0 r-x-- libcrypto.so.1.1
+</span></span><span class=line><span class=cl>00002b0da7fc2000    2044       0       0 ----- libcrypto.so.1.1
+</span></span><span class=line><span class=cl>00002b0da81c1000     172     172     172 r---- libcrypto.so.1.1
+</span></span><span class=line><span class=cl>00002b0da81ec000      12      12      12 rw--- libcrypto.so.1.1
+</span></span><span class=line><span class=cl>00002b0da81ef000      16       8       8 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0da81f3000      84      40       0 r-x-- libgcc_s-4.8.5-20150702.so.1
+</span></span><span class=line><span class=cl>00002b0da8409000    1808     316       0 r-x-- libc-2.17.so
+</span></span><span class=line><span class=cl>00002b0da85cd000    2044       0       0 ----- libc-2.17.so
+</span></span><span class=line><span class=cl>00002b0da87cc000      16      16      16 r---- libc-2.17.so
+</span></span><span class=line><span class=cl>00002b0da87d0000       8       8       8 rw--- libc-2.17.so
+</span></span><span class=line><span class=cl>00002b0da87d2000      20      12      12 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0da87d7000       8       0       0 r-x-- libfreebl3.so
+</span></span><span class=line><span class=cl>00002b0da87d9000    2044       0       0 ----- libfreebl3.so
+</span></span><span class=line><span class=cl>00002b0da89d8000       4       4       4 r---- libfreebl3.so
+</span></span><span class=line><span class=cl>00002b0da89d9000       4       4       4 rw--- libfreebl3.so
+</span></span><span class=line><span class=cl>00002b0da8a00000   24576   21936   21936 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0daa200000    8192    8180    8180 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0daaa00000    8192    8192    8192 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0dab200000    8192    8192    8192 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0daba00000    8192    8172    8172 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0dac200000    4096    4096    4096 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0dac600000    4096    4096    4096 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0daca00000    4096      12      12 rw-s- zero (deleted)
+</span></span><span class=line><span class=cl>00002b0dace00000    1024       0       0 rw-s- zero (deleted)
+</span></span><span class=line><span class=cl>00002b0dacf00000    1024       0       0 rw-s- zero (deleted)
+</span></span><span class=line><span class=cl>00002b0dad000000   16384   16384   16384 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0dae000000   10240       0       0 rw-s- zero (deleted)
+</span></span><span class=line><span class=cl>00002b0db3f00000      24      16       0 r-x-- cjson.so
+</span></span><span class=line><span class=cl>00002b0db3f06000    2048       0       0 ----- cjson.so
+</span></span><span class=line><span class=cl>00002b0db4106000       4       4       4 r---- cjson.so
+</span></span><span class=line><span class=cl>00002b0db4107000       4       4       4 rw--- cjson.so
+</span></span><span class=line><span class=cl>00002b0db4108000       8       0       0 r-x-- librestychash.so
+</span></span><span class=line><span class=cl>00002b0db410a000    2044       0       0 ----- librestychash.so
+</span></span><span class=line><span class=cl>00002b0db4309000       4       4       4 r---- librestychash.so
+</span></span><span class=line><span class=cl>00002b0db430a000       4       4       4 rw--- librestychash.so
+</span></span><span class=line><span class=cl>00002b0db430b000   10240    1784    1784 rw-s- zero (deleted)
+</span></span><span class=line><span class=cl>00002b0db4d0b000   10240       0       0 rw-s- zero (deleted)
+</span></span><span class=line><span class=cl>00002b0db5800000    6144    6144    6144 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0db5e00000    6144    6144    6144 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0db6400000    8192    8192    8192 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0db6c0b000    5120       8       8 rw-s- zero (deleted)
+</span></span><span class=line><span class=cl>00002b0db7200000    8192    8192    8192 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0dc2800000    1024       0       0 rw-s- zero (deleted)
+</span></span><span class=line><span class=cl>00002b0dc2900000   10240       0       0 rw-s- zero (deleted)
+</span></span><span class=line><span class=cl>00002b0dc3300000   10240       0       0 rw-s- zero (deleted)
+</span></span><span class=line><span class=cl>00002b0dc861f000    2048       8       8 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00002b0dc881f000       4       0       0 -----   [ anon ]
+</span></span><span class=line><span class=cl>00002b0dc8820000    2048       8       8 rw---   [ anon ]
+</span></span><span class=line><span class=cl>00007fff60f6c000     136      44      44 rw---   [ stack ]
+</span></span><span class=line><span class=cl>00007fff60fdd000       8       4       0 r-x--   [ anon ]
+</span></span><span class=line><span class=cl>ffffffffff600000       4       0       0 r-x--   [ anon ]
+</span></span><span class=line><span class=cl>---------------- ------- ------- -------
+</span></span><span class=line><span class=cl>total kB          558996  289376  285888
+</span></span></code></pre></td></tr></table></div></div><ul><li>Mapping: 支持如下值<ul><li>[anon]：分配的内存</li></ul></li></ul></section><footer class=article-footer></footer></article><script src=https://giscus.app/client.js data-repo=kuring/kuring.github.io data-repo-id="MDEwOlJlcG9zaXRvcnkyODM4MzQ0NTk=" data-category=Announcements data-category-id=DIC_kwDOEOr4W84CdeTU data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=zh-CN data-loading crossorigin=anonymous async></script><script>function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2013 -
+2026 kuring</section><section class=powerby>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
