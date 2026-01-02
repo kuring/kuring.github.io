@@ -6,7 +6,8 @@
 &lt;li&gt;33 篇草稿文章&lt;/li&gt;
 &lt;li&gt;静态资源文件（图片、参考文档等）&lt;/li&gt;
 &lt;li&gt;保持原有 URL 结构不变（SEO 友好）&lt;/li&gt;
-&lt;li&gt;配置 GitHub Actions 自动部署&lt;/li&gt;
+&lt;li&gt;配置 GitHub Actions 自动部署到 GitHub Pages&lt;/li&gt;
+&lt;li&gt;配置 Cloudflare Pages 部署（提升中国大陆访问速度）&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;这是一个典型的代码迁移任务，非常适合使用 AI 辅助工具来完成。我选择了 Cursor，这是一款基于 AI 的代码编辑器，能够理解上下文并执行复杂的代码重构任务。&lt;/p&gt;
 &lt;h2 id="为什么选择-cursor"&gt;为什么选择 Cursor
@@ -131,12 +132,57 @@
 &lt;li&gt;跨仓库部署到 &lt;code&gt;kuring/kuring.github.io&lt;/code&gt; 的 gh-pages 分支&lt;/li&gt;
 &lt;li&gt;使用 Personal Access Token 实现跨仓库权限&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h3 id="7-url-兼容性保证"&gt;7. URL 兼容性保证
+&lt;h3 id="7-cloudflare-pages-配置"&gt;7. Cloudflare Pages 配置
+&lt;/h3&gt;&lt;p&gt;由于 GitHub Pages 在中国大陆访问速度较慢，我决定同时配置 Cloudflare Pages 部署。这需要：&lt;/p&gt;
+&lt;h4 id="71-多平台部署兼容性检查"&gt;7.1 多平台部署兼容性检查
+&lt;/h4&gt;&lt;p&gt;首先，需要确保博客配置支持多平台部署：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;baseurl 配置&lt;/strong&gt;：设置为 &lt;code&gt;/&lt;/code&gt;，让 Hugo 根据实际访问域名自动生成 URL&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Giscus 评论系统&lt;/strong&gt;：使用 GitHub 仓库存储评论，两个平台共享同一套评论&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;硬编码 URL 修复&lt;/strong&gt;：将代码示例中的绝对 URL 改为相对路径&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="72-cloudflare-pages-配置步骤"&gt;7.2 Cloudflare Pages 配置步骤
+&lt;/h4&gt;&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;连接 GitHub 仓库&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;在 Cloudflare Dashboard 中创建 Pages 项目&lt;/li&gt;
+&lt;li&gt;连接 &lt;code&gt;kuring/hugo&lt;/code&gt; 仓库&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;构建设置&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Framework preset: &lt;code&gt;Hugo&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Build command: &lt;code&gt;git submodule update --init --recursive &amp;amp;&amp;amp; hugo --minify&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Build output directory: &lt;code&gt;public&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;设置 &lt;code&gt;HUGO_VERSION&lt;/code&gt; 环境变量为具体版本号（如 &lt;code&gt;0.120.0&lt;/code&gt;，不要使用 &lt;code&gt;latest&lt;/code&gt;）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;自动部署&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Production branch: &lt;code&gt;main&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;启用 Preview deployments（每个 PR 自动创建预览）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h4 id="73-多平台部署的优势"&gt;7.3 多平台部署的优势
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;GitHub Pages&lt;/strong&gt;：&lt;code&gt;kuring.github.io&lt;/code&gt; - 作为主要部署平台&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Cloudflare Pages&lt;/strong&gt;：&lt;code&gt;kuring.pages.dev&lt;/code&gt; - 提供更快的中国大陆访问速度&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;共享评论系统&lt;/strong&gt;：两个平台使用同一套 Giscus 评论，评论数据统一管理&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;URL 兼容性&lt;/strong&gt;：使用相对路径和正确的 baseurl 配置，确保两个平台都能正常工作&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;详细的 Cloudflare Pages 部署教程请参考：&lt;a class="link" href="https://github.com/kuring/hugo/blob/main/docs/cloudflare-pages-deployment.md" target="_blank" rel="noopener"
+&gt;Cloudflare Pages 部署教程&lt;/a&gt;&lt;/p&gt;
+&lt;h3 id="8-url-兼容性保证"&gt;8. URL 兼容性保证
 &lt;/h3&gt;&lt;p&gt;这是迁移中最关键的部分。Cursor 确保了：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;使用 &lt;code&gt;permalinks.post: /post/:slug/&lt;/code&gt; 保持 URL 格式&lt;/li&gt;
 &lt;li&gt;对于有 &lt;code&gt;url:&lt;/code&gt; 字段的文章，转换为 &lt;code&gt;slug:&lt;/code&gt; 字段&lt;/li&gt;
 &lt;li&gt;所有文章的 URL 与 Hexo 版本完全一致&lt;/li&gt;
+&lt;li&gt;配置 &lt;code&gt;baseurl: /&lt;/code&gt; 支持多平台部署（GitHub Pages 和 Cloudflare Pages）&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id="使用-cursor-的技巧"&gt;使用 Cursor 的技巧
 &lt;/h2&gt;&lt;h3 id="1-明确表达需求"&gt;1. 明确表达需求
@@ -177,6 +223,8 @@
 &lt;li&gt;✅ 33 篇草稿文章迁移，正确标记为 draft&lt;/li&gt;
 &lt;li&gt;✅ 所有静态资源迁移完成&lt;/li&gt;
 &lt;li&gt;✅ GitHub Actions 自动部署配置完成&lt;/li&gt;
+&lt;li&gt;✅ Cloudflare Pages 部署配置完成，支持多平台部署&lt;/li&gt;
+&lt;li&gt;✅ 多平台部署兼容性验证通过（两个平台共享评论系统）&lt;/li&gt;
 &lt;li&gt;✅ 本地测试通过，站点正常运行&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id="经验总结"&gt;经验总结
@@ -190,11 +238,40 @@
 &lt;h2 id="后续工作"&gt;后续工作
 &lt;/h2&gt;&lt;p&gt;迁移完成后，还需要：&lt;/p&gt;
 &lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;GitHub Pages 部署&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
 &lt;li&gt;创建 GitHub Personal Access Token 并配置到仓库 Secrets&lt;/li&gt;
 &lt;li&gt;推送代码到 GitHub&lt;/li&gt;
+&lt;li&gt;验证 GitHub Actions 自动部署流程&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Cloudflare Pages 部署&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;在 Cloudflare Dashboard 创建 Pages 项目&lt;/li&gt;
+&lt;li&gt;连接 GitHub 仓库并配置构建设置&lt;/li&gt;
+&lt;li&gt;设置 &lt;code&gt;HUGO_VERSION&lt;/code&gt; 环境变量（具体版本号，不要使用 &lt;code&gt;latest&lt;/code&gt;）&lt;/li&gt;
 &lt;li&gt;验证自动部署流程&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;多平台验证&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;验证两个平台的站点都能正常访问&lt;/li&gt;
+&lt;li&gt;测试搜索功能在两个平台都正常工作&lt;/li&gt;
+&lt;li&gt;验证 Giscus 评论系统在两个平台都正常工作&lt;/li&gt;
 &lt;li&gt;对比新旧站点，确保内容一致&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
 &lt;/ol&gt;
+&lt;p&gt;详细的部署指南请参考：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class="link" href="https://github.com/kuring/hugo/blob/main/docs/cloudflare-pages-deployment.md" target="_blank" rel="noopener"
+&gt;Cloudflare Pages 部署教程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class="link" href="https://github.com/kuring/hugo/blob/main/docs/multi-deployment-guide.md" target="_blank" rel="noopener"
+&gt;多平台部署指南&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 &lt;h2 id="结语"&gt;结语
 &lt;/h2&gt;&lt;p&gt;使用 Cursor 完成这次迁移，让我深刻体会到 AI 辅助编程的效率。原本需要数天的手工迁移工作，在 AI 的帮助下，几个小时就完成了。更重要的是，AI 能够理解整体需求，确保迁移的完整性和正确性。&lt;/p&gt;
 &lt;p&gt;对于类似的代码迁移、重构任务，我强烈推荐使用 Cursor 这样的 AI 辅助工具。它不仅能提高效率，还能减少人为错误，确保迁移质量。&lt;/p&gt;</description></item></channel></rss>
